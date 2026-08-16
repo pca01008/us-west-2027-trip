@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="ko" data-storage-key="uswest2027_saved">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#142b3d">
+<title>WESTBOUND 2027 · Las Vegas & LA</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--navy:#142b3d;--blue:#2f6685;--sky:#dceaf0;--sand:#e6a15c;--cream:#f7f3eb;--paper:#fffdf8;--ink:#22313a;--muted:#71808a;--line:#dce2e2;--red:#b9584d}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;background:var(--cream);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif}body{padding-bottom:38px}button,input,select{font:inherit}button{cursor:pointer}
+header{padding:calc(20px + env(safe-area-inset-top)) 16px 18px;color:#fff;background:linear-gradient(135deg,var(--navy),#28546c)}
+.eyebrow{font-size:10px;font-weight:900;letter-spacing:.16em;color:#f6c17d}.title{margin:6px 0 3px;font-size:25px;line-height:1.05;font-weight:950;letter-spacing:-.05em}.subtitle{font-size:12px;opacity:.82}.panel,.expense{background:rgba(255,253,248,.97);border:1px solid var(--line);border-radius:14px;box-shadow:0 5px 16px rgba(25,45,57,.06)}
+.tabs{position:sticky;top:0;z-index:10;display:flex;gap:6px;overflow-x:auto;padding:8px 10px;background:rgba(247,243,235,.97);border-bottom:1px solid var(--line);backdrop-filter:blur(12px);scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.tabs label{flex:none;min-width:66px;padding:8px 7px;text-align:center;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--muted);font-size:11px;font-weight:900}.tabs label span{display:block;margin-top:2px;font-size:10px;font-weight:800}.day-radio{position:absolute;opacity:0;pointer-events:none}.day{display:none}.day-radio:checked~.tabs label[for="prep"],.day-radio:checked~.tabs label[for="d1"]{background:var(--blue);color:#fff}.day-radio:checked~.tabs label[for="d2"],.day-radio:checked~.tabs label[for="d3"],.day-radio:checked~.tabs label[for="d4"],.day-radio:checked~.tabs label[for="d5"],.day-radio:checked~.tabs label[for="d6"],.day-radio:checked~.tabs label[for="d7"],.day-radio:checked~.tabs label[for="d8"],.day-radio:checked~.tabs label[for="d9"],.day-radio:checked~.tabs label[for="d10"],.day-radio:checked~.tabs label[for="d11"],.day-radio:checked~.tabs label[for="money"]{background:var(--blue);color:#fff;border-color:var(--blue)}#prep:checked~main .prepday,#d1:checked~main .day1,#d2:checked~main .day2,#d3:checked~main .day3,#d4:checked~main .day4,#d5:checked~main .day5,#d6:checked~main .day6,#d7:checked~main .day7,#d8:checked~main .day8,#d9:checked~main .day9,#d10:checked~main .day10,#d11:checked~main .day11,#money:checked~main .moneyday{display:block}
+main{max-width:780px;margin:auto;padding:8px}.panel{padding:14px}.day-head{display:flex;align-items:center;gap:10px;padding:0 2px 12px;border-bottom:1px solid var(--line)}.day-head h2{flex:none;margin:0;padding:7px 9px;border-radius:9px;background:var(--navy);color:#fff;font-size:13px;line-height:1.15;text-align:center}.day-head h2 span{display:block;margin-top:2px;color:#bcd4df;font-size:10px;font-weight:700}.day-head p{margin:0;color:var(--muted);font-size:12px;font-weight:800}.timeline-row{grid-template-columns:48px 16px minmax(0,1fr);gap:8px;position:relative;margin:10px 0}.timeline-row:not(:last-child) .rail:before{content:"";position:absolute;top:5px;bottom:-20px;left:50%;width:2px;background:#cbdadd}.time{padding-top:15px;font-size:12px;color:var(--navy)}.rail{position:relative;display:flex;justify-content:center}.dot{width:10px;height:10px;margin-top:18px;box-shadow:0 0 0 3px var(--cream)}.card{padding:13px;border-radius:12px}.card h3{font-size:15px;line-height:1.3}.remark{font-size:12px;line-height:1.5}.chip{margin-top:8px;padding:4px 7px;font-size:9px}.map{margin-top:8px;padding:9px;font-size:10px}.memo{margin:12px 0 0;padding:11px;font-size:11px}.checklist{margin-top:13px;padding-top:12px}.checklist h3{font-size:13px}.checklist label{padding:7px 0;font-size:12px}.checklist input{accent-color:var(--blue);margin-right:7px}
+.money-tools{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:14px 0}.currency{display:flex;overflow:hidden;border:1px solid var(--line);border-radius:10px}.currency button{border:0;padding:8px 12px;background:#fff;color:var(--muted);font-size:11px;font-weight:900}.currency button.active{background:var(--navy);color:#fff}.money-total{padding:14px;border-radius:14px;background:var(--navy);color:#fff}.money-total small{display:block;color:#b9ccd6;font-size:11px}.money-total strong{font-size:26px}.expenses{margin-top:10px}.expense{display:grid;grid-template-columns:1fr auto;gap:10px;margin:8px 0;padding:12px;background:#fff}.expense b{font-size:13px}.expense small{display:block;margin-top:3px;color:var(--muted);font-size:10px}.expense strong{align-self:center;color:var(--blue);font-size:14px}.add-expense{display:grid;grid-template-columns:1fr 120px 90px;gap:8px;margin-top:12px}.add-expense input,.add-expense select{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff}.btn{border:0;border-radius:10px;padding:10px;background:var(--blue);color:#fff;font-size:11px;font-weight:900}.editor-bar{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px}.editor-bar button{border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:#fff;color:var(--navy);font-size:11px;font-weight:900}.editor-bar .primary{background:var(--navy);color:#fff}.editing [contenteditable="true"]{outline:2px dashed #e6a15c;outline-offset:3px}.hidden{display:none!important}
+@media(max-width:520px){body{padding-bottom:22px}.title{font-size:23px}.subtitle{font-size:11px}.editor-bar{position:sticky;top:54px;z-index:9;flex-wrap:nowrap;overflow-x:auto;margin:0;padding:7px 9px;background:rgba(247,243,235,.97);border-bottom:1px solid var(--line)}.editor-bar button{flex:none;padding:7px 9px;font-size:10px}.editor-bar .chip{flex:none;margin:0}.add-expense{grid-template-columns:1fr 1fr}.add-expense .btn{grid-column:1/-1}}
+</style>
+<style>
+/* Only the selected date tab is highlighted. */
+.day-radio:checked~.tabs label{background:var(--paper);color:var(--muted);border-color:var(--line)}
+#prep:checked~.tabs label[for="prep"],#d1:checked~.tabs label[for="d1"],#d2:checked~.tabs label[for="d2"],#d3:checked~.tabs label[for="d3"],#d4:checked~.tabs label[for="d4"],#d5:checked~.tabs label[for="d5"],#d6:checked~.tabs label[for="d6"],#d7:checked~.tabs label[for="d7"],#d8:checked~.tabs label[for="d8"],#d9:checked~.tabs label[for="d9"],#d10:checked~.tabs label[for="d10"],#d11:checked~.tabs label[for="d11"],#money:checked~.tabs label[for="money"]{background:var(--blue);color:#fff;border-color:var(--blue)}
+</style>
+<style id="itinerary-redesign">
+/* Mobile itinerary redesign: one light theme, one coral accent, information-first. */
+:root{--navy:#15283e;--blue:#d85f4d;--sky:#fbe9e5;--sand:#d85f4d;--cream:#eef1f5;--paper:#ffffff;--ink:#172434;--muted:#657181;--line:#d8e0e9;--red:#b64539}
+html,body{background:var(--cream)!important;color:var(--ink)!important}body{padding-bottom:24px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
+header{min-height:124px;padding:calc(26px + env(safe-area-inset-top)) 20px 22px!important;background:var(--navy)!important;color:#f9fbfd!important}header:after{display:none}.eyebrow{display:none}.title{margin:0!important;font-size:29px!important;line-height:1.18!important;letter-spacing:-.055em!important}.subtitle{margin-top:7px;font-size:13px!important;color:#c7d3df!important;opacity:1!important}
+.tabs{gap:0!important;padding:7px 10px!important;background:rgba(238,241,245,.97)!important;border-bottom:1px solid var(--line)!important;box-shadow:0 1px 0 rgba(21,40,62,.03)!important}.tabs label{min-width:67px!important;padding:8px 6px!important;border:0!important;border-radius:0!important;background:transparent!important;color:var(--muted)!important;font-size:12px!important;line-height:1.05!important}.tabs label span{margin-top:3px!important;font-size:10px!important;font-weight:700!important}.tabs label:active,.editor-bar button:active,.currency button:active,.btn:active{transform:scale(.97)}
+#prep:checked~.tabs label[for="prep"],#d1:checked~.tabs label[for="d1"],#d2:checked~.tabs label[for="d2"],#d3:checked~.tabs label[for="d3"],#d4:checked~.tabs label[for="d4"],#d5:checked~.tabs label[for="d5"],#d6:checked~.tabs label[for="d6"],#d7:checked~.tabs label[for="d7"],#d8:checked~.tabs label[for="d8"],#d9:checked~.tabs label[for="d9"],#d10:checked~.tabs label[for="d10"],#d11:checked~.tabs label[for="d11"],#money:checked~.tabs label[for="money"]{position:relative;background:transparent!important;color:var(--navy)!important;border:0!important}#prep:checked~.tabs label[for="prep"]:after,#d1:checked~.tabs label[for="d1"]:after,#d2:checked~.tabs label[for="d2"]:after,#d3:checked~.tabs label[for="d3"]:after,#d4:checked~.tabs label[for="d4"]:after,#d5:checked~.tabs label[for="d5"]:after,#d6:checked~.tabs label[for="d6"]:after,#d7:checked~.tabs label[for="d7"]:after,#d8:checked~.tabs label[for="d8"]:after,#d9:checked~.tabs label[for="d9"]:after,#d10:checked~.tabs label[for="d10"]:after,#d11:checked~.tabs label[for="d11"]:after,#money:checked~.tabs label[for="money"]:after{content:"";position:absolute;right:10px;bottom:2px;left:10px;height:3px;border-radius:3px;background:var(--blue)}
+.editor-bar{max-width:680px;margin:0 auto!important;padding:8px 12px!important;background:var(--paper)!important;border-bottom:1px solid var(--line)!important;box-shadow:none!important}.editor-bar button{border:1px solid var(--line)!important;border-radius:8px!important;padding:7px 9px!important;background:#fff!important;color:var(--ink)!important;font-size:11px!important}.editor-bar .primary{background:var(--navy)!important;border-color:var(--navy)!important;color:#fff!important}.editor-bar .chip{display:none}
+main{max-width:680px!important;padding:12px!important}.panel{padding:0!important;background:var(--paper)!important;border:1px solid var(--line)!important;border-radius:14px!important;box-shadow:0 8px 22px rgba(21,40,62,.06)!important;overflow:hidden}.day-head{display:flex!important;align-items:center!important;gap:12px!important;padding:15px 16px!important;border-bottom:1px solid var(--line)!important;background:#fbfcfd!important}.day-head h2{min-width:67px;margin:0!important;padding:0!important;background:none!important;color:var(--navy)!important;font-size:19px!important;letter-spacing:-.04em!important;text-align:left!important}.day-head h2 span{margin-top:3px!important;color:var(--muted)!important;font-size:10px!important;font-weight:800!important;letter-spacing:0!important}.day-head p{font-size:14px!important;font-weight:800!important;color:var(--ink)!important}
+.timeline-row{grid-template-columns:74px minmax(0,1fr)!important;gap:0!important;margin:0 16px!important;min-height:76px}.rail{display:none!important}.dot{display:none!important}.time{justify-content:flex-start!important;padding-top:19px!important;color:var(--navy)!important;font-size:14px!important;font-weight:900!important}.timeline-row>.card{grid-column:2!important;padding:15px 0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}.card h3{margin:0 0 4px!important;color:var(--ink)!important;font-size:16px!important;line-height:1.35!important}.remark{color:var(--muted)!important;font-size:13px!important;line-height:1.45!important}.chip{display:none!important}.map{margin-top:8px!important;padding:8px 10px!important;border-left:2px solid var(--blue)!important;border-radius:0!important;background:#fff7f5!important;color:#7b4037!important;font-size:11px!important;font-weight:700!important}.memo{margin:4px 16px 16px!important;padding:11px 12px!important;border-left:3px solid var(--blue)!important;border-radius:0 8px 8px 0!important;background:#fff7f5!important;color:#70423b!important;font-size:12px!important}
+.checklist{margin:0!important;padding:12px 16px 16px!important;border:0!important}.checklist h3{font-size:14px!important}.checklist label{padding:10px 0!important;border-bottom:1px solid #edf0f3!important;color:var(--ink)!important;font-size:13px!important}.checklist label:last-child{border-bottom:0}.money-tools{margin:0!important;padding:14px 16px!important;border-bottom:1px solid var(--line)!important}.money-total{margin:14px 16px!important;border-radius:10px!important;background:var(--navy)!important}.expenses{padding:0 16px}.expense{margin:0!important;padding:13px 0!important;border:0!important;border-bottom:1px solid var(--line)!important;border-radius:0!important;box-shadow:none!important}.add-expense{margin:14px 16px 16px!important}.add-expense input,.add-expense select{border-color:var(--line)!important;border-radius:8px!important}.btn{border-radius:8px!important;background:var(--blue)!important}
+.time small{display:block;margin-top:2px;color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.02em}
+.editing .time[contenteditable="true"]{outline:2px dashed var(--blue);outline-offset:3px;border-radius:3px}.editing .timeline-row{position:relative}.editing .timeline-row:last-child .card{padding-right:44px!important}.row-delete{display:none}.editing .row-delete{position:absolute;right:0;top:17px;display:block;border:0;border-radius:7px;padding:5px 7px;background:#fff2f0;color:var(--red);font-size:10px;font-weight:900}.editing .row-delete:active{transform:scale(.96)}#addTimeBtn{display:none}.editing #addTimeBtn{display:inline-block}
+@media(min-width:681px){header{border-radius:0 0 18px 18px!important}.tabs{max-width:680px;margin:0 auto}.editor-bar{border-right:1px solid var(--line)!important;border-left:1px solid var(--line)!important}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important}}
+</style>
+<style id="timeline-and-checklist-fix">
+/* Direct two-column schedule layout: time always stays left of the detail. */
+.timeline-row{display:grid!important;grid-template-columns:76px minmax(0,1fr)!important;align-items:start!important;gap:0!important;margin:0 16px!important;min-height:76px}
+.timeline-row>.time{grid-column:1!important;grid-row:1!important;justify-content:flex-start!important;padding-top:19px!important;color:var(--navy)!important;font-size:14px!important;font-weight:900!important}
+.timeline-row>.rail,.timeline-row .dot{display:none!important}
+.timeline-row>.card{grid-column:2!important;grid-row:1!important;min-width:0!important;padding:15px 0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+.checklist{margin:0!important;padding:12px 16px 16px!important;border:0!important}.checklist h3{font-size:14px!important}
+.checklist label{display:flex!important;align-items:flex-start!important;gap:9px!important;padding:11px 0!important;border-bottom:1px solid #edf0f3!important;color:var(--ink)!important;font-size:13px!important;line-height:1.45!important}
+.checklist label input{flex:none;margin:3px 0 0!important}.checklist label span{flex:1;min-width:0}.checklist label:last-child{border-bottom:0}
+.editing .checklist label span[contenteditable="true"]{outline:2px dashed var(--blue);outline-offset:3px;border-radius:3px}
+#addCheckBtn{display:none}.editing #addCheckBtn{display:inline-block}
+.auth-dialog[hidden]{display:none}.auth-dialog{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:20px;background:rgba(15,27,42,.48)}.auth-card{width:min(100%,360px);padding:22px;border-radius:14px;background:#fff;color:var(--ink);box-shadow:0 20px 60px rgba(15,27,42,.24)}.auth-card h2{margin:0 0 7px;font-size:19px}.auth-card p{margin:0 0 16px;color:var(--muted);font-size:13px;line-height:1.45}.auth-card label{display:block;margin-bottom:7px;font-size:12px;font-weight:800}.auth-card input{width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;font-size:16px}.auth-actions{display:flex;gap:8px;margin-top:14px}.auth-actions button{border:0;border-radius:8px;padding:10px 12px;font-size:12px;font-weight:900}.auth-cancel{background:#edf1f5;color:var(--ink)}.auth-submit{background:var(--navy);color:#fff}.auth-error{min-height:18px;margin-top:10px;color:var(--red);font-size:12px}
+</style>
+</head>
+<body>
+<header><div class="eyebrow">TRAVEL PLAN</div><div class="title" contenteditable="true">미국 서부 여행</div><div class="subtitle" contenteditable="true">2027. 01. 21. - 01. 31. · 라스베이거스 · LA</div></header>
+<input class="day-radio" id="prep" name="day" type="radio"><input class="day-radio" id="d1" name="day" type="radio" checked><input class="day-radio" id="d2" name="day" type="radio"><input class="day-radio" id="d3" name="day" type="radio"><input class="day-radio" id="d4" name="day" type="radio"><input class="day-radio" id="d5" name="day" type="radio"><input class="day-radio" id="d6" name="day" type="radio"><input class="day-radio" id="d7" name="day" type="radio"><input class="day-radio" id="d8" name="day" type="radio"><input class="day-radio" id="d9" name="day" type="radio"><input class="day-radio" id="d10" name="day" type="radio"><input class="day-radio" id="d11" name="day" type="radio"><input class="day-radio" id="money" name="day" type="radio">
+<nav class="tabs"><label for="prep">PREP<span>준비</span></label><label for="d1">DAY 1<span>1/21</span></label><label for="d2">DAY 2<span>1/22</span></label><label for="d3">DAY 3<span>1/23</span></label><label for="d4">DAY 4<span>1/24</span></label><label for="d5">DAY 5<span>1/25</span></label><label for="d6">DAY 6<span>1/26</span></label><label for="d7">DAY 7<span>1/27</span></label><label for="d8">DAY 8<span>1/28</span></label><label for="d9">DAY 9<span>1/29</span></label><label for="d10">DAY 10<span>1/30</span></label><label for="d11">DAY 11<span>1/31</span></label><label for="money">BUDGET<span>경비</span></label></nav>
+<div class="editor-bar"><button class="primary" id="editBtn">편집 시작</button><button id="addTimeBtn">시간 일정 추가</button><button id="addCheckBtn">체크 항목 추가</button><button id="saveBtn">저장</button><button id="exportBtn">HTML 내보내기</button><button id="resetBtn">초기화</button><span id="status" class="chip">보기 모드</span></div>
+<section class="auth-dialog" id="authDialog" hidden aria-modal="true" aria-labelledby="authTitle" role="dialog"><form class="auth-card" id="authForm"><h2 id="authTitle">편집자 확인</h2><p>일정은 누구나 볼 수 있지만, 수정하려면 편집 비밀번호가 필요합니다.</p><label for="editorPassword">편집 비밀번호</label><input autocomplete="current-password" id="editorPassword" required type="password"><div class="auth-actions"><button class="auth-cancel" id="authCancel" type="button">취소</button><button class="auth-submit" type="submit">편집 시작</button></div><div aria-live="polite" class="auth-error" id="authError"></div></form></section>
+<main>
+<section class="panel day prepday"><div class="day-head"><h2>PREP</h2><p>출발 전 체크리스트</p></div><div class="checklist"><h3>Departure checklist</h3><label><input type="checkbox">여권·ESTA·항공권 확인</label><label><input type="checkbox">렌터카·그랜드캐니언 투어 예약 확인</label><label><input type="checkbox">겨울용 겉옷·트레킹화 준비</label><label><input type="checkbox">해외 결제 카드와 달러 현금 준비</label><label><input type="checkbox">숙소 주소·예약번호 오프라인 저장</label></div><div class="memo" contenteditable="true">미국 서부 1월은 일교차가 큽니다. 라스베이거스와 LA는 비교적 온화하지만 그랜드캐니언 새벽은 매우 추울 수 있어요.</div></section>
+<section class="panel day day1"><div class="day-head"><h2>DAY 1 · 01.21</h2><p>서울 → Las Vegas</p></div><div class="timeline-row"><div class="time">21:00</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">라스베이거스행 출국</h3><div class="remark" contenteditable="true">인천공항 T2 · 대한항공 KE005</div><span class="chip">AIRPORT / T2</span></article></div><div class="timeline-row"><div class="time">15:10</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">라스베이거스 공항 도착</h3><div class="remark" contenteditable="true">Harry Reid International Airport · Terminal 3</div><span class="chip">ARRIVAL</span></article></div><div class="memo" contenteditable="true">도착 시각은 현지 시간 기준으로 기록하고, 투어 출발 전 공항·숙소 이동 동선을 확인하세요.</div></section>
+<section class="panel day day2"><div class="day-head"><h2>DAY 2 · 01.22</h2><p>Grand Canyon day tour</p></div><div class="timeline-row"><div class="time">02:00</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">그랜드캐니언 투어 출발</h3><div class="remark" contenteditable="true">라스베이거스 출발 · 픽업 장소와 준비물 확인</div><div class="map">I-15 → US-93 → Grand Canyon</div></article></div><div class="timeline-row"><div class="time">21:00</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">그랜드캐니언 투어 복귀</h3><div class="remark" contenteditable="true">장거리 이동 후 휴식 · 늦은 저녁 대비</div><span class="chip">LONG DRIVE</span></article></div></section>
+<section class="panel day day3"><div class="day-head"><h2>DAY 3 · 01.23</h2><p>Las Vegas check-in</p></div><div class="timeline-row"><div class="time">오전</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">라스베이거스 자유 일정</h3><div class="remark" contenteditable="true">전날 투어 피로도에 따라 브런치·호텔 휴식</div></article></div><div class="timeline-row"><div class="time">16:00</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">월도프 아스토리아 라스베이거스 체크인</h3><div class="remark" contenteditable="true">체크인 후 스트립 야경과 저녁 식사</div><span class="chip">HOTEL</span></article></div></section>
+<section class="panel day day4"><div class="day-head"><h2>DAY 4 · 01.24</h2><p>Las Vegas · open day</p></div><div class="timeline-row"><div class="time">미정</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">라스베이거스 자유 일정</h3><div class="remark" contenteditable="true">추천 후보: 스트립 산책, 벨라지오 분수, 미술관, 쇼 관람</div><span class="chip">TO BE DECIDED</span></article></div></section>
+<section class="panel day day5"><div class="day-head"><h2>DAY 5 · 01.25</h2><p>Las Vegas → Los Angeles</p></div><div class="timeline-row"><div class="time">11:00</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">월도프 아스토리아 체크아웃</h3><div class="remark" contenteditable="true">짐 보관·공항 이동 시간 확인</div></article></div><div class="timeline-row"><div class="time">13:45</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">LA행 국내선 출발</h3><div class="remark" contenteditable="true">라스베이거스 공항 → Los Angeles</div><span class="chip">DOMESTIC FLIGHT</span></article></div><div class="timeline-row"><div class="time">15:00</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">LA 공항 도착</h3><div class="remark" contenteditable="true">숙소 이동 후 체크인·저녁 일정</div></article></div></section>
+<section class="panel day day6"><div class="day-head"><h2>DAY 6 · 01.26</h2><p>Los Angeles · open day</p></div><div class="timeline-row"><div class="time">미정</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">LA 자유 일정</h3><div class="remark" contenteditable="true">추천 후보: 산타모니카, 베니스 비치, 그리피스 천문대</div><span class="chip">TO BE DECIDED</span></article></div></section>
+<section class="panel day day7"><div class="day-head"><h2>DAY 7 · 01.27</h2><p>Los Angeles · open day</p></div><div class="timeline-row"><div class="time">미정</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">LA 자유 일정</h3><div class="remark" contenteditable="true">추천 후보: 할리우드, 더 그로브, 파머스 마켓</div><span class="chip">TO BE DECIDED</span></article></div></section>
+<section class="panel day day8"><div class="day-head"><h2>DAY 8 · 01.28</h2><p>Los Angeles · open day</p></div><div class="timeline-row"><div class="time">미정</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">LA 자유 일정</h3><div class="remark" contenteditable="true">추천 후보: 다운타운 LA, 게티 센터, 말리부</div><span class="chip">TO BE DECIDED</span></article></div></section>
+<section class="panel day day9"><div class="day-head"><h2>DAY 9 · 01.29</h2><p>Los Angeles · departure</p></div><div class="timeline-row"><div class="time">22:50</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">인천행 출국</h3><div class="remark" contenteditable="true">LA 공항 Terminal B · 대한항공 KE012</div><span class="chip">AIRPORT / TERMINAL B</span></article></div></section>
+<section class="panel day day10"><div class="day-head"><h2>DAY 10 · 01.30</h2><p>In transit</p></div><div class="timeline-row"><div class="time">종일</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">귀국 비행 중</h3><div class="remark" contenteditable="true">기내 휴식 · 한국 도착 준비</div></article></div></section>
+<section class="panel day day11"><div class="day-head"><h2>DAY 11 · 01.31</h2><p>Welcome home</p></div><div class="timeline-row"><div class="time">05:10</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">인천공항 도착</h3><div class="remark" contenteditable="true">인천공항 T2 · 여행 종료</div><span class="chip">ARRIVAL / T2</span></article></div></section>
+<section class="panel day moneyday"><div class="day-head"><h2>BUDGET</h2><p>여행 경비 기록</p></div><div class="money-tools"><strong>통화 표시</strong><div class="currency"><button class="active" data-currency="KRW">₩ 원화</button><button data-currency="USD">$ USD</button></div></div><div class="money-total"><small>기록된 총액</small><strong id="total">₩0</strong></div><div class="expenses" id="expenses"></div><div class="add-expense"><input id="expenseName" placeholder="항목 (예: 투어)" type="text"><input id="expenseAmount" min="0" placeholder="금액" type="number"><button class="btn" id="addExpense">경비 추가</button></div><div class="memo" contenteditable="true">환율은 참고용으로 직접 수정할 수 있습니다. 현재 표시 환율: 1 USD = 1,450 KRW</div></section>
+</main>
+<script>
+(()=>{
+ const KEY='uswest2027_saved_v1';let currency='KRW';let rate=1450;let expenses=[];const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+ const dayLabels=[['1/21','목요일','DAY 1'],['1/22','금요일','DAY 2'],['1/23','토요일','DAY 3'],['1/24','일요일','DAY 4'],['1/25','월요일','DAY 5'],['1/26','화요일','DAY 6'],['1/27','수요일','DAY 7'],['1/28','목요일','DAY 8'],['1/29','금요일','DAY 9'],['1/30','토요일','DAY 10'],['1/31','일요일','DAY 11']];
+ function decorateDates(){dayLabels.forEach((d,i)=>{const n=i+1,head=$('.day'+n+' .day-head h2'),tab=$('label[for="d'+n+'"]');if(head)head.innerHTML=d[0]+'<span>'+d[1]+' · '+d[2]+'</span>';if(tab)tab.innerHTML=d[0]+'<span>'+d[1].slice(0,1)+' · '+d[2]+'</span>'});const firstDayRows=$$('.day1 .timeline-row'),departure=firstDayRows[0]?.querySelector('.time'),arrival=firstDayRows[1]?.querySelector('.time'),home=$('.day11 .time');if(departure&&departure.textContent.trim()==='21:00')departure.innerHTML='21:00<small>KST</small>';if(arrival&&arrival.textContent.trim()==='15:10')arrival.innerHTML='15:10<small>PST</small>';if(home&&home.textContent.trim()==='05:10')home.innerHTML='05:10<small>KST</small>'}
+ function decorateChecklist(){ $$('.checklist label').forEach(label=>{let text=label.querySelector('span');if(!text){text=document.createElement('span');text.textContent=Array.from(label.childNodes).filter(n=>n.nodeType===Node.TEXT_NODE).map(n=>n.textContent).join('').trim();Array.from(label.childNodes).filter(n=>n.nodeType===Node.TEXT_NODE).forEach(n=>n.remove());label.appendChild(text)}}) }
+ const body=document.body,status=$('#status');let saveTimer;
+ function save(){localStorage.setItem(KEY,JSON.stringify({html:document.querySelector('main').innerHTML,currency,rate,expenses,checks:$$('input[type=checkbox]').map(x=>x.checked)}));status.textContent='저장 완료';setTimeout(()=>status.textContent=body.classList.contains('editing')?'편집 모드':'보기 모드',1400)}
+ function queueSave(){clearTimeout(saveTimer);saveTimer=setTimeout(save,500)}
+ function render(){const total=expenses.reduce((a,x)=>a+Number(x.amount),0);$('#total').textContent=currency==='KRW'?'₩'+Math.round(total*rate).toLocaleString():'$'+total.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});$('#expenses').innerHTML=expenses.length?expenses.map((x,i)=>`<div class="expense"><div><b>${esc(x.name)}</b><small>${currency==='KRW'?'₩'+Math.round(x.amount*rate).toLocaleString():'$'+Number(x.amount).toFixed(2)} · ${esc(x.category||'기타')}</small></div><button class="btn" data-remove="${i}">삭제</button></div>`).join(''):'<div class="remark">아직 기록된 경비가 없습니다.</div>'}
+ function esc(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+ function syncAmountLabel(){$('#expenseAmount').placeholder=currency==='KRW'?'금액 (원)':'금액 (USD)'}
+ function addExpense(){const name=$('#expenseName').value.trim(),entered=Number($('#expenseAmount').value);if(!name||!entered)return;expenses.push({name,amount:currency==='KRW'?entered/rate:entered,category:'기타'});$('#expenseName').value='';$('#expenseAmount').value='';render();save()}
+ document.addEventListener('click',e=>{if(e.target.id==='addExpense')addExpense();if(e.target.dataset.remove){expenses.splice(Number(e.target.dataset.remove),1);render();save()}if(e.target.dataset.currency){currency=e.target.dataset.currency;$$('[data-currency]').forEach(x=>x.classList.toggle('active',x.dataset.currency===currency));syncAmountLabel();render();save()}});
+ function setEditing(on){body.classList.toggle('editing',on);decorateChecklist();$$('[contenteditable],.time,.checklist label span').forEach(x=>x.contentEditable=on?'true':'false');$('#editBtn').textContent=on?'편집 종료':'편집 시작';status.textContent=on?'편집 모드':'보기 모드'}
+ function addTimeRow(){const selected=$('.day-radio:checked')?.id||'';if(!/^d\d+$/.test(selected)){alert('일정 날짜 탭을 선택한 뒤 추가해 주세요.');return}const panel=$('.day'+selected.slice(1));if(!panel)return;const row=document.createElement('div');row.className='timeline-row';row.innerHTML='<div class="time" contenteditable="true">시간</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">새 일정</h3><div class="remark" contenteditable="true">장소 또는 메모</div></article><button class="row-delete" type="button">삭제</button>';const memo=panel.querySelector('.memo');if(memo)panel.insertBefore(row,memo);else panel.appendChild(row);row.querySelector('.time').focus();queueSave()}
+ function addCheckRow(){const list=$('.prepday .checklist');if(!list){alert('준비 탭에서만 체크 항목을 추가할 수 있어요.');return}const label=document.createElement('label');label.innerHTML='<input type="checkbox"><span contenteditable="true">새 체크 항목</span>';list.appendChild(label);label.querySelector('span').focus();queueSave()}
+ $('#editBtn').onclick=()=>setEditing(!body.classList.contains('editing'));$('#addTimeBtn').onclick=addTimeRow;$('#addCheckBtn').onclick=addCheckRow;$('#saveBtn').onclick=save;
+ $('#resetBtn').onclick=()=>{if(confirm('저장된 수정 내용을 삭제할까요?')){localStorage.removeItem(KEY);location.reload()}};
+ $('#exportBtn').onclick=()=>{save();const clone=document.documentElement.cloneNode(true);clone.querySelector('body').classList.remove('editing');clone.querySelectorAll('[contenteditable]').forEach(x=>x.contentEditable='false');const blob=new Blob(['<!doctype html>\n'+clone.outerHTML],{type:'text/html;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='US_West_2027_editable.html';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+ try{const saved=JSON.parse(localStorage.getItem(KEY)||'null');if(saved){currency=saved.currency||'KRW';rate=saved.rate||1450;expenses=saved.expenses||[];if(saved.html)$('#money').parentNode.parentNode.querySelector('main').innerHTML=saved.html;$$('input[type=checkbox]').forEach((x,i)=>x.checked=!!saved.checks?.[i]);$$('[data-currency]').forEach(x=>x.classList.toggle('active',x.dataset.currency===currency))}}catch(e){}decorateDates();decorateChecklist();syncAmountLabel();render();
+ document.addEventListener('click',e=>{if(e.target.classList.contains('row-delete')){e.target.closest('.timeline-row')?.remove();queueSave()}});
+ document.addEventListener('input',e=>{if(body.classList.contains('editing')&&e.target.closest('main'))queueSave()});
+ document.addEventListener('change',e=>{if(e.target.matches('input[type=checkbox]'))save()});
+})();
+</script>
+<script>
+(() => {
+  const SUPABASE_URL = 'https://xuzhcogshnjqtunkbsuo.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_sRNvVZicFSgjcDph5KPJBQ_e8i-cxAp';
+  const EDITOR_EMAIL = 'pca01008@gmail.com';
+  const TRIP_ID = 'us-west-2027';
+  const LOCAL_KEY = 'uswest2027_saved_v1';
+  const REMOTE_VERSION_KEY = 'uswest2027_remote_version';
+  const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+  const $ = selector => document.querySelector(selector);
+  let remoteSaveTimer;
+  let editorSession = null;
+
+  function setStatus(message) {
+    const status = $('#status');
+    if (status) status.textContent = message;
+  }
+
+  function setEditingUI(on) {
+    document.body.classList.toggle('editing', on);
+    document.querySelectorAll('[contenteditable], .time, .checklist label span').forEach(element => {
+      element.contentEditable = on ? 'true' : 'false';
+    });
+    $('#editBtn').textContent = on ? '편집 종료' : '편집 시작';
+    setStatus(on ? '편집 모드' : '보기 모드');
+  }
+
+  function snapshot() {
+    const main = $('main');
+    const clone = main.cloneNode(true);
+    clone.querySelectorAll('input[type="checkbox"]').forEach(input => {
+      if (input.checked) input.setAttribute('checked', '');
+      else input.removeAttribute('checked');
+    });
+    let local = {};
+    try { local = JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}'); } catch (_) {}
+    return {
+      html: clone.innerHTML,
+      expenses: local.expenses || [],
+      currency: local.currency || 'KRW',
+      rate: local.rate || 1450,
+      checks: Array.from(main.querySelectorAll('input[type="checkbox"]')).map(input => input.checked)
+    };
+  }
+
+  async function refreshEditorSession() {
+    const { data: { session } } = await client.auth.getSession();
+    editorSession = session?.user?.email === EDITOR_EMAIL ? session : null;
+    if (!editorSession && document.body.classList.contains('editing')) setEditingUI(false);
+    return editorSession;
+  }
+
+  async function saveToRemote() {
+    if (!editorSession) return;
+    const { data, error } = await client
+      .from('trip_documents')
+      .update({ content: snapshot() })
+      .eq('trip_id', TRIP_ID)
+      .select('updated_at')
+      .single();
+    if (error) {
+      console.error(error);
+      setStatus('저장 실패');
+      return;
+    }
+    sessionStorage.setItem(REMOTE_VERSION_KEY, data.updated_at);
+    setStatus('공유 저장 완료');
+  }
+
+  function queueRemoteSave() {
+    if (!editorSession || !document.body.classList.contains('editing')) return;
+    clearTimeout(remoteSaveTimer);
+    remoteSaveTimer = setTimeout(saveToRemote, 700);
+  }
+
+  async function hydrateAndSubscribe() {
+    const { data, error } = await client
+      .from('trip_documents')
+      .select('content, updated_at')
+      .eq('trip_id', TRIP_ID)
+      .maybeSingle();
+    if (error) {
+      console.warn('Supabase setup is not ready yet.', error.message);
+      return;
+    }
+    if (data?.content?.html && sessionStorage.getItem(REMOTE_VERSION_KEY) !== data.updated_at) {
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(data.content));
+      sessionStorage.setItem(REMOTE_VERSION_KEY, data.updated_at);
+      location.reload();
+      return;
+    }
+    client
+      .channel('trip-document-' + TRIP_ID)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'trip_documents', filter: 'trip_id=eq.' + TRIP_ID }, payload => {
+        const next = payload.new;
+        if (!next?.content?.html || sessionStorage.getItem(REMOTE_VERSION_KEY) === next.updated_at) return;
+        localStorage.setItem(LOCAL_KEY, JSON.stringify(next.content));
+        sessionStorage.setItem(REMOTE_VERSION_KEY, next.updated_at);
+        location.reload();
+      })
+      .subscribe();
+  }
+
+  $('#editBtn').onclick = async () => {
+    if (document.body.classList.contains('editing')) {
+      setEditingUI(false);
+      return;
+    }
+    if (await refreshEditorSession()) {
+      setEditingUI(true);
+      return;
+    }
+    $('#authError').textContent = '';
+    $('#editorPassword').value = '';
+    $('#authDialog').hidden = false;
+    $('#editorPassword').focus();
+  };
+
+  $('#saveBtn').onclick = saveToRemote;
+  $('#authCancel').onclick = () => { $('#authDialog').hidden = true; };
+  $('#authForm').onsubmit = async event => {
+    event.preventDefault();
+    const password = $('#editorPassword').value;
+    const { error } = await client.auth.signInWithPassword({ email: EDITOR_EMAIL, password });
+    if (error) {
+      $('#authError').textContent = '비밀번호를 확인해 주세요.';
+      return;
+    }
+    $('#authDialog').hidden = true;
+    await refreshEditorSession();
+    setEditingUI(true);
+  };
+
+  document.addEventListener('input', event => {
+    if (event.target.closest('main')) queueRemoteSave();
+  });
+  document.addEventListener('change', event => {
+    if (event.target.closest('main')) queueRemoteSave();
+  });
+  document.addEventListener('click', event => {
+    if (event.target.id === 'addTimeBtn' || event.target.id === 'addCheckBtn' || event.target.dataset.remove || event.target.classList.contains('row-delete')) {
+      setTimeout(queueRemoteSave, 0);
+    }
+  });
+
+  client.auth.onAuthStateChange(() => { refreshEditorSession(); });
+  refreshEditorSession();
+  hydrateAndSubscribe();
+})();
+</script>
+</body>
+</html>
