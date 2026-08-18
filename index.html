@@ -50,13 +50,20 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
 #addCheckBtn{display:none}.editing #addCheckBtn{display:inline-block}
 .auth-dialog[hidden]{display:none}.auth-dialog{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:20px;background:rgba(15,27,42,.48)}.auth-card{width:min(100%,360px);padding:22px;border-radius:14px;background:#fff;color:var(--ink);box-shadow:0 20px 60px rgba(15,27,42,.24)}.auth-card h2{margin:0 0 7px;font-size:19px}.auth-card p{margin:0 0 16px;color:var(--muted);font-size:13px;line-height:1.45}.auth-card label{display:block;margin-bottom:7px;font-size:12px;font-weight:800}.auth-card input{width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;font-size:16px}.auth-actions{display:flex;gap:8px;margin-top:14px}.auth-actions button{border:0;border-radius:8px;padding:10px 12px;font-size:12px;font-weight:900}.auth-cancel{background:#edf1f5;color:var(--ink)}.auth-submit{background:var(--navy);color:#fff}.auth-error{min-height:18px;margin-top:10px;color:var(--red);font-size:12px}
 </style>
+<style id="editor-session-controls">
+.mode-only{display:none!important}.viewing .view-only{display:inline-flex!important}.editing .edit-only{display:inline-flex!important}.editing #addTimeBtn.hidden,.editing #addCheckBtn.hidden{display:none!important}.editor-bar button:disabled{cursor:not-allowed;opacity:.38}.editor-bar .danger{border-color:#c94f43!important;background:#c94f43!important;color:#fff!important}.editing .add-expense{display:grid}.viewing .add-expense,.viewing .expense [data-remove]{display:none!important}.notice-dialog[hidden],.version-dialog[hidden]{display:none}.notice-dialog,.version-dialog{position:fixed;inset:0;display:grid;place-items:center;padding:18px;background:rgba(15,27,42,.56)}.notice-dialog{z-index:1200}.version-dialog{z-index:1100}.notice-card,.version-card{width:min(100%,420px);max-height:88vh;overflow:auto;padding:22px;border-radius:15px;background:#fff;box-shadow:0 24px 70px rgba(15,27,42,.28)}.notice-card h2,.version-card h2{margin:0 0 8px;font-size:19px}.notice-card p,.version-card p{margin:0;color:var(--muted);font-size:13px;line-height:1.55}.notice-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:18px}.notice-actions button,.version-card button{border:0;border-radius:8px;padding:10px 12px;font-size:12px;font-weight:900}.action-muted{background:#edf1f5;color:var(--ink)}.action-primary{background:var(--navy);color:#fff}.action-danger{background:#c94f43;color:#fff}.version-card{width:min(100%,560px)}.version-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.version-list{display:grid;gap:8px;margin-top:16px}.version-item{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:10px}.version-item strong{display:block;font-size:13px}.version-item small{display:block;margin-top:3px;color:var(--muted);font-size:11px}.version-empty{padding:22px;text-align:center;color:var(--muted);font-size:13px}.session-countdown{margin-top:8px!important;color:var(--red)!important;font-weight:900}.preview-banner{display:none;max-width:680px;margin:8px auto 0;padding:10px 12px;border-radius:10px;background:#fff3cf;color:#694d00;font-size:12px;font-weight:800}.previewing .preview-banner{display:flex;align-items:center;justify-content:space-between;gap:10px}.preview-banner button{border:0;border-radius:7px;padding:7px 9px;background:#694d00;color:#fff;font-size:11px;font-weight:900}
+@media(max-width:520px){.notice-actions>*{flex:1}.version-item{grid-template-columns:1fr 1fr}.version-item>div{grid-column:1/-1}.version-item button{width:100%}}
+</style>
 </head>
-<body>
+<body class="viewing">
 <header><div class="eyebrow">TRAVEL PLAN</div><div class="title" contenteditable="true">미국 서부 여행</div><div class="subtitle" contenteditable="true">2027. 01. 21. - 01. 31. · 라스베이거스 · LA</div></header>
 <input class="day-radio" id="prep" name="day" type="radio"><input class="day-radio" id="d1" name="day" type="radio" checked><input class="day-radio" id="d2" name="day" type="radio"><input class="day-radio" id="d3" name="day" type="radio"><input class="day-radio" id="d4" name="day" type="radio"><input class="day-radio" id="d5" name="day" type="radio"><input class="day-radio" id="d6" name="day" type="radio"><input class="day-radio" id="d7" name="day" type="radio"><input class="day-radio" id="d8" name="day" type="radio"><input class="day-radio" id="d9" name="day" type="radio"><input class="day-radio" id="d10" name="day" type="radio"><input class="day-radio" id="d11" name="day" type="radio"><input class="day-radio" id="money" name="day" type="radio">
-<nav class="tabs"><label for="prep">PREP<span>준비</span></label><label for="d1">DAY 1<span>1/21</span></label><label for="d2">DAY 2<span>1/22</span></label><label for="d3">DAY 3<span>1/23</span></label><label for="d4">DAY 4<span>1/24</span></label><label for="d5">DAY 5<span>1/25</span></label><label for="d6">DAY 6<span>1/26</span></label><label for="d7">DAY 7<span>1/27</span></label><label for="d8">DAY 8<span>1/28</span></label><label for="d9">DAY 9<span>1/29</span></label><label for="d10">DAY 10<span>1/30</span></label><label for="d11">DAY 11<span>1/31</span></label><label for="money">BUDGET<span>경비</span></label></nav>
-<div class="editor-bar"><button class="primary" id="editBtn">편집 시작</button><button id="addTimeBtn">시간 일정 추가</button><button id="addCheckBtn">체크 항목 추가</button><button id="saveBtn">저장</button><button id="exportBtn">HTML 내보내기</button><button id="resetBtn">초기화</button><span id="status" class="chip">보기 모드</span></div>
+<nav class="tabs"><label for="prep">PREP<span>준비</span></label><label for="d1">DAY 1<span>1/21</span></label><label for="d2">DAY 2<span>1/22</span></label><label for="d3">DAY 3<span>1/23</span></label><label for="d4">DAY 4<span>1/24</span></label><label for="d5">DAY 5<span>1/25</span></label><label for="d6">DAY 6<span>1/26</span></label><label for="d7">DAY 7<span>1/27</span></label><label for="d8">DAY 8<span>1/28</span></label><label for="d9">DAY 9<span>1/29</span></label><label for="d10">DAY 10<span>1/30</span></label><label for="d11">DAY 11<span>1/31</span></label><label for="money">가계부<span>경비</span></label></nav>
+<div class="editor-bar"><button class="primary" id="editBtn">편집 시작</button><button class="mode-only edit-only" id="undoBtn" disabled>실행 취소</button><button class="mode-only edit-only" id="redoBtn" disabled>다시 실행</button><button class="mode-only edit-only" id="addTimeBtn">일정 시간 추가</button><button class="mode-only edit-only" id="addCheckBtn">체크 항목 추가</button><button class="mode-only edit-only danger" id="resetBtn">초기화</button><button class="mode-only view-only" id="saveBtn" disabled>저장</button><button class="mode-only view-only" id="exportBtn">HTML 내보내기</button><button class="mode-only view-only" id="versionsBtn">버전 관리</button><span id="status" class="chip">보기 모드</span></div>
+<div class="preview-banner" id="previewBanner"><span id="previewLabel">저장 버전 미리보기</span><button id="closePreviewBtn" type="button">미리보기 종료</button></div>
 <section class="auth-dialog" id="authDialog" hidden aria-modal="true" aria-labelledby="authTitle" role="dialog"><form class="auth-card" id="authForm"><h2 id="authTitle">편집자 확인</h2><p>일정은 누구나 볼 수 있지만, 수정하려면 편집 비밀번호가 필요합니다.</p><label for="editorPassword">편집 비밀번호</label><input autocomplete="current-password" id="editorPassword" required type="password"><div class="auth-actions"><button class="auth-cancel" id="authCancel" type="button">취소</button><button class="auth-submit" type="submit">편집 시작</button></div><div aria-live="polite" class="auth-error" id="authError"></div></form></section>
+<section class="notice-dialog" id="noticeDialog" hidden aria-modal="true" aria-labelledby="noticeTitle" role="dialog"><div class="notice-card"><h2 id="noticeTitle"></h2><p id="noticeMessage"></p><p class="session-countdown" id="sessionCountdown" hidden></p><div class="notice-actions" id="noticeActions"></div></div></section>
+<section class="version-dialog" id="versionDialog" hidden aria-modal="true" aria-labelledby="versionTitle" role="dialog"><div class="version-card"><div class="version-head"><div><h2 id="versionTitle">저장 버전 관리</h2><p>최근 저장본 50개를 확인하고 복원할 수 있습니다.</p></div><button class="action-muted" id="closeVersionsBtn" type="button">닫기</button></div><div class="version-list" id="versionList"></div></div></section>
 <main>
 <section class="panel day prepday"><div class="day-head"><h2>PREP</h2><p>출발 전 체크리스트</p></div><div class="checklist"><h3>Departure checklist</h3><label><input type="checkbox">여권·ESTA·항공권 확인</label><label><input type="checkbox">렌터카·그랜드캐니언 투어 예약 확인</label><label><input type="checkbox">겨울용 겉옷·트레킹화 준비</label><label><input type="checkbox">해외 결제 카드와 달러 현금 준비</label><label><input type="checkbox">숙소 주소·예약번호 오프라인 저장</label></div><div class="memo" contenteditable="true">미국 서부 1월은 일교차가 큽니다. 라스베이거스와 LA는 비교적 온화하지만 그랜드캐니언 새벽은 매우 추울 수 있어요.</div></section>
 <section class="panel day day1"><div class="day-head"><h2>DAY 1 · 01.21</h2><p>서울 → Las Vegas</p></div><div class="timeline-row"><div class="time">21:00</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">라스베이거스행 출국</h3><div class="remark" contenteditable="true">인천공항 T2 · 대한항공 KE005</div><span class="chip">AIRPORT / T2</span></article></div><div class="timeline-row"><div class="time">15:10</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">라스베이거스 공항 도착</h3><div class="remark" contenteditable="true">Harry Reid International Airport · Terminal 3</div><span class="chip">ARRIVAL</span></article></div><div class="memo" contenteditable="true">도착 시각은 현지 시간 기준으로 기록하고, 투어 출발 전 공항·숙소 이동 동선을 확인하세요.</div></section>
@@ -70,154 +77,606 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
 <section class="panel day day9"><div class="day-head"><h2>DAY 9 · 01.29</h2><p>Los Angeles · departure</p></div><div class="timeline-row"><div class="time">22:50</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">인천행 출국</h3><div class="remark" contenteditable="true">LA 공항 Terminal B · 대한항공 KE012</div><span class="chip">AIRPORT / TERMINAL B</span></article></div></section>
 <section class="panel day day10"><div class="day-head"><h2>DAY 10 · 01.30</h2><p>In transit</p></div><div class="timeline-row"><div class="time">종일</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">귀국 비행 중</h3><div class="remark" contenteditable="true">기내 휴식 · 한국 도착 준비</div></article></div></section>
 <section class="panel day day11"><div class="day-head"><h2>DAY 11 · 01.31</h2><p>Welcome home</p></div><div class="timeline-row"><div class="time">05:10</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">인천공항 도착</h3><div class="remark" contenteditable="true">인천공항 T2 · 여행 종료</div><span class="chip">ARRIVAL / T2</span></article></div></section>
-<section class="panel day moneyday"><div class="day-head"><h2>BUDGET</h2><p>여행 경비 기록</p></div><div class="money-tools"><strong>통화 표시</strong><div class="currency"><button class="active" data-currency="KRW">₩ 원화</button><button data-currency="USD">$ USD</button></div></div><div class="money-total"><small>기록된 총액</small><strong id="total">₩0</strong></div><div class="expenses" id="expenses"></div><div class="add-expense"><input id="expenseName" placeholder="항목 (예: 투어)" type="text"><input id="expenseAmount" min="0" placeholder="금액" type="number"><button class="btn" id="addExpense">경비 추가</button></div><div class="memo" contenteditable="true">환율은 참고용으로 직접 수정할 수 있습니다. 현재 표시 환율: 1 USD = 1,450 KRW</div></section>
+<section class="panel day moneyday"><div class="day-head"><h2>가계부</h2><p>여행 경비 기록</p></div><div class="money-tools"><strong>통화 표시</strong><div class="currency"><button class="active" data-currency="KRW">₩ 원화</button><button data-currency="USD">$ USD</button></div></div><div class="money-total"><small>기록된 총액</small><strong id="total">₩0</strong></div><div class="expenses" id="expenses"></div><div class="add-expense"><input id="expenseName" placeholder="항목 (예: 투어)" type="text"><input id="expenseAmount" min="0" placeholder="금액" type="number"><button class="btn" id="addExpense">경비 추가</button></div><div class="memo" contenteditable="true">환율은 참고용으로 직접 수정할 수 있습니다. 현재 표시 환율: 1 USD = 1,450 KRW</div></section>
 </main>
-<script>
-(()=>{
- const KEY='uswest2027_saved_v1';let currency='KRW';let rate=1450;let expenses=[];const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
- const dayLabels=[['1/21','목요일','DAY 1'],['1/22','금요일','DAY 2'],['1/23','토요일','DAY 3'],['1/24','일요일','DAY 4'],['1/25','월요일','DAY 5'],['1/26','화요일','DAY 6'],['1/27','수요일','DAY 7'],['1/28','목요일','DAY 8'],['1/29','금요일','DAY 9'],['1/30','토요일','DAY 10'],['1/31','일요일','DAY 11']];
- function decorateDates(){dayLabels.forEach((d,i)=>{const n=i+1,head=$('.day'+n+' .day-head h2'),tab=$('label[for="d'+n+'"]');if(head)head.innerHTML=d[0]+'<span>'+d[1]+' · '+d[2]+'</span>';if(tab)tab.innerHTML=d[0]+'<span>'+d[1].slice(0,1)+' · '+d[2]+'</span>'});const firstDayRows=$$('.day1 .timeline-row'),departure=firstDayRows[0]?.querySelector('.time'),arrival=firstDayRows[1]?.querySelector('.time'),home=$('.day11 .time');if(departure&&departure.textContent.trim()==='21:00')departure.innerHTML='21:00<small>KST</small>';if(arrival&&arrival.textContent.trim()==='15:10')arrival.innerHTML='15:10<small>PST</small>';if(home&&home.textContent.trim()==='05:10')home.innerHTML='05:10<small>KST</small>'}
- function decorateChecklist(){ $$('.checklist label').forEach(label=>{let text=label.querySelector('span');if(!text){text=document.createElement('span');text.textContent=Array.from(label.childNodes).filter(n=>n.nodeType===Node.TEXT_NODE).map(n=>n.textContent).join('').trim();Array.from(label.childNodes).filter(n=>n.nodeType===Node.TEXT_NODE).forEach(n=>n.remove());label.appendChild(text)}}) }
- const body=document.body,status=$('#status');let saveTimer;
- function save(){localStorage.setItem(KEY,JSON.stringify({html:document.querySelector('main').innerHTML,currency,rate,expenses,checks:$$('input[type=checkbox]').map(x=>x.checked)}));status.textContent='저장 완료';setTimeout(()=>status.textContent=body.classList.contains('editing')?'편집 모드':'보기 모드',1400)}
- function queueSave(){clearTimeout(saveTimer);saveTimer=setTimeout(save,500)}
- function render(){const total=expenses.reduce((a,x)=>a+Number(x.amount),0);$('#total').textContent=currency==='KRW'?'₩'+Math.round(total*rate).toLocaleString():'$'+total.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});$('#expenses').innerHTML=expenses.length?expenses.map((x,i)=>`<div class="expense"><div><b>${esc(x.name)}</b><small>${currency==='KRW'?'₩'+Math.round(x.amount*rate).toLocaleString():'$'+Number(x.amount).toFixed(2)} · ${esc(x.category||'기타')}</small></div><button class="btn" data-remove="${i}">삭제</button></div>`).join(''):'<div class="remark">아직 기록된 경비가 없습니다.</div>'}
- function esc(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
- function syncAmountLabel(){$('#expenseAmount').placeholder=currency==='KRW'?'금액 (원)':'금액 (USD)'}
- function addExpense(){const name=$('#expenseName').value.trim(),entered=Number($('#expenseAmount').value);if(!name||!entered)return;expenses.push({name,amount:currency==='KRW'?entered/rate:entered,category:'기타'});$('#expenseName').value='';$('#expenseAmount').value='';render();save()}
- document.addEventListener('click',e=>{if(e.target.id==='addExpense')addExpense();if(e.target.dataset.remove){expenses.splice(Number(e.target.dataset.remove),1);render();save()}if(e.target.dataset.currency){currency=e.target.dataset.currency;$$('[data-currency]').forEach(x=>x.classList.toggle('active',x.dataset.currency===currency));syncAmountLabel();render();save()}});
- function setEditing(on){body.classList.toggle('editing',on);decorateChecklist();$$('[contenteditable],.time,.checklist label span').forEach(x=>x.contentEditable=on?'true':'false');$('#editBtn').textContent=on?'편집 종료':'편집 시작';status.textContent=on?'편집 모드':'보기 모드'}
- function addTimeRow(){const selected=$('.day-radio:checked')?.id||'';if(!/^d\d+$/.test(selected)){alert('일정 날짜 탭을 선택한 뒤 추가해 주세요.');return}const panel=$('.day'+selected.slice(1));if(!panel)return;const row=document.createElement('div');row.className='timeline-row';row.innerHTML='<div class="time" contenteditable="true">시간</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">새 일정</h3><div class="remark" contenteditable="true">장소 또는 메모</div></article><button class="row-delete" type="button">삭제</button>';const memo=panel.querySelector('.memo');if(memo)panel.insertBefore(row,memo);else panel.appendChild(row);row.querySelector('.time').focus();queueSave()}
- function addCheckRow(){const list=$('.prepday .checklist');if(!list){alert('준비 탭에서만 체크 항목을 추가할 수 있어요.');return}const label=document.createElement('label');label.innerHTML='<input type="checkbox"><span contenteditable="true">새 체크 항목</span>';list.appendChild(label);label.querySelector('span').focus();queueSave()}
- $('#editBtn').onclick=()=>setEditing(!body.classList.contains('editing'));$('#addTimeBtn').onclick=addTimeRow;$('#addCheckBtn').onclick=addCheckRow;$('#saveBtn').onclick=save;
- $('#resetBtn').onclick=()=>{if(confirm('저장된 수정 내용을 삭제할까요?')){localStorage.removeItem(KEY);location.reload()}};
- $('#exportBtn').onclick=()=>{save();const clone=document.documentElement.cloneNode(true);clone.querySelector('body').classList.remove('editing');clone.querySelectorAll('[contenteditable]').forEach(x=>x.contentEditable='false');const blob=new Blob(['<!doctype html>\n'+clone.outerHTML],{type:'text/html;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='US_West_2027_editable.html';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
- try{const saved=JSON.parse(localStorage.getItem(KEY)||'null');if(saved){currency=saved.currency||'KRW';rate=saved.rate||1450;expenses=saved.expenses||[];if(saved.html)$('#money').parentNode.parentNode.querySelector('main').innerHTML=saved.html;$$('input[type=checkbox]').forEach((x,i)=>x.checked=!!saved.checks?.[i]);$$('[data-currency]').forEach(x=>x.classList.toggle('active',x.dataset.currency===currency))}}catch(e){}decorateDates();decorateChecklist();syncAmountLabel();render();
- document.addEventListener('click',e=>{if(e.target.classList.contains('row-delete')){e.target.closest('.timeline-row')?.remove();queueSave()}});
- document.addEventListener('input',e=>{if(body.classList.contains('editing')&&e.target.closest('main'))queueSave()});
- document.addEventListener('change',e=>{if(e.target.matches('input[type=checkbox]'))save()});
-})();
-</script>
 <script>
 (() => {
   const SUPABASE_URL = 'https://xuzhcogshnjqtunkbsuo.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_sRNvVZicFSgjcDph5KPJBQ_e8i-cxAp';
   const EDITOR_EMAIL = 'pca01008@gmail.com';
   const TRIP_ID = 'us-west-2027';
-  const LOCAL_KEY = 'uswest2027_saved_v1';
-  const REMOTE_VERSION_KEY = 'uswest2027_remote_version';
+  const CACHE_KEY = 'uswest2027_public_cache_v2';
+  const SESSION_MS = 30 * 60 * 1000;
+  const WARNING_MS = 29 * 60 * 1000;
   const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
   const $ = selector => document.querySelector(selector);
-  let remoteSaveTimer;
+  const $$ = selector => Array.from(document.querySelectorAll(selector));
+  const body = document.body;
+  const dayLabels = [['1/21','목요일','DAY 1'],['1/22','금요일','DAY 2'],['1/23','토요일','DAY 3'],['1/24','일요일','DAY 4'],['1/25','월요일','DAY 5'],['1/26','화요일','DAY 6'],['1/27','수요일','DAY 7'],['1/28','목요일','DAY 8'],['1/29','금요일','DAY 9'],['1/30','토요일','DAY 10'],['1/31','일요일','DAY 11']];
+
+  let currency = 'KRW';
+  let rate = 1450;
+  let expenses = [];
   let editorSession = null;
+  let lastSavedState = null;
+  let initialState = null;
+  let pendingDraft = false;
+  let history = [];
+  let historyIndex = -1;
+  let applyingHistory = false;
+  let historyTimer = null;
+  let warningTimer = null;
+  let logoutTimer = null;
+  let countdownTimer = null;
+  let lastActivityAt = 0;
+  let noticeResolver = null;
+  let authPurpose = 'edit';
+  let previewReturnState = null;
+
+  function cloneState(state) {
+    return JSON.parse(JSON.stringify(state));
+  }
+
+  function canonicalizeMarkup(markup) {
+    const template = document.createElement('template');
+    template.innerHTML = markup || '';
+    template.content.querySelectorAll('[contenteditable]').forEach(element => element.setAttribute('contenteditable', 'false'));
+    return template.innerHTML;
+  }
+
+  function normalizeState(state) {
+    return {
+      html: canonicalizeMarkup(state?.html || $('main').innerHTML),
+      headerHtml: canonicalizeMarkup(state?.headerHtml || $('header').innerHTML),
+      expenses: cloneState(state?.expenses || []),
+      currency: state?.currency || 'KRW',
+      rate: Number(state?.rate) || 1450,
+      checks: Array.isArray(state?.checks) ? state.checks.map(Boolean) : null
+    };
+  }
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
+  }
 
   function setStatus(message) {
     const status = $('#status');
     if (status) status.textContent = message;
   }
 
-  function setEditingUI(on) {
-    document.body.classList.toggle('editing', on);
-    document.querySelectorAll('[contenteditable], .time, .checklist label span').forEach(element => {
-      element.contentEditable = on ? 'true' : 'false';
+  function decorateDates() {
+    dayLabels.forEach((day, index) => {
+      const number = index + 1;
+      const head = $('.day' + number + ' .day-head h2');
+      const tab = $('label[for="d' + number + '"]');
+      if (head) head.innerHTML = day[0] + '<span>' + day[1] + ' · ' + day[2] + '</span>';
+      if (tab) tab.innerHTML = day[0] + '<span>' + day[1].slice(0, 1) + ' · ' + day[2] + '</span>';
     });
-    $('#editBtn').textContent = on ? '편집 종료' : '편집 시작';
-    setStatus(on ? '편집 모드' : '보기 모드');
+    const firstDayRows = $$('.day1 .timeline-row');
+    const departure = firstDayRows[0]?.querySelector('.time');
+    const arrival = firstDayRows[1]?.querySelector('.time');
+    const home = $('.day11 .time');
+    if (departure && departure.textContent.trim() === '21:00') departure.innerHTML = '21:00<small>KST</small>';
+    if (arrival && arrival.textContent.trim() === '15:10') arrival.innerHTML = '15:10<small>PST</small>';
+    if (home && home.textContent.trim() === '05:10') home.innerHTML = '05:10<small>KST</small>';
   }
 
-  function snapshot() {
-    const main = $('main');
-    const clone = main.cloneNode(true);
-    clone.querySelectorAll('input[type="checkbox"]').forEach(input => {
+  function decorateChecklist() {
+    $$('.checklist label').forEach(label => {
+      let text = label.querySelector('span');
+      if (text) return;
+      text = document.createElement('span');
+      text.textContent = Array.from(label.childNodes).filter(node => node.nodeType === Node.TEXT_NODE).map(node => node.textContent).join('').trim();
+      Array.from(label.childNodes).filter(node => node.nodeType === Node.TEXT_NODE).forEach(node => node.remove());
+      label.appendChild(text);
+    });
+  }
+
+  function syncCurrencyUI() {
+    $$('[data-currency]').forEach(button => button.classList.toggle('active', button.dataset.currency === currency));
+    const amount = $('#expenseAmount');
+    if (amount) amount.placeholder = currency === 'KRW' ? '금액 (원)' : '금액 (USD)';
+  }
+
+  function renderExpenses() {
+    const total = expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const totalElement = $('#total');
+    if (totalElement) totalElement.textContent = currency === 'KRW' ? '₩' + Math.round(total * rate).toLocaleString() : '$' + total.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+    const list = $('#expenses');
+    if (list) {
+      list.innerHTML = expenses.length ? expenses.map((item, index) => '<div class="expense"><div><b>' + escapeHtml(item.name) + '</b><small>' + (currency === 'KRW' ? '₩' + Math.round(item.amount * rate).toLocaleString() : '$' + Number(item.amount).toFixed(2)) + ' · ' + escapeHtml(item.category || '기타') + '</small></div><button class="btn" data-remove="' + index + '">삭제</button></div>').join('') : '<div class="remark">아직 기록된 경비가 없습니다.</div>';
+    }
+    syncCurrencyUI();
+  }
+
+  function captureState() {
+    const main = $('main').cloneNode(true);
+    const header = $('header').cloneNode(true);
+    main.querySelectorAll('[contenteditable]').forEach(element => element.setAttribute('contenteditable', 'false'));
+    header.querySelectorAll('[contenteditable]').forEach(element => element.setAttribute('contenteditable', 'false'));
+    main.querySelectorAll('input[type="checkbox"]').forEach(input => {
       if (input.checked) input.setAttribute('checked', '');
       else input.removeAttribute('checked');
     });
-    let local = {};
-    try { local = JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}'); } catch (_) {}
     return {
-      html: clone.innerHTML,
-      expenses: local.expenses || [],
-      currency: local.currency || 'KRW',
-      rate: local.rate || 1450,
-      checks: Array.from(main.querySelectorAll('input[type="checkbox"]')).map(input => input.checked)
+      html: main.innerHTML,
+      headerHtml: header.innerHTML,
+      expenses: cloneState(expenses),
+      currency,
+      rate,
+      checks: Array.from($('main').querySelectorAll('input[type="checkbox"]')).map(input => input.checked)
     };
   }
 
-  async function refreshEditorSession() {
+  function stateFingerprint(state) {
+    return JSON.stringify(state || {});
+  }
+
+  function applyState(state) {
+    if (!state?.html) return;
+    applyingHistory = true;
+    $('main').innerHTML = state.html;
+    if (state.headerHtml) $('header').innerHTML = state.headerHtml;
+    expenses = cloneState(state.expenses || []);
+    currency = state.currency || 'KRW';
+    rate = Number(state.rate) || 1450;
+    decorateDates();
+    decorateChecklist();
+    renderExpenses();
+    if (Array.isArray(state.checks)) {
+      $$('main input[type="checkbox"]').forEach((input, index) => { input.checked = Boolean(state.checks[index]); });
+    }
+    setEditable(body.classList.contains('editing'));
+    updateContextControls();
+    applyingHistory = false;
+  }
+
+  function setEditable(on) {
+    $$('header [contenteditable], main [contenteditable], .time, .checklist label span').forEach(element => { element.contentEditable = on ? 'true' : 'false'; });
+    $$('.add-expense input, .add-expense button').forEach(element => { element.disabled = !on; });
+  }
+
+  function isDirty() {
+    return Boolean(lastSavedState && stateFingerprint(captureState()) !== stateFingerprint(lastSavedState));
+  }
+
+  function updateDirtyState() {
+    pendingDraft = isDirty();
+    $('#saveBtn').disabled = !pendingDraft;
+    setStatus(body.classList.contains('editing') ? (pendingDraft ? '편집 중 · 저장되지 않음' : '편집 모드') : (pendingDraft ? '저장 대기 중' : '보기 모드'));
+  }
+
+  function updateHistoryControls() {
+    $('#undoBtn').disabled = historyIndex <= 0;
+    $('#redoBtn').disabled = historyIndex < 0 || historyIndex >= history.length - 1;
+  }
+
+  function recordHistory() {
+    if (!body.classList.contains('editing') || applyingHistory) return;
+    const next = captureState();
+    const fingerprint = stateFingerprint(next);
+    if (historyIndex >= 0 && stateFingerprint(history[historyIndex]) === fingerprint) return;
+    history = history.slice(0, historyIndex + 1);
+    history.push(cloneState(next));
+    if (history.length > 100) history.shift();
+    historyIndex = history.length - 1;
+    updateHistoryControls();
+    updateDirtyState();
+  }
+
+  function queueHistory() {
+    clearTimeout(historyTimer);
+    historyTimer = setTimeout(recordHistory, 450);
+  }
+
+  function moveHistory(offset) {
+    const nextIndex = historyIndex + offset;
+    if (nextIndex < 0 || nextIndex >= history.length) return;
+    historyIndex = nextIndex;
+    applyState(history[historyIndex]);
+    updateHistoryControls();
+    updateDirtyState();
+    resetInactivityTimer();
+  }
+
+  function updateContextControls() {
+    const selected = $('.day-radio:checked')?.id || '';
+    $('#addTimeBtn').classList.toggle('hidden', !/^d\d+$/.test(selected));
+    $('#addCheckBtn').classList.toggle('hidden', selected !== 'prep');
+  }
+
+  function setEditingUI(on) {
+    body.classList.toggle('editing', on);
+    body.classList.toggle('viewing', !on);
+    if (!on) clearSessionTimers();
+    $('#editBtn').textContent = on ? '편집 종료' : '편집 시작';
+    setEditable(on);
+    updateContextControls();
+    updateDirtyState();
+  }
+
+  function initializeHistory() {
+    history = [cloneState(captureState())];
+    historyIndex = 0;
+    updateHistoryControls();
+  }
+
+  async function getEditorSession() {
     const { data: { session } } = await client.auth.getSession();
     editorSession = session?.user?.email === EDITOR_EMAIL ? session : null;
-    if (!editorSession && document.body.classList.contains('editing')) setEditingUI(false);
     return editorSession;
   }
 
-  async function saveToRemote() {
-    if (!editorSession) return;
-    const { data, error } = await client
-      .from('trip_documents')
-      .update({ content: snapshot() })
-      .eq('trip_id', TRIP_ID)
-      .select('updated_at')
-      .single();
-    if (error) {
-      console.error(error);
-      setStatus('저장 실패');
-      return;
-    }
-    sessionStorage.setItem(REMOTE_VERSION_KEY, data.updated_at);
-    setStatus('공유 저장 완료');
+  async function fetchPublishedState() {
+    const { data, error } = await client.from('trip_documents').select('content, updated_at').eq('trip_id', TRIP_ID).maybeSingle();
+    if (error) throw error;
+    return data;
   }
 
-  function queueRemoteSave() {
-    if (!editorSession || !document.body.classList.contains('editing')) return;
-    clearTimeout(remoteSaveTimer);
-    remoteSaveTimer = setTimeout(saveToRemote, 700);
+  async function persistState(state) {
+    const normalized = normalizeState(state);
+    const { data, error } = await client.rpc('save_trip_document', { p_trip_id: TRIP_ID, p_content: normalized });
+    if (error) {
+      console.error(error);
+      setStatus('저장 실패 · Supabase 설정 확인');
+      return false;
+    }
+    lastSavedState = cloneState(normalized);
+    localStorage.setItem(CACHE_KEY, JSON.stringify(lastSavedState));
+    pendingDraft = false;
+    $('#saveBtn').disabled = true;
+    setStatus('공유 저장 완료');
+    return data;
+  }
+
+  function closeNotice(result) {
+    $('#noticeDialog').hidden = true;
+    $('#sessionCountdown').hidden = true;
+    clearInterval(countdownTimer);
+    const resolve = noticeResolver;
+    noticeResolver = null;
+    if (resolve) resolve(result);
+  }
+
+  function showChoice({title, message, choices, countdown = false}) {
+    if (noticeResolver) closeNotice('replaced');
+    $('#noticeTitle').textContent = title;
+    $('#noticeMessage').textContent = message;
+    const actions = $('#noticeActions');
+    actions.innerHTML = '';
+    choices.forEach(choice => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = choice.label;
+      button.className = choice.className || 'action-muted';
+      button.onclick = () => closeNotice(choice.value);
+      actions.appendChild(button);
+    });
+    $('#sessionCountdown').hidden = !countdown;
+    $('#noticeDialog').hidden = false;
+    return new Promise(resolve => { noticeResolver = resolve; });
+  }
+
+  function clearSessionTimers() {
+    clearTimeout(warningTimer);
+    clearTimeout(logoutTimer);
+    clearInterval(countdownTimer);
+  }
+
+  function resetInactivityTimer() {
+    if (!body.classList.contains('editing')) return;
+    clearSessionTimers();
+    lastActivityAt = Date.now();
+    warningTimer = setTimeout(showInactivityWarning, WARNING_MS);
+    logoutTimer = setTimeout(() => discardAndLogout('30분 동안 활동이 없어 자동 로그아웃되었습니다.'), SESSION_MS);
+  }
+
+  async function showInactivityWarning() {
+    let seconds = 60;
+    const countdown = $('#sessionCountdown');
+    countdown.hidden = false;
+    countdown.textContent = seconds + '초 후 저장하지 않은 변경이 폐기됩니다.';
+    countdownTimer = setInterval(() => {
+      seconds -= 1;
+      countdown.textContent = Math.max(0, seconds) + '초 후 저장하지 않은 변경이 폐기됩니다.';
+    }, 1000);
+    const choice = await showChoice({
+      title: '자동 로그아웃 예정',
+      message: '1분 안에 선택하지 않으면 초안을 폐기하고 자동 로그아웃합니다.',
+      countdown: true,
+      choices: [
+        {label:'저장', value:'save', className:'action-primary'},
+        {label:'계속 편집', value:'continue', className:'action-muted'},
+        {label:'폐기', value:'discard', className:'action-danger'}
+      ]
+    });
+    if (choice === 'save') await saveAndFinish();
+    else if (choice === 'continue') resetInactivityTimer();
+    else if (choice === 'discard') await discardAndLogout('수정 내용을 폐기하고 로그아웃했습니다.');
+  }
+
+  async function signOutEditor() {
+    clearSessionTimers();
+    await client.auth.signOut();
+    editorSession = null;
+  }
+
+  async function discardAndLogout(message) {
+    if (lastSavedState) applyState(lastSavedState);
+    pendingDraft = false;
+    initializeHistory();
+    setEditingUI(false);
+    closeNotice('timeout');
+    await signOutEditor();
+    setStatus(message || '수정 내용을 폐기했습니다.');
+  }
+
+  async function saveAndFinish() {
+    const state = captureState();
+    setEditingUI(false);
+    const saved = await persistState(state);
+    if (!saved) {
+      pendingDraft = true;
+      $('#saveBtn').disabled = false;
+      return false;
+    }
+    initializeHistory();
+    await signOutEditor();
+    return true;
+  }
+
+  async function requestFinishEditing() {
+    clearTimeout(historyTimer);
+    recordHistory();
+    if (!isDirty()) {
+      setEditingUI(false);
+      await signOutEditor();
+      return;
+    }
+    setEditingUI(false);
+    const choice = await showChoice({
+      title: '편집을 종료할까요?',
+      message: '저장해야 공개 링크에 변경 내용이 반영됩니다.',
+      choices: [
+        {label:'저장', value:'save', className:'action-primary'},
+        {label:'계속 편집', value:'continue', className:'action-muted'},
+        {label:'폐기', value:'discard', className:'action-danger'}
+      ]
+    });
+    if (choice === 'save') await saveAndFinish();
+    else if (choice === 'continue') { setEditingUI(true); resetInactivityTimer(); }
+    else if (choice === 'discard') await discardAndLogout('수정 내용을 폐기했습니다.');
+  }
+
+  async function beginEditing() {
+    try {
+      const published = await fetchPublishedState();
+      if (published?.content?.html) {
+        lastSavedState = normalizeState(published.content);
+        applyState(lastSavedState);
+      }
+    } catch (error) {
+      console.warn(error);
+    }
+    setEditingUI(true);
+    initializeHistory();
+    resetInactivityTimer();
+    setStatus('편집 모드 · 저장 전에는 공개되지 않음');
+  }
+
+  function requestAuthentication(purpose) {
+    authPurpose = purpose;
+    $('#authTitle').textContent = purpose === 'edit' ? '편집자 확인' : '버전 관리자 확인';
+    $('#authError').textContent = '';
+    $('#editorPassword').value = '';
+    $('#authDialog').hidden = false;
+    $('#editorPassword').focus();
+  }
+
+  async function requireEditor(purpose) {
+    if (await getEditorSession()) {
+      if (purpose === 'edit') await beginEditing();
+      if (purpose === 'versions') await openVersions();
+      if (purpose === 'save') await confirmViewSave();
+      return;
+    }
+    requestAuthentication(purpose);
+  }
+
+  function addTimeRow() {
+    const selected = $('.day-radio:checked')?.id || '';
+    if (!/^d\d+$/.test(selected)) return;
+    const panel = $('.day' + selected.slice(1));
+    const row = document.createElement('div');
+    row.className = 'timeline-row';
+    row.innerHTML = '<div class="time" contenteditable="true">시간</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">새 일정</h3><div class="remark" contenteditable="true">장소 또는 메모</div></article><button class="row-delete" type="button">삭제</button>';
+    const memo = panel.querySelector('.memo');
+    if (memo) panel.insertBefore(row, memo); else panel.appendChild(row);
+    row.querySelector('.time').focus();
+    recordHistory();
+  }
+
+  function addCheckRow() {
+    if ($('.day-radio:checked')?.id !== 'prep') return;
+    const list = $('.prepday .checklist');
+    const label = document.createElement('label');
+    label.innerHTML = '<input type="checkbox"><span contenteditable="true">새 체크 항목</span>';
+    list.appendChild(label);
+    label.querySelector('span').focus();
+    recordHistory();
+  }
+
+  function addExpense() {
+    if (!body.classList.contains('editing')) return;
+    const name = $('#expenseName').value.trim();
+    const entered = Number($('#expenseAmount').value);
+    if (!name || !entered) return;
+    expenses.push({name, amount: currency === 'KRW' ? entered / rate : entered, category:'기타'});
+    $('#expenseName').value = '';
+    $('#expenseAmount').value = '';
+    renderExpenses();
+    recordHistory();
+  }
+
+  async function resetDraft() {
+    const choice = await showChoice({
+      title: '마지막 저장본으로 초기화',
+      message: '현재 편집 중인 모든 변경을 삭제하고 마지막으로 저장한 버전으로 되돌립니다.',
+      choices: [
+        {label:'취소', value:'cancel', className:'action-muted'},
+        {label:'초기화', value:'reset', className:'action-danger'}
+      ]
+    });
+    if (choice !== 'reset') {
+      if (choice !== 'replaced') resetInactivityTimer();
+      return;
+    }
+    applyState(lastSavedState);
+    initializeHistory();
+    updateDirtyState();
+    setStatus('마지막 저장본으로 초기화했습니다.');
+    resetInactivityTimer();
+  }
+
+  async function confirmViewSave() {
+    if (!pendingDraft) { setStatus('저장할 변경이 없습니다.'); return; }
+    const choice = await showChoice({
+      title: '공유 일정에 저장',
+      message: '저장하면 공개 링크를 보고 있는 사용자에게 변경 내용이 반영됩니다.',
+      choices: [
+        {label:'취소', value:'cancel', className:'action-muted'},
+        {label:'저장', value:'save', className:'action-primary'}
+      ]
+    });
+    if (choice === 'save') await saveAndFinish();
+  }
+
+  function exportStaticHtml() {
+    const clone = document.documentElement.cloneNode(true);
+    clone.querySelectorAll('script,.editor-bar,.auth-dialog,.notice-dialog,.version-dialog,.preview-banner').forEach(element => element.remove());
+    clone.querySelector('body').className = 'viewing';
+    clone.querySelectorAll('[contenteditable]').forEach(element => element.removeAttribute('contenteditable'));
+    clone.querySelectorAll('.row-delete,.add-expense,.expense [data-remove]').forEach(element => element.remove());
+    clone.querySelectorAll('input[type="checkbox"]').forEach(input => {
+      if (input.checked) input.setAttribute('checked', ''); else input.removeAttribute('checked');
+      input.disabled = true;
+    });
+    const blob = new Blob(['<!doctype html>\n' + clone.outerHTML], {type:'text/html;charset=utf-8'});
+    const anchor = document.createElement('a');
+    anchor.href = URL.createObjectURL(blob);
+    anchor.download = 'US_West_2027_snapshot.html';
+    anchor.click();
+    setTimeout(() => URL.revokeObjectURL(anchor.href), 1000);
+    setStatus('독립 HTML을 내보냈습니다.');
+  }
+
+  async function openVersions() {
+    const list = $('#versionList');
+    list.innerHTML = '<div class="version-empty">버전을 불러오는 중입니다.</div>';
+    $('#versionDialog').hidden = false;
+    const { data, error } = await client.from('trip_document_versions').select('id, content, created_at').eq('trip_id', TRIP_ID).order('created_at', {ascending:false}).limit(50);
+    if (error) {
+      list.innerHTML = '<div class="version-empty">버전 목록을 불러오지 못했습니다. supabase_setup.sql을 다시 실행해 주세요.</div>';
+      return;
+    }
+    if (!data.length) {
+      list.innerHTML = '<div class="version-empty">아직 저장된 버전이 없습니다.</div>';
+      return;
+    }
+    list.innerHTML = '';
+    data.forEach(version => {
+      const item = document.createElement('div');
+      item.className = 'version-item';
+      const date = new Date(version.created_at).toLocaleString('ko-KR');
+      item.innerHTML = '<div><strong>버전 #' + version.id + '</strong><small>' + escapeHtml(date) + '</small></div><button class="action-muted" type="button">미리보기</button><button class="action-primary" type="button">복원</button>';
+      const buttons = item.querySelectorAll('button');
+      buttons[0].onclick = () => previewVersion(version);
+      buttons[1].onclick = () => restoreVersion(version);
+      list.appendChild(item);
+    });
+  }
+
+  function previewVersion(version) {
+    previewReturnState = captureState();
+    applyState(normalizeState(version.content));
+    body.classList.add('previewing');
+    $('#previewLabel').textContent = new Date(version.created_at).toLocaleString('ko-KR') + ' 저장본 미리보기';
+    $('#versionDialog').hidden = true;
+    setStatus('저장 버전 미리보기');
+  }
+
+  async function closePreview() {
+    if (previewReturnState) applyState(previewReturnState);
+    previewReturnState = null;
+    body.classList.remove('previewing');
+    await signOutEditor();
+    setStatus('보기 모드');
+  }
+
+  async function restoreVersion(version) {
+    const choice = await showChoice({
+      title: '이 버전을 복원할까요?',
+      message: '선택한 저장본이 새 버전으로 기록되고 공개 링크에 즉시 반영됩니다.',
+      choices: [
+        {label:'취소', value:'cancel', className:'action-muted'},
+        {label:'복원', value:'restore', className:'action-primary'}
+      ]
+    });
+    if (choice !== 'restore') return;
+    const restoredState = normalizeState(version.content);
+    const restored = await persistState(restoredState);
+    if (!restored) return;
+    applyState(restoredState);
+    lastSavedState = cloneState(restoredState);
+    $('#versionDialog').hidden = true;
+    await signOutEditor();
+    setStatus('선택한 버전을 복원했습니다.');
   }
 
   async function hydrateAndSubscribe() {
-    const { data, error } = await client
-      .from('trip_documents')
-      .select('content, updated_at')
-      .eq('trip_id', TRIP_ID)
-      .maybeSingle();
-    if (error) {
+    try {
+      const published = await fetchPublishedState();
+      if (published?.content?.html) {
+        lastSavedState = normalizeState(published.content);
+        localStorage.setItem(CACHE_KEY, JSON.stringify(lastSavedState));
+        applyState(lastSavedState);
+      }
+    } catch (error) {
       console.warn('Supabase setup is not ready yet.', error.message);
-      return;
-    }
-    if (data?.content?.html && sessionStorage.getItem(REMOTE_VERSION_KEY) !== data.updated_at) {
-      localStorage.setItem(LOCAL_KEY, JSON.stringify(data.content));
-      sessionStorage.setItem(REMOTE_VERSION_KEY, data.updated_at);
-      location.reload();
-      return;
+      try {
+        const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+        if (cached?.html) { lastSavedState = normalizeState(cached); applyState(lastSavedState); }
+      } catch (_) {}
     }
     client
       .channel('trip-document-' + TRIP_ID)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'trip_documents', filter: 'trip_id=eq.' + TRIP_ID }, payload => {
         const next = payload.new;
-        if (!next?.content?.html || sessionStorage.getItem(REMOTE_VERSION_KEY) === next.updated_at) return;
-        localStorage.setItem(LOCAL_KEY, JSON.stringify(next.content));
-        sessionStorage.setItem(REMOTE_VERSION_KEY, next.updated_at);
-        location.reload();
+        if (!next?.content?.html || body.classList.contains('editing') || pendingDraft || body.classList.contains('previewing')) return;
+        lastSavedState = normalizeState(next.content);
+        localStorage.setItem(CACHE_KEY, JSON.stringify(lastSavedState));
+        applyState(lastSavedState);
+        setStatus('새 저장본을 반영했습니다.');
       })
       .subscribe();
   }
 
   $('#editBtn').onclick = async () => {
-    if (document.body.classList.contains('editing')) {
-      setEditingUI(false);
-      return;
-    }
-    if (await refreshEditorSession()) {
-      setEditingUI(true);
-      return;
-    }
-    $('#authError').textContent = '';
-    $('#editorPassword').value = '';
-    $('#authDialog').hidden = false;
-    $('#editorPassword').focus();
+    if (body.classList.contains('editing')) await requestFinishEditing();
+    else { if (body.classList.contains('previewing')) await closePreview(); await requireEditor('edit'); }
   };
 
-  $('#saveBtn').onclick = saveToRemote;
+  $('#undoBtn').onclick = () => moveHistory(-1);
+  $('#redoBtn').onclick = () => moveHistory(1);
+  $('#addTimeBtn').onclick = addTimeRow;
+  $('#addCheckBtn').onclick = addCheckRow;
+  $('#resetBtn').onclick = resetDraft;
+  $('#saveBtn').onclick = () => requireEditor('save');
+  $('#exportBtn').onclick = exportStaticHtml;
+  $('#versionsBtn').onclick = () => requireEditor('versions');
+  $('#closePreviewBtn').onclick = () => closePreview();
   $('#authCancel').onclick = () => { $('#authDialog').hidden = true; };
+  $('#closeVersionsBtn').onclick = async () => { $('#versionDialog').hidden = true; if (!body.classList.contains('editing')) await signOutEditor(); };
   $('#authForm').onsubmit = async event => {
     event.preventDefault();
     const password = $('#editorPassword').value;
@@ -227,25 +686,55 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
       return;
     }
     $('#authDialog').hidden = true;
-    await refreshEditorSession();
-    setEditingUI(true);
+    await getEditorSession();
+    if (authPurpose === 'edit') await beginEditing();
+    if (authPurpose === 'versions') await openVersions();
+    if (authPurpose === 'save') await confirmViewSave();
   };
 
-  document.addEventListener('input', event => {
-    if (event.target.closest('main')) queueRemoteSave();
-  });
-  document.addEventListener('change', event => {
-    if (event.target.closest('main')) queueRemoteSave();
-  });
   document.addEventListener('click', event => {
-    if (event.target.id === 'addTimeBtn' || event.target.id === 'addCheckBtn' || event.target.dataset.remove || event.target.classList.contains('row-delete')) {
-      setTimeout(queueRemoteSave, 0);
+    if (event.target.id === 'addExpense') addExpense();
+    if (event.target.hasAttribute('data-remove') && body.classList.contains('editing')) {
+      expenses.splice(Number(event.target.dataset.remove), 1);
+      renderExpenses();
+      recordHistory();
+    }
+    if (event.target.classList.contains('row-delete') && body.classList.contains('editing')) {
+      event.target.closest('.timeline-row')?.remove();
+      recordHistory();
+    }
+    if (event.target.dataset.currency) {
+      currency = event.target.dataset.currency;
+      renderExpenses();
+      if (body.classList.contains('editing')) recordHistory();
     }
   });
 
-  client.auth.onAuthStateChange(() => { refreshEditorSession(); });
-  refreshEditorSession();
+  document.addEventListener('input', event => {
+    if (body.classList.contains('editing') && (event.target.closest('main') || event.target.closest('header'))) queueHistory();
+  });
+  document.addEventListener('change', event => {
+    if (body.classList.contains('editing') && event.target.closest('main')) recordHistory();
+    if (event.target.matches('.day-radio')) updateContextControls();
+  });
+  ['pointerdown','keydown'].forEach(type => document.addEventListener(type, () => {
+    if (body.classList.contains('editing') && $('#noticeDialog').hidden) resetInactivityTimer();
+  }, {passive:true}));
+
+  client.auth.onAuthStateChange((_event, session) => {
+    editorSession = session?.user?.email === EDITOR_EMAIL ? session : null;
+  });
+
+  decorateDates();
+  decorateChecklist();
+  renderExpenses();
+  initialState = captureState();
+  lastSavedState = cloneState(initialState);
+  body.classList.add('viewing');
+  setEditable(false);
+  updateContextControls();
   hydrateAndSubscribe();
+
 })();
 </script>
 </body>
