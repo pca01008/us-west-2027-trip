@@ -34,7 +34,7 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
 .checklist{margin:0!important;padding:12px 16px 16px!important;border:0!important}.checklist h3{font-size:14px!important}.checklist label{padding:10px 0!important;border-bottom:1px solid #edf0f3!important;color:var(--ink)!important;font-size:13px!important}.checklist label:last-child{border-bottom:0}.money-tools{margin:0!important;padding:14px 16px!important;border-bottom:1px solid var(--line)!important}.money-total{margin:14px 16px!important;border-radius:10px!important;background:var(--navy)!important}.expenses{padding:0 16px}.expense{margin:0!important;padding:13px 0!important;border:0!important;border-bottom:1px solid var(--line)!important;border-radius:0!important;box-shadow:none!important}.add-expense{margin:14px 16px 16px!important}.add-expense input,.add-expense select{border-color:var(--line)!important;border-radius:8px!important}.btn{border-radius:8px!important;background:var(--blue)!important}
 .time small{display:block;margin-top:2px;color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.02em}
 .editing .time[contenteditable="true"]{outline:2px dashed var(--blue);outline-offset:3px;border-radius:3px}.editing .timeline-row{position:relative}.editing .timeline-row:last-child .card{padding-right:44px!important}.row-delete{display:none}.editing .row-delete{position:absolute;right:0;top:17px;display:block;border:0;border-radius:7px;padding:5px 7px;background:#fff2f0;color:var(--red);font-size:10px;font-weight:900}.editing .row-delete:active{transform:scale(.96)}#addTimeBtn{display:none}.editing #addTimeBtn{display:inline-block}
-@media(min-width:681px){header{border-radius:0 0 18px 18px!important}.tabs{max-width:680px;margin:0 auto}.editor-bar{border-right:1px solid var(--line)!important;border-left:1px solid var(--line)!important}}
+@media(min-width:681px){header{border-radius:0 0 18px 18px!important}.tabs{max-width:1000px;margin:0 auto;scrollbar-width:thin!important;scrollbar-color:#aeb9c5 transparent}.tabs::-webkit-scrollbar{display:block!important;height:7px}.tabs::-webkit-scrollbar-thumb{border-radius:8px;background:#aeb9c5}.editor-bar{border-right:1px solid var(--line)!important;border-left:1px solid var(--line)!important}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important}}
 </style>
 <style id="timeline-and-checklist-fix">
@@ -46,28 +46,31 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
 .checklist{margin:0!important;padding:12px 16px 16px!important;border:0!important}.checklist h3{font-size:14px!important}
 .checklist label{display:flex!important;align-items:flex-start!important;gap:9px!important;padding:11px 0!important;border-bottom:1px solid #edf0f3!important;color:var(--ink)!important;font-size:13px!important;line-height:1.45!important}
 .checklist label input{flex:none;margin:3px 0 0!important}.checklist label span{flex:1;min-width:0}.checklist label:last-child{border-bottom:0}
+.editing .checklist input[type="checkbox"]{display:none!important}
 .editing .checklist label span[contenteditable="true"]{outline:2px dashed var(--blue);outline-offset:3px;border-radius:3px}
 #addCheckBtn{display:none}.editing #addCheckBtn{display:inline-block}
 .auth-dialog[hidden]{display:none}.auth-dialog{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:20px;background:rgba(15,27,42,.48)}.auth-card{width:min(100%,360px);padding:22px;border-radius:14px;background:#fff;color:var(--ink);box-shadow:0 20px 60px rgba(15,27,42,.24)}.auth-card h2{margin:0 0 7px;font-size:19px}.auth-card p{margin:0 0 16px;color:var(--muted);font-size:13px;line-height:1.45}.auth-card label{display:block;margin-bottom:7px;font-size:12px;font-weight:800}.auth-card input{width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;font-size:16px}.auth-actions{display:flex;gap:8px;margin-top:14px}.auth-actions button{border:0;border-radius:8px;padding:10px 12px;font-size:12px;font-weight:900}.auth-cancel{background:#edf1f5;color:var(--ink)}.auth-submit{background:var(--navy);color:#fff}.auth-error{min-height:18px;margin-top:10px;color:var(--red);font-size:12px}
 </style>
 <style id="editor-session-controls">
-.mode-only{display:none!important}.viewing .view-only{display:inline-flex!important}.editing .edit-only{display:inline-flex!important}.editing #addTimeBtn.hidden,.editing #addCheckBtn.hidden{display:none!important}.editor-bar button:disabled{cursor:not-allowed;opacity:.38}.editor-bar .danger{border-color:#c94f43!important;background:#c94f43!important;color:#fff!important}.editing .add-expense{display:grid}.viewing .add-expense,.viewing .expense [data-remove]{display:none!important}.notice-dialog[hidden],.version-dialog[hidden]{display:none}.notice-dialog,.version-dialog{position:fixed;inset:0;display:grid;place-items:center;padding:18px;background:rgba(15,27,42,.56)}.notice-dialog{z-index:1200}.version-dialog{z-index:1100}.notice-card,.version-card{width:min(100%,420px);max-height:88vh;overflow:auto;padding:22px;border-radius:15px;background:#fff;box-shadow:0 24px 70px rgba(15,27,42,.28)}.notice-card h2,.version-card h2{margin:0 0 8px;font-size:19px}.notice-card p,.version-card p{margin:0;color:var(--muted);font-size:13px;line-height:1.55}.notice-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:18px}.notice-actions button,.version-card button{border:0;border-radius:8px;padding:10px 12px;font-size:12px;font-weight:900}.action-muted{background:#edf1f5;color:var(--ink)}.action-primary{background:var(--navy);color:#fff}.action-danger{background:#c94f43;color:#fff}.version-card{width:min(100%,560px)}.version-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.version-list{display:grid;gap:8px;margin-top:16px}.version-item{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:10px}.version-item strong{display:block;font-size:13px}.version-item small{display:block;margin-top:3px;color:var(--muted);font-size:11px}.version-empty{padding:22px;text-align:center;color:var(--muted);font-size:13px}.session-countdown{margin-top:8px!important;color:var(--red)!important;font-weight:900}.preview-banner{display:none;max-width:680px;margin:8px auto 0;padding:10px 12px;border-radius:10px;background:#fff3cf;color:#694d00;font-size:12px;font-weight:800}.previewing .preview-banner{display:flex;align-items:center;justify-content:space-between;gap:10px}.preview-banner button{border:0;border-radius:7px;padding:7px 9px;background:#694d00;color:#fff;font-size:11px;font-weight:900}
-@media(max-width:520px){.notice-actions>*{flex:1}.version-item{grid-template-columns:1fr 1fr}.version-item>div{grid-column:1/-1}.version-item button{width:100%}}
+.mode-only{display:none!important}.viewing .view-only{display:inline-flex!important}.editing .edit-only{display:inline-flex!important}.editing #addTimeBtn.hidden,.editing #addCheckBtn.hidden{display:none!important}.editor-bar button:disabled{cursor:not-allowed;opacity:.38}.editor-bar .danger{border-color:#c94f43!important;background:#c94f43!important;color:#fff!important}.notice-dialog[hidden],.version-dialog[hidden]{display:none}.notice-dialog,.version-dialog{position:fixed;inset:0;display:grid;place-items:center;padding:18px;background:rgba(15,27,42,.56)}.notice-dialog{z-index:1200}.version-dialog{z-index:1100}.notice-card,.version-card{width:min(100%,420px);max-height:88vh;overflow:auto;padding:22px;border-radius:15px;background:#fff;box-shadow:0 24px 70px rgba(15,27,42,.28)}.notice-card h2,.version-card h2{margin:0 0 8px;font-size:19px}.notice-card p,.version-card p{margin:0;color:var(--muted);font-size:13px;line-height:1.55}.notice-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:18px}.notice-actions button,.version-card button{border:0;border-radius:8px;padding:10px 12px;font-size:12px;font-weight:900}.action-muted{background:#edf1f5;color:var(--ink)}.action-primary{background:var(--navy);color:#fff}.action-danger{background:#c94f43;color:#fff}.version-card{width:min(100%,560px)}.version-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.version-list{display:grid;gap:8px;margin-top:16px}.version-item{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:10px}.version-item strong{display:block;font-size:13px}.version-item small{display:block;margin-top:3px;color:var(--muted);font-size:11px}.version-empty{padding:22px;text-align:center;color:var(--muted);font-size:13px}.session-countdown{margin-top:8px!important;color:var(--red)!important;font-weight:900}.preview-banner{display:none;max-width:680px;margin:8px auto 0;padding:10px 12px;border-radius:10px;background:#fff3cf;color:#694d00;font-size:12px;font-weight:800}.previewing .preview-banner{display:flex;align-items:center;justify-content:space-between;gap:10px}.preview-banner button{border:0;border-radius:7px;padding:7px 9px;background:#694d00;color:#fff;font-size:11px;font-weight:900}.tab-scroll{display:none}.check-delete{display:none;flex:none;border:0;border-radius:7px;padding:5px 7px;background:#fff2f0;color:var(--red);font-size:10px;font-weight:900}.editing .check-delete{display:inline-flex}.money-totals{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 16px}.money-totals .money-total{margin:0!important}.add-expense{grid-template-columns:130px minmax(150px,1fr) minmax(190px,1fr) auto!important;align-items:end}.add-expense label{display:grid;gap:5px;color:var(--muted);font-size:10px;font-weight:800}.amount-with-currency{display:grid;grid-template-columns:minmax(90px,1fr) 80px;gap:6px}.amount-with-currency select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}.expense{grid-template-columns:minmax(0,1fr) auto auto!important;align-items:center}.expense .expense-amount{color:var(--navy);font-size:13px;white-space:nowrap}.editing [contenteditable="true"],.editing .time[contenteditable="true"],.editing .checklist label span[contenteditable="true"]{outline:none!important;background:#fff8f6!important;box-shadow:inset 0 -2px 0 rgba(216,95,77,.7)!important;border-radius:4px}.editing .timeline-row>.card{overflow:visible!important}
+@media(min-width:681px){.tab-scroll{position:sticky;z-index:3;display:grid;place-items:center;flex:none;width:34px;border:0;background:rgba(238,241,245,.96);color:var(--navy);font-size:22px;font-weight:900}.tab-scroll.prev{left:0}.tab-scroll.next{right:0}.tabs{scroll-behavior:smooth}.editing .timeline-row{grid-template-columns:76px minmax(0,1fr)!important}.editing .timeline-row>.time,.editing .timeline-row>.card{min-width:0!important}}
+@media(max-width:720px){.add-expense{grid-template-columns:1fr 1fr!important}.add-expense .expense-name{grid-column:1/-1}.add-expense .btn{grid-column:1/-1}.money-totals{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.notice-actions>*{flex:1}.version-item{grid-template-columns:1fr 1fr}.version-item>div{grid-column:1/-1}.version-item button{width:100%}.money-totals{grid-template-columns:1fr}.add-expense{grid-template-columns:1fr!important}.add-expense .expense-name,.add-expense .btn{grid-column:auto}.expense{grid-template-columns:1fr auto!important}.expense [data-remove]{grid-column:1/-1;justify-self:end}}
 </style>
 </head>
 <body class="viewing">
-<header><div class="eyebrow">TRAVEL PLAN</div><div class="title" contenteditable="true">미국 서부 여행</div><div class="subtitle" contenteditable="true">2027. 01. 21. - 01. 31. · 라스베이거스 · LA</div></header>
+<header><div class="eyebrow">TRAVEL PLAN</div><div class="title">미국 서부 여행</div><div class="subtitle">2027. 01. 21. - 01. 31. · 라스베이거스 · LA</div></header>
 <input class="day-radio" id="prep" name="day" type="radio"><input class="day-radio" id="d1" name="day" type="radio" checked><input class="day-radio" id="d2" name="day" type="radio"><input class="day-radio" id="d3" name="day" type="radio"><input class="day-radio" id="d4" name="day" type="radio"><input class="day-radio" id="d5" name="day" type="radio"><input class="day-radio" id="d6" name="day" type="radio"><input class="day-radio" id="d7" name="day" type="radio"><input class="day-radio" id="d8" name="day" type="radio"><input class="day-radio" id="d9" name="day" type="radio"><input class="day-radio" id="d10" name="day" type="radio"><input class="day-radio" id="d11" name="day" type="radio"><input class="day-radio" id="money" name="day" type="radio">
-<nav class="tabs"><label for="prep">PREP<span>준비</span></label><label for="money">가계부<span>경비</span></label><label for="d1">DAY 1<span>1/21</span></label><label for="d2">DAY 2<span>1/22</span></label><label for="d3">DAY 3<span>1/23</span></label><label for="d4">DAY 4<span>1/24</span></label><label for="d5">DAY 5<span>1/25</span></label><label for="d6">DAY 6<span>1/26</span></label><label for="d7">DAY 7<span>1/27</span></label><label for="d8">DAY 8<span>1/28</span></label><label for="d9">DAY 9<span>1/29</span></label><label for="d10">DAY 10<span>1/30</span></label><label for="d11">DAY 11<span>1/31</span></label></nav>
+<nav class="tabs"><button class="tab-scroll prev" id="tabsPrev" type="button" aria-label="이전 날짜">‹</button><label for="prep">PREP<span>준비</span></label><label for="money">가계부<span>경비</span></label><label for="d1">DAY 1<span>1/21</span></label><label for="d2">DAY 2<span>1/22</span></label><label for="d3">DAY 3<span>1/23</span></label><label for="d4">DAY 4<span>1/24</span></label><label for="d5">DAY 5<span>1/25</span></label><label for="d6">DAY 6<span>1/26</span></label><label for="d7">DAY 7<span>1/27</span></label><label for="d8">DAY 8<span>1/28</span></label><label for="d9">DAY 9<span>1/29</span></label><label for="d10">DAY 10<span>1/30</span></label><label for="d11">DAY 11<span>1/31</span></label><button class="tab-scroll next" id="tabsNext" type="button" aria-label="다음 날짜">›</button></nav>
 <div class="editor-bar"><button class="primary" id="editBtn">편집 시작</button><button class="mode-only edit-only" id="undoBtn" disabled>실행 취소</button><button class="mode-only edit-only" id="redoBtn" disabled>다시 실행</button><button class="mode-only edit-only" id="addTimeBtn">일정 시간 추가</button><button class="mode-only edit-only" id="addCheckBtn">체크 항목 추가</button><button class="mode-only edit-only danger" id="resetBtn">초기화</button><button class="mode-only view-only" id="saveBtn" disabled>저장</button><button class="mode-only view-only" id="exportBtn">HTML 내보내기</button><button class="mode-only view-only" id="versionsBtn">버전 관리</button><span id="status" class="chip">보기 모드</span></div>
 <div class="preview-banner" id="previewBanner"><span id="previewLabel">저장 버전 미리보기</span><button id="closePreviewBtn" type="button">미리보기 종료</button></div>
-<section class="auth-dialog" id="authDialog" hidden aria-modal="true" aria-labelledby="authTitle" role="dialog"><form class="auth-card" id="authForm"><h2 id="authTitle">편집자 확인</h2><p>일정은 누구나 볼 수 있지만, 수정하려면 편집 비밀번호가 필요합니다.</p><label for="editorPassword">편집 비밀번호</label><input autocomplete="current-password" id="editorPassword" required type="password"><div class="auth-actions"><button class="auth-cancel" id="authCancel" type="button">취소</button><button class="auth-submit" type="submit">편집 시작</button></div><div aria-live="polite" class="auth-error" id="authError"></div></form></section>
+<section class="auth-dialog" id="authDialog" hidden aria-modal="true" aria-labelledby="authTitle" role="dialog"><form class="auth-card" id="authForm"><h2 id="authTitle">편집자 확인</h2><p>일정은 누구나 볼 수 있지만, 수정하려면 편집 비밀번호가 필요합니다.</p><label for="editorPassword">편집 비밀번호</label><input autocomplete="current-password" id="editorPassword" required type="password"><div class="auth-actions"><button class="auth-cancel" id="authCancel" type="button">취소</button><button class="auth-submit" id="authSubmit" type="submit">확인</button></div><div aria-live="polite" class="auth-error" id="authError"></div></form></section>
 <section class="notice-dialog" id="noticeDialog" hidden aria-modal="true" aria-labelledby="noticeTitle" role="dialog"><div class="notice-card"><h2 id="noticeTitle"></h2><p id="noticeMessage"></p><p class="session-countdown" id="sessionCountdown" hidden></p><div class="notice-actions" id="noticeActions"></div></div></section>
 <section class="version-dialog" id="versionDialog" hidden aria-modal="true" aria-labelledby="versionTitle" role="dialog"><div class="version-card"><div class="version-head"><div><h2 id="versionTitle">저장 버전 관리</h2><p>최근 저장본 50개를 확인하고 복원할 수 있습니다.</p></div><button class="action-muted" id="closeVersionsBtn" type="button">닫기</button></div><div class="version-list" id="versionList"></div></div></section>
 <main>
-<section class="panel day prepday"><div class="day-head"><h2>PREP</h2><p>출발 전 체크리스트</p></div><div class="checklist"><h3>Departure checklist</h3><label><input type="checkbox">여권·ESTA·항공권 확인</label><label><input type="checkbox">렌터카·그랜드캐니언 투어 예약 확인</label><label><input type="checkbox">겨울용 겉옷·트레킹화 준비</label><label><input type="checkbox">해외 결제 카드와 달러 현금 준비</label><label><input type="checkbox">숙소 주소·예약번호 오프라인 저장</label></div><div class="memo" contenteditable="true">미국 서부 1월은 일교차가 큽니다. 라스베이거스와 LA는 비교적 온화하지만 그랜드캐니언 새벽은 매우 추울 수 있어요.</div></section>
-<section class="panel day day1"><div class="day-head"><h2>DAY 1 · 01.21</h2><p>서울 → Las Vegas</p></div><div class="timeline-row"><div class="time">21:00</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">라스베이거스행 출국</h3><div class="remark" contenteditable="true">인천공항 T2 · 대한항공 KE005</div><span class="chip">AIRPORT / T2</span></article></div><div class="timeline-row"><div class="time">15:10</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">라스베이거스 공항 도착</h3><div class="remark" contenteditable="true">Harry Reid International Airport · Terminal 3</div><span class="chip">ARRIVAL</span></article></div><div class="memo" contenteditable="true">도착 시각은 현지 시간 기준으로 기록하고, 투어 출발 전 공항·숙소 이동 동선을 확인하세요.</div></section>
-<section class="panel day day2"><div class="day-head"><h2>DAY 2 · 01.22</h2><p>Grand Canyon day tour</p></div><div class="timeline-row"><div class="time">02:00</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">그랜드캐니언 투어 출발</h3><div class="remark" contenteditable="true">라스베이거스 출발 · 픽업 장소와 준비물 확인</div><div class="map">I-15 → US-93 → Grand Canyon</div></article></div><div class="timeline-row"><div class="time">21:00</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">그랜드캐니언 투어 복귀</h3><div class="remark" contenteditable="true">장거리 이동 후 휴식 · 늦은 저녁 대비</div><span class="chip">LONG DRIVE</span></article></div></section>
+<section class="panel day prepday"><div class="day-head"><h2>PREP</h2><p>출발 전 체크리스트</p></div><div class="checklist"><h3>Departure checklist</h3><label><input type="checkbox">여권·ESTA·항공권 확인</label><label><input type="checkbox">렌터카·그랜드캐니언 투어 예약 확인</label><label><input type="checkbox">겨울용 겉옷·트레킹화 준비</label><label><input type="checkbox">해외 결제 카드와 달러 현금 준비</label><label><input type="checkbox">숙소 주소·예약번호 오프라인 저장</label></div></section>
+<section class="panel day day1"><div class="day-head"><h2>DAY 1 · 01.21</h2><p>서울 → Las Vegas</p></div><div class="timeline-row"><div class="time">21:00</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">라스베이거스행 출국</h3><div class="remark" contenteditable="true">인천공항 T2 · 대한항공 KE005</div><span class="chip">AIRPORT / T2</span></article></div><div class="timeline-row"><div class="time">15:10</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">라스베이거스 공항 도착</h3><div class="remark" contenteditable="true">Harry Reid International Airport · Terminal 3</div><span class="chip">ARRIVAL</span></article></div></section>
+<section class="panel day day2"><div class="day-head"><h2>DAY 2 · 01.22</h2><p>Grand Canyon day tour</p></div><div class="timeline-row"><div class="time">02:00</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">그랜드캐니언 투어 출발</h3><div class="remark" contenteditable="true">라스베이거스 출발 · 픽업 장소와 준비물 확인</div></article></div><div class="timeline-row"><div class="time">21:00</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">그랜드캐니언 투어 복귀</h3><div class="remark" contenteditable="true">장거리 이동 후 휴식 · 늦은 저녁 대비</div><span class="chip">LONG DRIVE</span></article></div></section>
 <section class="panel day day3"><div class="day-head"><h2>DAY 3 · 01.23</h2><p>Las Vegas check-in</p></div><div class="timeline-row"><div class="time">오전</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">라스베이거스 자유 일정</h3><div class="remark" contenteditable="true">전날 투어 피로도에 따라 브런치·호텔 휴식</div></article></div><div class="timeline-row"><div class="time">16:00</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">월도프 아스토리아 라스베이거스 체크인</h3><div class="remark" contenteditable="true">체크인 후 스트립 야경과 저녁 식사</div><span class="chip">HOTEL</span></article></div></section>
 <section class="panel day day4"><div class="day-head"><h2>DAY 4 · 01.24</h2><p>Las Vegas · open day</p></div><div class="timeline-row"><div class="time">미정</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">라스베이거스 자유 일정</h3><div class="remark" contenteditable="true">추천 후보: 스트립 산책, 벨라지오 분수, 미술관, 쇼 관람</div><span class="chip">TO BE DECIDED</span></article></div></section>
 <section class="panel day day5"><div class="day-head"><h2>DAY 5 · 01.25</h2><p>Las Vegas → Los Angeles</p></div><div class="timeline-row"><div class="time">11:00</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">월도프 아스토리아 체크아웃</h3><div class="remark" contenteditable="true">짐 보관·공항 이동 시간 확인</div></article></div><div class="timeline-row"><div class="time">13:45</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">LA행 국내선 출발</h3><div class="remark" contenteditable="true">라스베이거스 공항 → Los Angeles</div><span class="chip">DOMESTIC FLIGHT</span></article></div><div class="timeline-row"><div class="time">15:00</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">LA 공항 도착</h3><div class="remark" contenteditable="true">숙소 이동 후 체크인·저녁 일정</div></article></div></section>
@@ -77,7 +80,7 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
 <section class="panel day day9"><div class="day-head"><h2>DAY 9 · 01.29</h2><p>Los Angeles · departure</p></div><div class="timeline-row"><div class="time">22:50</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">인천행 출국</h3><div class="remark" contenteditable="true">LA 공항 Terminal B · 대한항공 KE012</div><span class="chip">AIRPORT / TERMINAL B</span></article></div></section>
 <section class="panel day day10"><div class="day-head"><h2>DAY 10 · 01.30</h2><p>In transit</p></div><div class="timeline-row"><div class="time">종일</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">귀국 비행 중</h3><div class="remark" contenteditable="true">기내 휴식 · 한국 도착 준비</div></article></div></section>
 <section class="panel day day11"><div class="day-head"><h2>DAY 11 · 01.31</h2><p>Welcome home</p></div><div class="timeline-row"><div class="time">05:10</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">인천공항 도착</h3><div class="remark" contenteditable="true">인천공항 T2 · 여행 종료</div><span class="chip">ARRIVAL / T2</span></article></div></section>
-<section class="panel day moneyday"><div class="day-head"><h2>가계부</h2><p>여행 경비 기록</p></div><div class="money-tools"><strong>통화 표시</strong><div class="currency"><button class="active" data-currency="KRW">₩ 원화</button><button data-currency="USD">$ USD</button></div></div><div class="money-total"><small>기록된 총액</small><strong id="total">₩0</strong></div><div class="expenses" id="expenses"></div><div class="add-expense"><input id="expenseName" placeholder="항목 (예: 투어)" type="text"><input id="expenseAmount" min="0" placeholder="금액" type="number"><button class="btn" id="addExpense">경비 추가</button></div><div class="memo" contenteditable="true">환율은 참고용으로 직접 수정할 수 있습니다. 현재 표시 환율: 1 USD = 1,450 KRW</div></section>
+<section class="panel day moneyday"><div class="day-head"><h2>가계부</h2><p>여행 경비 기록</p></div><div class="money-totals"><div class="money-total"><small>원화 합계</small><strong id="totalKrw">₩0</strong></div><div class="money-total"><small>USD 합계</small><strong id="totalUsd">$0.00</strong></div></div><div class="expenses" id="expenses"></div><div class="add-expense"><label><span>날짜</span><input id="expenseDate" type="date"></label><label class="expense-name"><span>항목</span><input id="expenseName" placeholder="예: 투어" type="text"></label><label><span>금액</span><span class="amount-with-currency"><input id="expenseAmount" inputmode="decimal" placeholder="0" type="text"><select id="expenseCurrency" aria-label="통화"><option value="KRW">KRW</option><option value="USD">USD</option></select></span></label><button class="btn" id="addExpense" type="button">경비 추가</button></div></section>
 </main>
 <script>
 (() => {
@@ -86,6 +89,7 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
   const EDITOR_EMAIL = 'pca01008@gmail.com';
   const TRIP_ID = 'us-west-2027';
   const CACHE_KEY = 'uswest2027_public_cache_v2';
+  const SESSION_ACTIVITY_KEY = 'uswest2027_editor_activity_v1';
   const SESSION_MS = 30 * 60 * 1000;
   const WARNING_MS = 29 * 60 * 1000;
   const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
@@ -94,8 +98,6 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
   const body = document.body;
   const dayLabels = [['1/21','목요일','DAY 1'],['1/22','금요일','DAY 2'],['1/23','토요일','DAY 3'],['1/24','일요일','DAY 4'],['1/25','월요일','DAY 5'],['1/26','화요일','DAY 6'],['1/27','수요일','DAY 7'],['1/28','목요일','DAY 8'],['1/29','금요일','DAY 9'],['1/30','토요일','DAY 10'],['1/31','일요일','DAY 11']];
 
-  let currency = 'KRW';
-  let rate = 1450;
   let expenses = [];
   let editorSession = null;
   let lastSavedState = null;
@@ -112,6 +114,8 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
   let noticeResolver = null;
   let authPurpose = 'edit';
   let previewReturnState = null;
+  let pendingAuthAction = null;
+  let moneyTemplateHtml = '';
 
   function cloneState(state) {
     return JSON.parse(JSON.stringify(state));
@@ -120,17 +124,35 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
   function canonicalizeMarkup(markup) {
     const template = document.createElement('template');
     template.innerHTML = markup || '';
+    template.content.querySelectorAll('.memo,.map').forEach(element => element.remove());
+    template.content.querySelectorAll('.check-delete').forEach(element => element.remove());
+    template.content.querySelectorAll('input[type="checkbox"]').forEach(input => input.removeAttribute('checked'));
+    if (moneyTemplateHtml) {
+      const savedMoney = template.content.querySelector('.moneyday');
+      const replacement = document.createElement('template');
+      replacement.innerHTML = moneyTemplateHtml;
+      if (savedMoney && replacement.content.firstElementChild) savedMoney.replaceWith(replacement.content.firstElementChild);
+    }
+    const renderedExpenses = template.content.querySelector('#expenses');
+    if (renderedExpenses) renderedExpenses.innerHTML = '';
     template.content.querySelectorAll('[contenteditable]').forEach(element => element.setAttribute('contenteditable', 'false'));
     return template.innerHTML;
+  }
+
+  function normalizeExpense(item) {
+    return {
+      name: String(item?.name || '').trim(),
+      amount: Number(item?.amount) || 0,
+      currency: item?.currency === 'KRW' ? 'KRW' : 'USD',
+      date: /^\d{4}-\d{2}-\d{2}$/.test(item?.date || '') ? item.date : '',
+      category: item?.category || '기타'
+    };
   }
 
   function normalizeState(state) {
     return {
       html: canonicalizeMarkup(state?.html || $('main').innerHTML),
-      headerHtml: canonicalizeMarkup(state?.headerHtml || $('header').innerHTML),
-      expenses: cloneState(state?.expenses || []),
-      currency: state?.currency || 'KRW',
-      rate: Number(state?.rate) || 1450,
+      expenses: (state?.expenses || []).map(normalizeExpense),
       checks: Array.isArray(state?.checks) ? state.checks.map(Boolean) : null
     };
   }
@@ -164,46 +186,62 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
   function decorateChecklist() {
     $$('.checklist label').forEach(label => {
       let text = label.querySelector('span');
-      if (text) return;
-      text = document.createElement('span');
-      text.textContent = Array.from(label.childNodes).filter(node => node.nodeType === Node.TEXT_NODE).map(node => node.textContent).join('').trim();
-      Array.from(label.childNodes).filter(node => node.nodeType === Node.TEXT_NODE).forEach(node => node.remove());
-      label.appendChild(text);
+      if (!text) {
+        text = document.createElement('span');
+        text.textContent = Array.from(label.childNodes).filter(node => node.nodeType === Node.TEXT_NODE).map(node => node.textContent).join('').trim();
+        Array.from(label.childNodes).filter(node => node.nodeType === Node.TEXT_NODE).forEach(node => node.remove());
+        label.appendChild(text);
+      }
+      if (!label.querySelector('.check-delete')) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'check-delete';
+        button.textContent = '삭제';
+        label.appendChild(button);
+      }
     });
   }
 
-  function syncCurrencyUI() {
-    $$('[data-currency]').forEach(button => button.classList.toggle('active', button.dataset.currency === currency));
-    const amount = $('#expenseAmount');
-    if (amount) amount.placeholder = currency === 'KRW' ? '금액 (원)' : '금액 (USD)';
+  function todayLocal() {
+    const now = new Date();
+    const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 10);
+  }
+
+  function setDefaultExpenseDate() {
+    const input = $('#expenseDate');
+    if (input && !input.value) input.value = todayLocal();
+  }
+
+  function formatExpenseAmount(item) {
+    return item.currency === 'KRW'
+      ? '₩' + Math.round(item.amount).toLocaleString()
+      : '$' + Number(item.amount).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
   }
 
   function renderExpenses() {
-    const total = expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
-    const totalElement = $('#total');
-    if (totalElement) totalElement.textContent = currency === 'KRW' ? '₩' + Math.round(total * rate).toLocaleString() : '$' + total.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+    const totalKrw = expenses.filter(item => item.currency === 'KRW').reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const totalUsd = expenses.filter(item => item.currency === 'USD').reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    if ($('#totalKrw')) $('#totalKrw').textContent = '₩' + Math.round(totalKrw).toLocaleString();
+    if ($('#totalUsd')) $('#totalUsd').textContent = '$' + totalUsd.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
     const list = $('#expenses');
     if (list) {
-      list.innerHTML = expenses.length ? expenses.map((item, index) => '<div class="expense"><div><b>' + escapeHtml(item.name) + '</b><small>' + (currency === 'KRW' ? '₩' + Math.round(item.amount * rate).toLocaleString() : '$' + Number(item.amount).toFixed(2)) + ' · ' + escapeHtml(item.category || '기타') + '</small></div><button class="btn" data-remove="' + index + '">삭제</button></div>').join('') : '<div class="remark">아직 기록된 경비가 없습니다.</div>';
+      list.innerHTML = expenses.length ? expenses.map((item, index) => '<div class="expense"><div><b>' + escapeHtml(item.name) + '</b><small>' + escapeHtml(item.date || '날짜 미지정') + '</small></div><strong class="expense-amount">' + escapeHtml(formatExpenseAmount(item)) + '</strong><button class="btn" data-remove="' + index + '">삭제</button></div>').join('') : '<div class="remark">아직 기록된 경비가 없습니다.</div>';
     }
-    syncCurrencyUI();
+    setDefaultExpenseDate();
   }
 
   function captureState() {
     const main = $('main').cloneNode(true);
-    const header = $('header').cloneNode(true);
     main.querySelectorAll('[contenteditable]').forEach(element => element.setAttribute('contenteditable', 'false'));
-    header.querySelectorAll('[contenteditable]').forEach(element => element.setAttribute('contenteditable', 'false'));
-    main.querySelectorAll('input[type="checkbox"]').forEach(input => {
-      if (input.checked) input.setAttribute('checked', '');
-      else input.removeAttribute('checked');
-    });
+    main.querySelectorAll('.memo,.map').forEach(element => element.remove());
+    main.querySelectorAll('.check-delete').forEach(element => element.remove());
+    const renderedExpenses = main.querySelector('#expenses');
+    if (renderedExpenses) renderedExpenses.innerHTML = '';
+    main.querySelectorAll('input[type="checkbox"]').forEach(input => input.removeAttribute('checked'));
     return {
       html: main.innerHTML,
-      headerHtml: header.innerHTML,
       expenses: cloneState(expenses),
-      currency,
-      rate,
       checks: Array.from($('main').querySelectorAll('input[type="checkbox"]')).map(input => input.checked)
     };
   }
@@ -214,17 +252,15 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
 
   function applyState(state) {
     if (!state?.html) return;
+    const normalized = normalizeState(state);
     applyingHistory = true;
-    $('main').innerHTML = state.html;
-    if (state.headerHtml) $('header').innerHTML = state.headerHtml;
-    expenses = cloneState(state.expenses || []);
-    currency = state.currency || 'KRW';
-    rate = Number(state.rate) || 1450;
+    $('main').innerHTML = normalized.html;
+    expenses = cloneState(normalized.expenses);
     decorateDates();
     decorateChecklist();
     renderExpenses();
-    if (Array.isArray(state.checks)) {
-      $$('main input[type="checkbox"]').forEach((input, index) => { input.checked = Boolean(state.checks[index]); });
+    if (Array.isArray(normalized.checks)) {
+      $$('main input[type="checkbox"]').forEach((input, index) => { input.checked = Boolean(normalized.checks[index]); });
     }
     setEditable(body.classList.contains('editing'));
     updateContextControls();
@@ -232,8 +268,7 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
   }
 
   function setEditable(on) {
-    $$('header [contenteditable], main [contenteditable], .time, .checklist label span').forEach(element => { element.contentEditable = on ? 'true' : 'false'; });
-    $$('.add-expense input, .add-expense button').forEach(element => { element.disabled = !on; });
+    $$('main [contenteditable], .time, .checklist label span, main .day:not(.prepday):not(.moneyday) .day-head p').forEach(element => { element.contentEditable = on ? 'true' : 'false'; });
   }
 
   function isDirty() {
@@ -285,10 +320,20 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
     $('#addCheckBtn').classList.toggle('hidden', selected !== 'prep');
   }
 
+  function scrollTabs(direction) {
+    const tabs = $('.tabs');
+    tabs.scrollBy({left: direction * Math.min(480, tabs.clientWidth * 0.72), behavior:'smooth'});
+  }
+
+  function revealSelectedTab() {
+    const selected = $('.day-radio:checked');
+    const label = selected ? $('label[for="' + selected.id + '"]') : null;
+    if (label) label.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
+  }
+
   function setEditingUI(on) {
     body.classList.toggle('editing', on);
     body.classList.toggle('viewing', !on);
-    if (!on) clearSessionTimers();
     $('#editBtn').textContent = on ? '편집 종료' : '편집 시작';
     setEditable(on);
     updateContextControls();
@@ -304,6 +349,19 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
   async function getEditorSession() {
     const { data: { session } } = await client.auth.getSession();
     editorSession = session?.user?.email === EDITOR_EMAIL ? session : null;
+    if (!editorSession) {
+      localStorage.removeItem(SESSION_ACTIVITY_KEY);
+      clearSessionTimers();
+      return null;
+    }
+    const storedActivity = Number(localStorage.getItem(SESSION_ACTIVITY_KEY) || 0);
+    if (storedActivity && Date.now() - storedActivity >= SESSION_MS) {
+      await signOutEditor();
+      return null;
+    }
+    const activityAt = storedActivity || Date.now();
+    if (!storedActivity) localStorage.setItem(SESSION_ACTIVITY_KEY, String(activityAt));
+    scheduleSessionTimers(activityAt);
     return editorSession;
   }
 
@@ -363,12 +421,19 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
     clearInterval(countdownTimer);
   }
 
-  function resetInactivityTimer() {
-    if (!body.classList.contains('editing')) return;
+  function scheduleSessionTimers(activityAt) {
     clearSessionTimers();
-    lastActivityAt = Date.now();
-    warningTimer = setTimeout(showInactivityWarning, WARNING_MS);
-    logoutTimer = setTimeout(() => discardAndLogout('30분 동안 활동이 없어 자동 로그아웃되었습니다.'), SESSION_MS);
+    lastActivityAt = activityAt;
+    const elapsed = Math.max(0, Date.now() - activityAt);
+    warningTimer = setTimeout(showInactivityWarning, Math.max(0, WARNING_MS - elapsed));
+    logoutTimer = setTimeout(() => discardAndLogout('30분 동안 활동이 없어 자동 로그아웃되었습니다.'), Math.max(0, SESSION_MS - elapsed));
+  }
+
+  function resetInactivityTimer() {
+    if (!editorSession) return;
+    const now = Date.now();
+    localStorage.setItem(SESSION_ACTIVITY_KEY, String(now));
+    scheduleSessionTimers(now);
   }
 
   async function showInactivityWarning() {
@@ -380,14 +445,18 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
       seconds -= 1;
       countdown.textContent = Math.max(0, seconds) + '초 후 저장하지 않은 변경이 폐기됩니다.';
     }, 1000);
+    const dirty = isDirty();
     const choice = await showChoice({
       title: '자동 로그아웃 예정',
-      message: '1분 안에 선택하지 않으면 초안을 폐기하고 자동 로그아웃합니다.',
+      message: dirty ? '1분 안에 선택하지 않으면 초안을 폐기하고 자동 로그아웃합니다.' : '1분 안에 선택하지 않으면 자동 로그아웃합니다.',
       countdown: true,
-      choices: [
+      choices: dirty ? [
         {label:'저장', value:'save', className:'action-primary'},
-        {label:'계속 편집', value:'continue', className:'action-muted'},
+        {label:'계속 사용', value:'continue', className:'action-muted'},
         {label:'폐기', value:'discard', className:'action-danger'}
+      ] : [
+        {label:'계속 사용', value:'continue', className:'action-primary'},
+        {label:'로그아웃', value:'discard', className:'action-danger'}
       ]
     });
     if (choice === 'save') await saveAndFinish();
@@ -397,8 +466,18 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
 
   async function signOutEditor() {
     clearSessionTimers();
+    localStorage.removeItem(SESSION_ACTIVITY_KEY);
     await client.auth.signOut();
     editorSession = null;
+  }
+
+  function discardDraft(message) {
+    if (lastSavedState) applyState(lastSavedState);
+    pendingDraft = false;
+    initializeHistory();
+    setEditingUI(false);
+    resetInactivityTimer();
+    setStatus(message || '수정 내용을 폐기했습니다.');
   }
 
   async function discardAndLogout(message) {
@@ -421,7 +500,7 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
       return false;
     }
     initializeHistory();
-    await signOutEditor();
+    resetInactivityTimer();
     return true;
   }
 
@@ -430,7 +509,7 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
     recordHistory();
     if (!isDirty()) {
       setEditingUI(false);
-      await signOutEditor();
+      resetInactivityTimer();
       return;
     }
     setEditingUI(false);
@@ -445,7 +524,7 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
     });
     if (choice === 'save') await saveAndFinish();
     else if (choice === 'continue') { setEditingUI(true); resetInactivityTimer(); }
-    else if (choice === 'discard') await discardAndLogout('수정 내용을 폐기했습니다.');
+    else if (choice === 'discard') discardDraft('수정 내용을 폐기했습니다.');
   }
 
   async function beginEditing() {
@@ -466,18 +545,30 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
 
   function requestAuthentication(purpose) {
     authPurpose = purpose;
-    $('#authTitle').textContent = purpose === 'edit' ? '편집자 확인' : '버전 관리자 확인';
+    $('#authTitle').textContent = purpose === 'edit' ? '편집자 확인' : purpose === 'versions' ? '버전 관리자 확인' : purpose === 'ledger' ? '가계부 저장 권한 확인' : '저장 권한 확인';
+    $('#authSubmit').textContent = '확인';
     $('#authError').textContent = '';
     $('#editorPassword').value = '';
     $('#authDialog').hidden = false;
     $('#editorPassword').focus();
   }
 
-  async function requireEditor(purpose) {
+  async function runAuthenticatedPurpose(purpose) {
+    resetInactivityTimer();
+    if (purpose === 'edit') await beginEditing();
+    if (purpose === 'versions') await openVersions();
+    if (purpose === 'save') await confirmViewSave();
+    if (purpose === 'ledger' && pendingAuthAction) {
+      const action = pendingAuthAction;
+      pendingAuthAction = null;
+      await action();
+    }
+  }
+
+  async function requireEditor(purpose, action = null) {
+    if (action) pendingAuthAction = action;
     if (await getEditorSession()) {
-      if (purpose === 'edit') await beginEditing();
-      if (purpose === 'versions') await openVersions();
-      if (purpose === 'save') await confirmViewSave();
+      await runAuthenticatedPurpose(purpose);
       return;
     }
     requestAuthentication(purpose);
@@ -490,8 +581,7 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
     const row = document.createElement('div');
     row.className = 'timeline-row';
     row.innerHTML = '<div class="time" contenteditable="true">시간</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">새 일정</h3><div class="remark" contenteditable="true">장소 또는 메모</div></article><button class="row-delete" type="button">삭제</button>';
-    const memo = panel.querySelector('.memo');
-    if (memo) panel.insertBefore(row, memo); else panel.appendChild(row);
+    panel.appendChild(row);
     row.querySelector('.time').focus();
     recordHistory();
   }
@@ -500,22 +590,55 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
     if ($('.day-radio:checked')?.id !== 'prep') return;
     const list = $('.prepday .checklist');
     const label = document.createElement('label');
-    label.innerHTML = '<input type="checkbox"><span contenteditable="true">새 체크 항목</span>';
+    label.innerHTML = '<input type="checkbox"><span contenteditable="true">새 체크 항목</span><button class="check-delete" type="button">삭제</button>';
     list.appendChild(label);
     label.querySelector('span').focus();
     recordHistory();
   }
 
-  function addExpense() {
-    if (!body.classList.contains('editing')) return;
+  function finishDraftMutation() {
+    if (body.classList.contains('editing')) recordHistory();
+    else updateDirtyState();
+    resetInactivityTimer();
+  }
+
+  async function addExpense() {
     const name = $('#expenseName').value.trim();
-    const entered = Number($('#expenseAmount').value);
-    if (!name || !entered) return;
-    expenses.push({name, amount: currency === 'KRW' ? entered / rate : entered, category:'기타'});
-    $('#expenseName').value = '';
-    $('#expenseAmount').value = '';
-    renderExpenses();
-    recordHistory();
+    const amountText = $('#expenseAmount').value.replace(/,/g, '').trim();
+    const amount = Number(amountText);
+    const expenseCurrency = $('#expenseCurrency').value === 'USD' ? 'USD' : 'KRW';
+    const date = $('#expenseDate').value || todayLocal();
+    if (!name || !Number.isFinite(amount) || amount <= 0) {
+      setStatus('가계부 항목과 올바른 금액을 입력해 주세요.');
+      return;
+    }
+    await requireEditor('ledger', async () => {
+      expenses.push(normalizeExpense({name, amount, currency:expenseCurrency, date, category:'기타'}));
+      $('#expenseName').value = '';
+      $('#expenseAmount').value = '';
+      $('#expenseDate').value = todayLocal();
+      renderExpenses();
+      finishDraftMutation();
+    });
+  }
+
+  async function deleteExpense(index) {
+    const item = expenses[index];
+    if (!item) return;
+    const choice = await showChoice({
+      title: '가계부 항목을 삭제할까요?',
+      message: item.name + ' · ' + formatExpenseAmount(item) + ' 항목을 삭제합니다. 저장 전에는 공개본에 반영되지 않습니다.',
+      choices: [
+        {label:'취소', value:'cancel', className:'action-muted'},
+        {label:'삭제', value:'delete', className:'action-danger'}
+      ]
+    });
+    if (choice !== 'delete') return;
+    await requireEditor('ledger', async () => {
+      expenses.splice(index, 1);
+      renderExpenses();
+      finishDraftMutation();
+    });
   }
 
   async function resetDraft() {
@@ -556,7 +679,7 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
     clone.querySelectorAll('script,.editor-bar,.auth-dialog,.notice-dialog,.version-dialog,.preview-banner').forEach(element => element.remove());
     clone.querySelector('body').className = 'viewing';
     clone.querySelectorAll('[contenteditable]').forEach(element => element.removeAttribute('contenteditable'));
-    clone.querySelectorAll('.row-delete,.add-expense,.expense [data-remove]').forEach(element => element.remove());
+    clone.querySelectorAll('.row-delete,.check-delete,.tab-scroll,.add-expense,.expense [data-remove]').forEach(element => element.remove());
     clone.querySelectorAll('input[type="checkbox"]').forEach(input => {
       if (input.checked) input.setAttribute('checked', ''); else input.removeAttribute('checked');
       input.disabled = true;
@@ -609,7 +732,7 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
     if (previewReturnState) applyState(previewReturnState);
     previewReturnState = null;
     body.classList.remove('previewing');
-    await signOutEditor();
+    resetInactivityTimer();
     setStatus('보기 모드');
   }
 
@@ -629,7 +752,7 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
     applyState(restoredState);
     lastSavedState = cloneState(restoredState);
     $('#versionDialog').hidden = true;
-    await signOutEditor();
+    resetInactivityTimer();
     setStatus('선택한 버전을 복원했습니다.');
   }
 
@@ -674,9 +797,11 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
   $('#saveBtn').onclick = () => requireEditor('save');
   $('#exportBtn').onclick = exportStaticHtml;
   $('#versionsBtn').onclick = () => requireEditor('versions');
+  $('#tabsPrev').onclick = () => scrollTabs(-1);
+  $('#tabsNext').onclick = () => scrollTabs(1);
   $('#closePreviewBtn').onclick = () => closePreview();
-  $('#authCancel').onclick = () => { $('#authDialog').hidden = true; };
-  $('#closeVersionsBtn').onclick = async () => { $('#versionDialog').hidden = true; if (!body.classList.contains('editing')) await signOutEditor(); };
+  $('#authCancel').onclick = () => { $('#authDialog').hidden = true; pendingAuthAction = null; };
+  $('#closeVersionsBtn').onclick = () => { $('#versionDialog').hidden = true; resetInactivityTimer(); };
   $('#authForm').onsubmit = async event => {
     event.preventDefault();
     const password = $('#editorPassword').value;
@@ -685,55 +810,65 @@ main{max-width:680px!important;padding:12px!important}.panel{padding:0!important
       $('#authError').textContent = '비밀번호를 확인해 주세요.';
       return;
     }
+    const session = await getEditorSession();
+    if (!session) {
+      $('#authError').textContent = '로그인 세션을 확인하지 못했습니다. 다시 시도해 주세요.';
+      return;
+    }
     $('#authDialog').hidden = true;
-    await getEditorSession();
-    if (authPurpose === 'edit') await beginEditing();
-    if (authPurpose === 'versions') await openVersions();
-    if (authPurpose === 'save') await confirmViewSave();
+    resetInactivityTimer();
+    await runAuthenticatedPurpose(authPurpose);
   };
 
   document.addEventListener('click', event => {
     if (event.target.id === 'addExpense') addExpense();
-    if (event.target.hasAttribute('data-remove') && body.classList.contains('editing')) {
-      expenses.splice(Number(event.target.dataset.remove), 1);
-      renderExpenses();
-      recordHistory();
-    }
+    if (event.target.hasAttribute('data-remove')) deleteExpense(Number(event.target.dataset.remove));
     if (event.target.classList.contains('row-delete') && body.classList.contains('editing')) {
       event.target.closest('.timeline-row')?.remove();
       recordHistory();
     }
-    if (event.target.dataset.currency) {
-      currency = event.target.dataset.currency;
-      renderExpenses();
-      if (body.classList.contains('editing')) recordHistory();
+    if (event.target.classList.contains('check-delete') && body.classList.contains('editing')) {
+      event.target.closest('label')?.remove();
+      recordHistory();
     }
   });
 
   document.addEventListener('input', event => {
-    if (body.classList.contains('editing') && (event.target.closest('main') || event.target.closest('header'))) queueHistory();
+    if (body.classList.contains('editing') && event.target.closest('main') && !event.target.closest('.add-expense')) queueHistory();
   });
   document.addEventListener('change', event => {
-    if (body.classList.contains('editing') && event.target.closest('main')) recordHistory();
-    if (event.target.matches('.day-radio')) updateContextControls();
+    if (body.classList.contains('editing') && event.target.closest('main') && !event.target.closest('.add-expense')) recordHistory();
+    if (event.target.matches('.day-radio')) { updateContextControls(); revealSelectedTab(); }
   });
+  $('.tabs').addEventListener('wheel', event => {
+    const tabs = event.currentTarget;
+    if (tabs.scrollWidth <= tabs.clientWidth || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+    event.preventDefault();
+    tabs.scrollLeft += event.deltaY;
+  }, {passive:false});
   ['pointerdown','keydown'].forEach(type => document.addEventListener(type, () => {
-    if (body.classList.contains('editing') && $('#noticeDialog').hidden) resetInactivityTimer();
+    if (editorSession && $('#noticeDialog').hidden) resetInactivityTimer();
   }, {passive:true}));
 
   client.auth.onAuthStateChange((_event, session) => {
     editorSession = session?.user?.email === EDITOR_EMAIL ? session : null;
+    if (!editorSession) {
+      localStorage.removeItem(SESSION_ACTIVITY_KEY);
+      clearSessionTimers();
+    }
   });
 
   decorateDates();
   decorateChecklist();
   renderExpenses();
+  moneyTemplateHtml = $('.moneyday').outerHTML;
   initialState = captureState();
   lastSavedState = cloneState(initialState);
   body.classList.add('viewing');
   setEditable(false);
   updateContextControls();
   hydrateAndSubscribe();
+  getEditorSession();
 
 })();
 </script>
