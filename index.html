@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko" data-storage-key="uswest2027_saved">
+<html lang="ko" data-storage-key="uswest2027_saved" data-trip-id="us-west-2027" data-schema-version="3" data-offline="false">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -464,16 +464,40 @@ main{max-width:860px!important;padding:16px 0!important}
 }
 @media(prefers-reduced-motion:reduce){button,.tabs label{transition:none!important}}
 </style>
+<style id="feature-upgrade-ui">
+.trip-progress{max-width:860px;margin:20px auto 0;padding:13px 15px;border:1px solid rgba(255,255,255,.16);border-radius:15px;background:rgba(255,255,255,.1);backdrop-filter:blur(12px)}
+.trip-progress-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:9px;color:#fff}.trip-progress-head strong{font-size:13px}.trip-progress-head span{color:#d9e5f0;font-size:10px;font-weight:750;text-align:right}.trip-progress-track{height:7px;overflow:hidden;border-radius:999px;background:rgba(255,255,255,.17)}.trip-progress-track i{display:block;width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,#ffb49f,#fff0d0);box-shadow:0 0 16px rgba(255,201,174,.55);transition:width .5s ease}
+.editor-bar button{align-items:center!important;justify-content:center!important;gap:6px!important;line-height:1!important;white-space:nowrap}#editBtn{display:inline-flex!important}.button-icon{display:grid;width:16px;height:16px;place-items:center;flex:0 0 16px;align-self:center}.button-icon svg{display:block;width:16px;height:16px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.9}.tab-label-icon{display:inline-grid;min-width:18px;height:18px;margin-right:4px;place-items:center;border-radius:6px;background:rgba(23,43,77,.08);font-size:10px;vertical-align:middle}#prep:checked~.tabs label[for="prep"] .tab-label-icon,#money:checked~.tabs label[for="money"] .tab-label-icon{background:rgba(255,255,255,.19)}
+/* Traditional timeline: time | rail | card. */
+.timeline-row{display:grid!important;grid-template-columns:68px 22px minmax(0,1fr)!important;column-gap:8px!important;align-items:stretch!important;min-height:82px!important;margin:12px 18px!important;padding:0!important;overflow:visible!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+.timeline-row:before{display:none!important;content:none!important}.timeline-row>.time{grid-column:1!important;grid-row:1!important;align-self:start!important;justify-self:stretch!important;min-width:0!important;margin:0!important;padding:18px 0 0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;text-align:right!important;white-space:nowrap}.timeline-row>.rail{grid-column:2!important;grid-row:1!important;position:relative!important;display:flex!important;min-height:100%!important;align-items:flex-start!important;justify-content:center!important}.timeline-row>.rail:before{content:""!important;position:absolute!important;top:0!important;bottom:-24px!important;left:50%!important;display:block!important;width:2px!important;transform:translateX(-50%)!important;background:#d8e1eb!important}.timeline-row:last-of-type>.rail:before{bottom:50%!important}.timeline-row .dot{position:relative!important;z-index:2!important;display:block!important;width:11px!important;height:11px!important;margin-top:21px!important;border-radius:50%!important;background:var(--blue)!important;box-shadow:0 0 0 4px #f6f8fb!important}.timeline-row>.card{grid-column:3!important;grid-row:1!important;position:relative!important;min-height:64px!important;padding:15px 16px!important;border:1px solid #e2e8f0!important;border-radius:15px!important;background:#fbfcfe!important;box-shadow:0 4px 13px rgba(23,43,77,.045)!important}.timeline-row>.card:hover{border-color:#d4deea!important;box-shadow:0 8px 20px rgba(23,43,77,.07)!important}.editing .timeline-row{grid-template-columns:68px 22px minmax(0,1fr)!important;padding-right:0!important}.editing .timeline-row>.card{padding-right:58px!important}.editing .row-delete{right:8px!important;top:8px!important}
+.schedule-media-tools{display:none;flex-wrap:wrap;gap:6px;margin-top:11px;padding-top:10px;border-top:1px dashed #dbe3ec}.editing .schedule-media-tools{display:flex}.schedule-media-tools button{display:inline-flex;align-items:center;gap:5px;border:1px solid #d8e2ed;border-radius:9px;padding:7px 9px;background:#fff;color:var(--navy);font-size:10px;font-weight:850}.schedule-map{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding:9px 10px;border:1px solid #dce6ef;border-radius:10px;background:#f1f6fa}.schedule-map a{display:flex;align-items:center;gap:6px;min-width:0;color:#315d77;font-size:11px;font-weight:850;text-decoration:none}.schedule-map a span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.schedule-map-delete{display:none;border:0;background:transparent;color:var(--red);font-size:10px;font-weight:850}.editing .schedule-map-delete{display:block}
+.schedule-gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}.schedule-photo{position:relative;min-width:0;margin:0;overflow:hidden;border:1px solid #dfe6ee;border-radius:11px;background:#eef2f6;aspect-ratio:4/3}.schedule-photo img{display:block;width:100%;height:100%;object-fit:cover;cursor:zoom-in}.photo-delete{display:none;position:absolute;top:6px;right:6px;border:0;border-radius:8px;padding:5px 7px;background:rgba(144,39,34,.88);color:#fff;font-size:9px;font-weight:900;box-shadow:0 3px 10px rgba(0,0,0,.16)}.editing .photo-delete{display:block}.photo-uploading{display:grid;min-height:110px;place-items:center;color:var(--muted);font-size:11px}
+.photo-viewer[hidden]{display:none}.photo-viewer{position:fixed;inset:0;z-index:1400;display:grid;place-items:center;padding:52px 18px 18px;background:rgba(7,18,31,.91);backdrop-filter:blur(10px)}.photo-viewer img{max-width:min(100%,1200px);max-height:calc(100vh - 80px);border-radius:14px;box-shadow:0 24px 80px rgba(0,0,0,.5)}.photo-viewer button{position:absolute;top:14px;right:16px;width:38px;height:38px;border:1px solid rgba(255,255,255,.25);border-radius:50%;background:rgba(255,255,255,.12);color:#fff;font-size:25px}
+.dialog-field{display:grid;gap:6px;margin-top:14px;color:var(--muted);font-size:11px;font-weight:850}.dialog-field input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font-size:14px}.category-card{width:min(100%,460px)!important}.icon-picker{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:14px}.icon-picker button{display:grid;min-height:38px;place-items:center;border:1px solid var(--line);border-radius:9px;background:#fff;font-size:19px}.icon-picker button.active{border-color:var(--blue);background:#fff1ee;box-shadow:0 0 0 2px rgba(226,96,79,.14)}
+.import-card{width:min(100%,680px)!important}.import-diff{display:grid;gap:8px;max-height:52vh;margin-top:14px;overflow:auto}.diff-group{padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:#f8fafc}.diff-group strong{display:block;margin-bottom:5px;font-size:12px}.diff-group ul{margin:0;padding-left:18px;color:var(--muted);font-size:11px;line-height:1.55}.diff-empty{padding:22px;text-align:center;color:var(--muted);font-size:12px}
+.export-card{width:min(100%,620px)!important}.export-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.export-option{display:grid!important;grid-template-columns:38px minmax(0,1fr);align-items:start!important;gap:11px!important;min-height:116px;padding:16px!important;border:1px solid #dce4ed!important;border-radius:14px!important;background:#fbfcfe!important;color:var(--ink)!important;text-align:left!important;box-shadow:none!important}.export-option:hover{border-color:#aebfd1!important;background:#f7faff!important;box-shadow:0 8px 20px rgba(23,43,77,.08)!important}.export-option>.button-icon{width:38px;height:38px;flex-basis:38px;border-radius:11px;background:#e9f0f7;color:var(--navy)}.export-option>.button-icon svg{width:20px;height:20px}.export-option strong{display:block;color:var(--navy);font-size:13px;line-height:1.3}.export-option small{display:block;margin-top:7px;color:var(--muted);font-size:10px;font-weight:750;line-height:1.55}.artifact-banner{display:flex;align-items:center;justify-content:space-between;gap:16px;max-width:860px;margin:12px auto 0;padding:11px 14px;border:1px solid #d7e1ec;border-radius:13px;background:#f7faff;color:#53647a;font-size:10px;font-weight:750}.artifact-banner strong{flex:none;color:var(--navy);font-size:12px}.artifact-banner.readonly{border-color:#dddfe5;background:#f8f8fa}.artifact-banner.readonly strong{color:#545b68}
+.exchange-rate{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px;padding:14px 16px;border:1px solid #dfe6ee;border-radius:14px;background:#f6f8fb}.exchange-rate small{display:block;margin-bottom:4px;color:var(--muted);font-size:10px;font-weight:800}.exchange-rate strong{color:var(--navy);font-size:13px}.exchange-rate input{width:82px;padding:6px 7px;border:1px solid #d5dfeb;border-radius:8px;background:#fff;color:var(--navy);font-weight:900;text-align:right}.viewing .exchange-rate input{pointer-events:none;border-color:transparent;background:transparent}.exchange-rate>span{color:var(--muted);font-size:9px;text-align:right}.money-totals{grid-template-columns:repeat(3,minmax(0,1fr))!important}.combined-total{background:linear-gradient(135deg,#614861,#885d75)!important}.category-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 18px 18px}.category-total{padding:12px 13px;border:1px solid #e1e7ee;border-radius:13px;background:#fbfcfe}.category-total>span{display:flex;align-items:center;gap:6px;color:#546277;font-size:11px;font-weight:850}.category-total b{display:block;margin-top:6px;color:var(--navy);font-size:14px}.category-total small{display:block;margin-top:3px;color:var(--muted);font-size:9px}.category-manager{margin:0 18px 18px;padding:14px;border:1px solid #dfe6ee;border-radius:14px;background:#f7f9fc}.category-manager-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.category-manager-head strong{font-size:12px}.category-manager-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}.category-chip{display:inline-flex;align-items:center;gap:5px;padding:7px 8px;border:1px solid #dce4ed;border-radius:999px;background:#fff;color:#3d4c61;font-size:10px;font-weight:800}.category-chip button{border:0;background:transparent;color:inherit;font-size:10px}.category-chip.system{opacity:.62}.add-expense{grid-template-columns:130px 150px minmax(160px,1fr) minmax(190px,1fr) auto!important}.expense-category select{width:100%}.expense-category-badge{display:inline-flex;align-items:center;gap:5px;margin-top:5px;color:var(--muted);font-size:10px}.offline-mode .online-only{display:none!important}.offline-mode #saveBtn{display:inline-flex!important}.offline-mode #saveBtn:disabled{display:inline-flex!important}.offline-mode #status:before{content:"OFFLINE · ";font-weight:950}.offline-mode .auth-dialog{display:none!important}
+@media(min-width:700px){.category-summary{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:760px){.schedule-gallery{grid-template-columns:repeat(2,minmax(0,1fr))}.add-expense{grid-template-columns:1fr 1fr!important}.add-expense .expense-name{grid-column:1/-1}.add-expense>.btn{grid-column:1/-1}.money-totals{grid-template-columns:1fr 1fr!important}.combined-total{grid-column:1/-1}.icon-picker{grid-template-columns:repeat(6,1fr)}}
+@media(max-width:520px){.trip-progress{margin-top:15px;padding:11px 12px}.trip-progress-head{align-items:flex-start;flex-direction:column;gap:3px}.trip-progress-head span{text-align:left}.timeline-row,.editing .timeline-row{grid-template-columns:55px 18px minmax(0,1fr)!important;column-gap:6px!important;margin:10px 6px!important}.timeline-row>.time{padding-top:17px!important;font-size:11px!important}.timeline-row .dot{width:9px!important;height:9px!important;margin-top:20px!important}.timeline-row>.card{padding:13px 12px!important}.editing .timeline-row>.card{padding-right:52px!important}.schedule-gallery{grid-template-columns:1fr 1fr}.exchange-rate{align-items:flex-start;flex-direction:column;margin:12px}.money-totals{margin:12px!important}.category-summary{grid-template-columns:1fr 1fr;margin:0 12px 12px}.category-manager{margin:0 12px 12px}.add-expense{grid-template-columns:1fr!important}.add-expense .expense-name,.add-expense>.btn{grid-column:auto}.icon-picker{grid-template-columns:repeat(5,1fr)}.export-options{grid-template-columns:1fr}.export-option{min-height:0}.artifact-banner{align-items:flex-start;flex-direction:column;gap:3px;margin:9px 11px 0}}
+</style>
 </head>
 <body class="viewing">
-<header><div class="eyebrow">TRAVEL PLAN</div><div class="title">미국 서부 여행</div><div class="subtitle">2027. 01. 21. - 01. 31. · 라스베이거스 · LA</div></header>
+<header><div class="eyebrow">TRAVEL PLAN</div><div class="title">미국 서부 여행</div><div class="subtitle">2027. 01. 21. - 01. 31. · 라스베이거스 · LA</div><div class="trip-progress" id="tripProgress"><div class="trip-progress-head"><strong id="tripProgressLabel">여행 준비 중</strong><span id="tripProgressMeta">일정을 계산하고 있습니다.</span></div><div class="trip-progress-track" aria-label="여행 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" role="progressbar"><i id="tripProgressFill"></i></div></div></header>
 <input class="day-radio" id="prep" name="day" type="radio"><input class="day-radio" id="d1" name="day" type="radio" checked><input class="day-radio" id="d2" name="day" type="radio"><input class="day-radio" id="d3" name="day" type="radio"><input class="day-radio" id="d4" name="day" type="radio"><input class="day-radio" id="d5" name="day" type="radio"><input class="day-radio" id="d6" name="day" type="radio"><input class="day-radio" id="d7" name="day" type="radio"><input class="day-radio" id="d8" name="day" type="radio"><input class="day-radio" id="d9" name="day" type="radio"><input class="day-radio" id="d10" name="day" type="radio"><input class="day-radio" id="d11" name="day" type="radio"><input class="day-radio" id="money" name="day" type="radio">
-<nav class="tabs"><button class="tab-scroll prev" id="tabsPrev" type="button" aria-label="이전 날짜">‹</button><label for="prep">PREP<span>준비</span></label><label for="money">가계부<span>경비</span></label><label for="d1">DAY 1<span>1/21</span></label><label for="d2">DAY 2<span>1/22</span></label><label for="d3">DAY 3<span>1/23</span></label><label for="d4">DAY 4<span>1/24</span></label><label for="d5">DAY 5<span>1/25</span></label><label for="d6">DAY 6<span>1/26</span></label><label for="d7">DAY 7<span>1/27</span></label><label for="d8">DAY 8<span>1/28</span></label><label for="d9">DAY 9<span>1/29</span></label><label for="d10">DAY 10<span>1/30</span></label><label for="d11">DAY 11<span>1/31</span></label><button class="tab-scroll next" id="tabsNext" type="button" aria-label="다음 날짜">›</button></nav>
-<div class="editor-bar"><button class="primary" id="editBtn">편집 시작</button><button class="mode-only edit-only" id="undoBtn" disabled>실행 취소</button><button class="mode-only edit-only" id="redoBtn" disabled>다시 실행</button><button class="mode-only edit-only" id="addTimeBtn">일정 시간 추가</button><button class="mode-only edit-only" id="addCheckBtn">체크 항목 추가</button><button class="mode-only edit-only danger" id="resetBtn">초기화</button><button class="mode-only view-only" id="saveBtn" disabled>저장</button><button class="mode-only view-only" id="exportBtn">HTML 내보내기</button><button class="mode-only view-only" id="versionsBtn">버전 관리</button><span id="status" class="chip">보기 모드</span></div>
+<nav class="tabs"><button class="tab-scroll prev" id="tabsPrev" type="button" aria-label="이전 날짜">‹</button><label for="prep"><b class="tab-label-icon" aria-hidden="true">✓</b>PREP<span>준비</span></label><label for="money"><b class="tab-label-icon" aria-hidden="true">₩</b>가계부<span>경비</span></label><label for="d1">DAY 1<span>1/21</span></label><label for="d2">DAY 2<span>1/22</span></label><label for="d3">DAY 3<span>1/23</span></label><label for="d4">DAY 4<span>1/24</span></label><label for="d5">DAY 5<span>1/25</span></label><label for="d6">DAY 6<span>1/26</span></label><label for="d7">DAY 7<span>1/27</span></label><label for="d8">DAY 8<span>1/28</span></label><label for="d9">DAY 9<span>1/29</span></label><label for="d10">DAY 10<span>1/30</span></label><label for="d11">DAY 11<span>1/31</span></label><button class="tab-scroll next" id="tabsNext" type="button" aria-label="다음 날짜">›</button></nav>
+<div class="editor-bar"><button class="primary" data-icon="edit" id="editBtn">편집 시작</button><button class="mode-only edit-only" data-icon="undo" id="undoBtn" disabled>실행 취소</button><button class="mode-only edit-only" data-icon="redo" id="redoBtn" disabled>다시 실행</button><button class="mode-only edit-only" data-icon="plus" id="addTimeBtn">일정 시간 추가</button><button class="mode-only edit-only" data-icon="check" id="addCheckBtn">체크 항목 추가</button><button class="mode-only edit-only danger" data-icon="reset" id="resetBtn">초기화</button><button class="mode-only view-only" data-icon="save" id="saveBtn" disabled>저장</button><button class="mode-only view-only online-only" data-icon="upload" id="importBtn" title="오프라인 작업본을 최신 저장본과 비교해 초안으로 불러옵니다.">편집본 불러오기</button><button class="mode-only view-only" data-icon="export" id="exportMenuBtn">내보내기</button><button class="mode-only view-only online-only" data-icon="history" id="versionsBtn">버전 관리</button><span id="status" class="chip">보기 모드</span><input accept="text/html,.html" id="importFileInput" type="file" hidden></div>
 <div class="preview-banner" id="previewBanner"><span id="previewLabel">저장 버전 미리보기</span><button id="closePreviewBtn" type="button">미리보기 종료</button></div>
 <section class="auth-dialog" id="authDialog" hidden aria-modal="true" aria-labelledby="authTitle" role="dialog"><form class="auth-card" id="authForm"><h2 id="authTitle">편집자 확인</h2><p>일정은 누구나 볼 수 있지만, 수정하려면 편집 비밀번호가 필요합니다.</p><label for="editorPassword">편집 비밀번호</label><input autocomplete="current-password" id="editorPassword" required type="password"><div class="auth-actions"><button class="auth-cancel" id="authCancel" type="button">취소</button><button class="auth-submit" id="authSubmit" type="submit">확인</button></div><div aria-live="polite" class="auth-error" id="authError"></div></form></section>
 <section class="notice-dialog" id="noticeDialog" hidden aria-modal="true" aria-labelledby="noticeTitle" role="dialog"><div class="notice-card"><h2 id="noticeTitle"></h2><p id="noticeMessage"></p><p class="session-countdown" id="sessionCountdown" hidden></p><div class="notice-actions" id="noticeActions"></div></div></section>
 <section class="version-dialog" id="versionDialog" hidden aria-modal="true" aria-labelledby="versionTitle" role="dialog"><div class="version-card"><div class="version-head"><div><h2 id="versionTitle">저장 버전 관리</h2><p>최근 저장본 50개를 확인하고 복원할 수 있습니다.</p></div><button class="action-muted" id="closeVersionsBtn" type="button">닫기</button></div><div class="version-list" id="versionList"></div></div></section>
+<section class="notice-dialog" id="categoryDialog" hidden aria-modal="true" aria-labelledby="categoryTitle" role="dialog"><div class="notice-card category-card"><h2 id="categoryTitle">카테고리 편집</h2><label class="dialog-field"><span>카테고리 이름</span><input id="categoryName" maxlength="24" type="text"></label><div class="icon-picker" id="categoryIconPicker" aria-label="카테고리 아이콘"></div><div class="notice-actions"><button class="action-muted" id="categoryCancel" type="button">취소</button><button class="action-primary" id="categorySave" type="button">적용</button></div></div></section>
+<section class="notice-dialog" id="mapDialog" hidden aria-modal="true" aria-labelledby="mapTitle" role="dialog"><div class="notice-card"><h2 id="mapTitle">지도 링크 첨부</h2><label class="dialog-field"><span>장소명</span><input id="mapName" maxlength="80" placeholder="예: 그리피스 천문대" type="text"></label><label class="dialog-field"><span>Google Maps URL</span><input id="mapUrl" inputmode="url" placeholder="https://maps.google.com/..." type="url"></label><div class="notice-actions"><button class="action-muted" id="mapCancel" type="button">취소</button><button class="action-primary" id="mapSave" type="button">첨부</button></div></div></section>
+<section class="notice-dialog" id="importDialog" hidden aria-modal="true" aria-labelledby="importTitle" role="dialog"><div class="notice-card import-card"><h2 id="importTitle">최신 저장본과 비교</h2><p id="importSummary"></p><div class="import-diff" id="importDiff"></div><div class="notice-actions"><button class="action-muted" id="importCancel" type="button">취소</button><button class="action-primary" id="importApply" type="button">초안으로 불러오기</button></div></div></section>
+<section class="notice-dialog" id="exportDialog" hidden aria-modal="true" aria-labelledby="exportTitle" role="dialog"><div class="notice-card export-card"><h2 id="exportTitle">어떤 용도로 내보낼까요?</h2><p>파일을 다시 편집할지, 다른 사람에게 읽기 전용으로 전달할지 선택하세요.</p><div class="export-options"><button class="export-option" data-icon="work" id="offlineExportBtn" type="button"><span><strong>오프라인 작업본</strong><small>인터넷 없이 계속 수정하고, 나중에 온라인 페이지에서 다시 불러올 수 있습니다. 사진이 파일 안에 포함됩니다.</small></span></button><button class="export-option" data-icon="readonly" id="exportBtn" type="button"><span><strong>인쇄·공유용 사본</strong><small>편집과 온라인 반영이 불가능한 읽기 전용 파일입니다. 사진·지도 표시는 인터넷 연결이 필요합니다.</small></span></button></div><div class="notice-actions"><button class="action-muted" id="exportCancel" type="button">취소</button></div></div></section>
+<section class="photo-viewer" id="photoViewer" hidden aria-modal="true" aria-label="사진 크게 보기" role="dialog"><button id="photoViewerClose" type="button" aria-label="사진 닫기">×</button><img id="photoViewerImage" alt="일정 사진"></section>
+<input accept="image/*" id="photoInput" multiple type="file" hidden>
 <main>
 <section class="panel day prepday"><div class="day-head"><h2>PREP</h2><p>출발 전 체크리스트</p></div><div class="checklist"><h3>Departure checklist</h3><label><input type="checkbox">여권·ESTA·항공권 확인</label><label><input type="checkbox">렌터카·그랜드캐니언 투어 예약 확인</label><label><input type="checkbox">겨울용 겉옷·트레킹화 준비</label><label><input type="checkbox">해외 결제 카드와 달러 현금 준비</label><label><input type="checkbox">숙소 주소·예약번호 오프라인 저장</label></div></section>
 <section class="panel day day1"><div class="day-head"><h2>DAY 1 · 01.21</h2><p>서울 → Las Vegas</p></div><div class="timeline-row"><div class="time">21:00</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">라스베이거스행 출국</h3><div class="remark" contenteditable="true">인천공항 T2 · 대한항공 KE005</div><span class="chip">AIRPORT / T2</span></article></div><div class="timeline-row"><div class="time">15:10</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">라스베이거스 공항 도착</h3><div class="remark" contenteditable="true">Harry Reid International Airport · Terminal 3</div><span class="chip">ARRIVAL</span></article></div></section>
@@ -487,28 +511,65 @@ main{max-width:860px!important;padding:16px 0!important}
 <section class="panel day day9"><div class="day-head"><h2>DAY 9 · 01.29</h2><p>Los Angeles · departure</p></div><div class="timeline-row"><div class="time">22:50</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">인천행 출국</h3><div class="remark" contenteditable="true">LA 공항 Terminal B · 대한항공 KE012</div><span class="chip">AIRPORT / TERMINAL B</span></article></div></section>
 <section class="panel day day10"><div class="day-head"><h2>DAY 10 · 01.30</h2><p>In transit</p></div><div class="timeline-row"><div class="time">종일</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">귀국 비행 중</h3><div class="remark" contenteditable="true">기내 휴식 · 한국 도착 준비</div></article></div></section>
 <section class="panel day day11"><div class="day-head"><h2>DAY 11 · 01.31</h2><p>Welcome home</p></div><div class="timeline-row"><div class="time">05:10</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">인천공항 도착</h3><div class="remark" contenteditable="true">인천공항 T2 · 여행 종료</div><span class="chip">ARRIVAL / T2</span></article></div></section>
-<section class="panel day moneyday"><div class="day-head"><h2>가계부</h2><p>여행 경비 기록</p></div><div class="money-totals"><div class="money-total"><small>원화 합계</small><strong id="totalKrw">₩0</strong></div><div class="money-total"><small>USD 합계</small><strong id="totalUsd">$0.00</strong></div></div><div class="expenses" id="expenses"></div><div class="add-expense"><label><span>날짜</span><input id="expenseDate" type="date"></label><label class="expense-name"><span>항목</span><input id="expenseName" placeholder="예: 투어" type="text"></label><label><span>금액</span><span class="amount-with-currency"><input id="expenseAmount" inputmode="decimal" placeholder="0" type="text"><select id="expenseCurrency" aria-label="통화"><option value="KRW">KRW</option><option value="USD">USD</option></select></span></label><button class="btn" id="addExpense" type="button">경비 추가</button></div></section>
+<section class="panel day moneyday"><div class="day-head"><h2>가계부</h2><p>여행 경비 기록</p></div><div class="exchange-rate"><div><small>적용 환율</small><strong>1 USD = <input id="exchangeRate" inputmode="decimal" type="text" value="1450"> KRW</strong></div><span id="exchangeRateUpdated">수동 환율</span></div><div class="money-totals"><div class="money-total"><small>원화 합계</small><strong id="totalKrw">₩0</strong></div><div class="money-total"><small>USD 합계</small><strong id="totalUsd">$0.00</strong></div><div class="money-total combined-total"><small>원화 환산 합계</small><strong id="totalConverted">₩0</strong></div></div><div class="category-summary" id="categorySummary"></div><div class="category-manager edit-only mode-only"><div class="category-manager-head"><strong>가계부 카테고리</strong><button class="btn" data-icon="plus" id="addCategoryBtn" type="button">카테고리 추가</button></div><div class="category-manager-list" id="categoryManagerList"></div></div><div class="expenses" id="expenses"></div><div class="add-expense"><label><span>날짜</span><input id="expenseDate" type="date"></label><label class="expense-category"><span>카테고리</span><select id="expenseCategory"></select></label><label class="expense-name"><span>항목</span><input id="expenseName" placeholder="예: 그랜드캐니언 투어" type="text"></label><label><span>금액</span><span class="amount-with-currency"><input id="expenseAmount" inputmode="decimal" placeholder="0" type="text"><select id="expenseCurrency" aria-label="통화"><option value="KRW">KRW</option><option value="USD">USD</option></select></span></label><button class="btn" data-icon="plus" id="addExpense" type="button">경비 추가</button></div></section>
 </main>
-<script>
+<script id="offlineEmbeddedState" type="application/json">null</script>
+<script id="tripAppV3">
 (() => {
+  'use strict';
+
   const SUPABASE_URL = 'https://xuzhcogshnjqtunkbsuo.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_sRNvVZicFSgjcDph5KPJBQ_e8i-cxAp';
   const EDITOR_EMAIL = 'pca01008@gmail.com';
   const TRIP_ID = 'us-west-2027';
-  const CACHE_KEY = 'uswest2027_public_cache_v2';
+  const MEDIA_BUCKET = 'trip-media';
+  const SCHEMA_VERSION = 3;
+  const CACHE_KEY = 'uswest2027_public_cache_v3';
   const SESSION_ACTIVITY_KEY = 'uswest2027_editor_activity_v1';
+  const OFFLINE_MODE = document.documentElement.dataset.offline === 'true';
+  const OFFLINE_ID = document.documentElement.dataset.offlineId || 'live';
+  const OFFLINE_CACHE_KEY = 'uswest2027_offline_' + OFFLINE_ID;
   const SESSION_MS = 30 * 60 * 1000;
   const WARNING_MS = 29 * 60 * 1000;
-  const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+  const TRIP_START = Date.parse('2027-01-21T21:00:00+09:00');
+  const TRIP_END = Date.parse('2027-01-31T05:10:00+09:00');
+  const DELETED_CATEGORY_ID = 'deleted';
+  const ICON_CANDIDATES = ['✈️','🏨','🍽️','☕','🚗','🚕','⛽','🅿️','🎟️','🎭','🏞️','🛍️','💆','🍸','🎁','💊','📱','💵','📦','🗑️'];
+  const DEFAULT_CATEGORIES = [
+    {id:'flight', name:'항공', icon:'✈️'}, {id:'hotel', name:'숙박', icon:'🏨'},
+    {id:'food', name:'식비', icon:'🍽️'}, {id:'cafe', name:'카페·간식', icon:'☕'},
+    {id:'transport', name:'교통·렌터카', icon:'🚗'}, {id:'fuel', name:'주유', icon:'⛽'},
+    {id:'parking', name:'주차', icon:'🅿️'}, {id:'ticket', name:'관광·티켓', icon:'🎟️'},
+    {id:'shopping', name:'쇼핑', icon:'🛍️'}, {id:'misc', name:'기타', icon:'📦'},
+    {id:DELETED_CATEGORY_ID, name:'삭제된 카테고리', icon:'🗑️', system:true}
+  ];
+  const ICONS = {
+    edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+    undo:'<path d="m9 14-4-4 4-4"/><path d="M5 10h8a6 6 0 0 1 6 6v1"/>',
+    redo:'<path d="m15 14 4-4-4-4"/><path d="M19 10h-8a6 6 0 0 0-6 6v1"/>',
+    plus:'<path d="M12 5v14M5 12h14"/>', check:'<path d="m5 12 4 4L19 6"/>',
+    reset:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
+    save:'<path d="M5 4h12l2 2v14H5Z"/><path d="M8 4v6h8V4M8 20v-6h8v6"/>',
+    upload:'<path d="M3 8h7l2 2h9v10H3Z"/><path d="M12 17V7"/><path d="m8 11 4-4 4 4"/>',
+    export:'<path d="M5 12v8h14v-8"/><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/>',
+    work:'<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 22h8M12 18v4"/><path d="m14 8 2 2-5 5H9v-2Z"/>',
+    readonly:'<path d="M6 2h8l4 4v16H6Z"/><path d="M14 2v5h5"/><rect x="9" y="14" width="6" height="5" rx="1"/><path d="M10.5 14v-1a1.5 1.5 0 0 1 3 0v1"/>',
+    history:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
+    photo:'<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 15-5-5L5 20"/>',
+    map:'<path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3Z"/><path d="M9 3v15M15 6v15"/>'
+  };
+  const client = OFFLINE_MODE ? null : window.supabase?.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
   const $ = selector => document.querySelector(selector);
   const $$ = selector => Array.from(document.querySelectorAll(selector));
   const body = document.body;
   const dayLabels = [['1/21','목요일','DAY 1'],['1/22','금요일','DAY 2'],['1/23','토요일','DAY 3'],['1/24','일요일','DAY 4'],['1/25','월요일','DAY 5'],['1/26','화요일','DAY 6'],['1/27','수요일','DAY 7'],['1/28','목요일','DAY 8'],['1/29','금요일','DAY 9'],['1/30','토요일','DAY 10'],['1/31','일요일','DAY 11']];
 
   let expenses = [];
+  let categories = DEFAULT_CATEGORIES.map(item => ({...item}));
+  let exchangeRate = 1450;
+  let exchangeRateUpdated = '';
   let editorSession = null;
   let lastSavedState = null;
-  let initialState = null;
   let pendingDraft = false;
   let history = [];
   let historyIndex = -1;
@@ -517,766 +578,340 @@ main{max-width:860px!important;padding:16px 0!important}
   let warningTimer = null;
   let logoutTimer = null;
   let countdownTimer = null;
-  let lastActivityAt = 0;
   let noticeResolver = null;
   let authPurpose = 'edit';
-  let previewReturnState = null;
   let pendingAuthAction = null;
+  let previewReturnState = null;
   let moneyTemplateHtml = '';
+  let activeScheduleRow = null;
+  let editingCategoryId = null;
+  let selectedCategoryIcon = '📦';
+  let pendingImport = null;
 
-  function cloneState(state) {
-    return JSON.parse(JSON.stringify(state));
+  function uid(prefix='id') {
+    return prefix + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,9);
+  }
+  function clone(value) { return JSON.parse(JSON.stringify(value)); }
+  function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function hashText(value) { let hash=2166136261; for (const c of String(value)) { hash^=c.charCodeAt(0); hash=Math.imul(hash,16777619); } return (hash>>>0).toString(36); }
+  function setStatus(message) { if ($('#status')) $('#status').textContent = message; }
+  function todayLocal() { const now=new Date(); return new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().slice(0,10); }
+  function formatKrw(value) { return '₩' + Math.round(Number(value)||0).toLocaleString('ko-KR'); }
+  function formatUsd(value) { return '$' + (Number(value)||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function iconSvg(name) { return '<span class="button-icon" aria-hidden="true"><svg viewBox="0 0 24 24">' + (ICONS[name] || ICONS.plus) + '</svg></span>'; }
+  function decorateButtonIcons(root=document) {
+    root.querySelectorAll('button[data-icon]').forEach(button => {
+      if (!button.querySelector('.button-icon')) button.insertAdjacentHTML('afterbegin', iconSvg(button.dataset.icon));
+    });
   }
 
-  function canonicalizeMarkup(markup) {
-    const template = document.createElement('template');
-    template.innerHTML = markup || '';
-    template.content.querySelectorAll('.memo,.map').forEach(element => element.remove());
-    template.content.querySelectorAll('.check-delete').forEach(element => element.remove());
-    template.content.querySelectorAll('input[type="checkbox"]').forEach(input => input.removeAttribute('checked'));
-    if (moneyTemplateHtml) {
-      const savedMoney = template.content.querySelector('.moneyday');
-      const replacement = document.createElement('template');
-      replacement.innerHTML = moneyTemplateHtml;
-      if (savedMoney && replacement.content.firstElementChild) savedMoney.replaceWith(replacement.content.firstElementChild);
+  function kstDateNumber(timestamp) {
+    const date = new Date(timestamp + 9*60*60*1000);
+    return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) / 86400000;
+  }
+  function updateTripProgress() {
+    const now = Date.now();
+    const label = $('#tripProgressLabel');
+    const meta = $('#tripProgressMeta');
+    const fill = $('#tripProgressFill');
+    const track = $('.trip-progress-track');
+    let percent = 0;
+    if (now < TRIP_START) {
+      const days = Math.max(0, kstDateNumber(TRIP_START) - kstDateNumber(now));
+      label.textContent = days === 0 ? 'D-DAY' : 'D-' + days;
+      meta.textContent = '인천 출발까지';
+    } else if (now <= TRIP_END) {
+      percent = Math.min(100, Math.max(0, (now-TRIP_START)/(TRIP_END-TRIP_START)*100));
+      label.textContent = Math.round(percent) + '% 진행';
+      meta.textContent = '여행 중 · 1시간마다 갱신';
+    } else {
+      percent = 100;
+      const days = Math.max(0, kstDateNumber(now) - kstDateNumber(TRIP_END));
+      label.textContent = days === 0 ? '여행 종료 D-DAY' : '여행 종료 D+' + days;
+      meta.textContent = '2027. 01. 31. 귀국 완료';
     }
-    const renderedExpenses = template.content.querySelector('#expenses');
-    if (renderedExpenses) renderedExpenses.innerHTML = '';
-    template.content.querySelectorAll('[contenteditable]').forEach(element => element.setAttribute('contenteditable', 'false'));
+    fill.style.width = percent + '%';
+    track?.setAttribute('aria-valuenow', String(Math.round(percent)));
+  }
+
+  function normalizeCategories(input) {
+    const source = Array.isArray(input) && input.length ? input : DEFAULT_CATEGORIES;
+    const seen = new Set();
+    const result = source.map((item,index) => ({
+      id: String(item?.id || 'category-'+index+'-'+hashText(item?.name||index)),
+      name: String(item?.name || '카테고리').trim().slice(0,24),
+      icon: ICON_CANDIDATES.includes(item?.icon) ? item.icon : '📦',
+      system: Boolean(item?.system)
+    })).filter(item => item.name && !seen.has(item.id) && seen.add(item.id));
+    if (!result.some(item => item.id === DELETED_CATEGORY_ID)) result.push(clone(DEFAULT_CATEGORIES.at(-1)));
+    const deleted = result.find(item => item.id === DELETED_CATEGORY_ID);
+    Object.assign(deleted,{name:'삭제된 카테고리',icon:'🗑️',system:true});
+    return result;
+  }
+  function findCategoryId(raw,cats=categories) {
+    if (cats.some(item => item.id === raw)) return raw;
+    const byName = cats.find(item => item.name === raw || (item.icon+' '+item.name) === raw);
+    return byName?.id || 'misc';
+  }
+  function normalizeExpense(item,index,cats) {
+    return {
+      id:String(item?.id || 'legacy-'+index+'-'+hashText(JSON.stringify(item||{}))),
+      name:String(item?.name||'').trim(), amount:Number(item?.amount)||0,
+      currency:item?.currency === 'KRW' ? 'KRW' : 'USD',
+      date:/^\d{4}-\d{2}-\d{2}$/.test(item?.date||'') ? item.date : '',
+      categoryId:findCategoryId(item?.categoryId || item?.category || 'misc',cats)
+    };
+  }
+  function sanitizeMarkup(markup, imported=false) {
+    const template=document.createElement('template'); template.innerHTML=markup||'';
+    template.content.querySelectorAll('script,style,iframe,object,embed,link,meta,form,.memo,.map,.schedule-media-tools,.photo-delete,.row-delete,.check-delete').forEach(el=>el.remove());
+    if(imported){
+      const allowed=new Set(['SECTION','DIV','H2','H3','P','ARTICLE','SPAN','SMALL','STRONG','B','I','LABEL','INPUT','BR','FIGURE','IMG','A']);
+      template.content.querySelectorAll('*').forEach(el=>{if(!allowed.has(el.tagName))el.remove();});
+    }
+    template.content.querySelectorAll('*').forEach(el => {
+      Array.from(el.attributes).forEach(attr => {
+        const name=attr.name.toLowerCase();
+        if (name.startsWith('on') || (imported && name==='style')) el.removeAttribute(attr.name);
+      });
+      if (el.hasAttribute('contenteditable')) el.setAttribute('contenteditable','false');
+    });
+    template.content.querySelectorAll('a[href]').forEach(a => { if (!/^https:\/\//i.test(a.getAttribute('href')||'')) a.removeAttribute('href'); });
+    template.content.querySelectorAll('img[src]').forEach(img => {
+      const src=img.getAttribute('src')||'';
+      if (!/^data:image\/(webp|jpeg|png);base64,/i.test(src) && !src.startsWith(SUPABASE_URL+'/storage/')) img.removeAttribute('src');
+      const full=img.getAttribute('data-full-url')||'';
+      if (full && !/^data:image\/(webp|jpeg|png);base64,/i.test(full) && !full.startsWith(SUPABASE_URL+'/storage/')) img.removeAttribute('data-full-url');
+      img.loading='lazy'; img.decoding='async';
+    });
+    template.content.querySelectorAll('.schedule-photo').forEach(figure=>{
+      ['data-full-path','data-thumb-path'].forEach(name=>{const value=figure.getAttribute(name)||'';if(value&&!/^us-west-2027\/[a-zA-Z0-9._/-]+$/.test(value))figure.removeAttribute(name);});
+    });
+    const savedMoney=template.content.querySelector('.moneyday');
+    if (savedMoney && moneyTemplateHtml) { const replacement=document.createElement('template'); replacement.innerHTML=moneyTemplateHtml; savedMoney.replaceWith(replacement.content.firstElementChild); }
+    const rendered=template.content.querySelector('#expenses'); if(rendered) rendered.innerHTML='';
+    const manager=template.content.querySelector('#categoryManagerList'); if(manager) manager.innerHTML='';
+    const summary=template.content.querySelector('#categorySummary'); if(summary) summary.innerHTML='';
+    template.content.querySelectorAll('input[type="checkbox"]').forEach(input=>input.removeAttribute('checked'));
     return template.innerHTML;
   }
-
-  function normalizeExpense(item) {
+  function normalizeState(raw, imported=false) {
+    const cats=normalizeCategories(raw?.categories);
+    const rate=Number(raw?.exchangeRate);
     return {
-      name: String(item?.name || '').trim(),
-      amount: Number(item?.amount) || 0,
-      currency: item?.currency === 'KRW' ? 'KRW' : 'USD',
-      date: /^\d{4}-\d{2}-\d{2}$/.test(item?.date || '') ? item.date : '',
-      category: item?.category || '기타'
+      schemaVersion:SCHEMA_VERSION,
+      html:sanitizeMarkup(raw?.html || $('main').innerHTML, imported),
+      expenses:(raw?.expenses||[]).map((item,index)=>normalizeExpense(item,index,cats)),
+      categories:cats,
+      exchangeRate:Number.isFinite(rate)&&rate>0 ? rate : 1450,
+      exchangeRateUpdated:String(raw?.exchangeRateUpdated||''),
+      checks:Array.isArray(raw?.checks)?raw.checks.map(Boolean):null
     };
-  }
-
-  function normalizeState(state) {
-    return {
-      html: canonicalizeMarkup(state?.html || $('main').innerHTML),
-      expenses: (state?.expenses || []).map(normalizeExpense),
-      checks: Array.isArray(state?.checks) ? state.checks.map(Boolean) : null
-    };
-  }
-
-  function escapeHtml(value) {
-    return String(value).replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
-  }
-
-  function setStatus(message) {
-    const status = $('#status');
-    if (status) status.textContent = message;
   }
 
   function decorateDates() {
-    dayLabels.forEach((day, index) => {
-      const number = index + 1;
-      const head = $('.day' + number + ' .day-head h2');
-      const tab = $('label[for="d' + number + '"]');
-      if (head) head.innerHTML = day[0] + '<span>' + day[1] + ' · ' + day[2] + '</span>';
-      if (tab) tab.innerHTML = day[0] + '<span>' + day[1].slice(0, 1) + ' · ' + day[2] + '</span>';
+    dayLabels.forEach((day,index)=>{
+      const number=index+1, head=$('.day'+number+' .day-head h2'), tab=$('label[for="d'+number+'"]');
+      if(head) head.innerHTML=day[0]+'<span>'+day[1]+' · '+day[2]+'</span>';
+      if(tab) tab.innerHTML=day[0]+'<span>'+day[1].slice(0,1)+' · '+day[2]+'</span>';
     });
-    const firstDayRows = $$('.day1 .timeline-row');
-    const departure = firstDayRows[0]?.querySelector('.time');
-    const arrival = firstDayRows[1]?.querySelector('.time');
-    const home = $('.day11 .time');
-    if (departure && departure.textContent.trim() === '21:00') departure.innerHTML = '21:00<small>KST</small>';
-    if (arrival && arrival.textContent.trim() === '15:10') arrival.innerHTML = '15:10<small>PST</small>';
-    if (home && home.textContent.trim() === '05:10') home.innerHTML = '05:10<small>KST</small>';
+    const rows=$$('.day1 .timeline-row');
+    if(rows[0]?.querySelector('.time')?.textContent.trim()==='21:00') rows[0].querySelector('.time').innerHTML='21:00<small>KST</small>';
+    if(rows[1]?.querySelector('.time')?.textContent.trim()==='15:10') rows[1].querySelector('.time').innerHTML='15:10<small>PST</small>';
+    if($('.day11 .time')?.textContent.trim()==='05:10') $('.day11 .time').innerHTML='05:10<small>KST</small>';
   }
-
   function decorateChecklist() {
-    $$('.checklist label').forEach(label => {
-      let text = label.querySelector('span');
-      if (!text) {
-        text = document.createElement('span');
-        text.textContent = Array.from(label.childNodes).filter(node => node.nodeType === Node.TEXT_NODE).map(node => node.textContent).join('').trim();
-        Array.from(label.childNodes).filter(node => node.nodeType === Node.TEXT_NODE).forEach(node => node.remove());
-        label.appendChild(text);
-      }
-      if (!label.querySelector('.check-delete')) {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'check-delete';
-        button.textContent = '삭제';
-        label.appendChild(button);
-      }
+    $$('.checklist label').forEach(label=>{
+      if(!label.dataset.checkId)label.dataset.checkId=uid('check');
+      let span=label.querySelector('span');
+      if(!span){ span=document.createElement('span'); span.textContent=Array.from(label.childNodes).filter(n=>n.nodeType===Node.TEXT_NODE).map(n=>n.textContent).join('').trim(); Array.from(label.childNodes).filter(n=>n.nodeType===Node.TEXT_NODE).forEach(n=>n.remove()); label.appendChild(span); }
+      if(!label.querySelector('.check-delete')){ const b=document.createElement('button'); b.type='button'; b.className='check-delete'; b.textContent='삭제'; label.appendChild(b); }
     });
   }
-
-  function todayLocal() {
-    const now = new Date();
-    const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-    return local.toISOString().slice(0, 10);
+  function decorateScheduleRows() {
+    $$('.timeline-row').forEach((row,index)=>{
+      if(!row.dataset.rowId) row.dataset.rowId='row-'+hashText((row.closest('.day')?.className||'')+'-'+index+'-'+row.textContent);
+      const card=row.querySelector('.card'); if(!card) return;
+      card.querySelectorAll('.schedule-photo img').forEach(img=>{img.loading='lazy';img.decoding='async';img.fetchPriority='low';});
+      if(!card.querySelector('.schedule-media-tools')){
+        const tools=document.createElement('div'); tools.className='schedule-media-tools';
+        tools.innerHTML='<button data-media="photo" data-icon="photo" type="button">사진 첨부</button><button data-media="map" data-icon="map" type="button">지도 첨부</button>';
+        card.appendChild(tools); decorateButtonIcons(tools);
+      }
+      card.querySelectorAll('.schedule-photo').forEach(figure=>{ if(!figure.dataset.photoId)figure.dataset.photoId=uid('photo');if(!figure.querySelector('.photo-delete')){const b=document.createElement('button');b.className='photo-delete';b.type='button';b.textContent='삭제';figure.appendChild(b);} });
+      const map=card.querySelector('.schedule-map');
+      if(map&&!map.querySelector('.schedule-map-delete')){const b=document.createElement('button');b.className='schedule-map-delete';b.type='button';b.textContent='삭제';map.appendChild(b);}
+    });
   }
-
-  function setDefaultExpenseDate() {
-    const input = $('#expenseDate');
-    if (input && !input.value) input.value = todayLocal();
+  function getCategory(id) { return categories.find(item=>item.id===id) || categories.find(item=>item.id==='misc') || categories[0]; }
+  function renderLedger() {
+    const krw=expenses.filter(x=>x.currency==='KRW').reduce((s,x)=>s+x.amount,0);
+    const usd=expenses.filter(x=>x.currency==='USD').reduce((s,x)=>s+x.amount,0);
+    $('#totalKrw').textContent=formatKrw(krw); $('#totalUsd').textContent=formatUsd(usd); $('#totalConverted').textContent=formatKrw(krw+usd*exchangeRate);
+    $('#exchangeRate').value=String(exchangeRate); $('#exchangeRateUpdated').textContent=exchangeRateUpdated ? '수정 '+new Date(exchangeRateUpdated).toLocaleDateString('ko-KR') : '수동 환율';
+    const select=$('#expenseCategory'), previous=select.value; select.innerHTML=categories.filter(x=>x.id!==DELETED_CATEGORY_ID).map(x=>'<option value="'+escapeHtml(x.id)+'">'+escapeHtml(x.icon+' '+x.name)+'</option>').join(''); if([...select.options].some(x=>x.value===previous))select.value=previous;
+    $('#categorySummary').innerHTML=categories.map(cat=>{
+      const items=expenses.filter(x=>x.categoryId===cat.id); if(!items.length)return'';
+      const ckrw=items.filter(x=>x.currency==='KRW').reduce((s,x)=>s+x.amount,0), cusd=items.filter(x=>x.currency==='USD').reduce((s,x)=>s+x.amount,0);
+      const parts=[ckrw?formatKrw(ckrw):'',cusd?formatUsd(cusd):''].filter(Boolean).join(' + ');
+      return '<div class="category-total"><span>'+escapeHtml(cat.icon+' '+cat.name)+'</span><b>'+escapeHtml(parts)+'</b>'+(cusd?'<small>(원화 환산 '+escapeHtml(formatKrw(ckrw+cusd*exchangeRate))+')</small>':'')+'</div>';
+    }).join('')||'<div class="diff-empty">아직 카테고리별 내역이 없습니다.</div>';
+    $('#categoryManagerList').innerHTML=categories.map(cat=>'<span class="category-chip'+(cat.system?' system':'')+'"><b>'+escapeHtml(cat.icon)+'</b>'+escapeHtml(cat.name)+(cat.system?'':'<button data-category-edit="'+escapeHtml(cat.id)+'" type="button">수정</button><button data-category-delete="'+escapeHtml(cat.id)+'" type="button">삭제</button>')+'</span>').join('');
+    $('#expenses').innerHTML=expenses.length?expenses.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(item=>{const cat=getCategory(item.categoryId);return '<div class="expense" data-expense-id="'+escapeHtml(item.id)+'"><div><b>'+escapeHtml(item.name)+'</b><small>'+escapeHtml(item.date||'날짜 미지정')+'</small><span class="expense-category-badge">'+escapeHtml(cat.icon+' '+cat.name)+'</span></div><strong class="expense-amount">'+escapeHtml(item.currency==='KRW'?formatKrw(item.amount):formatUsd(item.amount))+'</strong><button class="btn" data-remove-expense="'+escapeHtml(item.id)+'" type="button">삭제</button></div>';}).join(''):'<div class="remark">아직 기록된 경비가 없습니다.</div>';
+    if(!$('#expenseDate').value) $('#expenseDate').value=todayLocal();
   }
-
-  function formatExpenseAmount(item) {
-    return item.currency === 'KRW'
-      ? '₩' + Math.round(item.amount).toLocaleString()
-      : '$' + Number(item.amount).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
-  }
-
-  function renderExpenses() {
-    const totalKrw = expenses.filter(item => item.currency === 'KRW').reduce((sum, item) => sum + Number(item.amount || 0), 0);
-    const totalUsd = expenses.filter(item => item.currency === 'USD').reduce((sum, item) => sum + Number(item.amount || 0), 0);
-    if ($('#totalKrw')) $('#totalKrw').textContent = '₩' + Math.round(totalKrw).toLocaleString();
-    if ($('#totalUsd')) $('#totalUsd').textContent = '$' + totalUsd.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
-    const list = $('#expenses');
-    if (list) {
-      list.innerHTML = expenses.length ? expenses.map((item, index) => '<div class="expense"><div><b>' + escapeHtml(item.name) + '</b><small>' + escapeHtml(item.date || '날짜 미지정') + '</small></div><strong class="expense-amount">' + escapeHtml(formatExpenseAmount(item)) + '</strong><button class="btn" data-remove="' + index + '">삭제</button></div>').join('') : '<div class="remark">아직 기록된 경비가 없습니다.</div>';
-    }
-    setDefaultExpenseDate();
-  }
-
   function captureState() {
-    const main = $('main').cloneNode(true);
-    main.querySelectorAll('[contenteditable]').forEach(element => element.setAttribute('contenteditable', 'false'));
-    main.querySelectorAll('.memo,.map').forEach(element => element.remove());
-    main.querySelectorAll('.check-delete').forEach(element => element.remove());
-    const renderedExpenses = main.querySelector('#expenses');
-    if (renderedExpenses) renderedExpenses.innerHTML = '';
-    main.querySelectorAll('input[type="checkbox"]').forEach(input => input.removeAttribute('checked'));
-    return {
-      html: main.innerHTML,
-      expenses: cloneState(expenses),
-      checks: Array.from($('main').querySelectorAll('input[type="checkbox"]')).map(input => input.checked)
-    };
+    const main=$('main').cloneNode(true);
+    main.querySelectorAll('[contenteditable]').forEach(el=>el.setAttribute('contenteditable','false'));
+    main.querySelectorAll('.schedule-media-tools,.photo-delete,.schedule-map-delete,.row-delete,.check-delete').forEach(el=>el.remove());
+    const rendered=main.querySelector('#expenses');if(rendered)rendered.innerHTML='';
+    const manager=main.querySelector('#categoryManagerList');if(manager)manager.innerHTML='';
+    const summary=main.querySelector('#categorySummary');if(summary)summary.innerHTML='';
+    main.querySelectorAll('input[type="checkbox"]').forEach(input=>input.removeAttribute('checked'));
+    return {schemaVersion:SCHEMA_VERSION,html:main.innerHTML,expenses:clone(expenses),categories:clone(categories),exchangeRate,exchangeRateUpdated,checks:$$('main input[type="checkbox"]').map(input=>input.checked)};
   }
-
-  function stateFingerprint(state) {
-    return JSON.stringify(state || {});
+  function applyState(raw) {
+    if(!raw?.html)return; const state=normalizeState(raw); applyingHistory=true;
+    $('main').innerHTML=state.html; expenses=clone(state.expenses);categories=clone(state.categories);exchangeRate=state.exchangeRate;exchangeRateUpdated=state.exchangeRateUpdated;
+    decorateDates();decorateChecklist();decorateScheduleRows();renderLedger();
+    if(Array.isArray(state.checks))$$('main input[type="checkbox"]').forEach((input,index)=>input.checked=Boolean(state.checks[index]));
+    setEditable(body.classList.contains('editing'));updateContextControls();applyingHistory=false;
   }
+  function fingerprint(state){return JSON.stringify(state||{});}
+  function isDirty(){return Boolean(lastSavedState&&fingerprint(captureState())!==fingerprint(lastSavedState));}
+  function updateDirtyState(){pendingDraft=isDirty();$('#saveBtn').disabled=!pendingDraft;setStatus(body.classList.contains('editing')?(pendingDraft?'편집 중 · 저장되지 않음':'편집 모드'):(pendingDraft?'저장 대기 중':(OFFLINE_MODE?'오프라인 작업본':'보기 모드')));}
+  function setEditable(on){$$('main [contenteditable],.time,.checklist label span,main .day:not(.prepday):not(.moneyday) .day-head p').forEach(el=>el.contentEditable=on?'true':'false');$('#exchangeRate').disabled=!on;}
+  function recordHistory(){if(!body.classList.contains('editing')||applyingHistory)return;const next=captureState();if(historyIndex>=0&&fingerprint(history[historyIndex])===fingerprint(next))return;history=history.slice(0,historyIndex+1);history.push(clone(next));if(history.length>100)history.shift();historyIndex=history.length-1;updateHistoryControls();updateDirtyState();}
+  function queueHistory(){clearTimeout(historyTimer);historyTimer=setTimeout(recordHistory,400);}
+  function initializeHistory(){history=[clone(captureState())];historyIndex=0;updateHistoryControls();}
+  function updateHistoryControls(){$('#undoBtn').disabled=historyIndex<=0;$('#redoBtn').disabled=historyIndex<0||historyIndex>=history.length-1;}
+  function moveHistory(offset){const next=historyIndex+offset;if(next<0||next>=history.length)return;historyIndex=next;applyState(history[next]);updateHistoryControls();updateDirtyState();resetInactivityTimer();}
+  function updateContextControls(){const id=$('.day-radio:checked')?.id||'';$('#addTimeBtn').classList.toggle('hidden',!/^d\d+$/.test(id));$('#addCheckBtn').classList.toggle('hidden',id!=='prep');}
+  function setEditingUI(on){body.classList.toggle('editing',on);body.classList.toggle('viewing',!on);$('#editBtn').lastChild.textContent=on?' 편집 종료':' 편집 시작';setEditable(on);updateContextControls();updateDirtyState();}
 
-  function applyState(state) {
-    if (!state?.html) return;
-    const normalized = normalizeState(state);
-    applyingHistory = true;
-    $('main').innerHTML = normalized.html;
-    expenses = cloneState(normalized.expenses);
-    decorateDates();
-    decorateChecklist();
-    renderExpenses();
-    if (Array.isArray(normalized.checks)) {
-      $$('main input[type="checkbox"]').forEach((input, index) => { input.checked = Boolean(normalized.checks[index]); });
-    }
-    setEditable(body.classList.contains('editing'));
-    updateContextControls();
-    applyingHistory = false;
-  }
+  function closeNotice(result){$('#noticeDialog').hidden=true;$('#sessionCountdown').hidden=true;clearInterval(countdownTimer);const resolve=noticeResolver;noticeResolver=null;if(resolve)resolve(result);}
+  function showChoice({title,message,choices,countdown=false}){if(noticeResolver)closeNotice('replaced');$('#noticeTitle').textContent=title;$('#noticeMessage').textContent=message;const actions=$('#noticeActions');actions.innerHTML='';choices.forEach(choice=>{const b=document.createElement('button');b.type='button';b.textContent=choice.label;b.className=choice.className||'action-muted';b.onclick=()=>closeNotice(choice.value);actions.appendChild(b);});$('#sessionCountdown').hidden=!countdown;$('#noticeDialog').hidden=false;return new Promise(resolve=>noticeResolver=resolve);}
+  function clearSessionTimers(){clearTimeout(warningTimer);clearTimeout(logoutTimer);clearInterval(countdownTimer);}
+  function scheduleSessionTimers(at){if(OFFLINE_MODE)return;clearSessionTimers();const elapsed=Math.max(0,Date.now()-at);warningTimer=setTimeout(showInactivityWarning,Math.max(0,WARNING_MS-elapsed));logoutTimer=setTimeout(()=>discardAndLogout('30분 동안 활동이 없어 자동 로그아웃되었습니다.'),Math.max(0,SESSION_MS-elapsed));}
+  function resetInactivityTimer(){if(OFFLINE_MODE||!editorSession)return;const now=Date.now();localStorage.setItem(SESSION_ACTIVITY_KEY,String(now));scheduleSessionTimers(now);}
+  async function getEditorSession(){if(OFFLINE_MODE){editorSession={offline:true};return editorSession;}const {data:{session}}=await client.auth.getSession();editorSession=session?.user?.email===EDITOR_EMAIL?session:null;if(!editorSession){localStorage.removeItem(SESSION_ACTIVITY_KEY);clearSessionTimers();return null;}const stored=Number(localStorage.getItem(SESSION_ACTIVITY_KEY)||0);if(stored&&Date.now()-stored>=SESSION_MS){await signOutEditor();return null;}const at=stored||Date.now();localStorage.setItem(SESSION_ACTIVITY_KEY,String(at));scheduleSessionTimers(at);return editorSession;}
+  async function showInactivityWarning(){let seconds=60;const countdown=$('#sessionCountdown');countdown.textContent=seconds+'초 후 저장하지 않은 변경이 폐기됩니다.';countdownTimer=setInterval(()=>{seconds--;countdown.textContent=Math.max(0,seconds)+'초 후 저장하지 않은 변경이 폐기됩니다.';},1000);const dirty=isDirty();const choice=await showChoice({title:'자동 로그아웃 예정',message:dirty?'1분 안에 선택하지 않으면 초안을 폐기하고 자동 로그아웃합니다.':'1분 안에 선택하지 않으면 자동 로그아웃합니다.',countdown:true,choices:dirty?[{label:'저장',value:'save',className:'action-primary'},{label:'계속 사용',value:'continue'},{label:'폐기',value:'discard',className:'action-danger'}]:[{label:'계속 사용',value:'continue',className:'action-primary'},{label:'로그아웃',value:'discard',className:'action-danger'}]});if(choice==='save')await saveAndFinish();else if(choice==='continue')resetInactivityTimer();else if(choice==='discard')await discardAndLogout();}
+  async function signOutEditor(){if(OFFLINE_MODE)return;clearSessionTimers();localStorage.removeItem(SESSION_ACTIVITY_KEY);await client.auth.signOut();editorSession=null;}
+  function discardDraft(message='수정 내용을 폐기했습니다.'){if(lastSavedState)applyState(lastSavedState);initializeHistory();setEditingUI(false);resetInactivityTimer();setStatus(message);}
+  async function discardAndLogout(message='수정 내용을 폐기하고 로그아웃했습니다.'){if(lastSavedState)applyState(lastSavedState);initializeHistory();setEditingUI(false);closeNotice('timeout');await signOutEditor();setStatus(message);}
+  async function fetchPublishedState(){if(OFFLINE_MODE)return null;const {data,error}=await client.from('trip_documents').select('content,updated_at').eq('trip_id',TRIP_ID).maybeSingle();if(error)throw error;return data;}
+  async function persistState(state){const normalized=normalizeState(state);if(OFFLINE_MODE){lastSavedState=clone(normalized);localStorage.setItem(OFFLINE_CACHE_KEY,JSON.stringify(lastSavedState));pendingDraft=false;return {offline:true};}const {data,error}=await client.rpc('save_trip_document',{p_trip_id:TRIP_ID,p_content:normalized});if(error){console.error(error);setStatus('저장 실패 · Supabase 설정 확인');return false;}lastSavedState=clone(normalized);localStorage.setItem(CACHE_KEY,JSON.stringify(lastSavedState));pendingDraft=false;return data;}
+  async function saveAndFinish(){const state=captureState();setEditingUI(false);const saved=await persistState(state);if(!saved){pendingDraft=true;$('#saveBtn').disabled=false;return false;}initializeHistory();resetInactivityTimer();setStatus(OFFLINE_MODE?'오프라인 작업본 생성 중':'공유 저장 완료');if(OFFLINE_MODE)await exportOfflineHtml(lastSavedState);return true;}
+  async function requestFinishEditing(){clearTimeout(historyTimer);recordHistory();if(!isDirty()){setEditingUI(false);resetInactivityTimer();return;}setEditingUI(false);const choice=await showChoice({title:'편집을 종료할까요?',message:OFFLINE_MODE?'저장하면 수정된 오프라인 작업본을 새 파일로 내려받습니다.':'저장해야 공개 링크에 변경 내용이 반영됩니다.',choices:[{label:'저장',value:'save',className:'action-primary'},{label:'계속 편집',value:'continue'},{label:'폐기',value:'discard',className:'action-danger'}]});if(choice==='save')await saveAndFinish();else if(choice==='continue'){setEditingUI(true);resetInactivityTimer();}else if(choice==='discard')discardDraft();}
+  async function beginEditing(){if(!OFFLINE_MODE){try{const published=await fetchPublishedState();if(published?.content?.html){lastSavedState=normalizeState(published.content);applyState(lastSavedState);}}catch(error){console.warn(error);}}setEditingUI(true);initializeHistory();resetInactivityTimer();setStatus('편집 모드 · 저장 전에는 공개되지 않음');}
+  function requestAuthentication(purpose){authPurpose=purpose;$('#authTitle').textContent=purpose==='edit'?'편집자 확인':purpose==='versions'?'버전 관리자 확인':purpose==='import'?'편집본 불러오기 권한 확인':'저장 권한 확인';$('#authError').textContent='';$('#editorPassword').value='';$('#authDialog').hidden=false;$('#editorPassword').focus();}
+  async function runPurpose(purpose){resetInactivityTimer();if(purpose==='edit')await beginEditing();if(purpose==='versions')await openVersions();if(purpose==='save')await confirmSave();if((purpose==='ledger'||purpose==='import')&&pendingAuthAction){const action=pendingAuthAction;pendingAuthAction=null;await action();}}
+  async function requireEditor(purpose,action=null){if(action)pendingAuthAction=action;if(OFFLINE_MODE){await runPurpose(purpose);return;}if(await getEditorSession()){await runPurpose(purpose);return;}requestAuthentication(purpose);}
 
-  function setEditable(on) {
-    $$('main [contenteditable], .time, .checklist label span, main .day:not(.prepday):not(.moneyday) .day-head p').forEach(element => { element.contentEditable = on ? 'true' : 'false'; });
-  }
+  function addTimeRow(){const id=$('.day-radio:checked')?.id||'';if(!/^d\d+$/.test(id))return;const panel=$('.day'+id.slice(1)),row=document.createElement('div');row.className='timeline-row';row.dataset.rowId=uid('row');row.innerHTML='<div class="time" contenteditable="true">시간</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">새 일정</h3><div class="remark" contenteditable="true">장소 또는 메모</div></article><button class="row-delete" type="button">삭제</button>';panel.appendChild(row);decorateScheduleRows();row.querySelector('.time').focus();recordHistory();}
+  function addCheckRow(){if($('.day-radio:checked')?.id!=='prep')return;const label=document.createElement('label');label.innerHTML='<input type="checkbox"><span contenteditable="true">새 체크 항목</span><button class="check-delete" type="button">삭제</button>';$('.prepday .checklist').appendChild(label);label.querySelector('span').focus();recordHistory();}
+  function finishMutation(){if(body.classList.contains('editing'))recordHistory();else updateDirtyState();resetInactivityTimer();}
+  async function addExpense(){const name=$('#expenseName').value.trim(),amount=Number($('#expenseAmount').value.replace(/,/g,'').trim()),currency=$('#expenseCurrency').value==='USD'?'USD':'KRW',date=$('#expenseDate').value||todayLocal(),categoryId=$('#expenseCategory').value||'misc';if(!name||!Number.isFinite(amount)||amount<=0){setStatus('가계부 항목과 올바른 금액을 입력해 주세요.');return;}await requireEditor('ledger',async()=>{expenses.push({id:uid('expense'),name,amount,currency,date,categoryId});$('#expenseName').value='';$('#expenseAmount').value='';renderLedger();finishMutation();});}
+  async function deleteExpense(id){const item=expenses.find(x=>x.id===id);if(!item)return;const choice=await showChoice({title:'가계부 항목을 삭제할까요?',message:item.name+' 항목을 삭제합니다.',choices:[{label:'취소',value:'cancel'},{label:'삭제',value:'delete',className:'action-danger'}]});if(choice!=='delete')return;await requireEditor('ledger',async()=>{expenses=expenses.filter(x=>x.id!==id);renderLedger();finishMutation();});}
+  function renderIconPicker(){const picker=$('#categoryIconPicker');picker.innerHTML=ICON_CANDIDATES.map(icon=>'<button class="'+(icon===selectedCategoryIcon?'active':'')+'" data-category-icon="'+icon+'" type="button">'+icon+'</button>').join('');}
+  function openCategoryDialog(id=null){editingCategoryId=id;const cat=id?getCategory(id):null;selectedCategoryIcon=cat?.icon||'📦';$('#categoryTitle').textContent=id?'카테고리 수정':'카테고리 추가';$('#categoryName').value=cat?.name||'';renderIconPicker();$('#categoryDialog').hidden=false;$('#categoryName').focus();}
+  function saveCategory(){const name=$('#categoryName').value.trim();if(!name){setStatus('카테고리 이름을 입력해 주세요.');return;}if(editingCategoryId){const cat=getCategory(editingCategoryId);if(cat.system)return;cat.name=name;cat.icon=selectedCategoryIcon;}else categories.splice(categories.length-1,0,{id:uid('category'),name,icon:selectedCategoryIcon,system:false});$('#categoryDialog').hidden=true;renderLedger();recordHistory();}
+  async function deleteCategory(id){const cat=getCategory(id);if(!cat||cat.system)return;const count=expenses.filter(x=>x.categoryId===id).length;const choice=await showChoice({title:'카테고리를 삭제할까요?',message:count?count+'개 내역은 “삭제된 카테고리”로 이동합니다.':'이 카테고리를 삭제합니다.',choices:[{label:'취소',value:'cancel'},{label:'삭제',value:'delete',className:'action-danger'}]});if(choice!=='delete')return;expenses.forEach(x=>{if(x.categoryId===id)x.categoryId=DELETED_CATEGORY_ID;});categories=categories.filter(x=>x.id!==id);renderLedger();recordHistory();}
+  function updateExchangeRate(){if(!body.classList.contains('editing'))return;const value=Number($('#exchangeRate').value.replace(/,/g,''));if(!Number.isFinite(value)||value<=0){$('#exchangeRate').value=String(exchangeRate);setStatus('올바른 환율을 입력해 주세요.');return;}exchangeRate=value;exchangeRateUpdated=new Date().toISOString();renderLedger();recordHistory();}
 
-  function isDirty() {
-    return Boolean(lastSavedState && stateFingerprint(captureState()) !== stateFingerprint(lastSavedState));
-  }
+  function blobToDataUrl(blob){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=reject;reader.readAsDataURL(blob);});}
+  function dataUrlToBlob(dataUrl){const [head,data]=dataUrl.split(','),mime=(head.match(/data:([^;]+)/)||[])[1]||'image/webp',bytes=atob(data),array=new Uint8Array(bytes.length);for(let i=0;i<bytes.length;i++)array[i]=bytes.charCodeAt(i);return new Blob([array],{type:mime});}
+  async function compressImage(file,maxSide,quality=.8){const bitmap=await createImageBitmap(file);const scale=Math.min(1,maxSide/Math.max(bitmap.width,bitmap.height));const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();return await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('이미지 압축 실패')),'image/webp',quality));}
+  async function hashBlob(blob){const digest=await crypto.subtle.digest('SHA-256',await blob.arrayBuffer());return Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,'0')).join('');}
+  function publicMediaUrl(path){return client.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl;}
+  function isDuplicateUpload(error){return /already exists|duplicate/i.test(String(error?.message||error?.error||''));}
+  async function immutableBlobExists(path){try{return (await fetch(publicMediaUrl(path),{method:'HEAD',cache:'force-cache'})).ok;}catch(_){return false;}}
+  async function uploadImmutableBlob(path,blob){if(await immutableBlobExists(path))return;const {error}=await client.storage.from(MEDIA_BUCKET).upload(path,blob,{cacheControl:'31536000',contentType:'image/webp',upsert:false});if(error&&!isDuplicateUpload(error))throw error;}
+  async function uploadPhotoBlobs(full,thumb){const [fullHash,thumbHash]=await Promise.all([hashBlob(full),hashBlob(thumb)]),fullPath=TRIP_ID+'/photos/'+fullHash+'.webp',thumbPath=TRIP_ID+'/thumbs/'+thumbHash+'.webp';await Promise.all([uploadImmutableBlob(fullPath,full),uploadImmutableBlob(thumbPath,thumb)]);return {fullPath,thumbPath,fullUrl:publicMediaUrl(fullPath),thumbUrl:publicMediaUrl(thumbPath)};}
+  function createPhotoFigure(info,alt='일정 사진'){const figure=document.createElement('figure');figure.className='schedule-photo';figure.dataset.photoId=uid('photo');if(info.fullPath)figure.dataset.fullPath=info.fullPath;if(info.thumbPath)figure.dataset.thumbPath=info.thumbPath;figure.innerHTML='<img alt="'+escapeHtml(alt)+'" decoding="async" fetchpriority="low" loading="lazy" src="'+escapeHtml(info.thumbUrl||info.fullUrl)+'" data-full-url="'+escapeHtml(info.fullUrl||'')+'"><button class="photo-delete" type="button">삭제</button>';return figure;}
+  async function attachPhotos(files){if(!activeScheduleRow||!files.length)return;const card=activeScheduleRow.querySelector('.card');let gallery=card.querySelector('.schedule-gallery');if(!gallery){gallery=document.createElement('div');gallery.className='schedule-gallery';card.insertBefore(gallery,card.querySelector('.schedule-media-tools'));}setStatus(files.length+'개 사진 처리 중');for(const file of files){try{if(file.size>20*1024*1024)throw new Error('20MB를 초과한 사진입니다.');const full=await compressImage(file,1600,.8),thumb=await compressImage(file,480,.76);let info;if(OFFLINE_MODE){info={fullUrl:await blobToDataUrl(full),thumbUrl:await blobToDataUrl(thumb)};}else{if(!await getEditorSession())throw new Error('편집자 로그인이 필요합니다.');info=await uploadPhotoBlobs(full,thumb);}gallery.appendChild(createPhotoFigure(info,file.name));}catch(error){console.error(error);await showChoice({title:'사진 첨부 실패',message:file.name+' · '+error.message,choices:[{label:'확인',value:'ok',className:'action-primary'}]});}}finishMutation();setStatus('사진 첨부 완료');}
+  function openMapDialog(row){activeScheduleRow=row;const map=row.querySelector('.schedule-map a');$('#mapName').value=map?.querySelector('span')?.textContent||'';$('#mapUrl').value=map?.href||'';$('#mapDialog').hidden=false;$('#mapName').focus();}
+  function saveMap(){const name=$('#mapName').value.trim(),url=$('#mapUrl').value.trim();if(!name||!/^https:\/\//i.test(url)){setStatus('장소명과 https 지도 링크를 입력해 주세요.');return;}const card=activeScheduleRow?.querySelector('.card');if(!card)return;let map=card.querySelector('.schedule-map');if(!map){map=document.createElement('div');map.className='schedule-map';card.insertBefore(map,card.querySelector('.schedule-media-tools'));}map.innerHTML='<a href="'+escapeHtml(url)+'" rel="noopener noreferrer" target="_blank">'+iconSvg('map')+'<span>'+escapeHtml(name)+'</span></a><button class="schedule-map-delete" type="button">삭제</button>';$('#mapDialog').hidden=true;recordHistory();}
 
-  function updateDirtyState() {
-    pendingDraft = isDirty();
-    $('#saveBtn').disabled = !pendingDraft;
-    setStatus(body.classList.contains('editing') ? (pendingDraft ? '편집 중 · 저장되지 않음' : '편집 모드') : (pendingDraft ? '저장 대기 중' : '보기 모드'));
-  }
+  function stripTransient(root){root.querySelectorAll('.schedule-media-tools,.photo-delete,.schedule-map-delete,.row-delete,.check-delete').forEach(el=>el.remove());root.querySelectorAll('[contenteditable]').forEach(el=>el.setAttribute('contenteditable','false'));}
+  async function fetchAsDataUrl(url){if(url.startsWith('data:image/'))return url;const response=await fetch(url);if(!response.ok)throw new Error('사진 다운로드 실패');return blobToDataUrl(await response.blob());}
+  async function embedPhotos(state){const normalized=normalizeState(state),template=document.createElement('template');template.innerHTML=normalized.html;const photos=Array.from(template.content.querySelectorAll('.schedule-photo'));for(let i=0;i<photos.length;i++){const figure=photos[i],img=figure.querySelector('img');const full=img.dataset.fullUrl||img.src;setStatus('오프라인 사진 포함 중 '+(i+1)+'/'+photos.length);const data=await fetchAsDataUrl(full);img.src=data;img.removeAttribute('data-full-url');}normalized.html=template.innerHTML;return normalized;}
+  function downloadHtml(source,name){const blob=new Blob([source],{type:'text/html;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);}
+  function setArtifactBanner(root,type){root.querySelectorAll('.artifact-banner').forEach(el=>el.remove());const banner=document.createElement('div'),date=todayLocal();banner.className='artifact-banner '+(type==='readonly'?'readonly':'editable');banner.innerHTML=type==='readonly'?'<strong>인쇄·공유용 사본</strong><span>읽기 전용 · 온라인 반영 불가 · '+date+' 생성</span>':'<strong>오프라인 작업본</strong><span>인터넷 없이 수정 가능 · 수정 후 온라인 페이지에서 “편집본 불러오기”를 사용하세요.</span>';root.querySelector('header')?.insertAdjacentElement('afterend',banner);root.dataset.artifactType=type;}
+  async function exportOfflineHtml(sourceState=captureState()) {try{const state=await embedPhotos(sourceState),cloneDoc=document.documentElement.cloneNode(true);cloneDoc.dataset.offline='true';cloneDoc.dataset.offlineId=Date.now().toString(36);cloneDoc.querySelector('body').className='viewing offline-mode';cloneDoc.querySelector('main').innerHTML=state.html;cloneDoc.querySelector('#offlineEmbeddedState').textContent=JSON.stringify(state).replace(/</g,'\\u003c');cloneDoc.querySelector('script[src*="supabase"]')?.remove();stripTransient(cloneDoc);setArtifactBanner(cloneDoc,'editable');const source='<!doctype html>\n'+cloneDoc.outerHTML,size=new Blob([source]).size;if(size>100*1024*1024){const choice=await showChoice({title:'오프라인 파일이 큽니다.',message:'사진을 포함한 파일 크기가 약 '+Math.ceil(size/1024/1024)+'MB입니다. 기기에 따라 열고 저장하는 데 시간이 걸릴 수 있습니다.',choices:[{label:'취소',value:'cancel'},{label:'계속 다운로드',value:'continue',className:'action-primary'}]});if(choice!=='continue'){setStatus('오프라인 작업본 생성을 취소했습니다.');return;}}downloadHtml(source,'US_West_2027_EDITABLE_'+todayLocal()+'.html');setStatus('오프라인 작업본을 만들었습니다.');}catch(error){console.error(error);await showChoice({title:'오프라인 작업본 생성 실패',message:'모든 사진을 포함하지 못했습니다. 인터넷 연결과 Storage 설정을 확인해 주세요.',choices:[{label:'확인',value:'ok',className:'action-primary'}]});}}
+  function exportStaticHtml(){const cloneDoc=document.documentElement.cloneNode(true);cloneDoc.querySelectorAll('script,.editor-bar,.auth-dialog,.notice-dialog,.version-dialog,.preview-banner,.photo-viewer').forEach(el=>el.remove());cloneDoc.querySelector('body').className='viewing';stripTransient(cloneDoc);cloneDoc.querySelectorAll('.add-expense,.category-manager,.expense [data-remove-expense]').forEach(el=>el.remove());cloneDoc.querySelectorAll('input[type="checkbox"]').forEach((input,index)=>{if($$('main input[type="checkbox"]')[index]?.checked)input.setAttribute('checked','');input.disabled=true;});setArtifactBanner(cloneDoc,'readonly');downloadHtml('<!doctype html>\n'+cloneDoc.outerHTML,'US_West_2027_VIEW_ONLY_'+todayLocal()+'.html');setStatus('인쇄·공유용 사본을 만들었습니다.');}
 
-  function updateHistoryControls() {
-    $('#undoBtn').disabled = historyIndex <= 0;
-    $('#redoBtn').disabled = historyIndex < 0 || historyIndex >= history.length - 1;
-  }
-
-  function recordHistory() {
-    if (!body.classList.contains('editing') || applyingHistory) return;
-    const next = captureState();
-    const fingerprint = stateFingerprint(next);
-    if (historyIndex >= 0 && stateFingerprint(history[historyIndex]) === fingerprint) return;
-    history = history.slice(0, historyIndex + 1);
-    history.push(cloneState(next));
-    if (history.length > 100) history.shift();
-    historyIndex = history.length - 1;
-    updateHistoryControls();
-    updateDirtyState();
-  }
-
-  function queueHistory() {
-    clearTimeout(historyTimer);
-    historyTimer = setTimeout(recordHistory, 450);
-  }
-
-  function moveHistory(offset) {
-    const nextIndex = historyIndex + offset;
-    if (nextIndex < 0 || nextIndex >= history.length) return;
-    historyIndex = nextIndex;
-    applyState(history[historyIndex]);
-    updateHistoryControls();
-    updateDirtyState();
-    resetInactivityTimer();
-  }
-
-  function updateContextControls() {
-    const selected = $('.day-radio:checked')?.id || '';
-    $('#addTimeBtn').classList.toggle('hidden', !/^d\d+$/.test(selected));
-    $('#addCheckBtn').classList.toggle('hidden', selected !== 'prep');
-  }
-
-  function scrollTabs(direction) {
-    const tabs = $('.tabs');
-    tabs.scrollBy({left: direction * Math.min(480, tabs.clientWidth * 0.72), behavior:'smooth'});
-  }
-
-  function revealSelectedTab() {
-    const selected = $('.day-radio:checked');
-    const label = selected ? $('label[for="' + selected.id + '"]') : null;
-    if (label) label.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
-  }
-
-  function setEditingUI(on) {
-    body.classList.toggle('editing', on);
-    body.classList.toggle('viewing', !on);
-    $('#editBtn').textContent = on ? '편집 종료' : '편집 시작';
-    setEditable(on);
-    updateContextControls();
-    updateDirtyState();
-  }
-
-  function initializeHistory() {
-    history = [cloneState(captureState())];
-    historyIndex = 0;
-    updateHistoryControls();
-  }
-
-  async function getEditorSession() {
-    const { data: { session } } = await client.auth.getSession();
-    editorSession = session?.user?.email === EDITOR_EMAIL ? session : null;
-    if (!editorSession) {
-      localStorage.removeItem(SESSION_ACTIVITY_KEY);
-      clearSessionTimers();
-      return null;
-    }
-    const storedActivity = Number(localStorage.getItem(SESSION_ACTIVITY_KEY) || 0);
-    if (storedActivity && Date.now() - storedActivity >= SESSION_MS) {
-      await signOutEditor();
-      return null;
-    }
-    const activityAt = storedActivity || Date.now();
-    if (!storedActivity) localStorage.setItem(SESSION_ACTIVITY_KEY, String(activityAt));
-    scheduleSessionTimers(activityAt);
-    return editorSession;
-  }
-
-  async function fetchPublishedState() {
-    const { data, error } = await client.from('trip_documents').select('content, updated_at').eq('trip_id', TRIP_ID).maybeSingle();
-    if (error) throw error;
-    return data;
-  }
-
-  async function persistState(state) {
-    const normalized = normalizeState(state);
-    const { data, error } = await client.rpc('save_trip_document', { p_trip_id: TRIP_ID, p_content: normalized });
-    if (error) {
-      console.error(error);
-      setStatus('저장 실패 · Supabase 설정 확인');
-      return false;
-    }
-    lastSavedState = cloneState(normalized);
-    localStorage.setItem(CACHE_KEY, JSON.stringify(lastSavedState));
-    pendingDraft = false;
-    $('#saveBtn').disabled = true;
-    setStatus('공유 저장 완료');
-    return data;
-  }
-
-  function closeNotice(result) {
-    $('#noticeDialog').hidden = true;
-    $('#sessionCountdown').hidden = true;
-    clearInterval(countdownTimer);
-    const resolve = noticeResolver;
-    noticeResolver = null;
-    if (resolve) resolve(result);
-  }
-
-  function showChoice({title, message, choices, countdown = false}) {
-    if (noticeResolver) closeNotice('replaced');
-    $('#noticeTitle').textContent = title;
-    $('#noticeMessage').textContent = message;
-    const actions = $('#noticeActions');
-    actions.innerHTML = '';
-    choices.forEach(choice => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.textContent = choice.label;
-      button.className = choice.className || 'action-muted';
-      button.onclick = () => closeNotice(choice.value);
-      actions.appendChild(button);
+  function stateSummary(state){const template=document.createElement('template');template.innerHTML=state.html;const schedules=[];template.content.querySelectorAll('.day:not(.prepday):not(.moneyday)').forEach((day,dayIndex)=>day.querySelectorAll('.timeline-row').forEach((row,index)=>schedules.push({id:row.dataset.rowId||'position-'+dayIndex+'-'+index,key:'DAY '+(dayIndex+1)+' 일정 '+(index+1),time:row.querySelector('.time')?.textContent.trim()||'',title:row.querySelector('h3')?.textContent.trim()||'',detail:row.querySelector('.remark')?.textContent.trim()||'',mapName:row.querySelector('.schedule-map span')?.textContent.trim()||'',map:row.querySelector('.schedule-map a')?.href||'',photos:Array.from(row.querySelectorAll('.schedule-photo')).map(photo=>photo.dataset.photoId||photo.dataset.fullPath||'photo')})));const checks=Array.from(template.content.querySelectorAll('.checklist label span')).map((span,index)=>({id:span.closest('label')?.dataset.checkId||'position-'+index,text:span.textContent.trim(),checked:Boolean(state.checks?.[index])}));return {schedules,checks,expenses:state.expenses,categories:state.categories,exchangeRate:state.exchangeRate};}
+  function buildDiff(beforeState,afterState){
+    const before=stateSummary(beforeState),after=stateSummary(afterState),groups=[];
+    const addGroup=(title,items)=>{if(items.length)groups.push({title,items});};
+    const value=value=>String(value??'').trim()||'없음';
+    const scheduleChanges=[];
+    const beforeSchedules=new Map(before.schedules.map(item=>[item.id,item]));
+    const afterSchedules=new Map(after.schedules.map(item=>[item.id,item]));
+    before.schedules.forEach(item=>{if(!afterSchedules.has(item.id))scheduleChanges.push(item.key+' 삭제: '+value(item.time)+' · '+value(item.title));});
+    after.schedules.forEach(item=>{
+      const old=beforeSchedules.get(item.id);
+      if(!old){scheduleChanges.push(item.key+' 추가: '+value(item.time)+' · '+value(item.title));return;}
+      [['시간','time'],['제목','title'],['상세','detail'],['지도 장소','mapName'],['지도 링크','map']].forEach(([label,key])=>{if(old[key]!==item[key])scheduleChanges.push(item.key+' '+label+': '+value(old[key])+' → '+value(item[key]));});
+      if(JSON.stringify(old.photos)!==JSON.stringify(item.photos))scheduleChanges.push(item.key+' 사진: '+old.photos.length+'개 → '+item.photos.length+'개');
     });
-    $('#sessionCountdown').hidden = !countdown;
-    $('#noticeDialog').hidden = false;
-    return new Promise(resolve => { noticeResolver = resolve; });
+    addGroup('일정',scheduleChanges);
+    const checkChanges=[],beforeChecks=new Map(before.checks.map(item=>[item.id,item])),afterChecks=new Map(after.checks.map(item=>[item.id,item]));
+    before.checks.forEach(item=>{if(!afterChecks.has(item.id))checkChanges.push('항목 삭제: '+value(item.text));});
+    after.checks.forEach(item=>{const old=beforeChecks.get(item.id);if(!old)checkChanges.push('항목 추가: '+value(item.text));else{if(old.text!==item.text)checkChanges.push('항목 내용: '+value(old.text)+' → '+value(item.text));if(old.checked!==item.checked)checkChanges.push(value(item.text)+': '+(old.checked?'완료':'미완료')+' → '+(item.checked?'완료':'미완료'));}});
+    addGroup('체크리스트',checkChanges);
+    const expenseChanges=[],beforeExpenses=new Map(before.expenses.map(item=>[item.id,item])),afterExpenses=new Map(after.expenses.map(item=>[item.id,item]));
+    before.expenses.forEach(item=>{if(!afterExpenses.has(item.id))expenseChanges.push('내역 삭제: '+value(item.name)+' · '+item.amount+' '+item.currency);});
+    after.expenses.forEach(item=>{const old=beforeExpenses.get(item.id);if(!old)expenseChanges.push('내역 추가: '+value(item.name)+' · '+item.amount+' '+item.currency);else if(JSON.stringify(old)!==JSON.stringify(item))expenseChanges.push('내역 변경: '+value(old.name)+' → '+value(item.name)+' · '+item.amount+' '+item.currency);});
+    addGroup('가계부 내역',expenseChanges);
+    const categoryChanges=[],beforeCategories=new Map(before.categories.map(item=>[item.id,item])),afterCategories=new Map(after.categories.map(item=>[item.id,item]));
+    before.categories.forEach(item=>{if(!afterCategories.has(item.id))categoryChanges.push('카테고리 삭제: '+item.icon+' '+item.name);});
+    after.categories.forEach(item=>{const old=beforeCategories.get(item.id);if(!old)categoryChanges.push('카테고리 추가: '+item.icon+' '+item.name);else if(old.name!==item.name||old.icon!==item.icon)categoryChanges.push('카테고리 변경: '+old.icon+' '+old.name+' → '+item.icon+' '+item.name);});
+    addGroup('가계부 카테고리',categoryChanges);
+    if(before.exchangeRate!==after.exchangeRate)addGroup('환율',['1 USD = '+before.exchangeRate+' KRW → '+after.exchangeRate+' KRW']);
+    return groups;
   }
+  function renderImportDiff(groups,message=''){const count=groups.reduce((sum,g)=>sum+g.items.length,0);$('#importSummary').textContent=message||(count?count+'개 변경 사항이 있습니다. 불러오면 현재 화면의 초안으로 적용됩니다.':'최신 저장본과 동일합니다.');$('#importDiff').innerHTML=groups.length?groups.map(group=>'<div class="diff-group"><strong>'+escapeHtml(group.title)+'</strong><ul>'+group.items.slice(0,80).map(item=>'<li>'+escapeHtml(item)+'</li>').join('')+'</ul></div>').join(''):'<div class="diff-empty">변경 사항이 없습니다.</div>';$('#importApply').disabled=!groups.length;}
+  async function chooseImportFile(){await requireEditor('import',()=>$('#importFileInput').click());}
+  async function readImportFile(file){try{const source=await file.text(),doc=new DOMParser().parseFromString(source,'text/html');if(doc.documentElement.dataset.tripId!==TRIP_ID||doc.documentElement.dataset.offline!=='true')throw new Error('이 여행에서 만든 오프라인 작업본이 아닙니다.');const fileVersion=Number(doc.documentElement.dataset.schemaVersion||0);if(!fileVersion)throw new Error('파일 버전을 확인할 수 없습니다.');if(fileVersion>SCHEMA_VERSION)throw new Error('더 새로운 버전에서 만든 파일입니다. 온라인 페이지를 먼저 업데이트해 주세요.');const embedded=doc.querySelector('#offlineEmbeddedState');if(!embedded)throw new Error('편집 데이터가 없습니다.');const incoming=normalizeState(JSON.parse(embedded.textContent),true),published=await fetchPublishedState();const current=normalizeState(published?.content?.html?published.content:lastSavedState),groups=buildDiff(current,incoming);pendingImport={state:incoming,baselineUpdatedAt:published?.updated_at||'',current};renderImportDiff(groups);$('#importDialog').hidden=false;}catch(error){console.error(error);await showChoice({title:'작업본을 불러올 수 없습니다.',message:error.message,choices:[{label:'확인',value:'ok',className:'action-primary'}]});}finally{$('#importFileInput').value='';}}
+  async function materializeImportedPhotos(state){const normalized=normalizeState(state,true),template=document.createElement('template');template.innerHTML=normalized.html;for(const figure of template.content.querySelectorAll('.schedule-photo')){const img=figure.querySelector('img'),fullPath=figure.dataset.fullPath,thumbPath=figure.dataset.thumbPath;if(fullPath&&thumbPath){img.src=publicMediaUrl(thumbPath);img.dataset.fullUrl=publicMediaUrl(fullPath);continue;}if(!img.src.startsWith('data:image/'))continue;const source=dataUrlToBlob(img.src),full=await compressImage(source,1600,.8),thumb=await compressImage(source,480,.76),uploaded=await uploadPhotoBlobs(full,thumb);figure.dataset.fullPath=uploaded.fullPath;figure.dataset.thumbPath=uploaded.thumbPath;img.src=uploaded.thumbUrl;img.dataset.fullUrl=uploaded.fullUrl;}normalized.html=template.innerHTML;return normalized;}
+  async function applyImportedDraft(){if(!pendingImport)return;try{const published=await fetchPublishedState();if((published?.updated_at||'')!==pendingImport.baselineUpdatedAt){const current=normalizeState(published.content),groups=buildDiff(current,pendingImport.state);pendingImport.current=current;pendingImport.baselineUpdatedAt=published.updated_at;lastSavedState=clone(current);renderImportDiff(groups,'비교 중 최신 저장본이 변경되어 차이를 다시 계산했습니다. 내용을 확인하고 한 번 더 불러오세요.');return;}setStatus('편집본 사진을 준비 중입니다.');const incoming=await materializeImportedPhotos(pendingImport.state);lastSavedState=clone(pendingImport.current);applyState(incoming);initializeHistory();updateDirtyState();$('#importDialog').hidden=true;pendingImport=null;setStatus('편집본을 초안으로 불러왔습니다. 저장해야 공개됩니다.');}catch(error){console.error(error);setStatus('편집본 적용 실패');await showChoice({title:'편집본 적용 실패',message:error.message,choices:[{label:'확인',value:'ok',className:'action-primary'}]});}}
 
-  function clearSessionTimers() {
-    clearTimeout(warningTimer);
-    clearTimeout(logoutTimer);
-    clearInterval(countdownTimer);
-  }
+  async function resetDraft(){const choice=await showChoice({title:'마지막 저장본으로 초기화',message:'현재 변경을 삭제하고 마지막 저장본으로 되돌립니다.',choices:[{label:'취소',value:'cancel'},{label:'초기화',value:'reset',className:'action-danger'}]});if(choice==='reset')discardDraft('마지막 저장본으로 초기화했습니다.');}
+  async function confirmSave(){if(!pendingDraft){setStatus('저장할 변경이 없습니다.');return;}const choice=await showChoice({title:OFFLINE_MODE?'오프라인 작업본 저장':'공유 일정에 저장',message:OFFLINE_MODE?'수정된 내용을 포함한 새 작업본을 내려받습니다.':'저장하면 공개 링크에 변경 내용이 반영됩니다.',choices:[{label:'취소',value:'cancel'},{label:'저장',value:'save',className:'action-primary'}]});if(choice==='save')await saveAndFinish();}
+  async function openVersions(){if(OFFLINE_MODE)return;const list=$('#versionList');list.innerHTML='<div class="version-empty">버전을 불러오는 중입니다.</div>';$('#versionDialog').hidden=false;const {data,error}=await client.from('trip_document_versions').select('id,content,created_at').eq('trip_id',TRIP_ID).order('created_at',{ascending:false}).limit(50);if(error){list.innerHTML='<div class="version-empty">버전 목록을 불러오지 못했습니다.</div>';return;}list.innerHTML=data.length?'':'<div class="version-empty">아직 저장된 버전이 없습니다.</div>';data.forEach(version=>{const item=document.createElement('div');item.className='version-item';item.innerHTML='<div><strong>버전 #'+version.id+'</strong><small>'+escapeHtml(new Date(version.created_at).toLocaleString('ko-KR'))+'</small></div><button class="action-muted" type="button">미리보기</button><button class="action-primary" type="button">복원</button>';const buttons=item.querySelectorAll('button');buttons[0].onclick=()=>{previewReturnState=captureState();applyState(version.content);body.classList.add('previewing');$('#previewLabel').textContent=new Date(version.created_at).toLocaleString('ko-KR')+' 저장본 미리보기';$('#versionDialog').hidden=true;};buttons[1].onclick=async()=>{const choice=await showChoice({title:'이 버전을 복원할까요?',message:'선택한 저장본이 새 버전으로 저장되고 공개됩니다.',choices:[{label:'취소',value:'cancel'},{label:'복원',value:'restore',className:'action-primary'}]});if(choice==='restore'){const restored=normalizeState(version.content);if(await persistState(restored)){applyState(restored);$('#versionDialog').hidden=true;setStatus('선택한 버전을 복원했습니다.');}}};list.appendChild(item);});}
+  function closePreview(){if(previewReturnState)applyState(previewReturnState);previewReturnState=null;body.classList.remove('previewing');setStatus('보기 모드');resetInactivityTimer();}
+  function scrollTabs(direction){const tabs=$('.tabs');tabs.scrollBy({left:direction*Math.min(480,tabs.clientWidth*.72),behavior:'smooth'});}
+  function revealSelectedTab(){const selected=$('.day-radio:checked'),label=selected?$('label[for="'+selected.id+'"]'):null;label?.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});}
 
-  function scheduleSessionTimers(activityAt) {
-    clearSessionTimers();
-    lastActivityAt = activityAt;
-    const elapsed = Math.max(0, Date.now() - activityAt);
-    warningTimer = setTimeout(showInactivityWarning, Math.max(0, WARNING_MS - elapsed));
-    logoutTimer = setTimeout(() => discardAndLogout('30분 동안 활동이 없어 자동 로그아웃되었습니다.'), Math.max(0, SESSION_MS - elapsed));
-  }
+  async function hydrate(){if(OFFLINE_MODE){body.classList.add('offline-mode');let embedded=null;try{embedded=JSON.parse($('#offlineEmbeddedState').textContent||'null');}catch(_){}let cached=null;try{cached=JSON.parse(localStorage.getItem(OFFLINE_CACHE_KEY)||'null');}catch(_){}lastSavedState=normalizeState(cached?.html?cached:embedded?.html?embedded:captureState());applyState(lastSavedState);initializeHistory();updateDirtyState();return;}try{const published=await fetchPublishedState();if(published?.content?.html){lastSavedState=normalizeState(published.content);localStorage.setItem(CACHE_KEY,JSON.stringify(lastSavedState));applyState(lastSavedState);}}catch(error){console.warn(error);try{const cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');if(cached?.html){lastSavedState=normalizeState(cached);applyState(lastSavedState);}}catch(_){}}initializeHistory();updateDirtyState();if(!client){setStatus('공유 서버 연결 실패 · 저장된 화면 표시 중');return;}client.channel('trip-document-'+TRIP_ID).on('postgres_changes',{event:'UPDATE',schema:'public',table:'trip_documents',filter:'trip_id=eq.'+TRIP_ID},payload=>{if(!payload.new?.content?.html||body.classList.contains('editing')||pendingDraft||body.classList.contains('previewing'))return;lastSavedState=normalizeState(payload.new.content);localStorage.setItem(CACHE_KEY,JSON.stringify(lastSavedState));applyState(lastSavedState);initializeHistory();setStatus('새 저장본을 반영했습니다.');}).subscribe();await getEditorSession();}
 
-  function resetInactivityTimer() {
-    if (!editorSession) return;
-    const now = Date.now();
-    localStorage.setItem(SESSION_ACTIVITY_KEY, String(now));
-    scheduleSessionTimers(now);
-  }
-
-  async function showInactivityWarning() {
-    let seconds = 60;
-    const countdown = $('#sessionCountdown');
-    countdown.hidden = false;
-    countdown.textContent = seconds + '초 후 저장하지 않은 변경이 폐기됩니다.';
-    countdownTimer = setInterval(() => {
-      seconds -= 1;
-      countdown.textContent = Math.max(0, seconds) + '초 후 저장하지 않은 변경이 폐기됩니다.';
-    }, 1000);
-    const dirty = isDirty();
-    const choice = await showChoice({
-      title: '자동 로그아웃 예정',
-      message: dirty ? '1분 안에 선택하지 않으면 초안을 폐기하고 자동 로그아웃합니다.' : '1분 안에 선택하지 않으면 자동 로그아웃합니다.',
-      countdown: true,
-      choices: dirty ? [
-        {label:'저장', value:'save', className:'action-primary'},
-        {label:'계속 사용', value:'continue', className:'action-muted'},
-        {label:'폐기', value:'discard', className:'action-danger'}
-      ] : [
-        {label:'계속 사용', value:'continue', className:'action-primary'},
-        {label:'로그아웃', value:'discard', className:'action-danger'}
-      ]
-    });
-    if (choice === 'save') await saveAndFinish();
-    else if (choice === 'continue') resetInactivityTimer();
-    else if (choice === 'discard') await discardAndLogout('수정 내용을 폐기하고 로그아웃했습니다.');
-  }
-
-  async function signOutEditor() {
-    clearSessionTimers();
-    localStorage.removeItem(SESSION_ACTIVITY_KEY);
-    await client.auth.signOut();
-    editorSession = null;
-  }
-
-  function discardDraft(message) {
-    if (lastSavedState) applyState(lastSavedState);
-    pendingDraft = false;
-    initializeHistory();
-    setEditingUI(false);
-    resetInactivityTimer();
-    setStatus(message || '수정 내용을 폐기했습니다.');
-  }
-
-  async function discardAndLogout(message) {
-    if (lastSavedState) applyState(lastSavedState);
-    pendingDraft = false;
-    initializeHistory();
-    setEditingUI(false);
-    closeNotice('timeout');
-    await signOutEditor();
-    setStatus(message || '수정 내용을 폐기했습니다.');
-  }
-
-  async function saveAndFinish() {
-    const state = captureState();
-    setEditingUI(false);
-    const saved = await persistState(state);
-    if (!saved) {
-      pendingDraft = true;
-      $('#saveBtn').disabled = false;
-      return false;
-    }
-    initializeHistory();
-    resetInactivityTimer();
-    return true;
-  }
-
-  async function requestFinishEditing() {
-    clearTimeout(historyTimer);
-    recordHistory();
-    if (!isDirty()) {
-      setEditingUI(false);
-      resetInactivityTimer();
-      return;
-    }
-    setEditingUI(false);
-    const choice = await showChoice({
-      title: '편집을 종료할까요?',
-      message: '저장해야 공개 링크에 변경 내용이 반영됩니다.',
-      choices: [
-        {label:'저장', value:'save', className:'action-primary'},
-        {label:'계속 편집', value:'continue', className:'action-muted'},
-        {label:'폐기', value:'discard', className:'action-danger'}
-      ]
-    });
-    if (choice === 'save') await saveAndFinish();
-    else if (choice === 'continue') { setEditingUI(true); resetInactivityTimer(); }
-    else if (choice === 'discard') discardDraft('수정 내용을 폐기했습니다.');
-  }
-
-  async function beginEditing() {
-    try {
-      const published = await fetchPublishedState();
-      if (published?.content?.html) {
-        lastSavedState = normalizeState(published.content);
-        applyState(lastSavedState);
-      }
-    } catch (error) {
-      console.warn(error);
-    }
-    setEditingUI(true);
-    initializeHistory();
-    resetInactivityTimer();
-    setStatus('편집 모드 · 저장 전에는 공개되지 않음');
-  }
-
-  function requestAuthentication(purpose) {
-    authPurpose = purpose;
-    $('#authTitle').textContent = purpose === 'edit' ? '편집자 확인' : purpose === 'versions' ? '버전 관리자 확인' : purpose === 'ledger' ? '가계부 저장 권한 확인' : '저장 권한 확인';
-    $('#authSubmit').textContent = '확인';
-    $('#authError').textContent = '';
-    $('#editorPassword').value = '';
-    $('#authDialog').hidden = false;
-    $('#editorPassword').focus();
-  }
-
-  async function runAuthenticatedPurpose(purpose) {
-    resetInactivityTimer();
-    if (purpose === 'edit') await beginEditing();
-    if (purpose === 'versions') await openVersions();
-    if (purpose === 'save') await confirmViewSave();
-    if (purpose === 'ledger' && pendingAuthAction) {
-      const action = pendingAuthAction;
-      pendingAuthAction = null;
-      await action();
-    }
-  }
-
-  async function requireEditor(purpose, action = null) {
-    if (action) pendingAuthAction = action;
-    if (await getEditorSession()) {
-      await runAuthenticatedPurpose(purpose);
-      return;
-    }
-    requestAuthentication(purpose);
-  }
-
-  function addTimeRow() {
-    const selected = $('.day-radio:checked')?.id || '';
-    if (!/^d\d+$/.test(selected)) return;
-    const panel = $('.day' + selected.slice(1));
-    const row = document.createElement('div');
-    row.className = 'timeline-row';
-    row.innerHTML = '<div class="time" contenteditable="true">시간</div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true">새 일정</h3><div class="remark" contenteditable="true">장소 또는 메모</div></article><button class="row-delete" type="button">삭제</button>';
-    panel.appendChild(row);
-    row.querySelector('.time').focus();
-    recordHistory();
-  }
-
-  function addCheckRow() {
-    if ($('.day-radio:checked')?.id !== 'prep') return;
-    const list = $('.prepday .checklist');
-    const label = document.createElement('label');
-    label.innerHTML = '<input type="checkbox"><span contenteditable="true">새 체크 항목</span><button class="check-delete" type="button">삭제</button>';
-    list.appendChild(label);
-    label.querySelector('span').focus();
-    recordHistory();
-  }
-
-  function finishDraftMutation() {
-    if (body.classList.contains('editing')) recordHistory();
-    else updateDirtyState();
-    resetInactivityTimer();
-  }
-
-  async function addExpense() {
-    const name = $('#expenseName').value.trim();
-    const amountText = $('#expenseAmount').value.replace(/,/g, '').trim();
-    const amount = Number(amountText);
-    const expenseCurrency = $('#expenseCurrency').value === 'USD' ? 'USD' : 'KRW';
-    const date = $('#expenseDate').value || todayLocal();
-    if (!name || !Number.isFinite(amount) || amount <= 0) {
-      setStatus('가계부 항목과 올바른 금액을 입력해 주세요.');
-      return;
-    }
-    await requireEditor('ledger', async () => {
-      expenses.push(normalizeExpense({name, amount, currency:expenseCurrency, date, category:'기타'}));
-      $('#expenseName').value = '';
-      $('#expenseAmount').value = '';
-      $('#expenseDate').value = todayLocal();
-      renderExpenses();
-      finishDraftMutation();
-    });
-  }
-
-  async function deleteExpense(index) {
-    const item = expenses[index];
-    if (!item) return;
-    const choice = await showChoice({
-      title: '가계부 항목을 삭제할까요?',
-      message: item.name + ' · ' + formatExpenseAmount(item) + ' 항목을 삭제합니다. 저장 전에는 공개본에 반영되지 않습니다.',
-      choices: [
-        {label:'취소', value:'cancel', className:'action-muted'},
-        {label:'삭제', value:'delete', className:'action-danger'}
-      ]
-    });
-    if (choice !== 'delete') return;
-    await requireEditor('ledger', async () => {
-      expenses.splice(index, 1);
-      renderExpenses();
-      finishDraftMutation();
-    });
-  }
-
-  async function resetDraft() {
-    const choice = await showChoice({
-      title: '마지막 저장본으로 초기화',
-      message: '현재 편집 중인 모든 변경을 삭제하고 마지막으로 저장한 버전으로 되돌립니다.',
-      choices: [
-        {label:'취소', value:'cancel', className:'action-muted'},
-        {label:'초기화', value:'reset', className:'action-danger'}
-      ]
-    });
-    if (choice !== 'reset') {
-      if (choice !== 'replaced') resetInactivityTimer();
-      return;
-    }
-    applyState(lastSavedState);
-    initializeHistory();
-    updateDirtyState();
-    setStatus('마지막 저장본으로 초기화했습니다.');
-    resetInactivityTimer();
-  }
-
-  async function confirmViewSave() {
-    if (!pendingDraft) { setStatus('저장할 변경이 없습니다.'); return; }
-    const choice = await showChoice({
-      title: '공유 일정에 저장',
-      message: '저장하면 공개 링크를 보고 있는 사용자에게 변경 내용이 반영됩니다.',
-      choices: [
-        {label:'취소', value:'cancel', className:'action-muted'},
-        {label:'저장', value:'save', className:'action-primary'}
-      ]
-    });
-    if (choice === 'save') await saveAndFinish();
-  }
-
-  function exportStaticHtml() {
-    const clone = document.documentElement.cloneNode(true);
-    clone.querySelectorAll('script,.editor-bar,.auth-dialog,.notice-dialog,.version-dialog,.preview-banner').forEach(element => element.remove());
-    clone.querySelector('body').className = 'viewing';
-    clone.querySelectorAll('[contenteditable]').forEach(element => element.removeAttribute('contenteditable'));
-    clone.querySelectorAll('.row-delete,.check-delete,.tab-scroll,.add-expense,.expense [data-remove]').forEach(element => element.remove());
-    clone.querySelectorAll('input[type="checkbox"]').forEach(input => {
-      if (input.checked) input.setAttribute('checked', ''); else input.removeAttribute('checked');
-      input.disabled = true;
-    });
-    const blob = new Blob(['<!doctype html>\n' + clone.outerHTML], {type:'text/html;charset=utf-8'});
-    const anchor = document.createElement('a');
-    anchor.href = URL.createObjectURL(blob);
-    anchor.download = 'US_West_2027_snapshot.html';
-    anchor.click();
-    setTimeout(() => URL.revokeObjectURL(anchor.href), 1000);
-    setStatus('독립 HTML을 내보냈습니다.');
-  }
-
-  async function openVersions() {
-    const list = $('#versionList');
-    list.innerHTML = '<div class="version-empty">버전을 불러오는 중입니다.</div>';
-    $('#versionDialog').hidden = false;
-    const { data, error } = await client.from('trip_document_versions').select('id, content, created_at').eq('trip_id', TRIP_ID).order('created_at', {ascending:false}).limit(50);
-    if (error) {
-      list.innerHTML = '<div class="version-empty">버전 목록을 불러오지 못했습니다. supabase_setup.sql을 다시 실행해 주세요.</div>';
-      return;
-    }
-    if (!data.length) {
-      list.innerHTML = '<div class="version-empty">아직 저장된 버전이 없습니다.</div>';
-      return;
-    }
-    list.innerHTML = '';
-    data.forEach(version => {
-      const item = document.createElement('div');
-      item.className = 'version-item';
-      const date = new Date(version.created_at).toLocaleString('ko-KR');
-      item.innerHTML = '<div><strong>버전 #' + version.id + '</strong><small>' + escapeHtml(date) + '</small></div><button class="action-muted" type="button">미리보기</button><button class="action-primary" type="button">복원</button>';
-      const buttons = item.querySelectorAll('button');
-      buttons[0].onclick = () => previewVersion(version);
-      buttons[1].onclick = () => restoreVersion(version);
-      list.appendChild(item);
-    });
-  }
-
-  function previewVersion(version) {
-    previewReturnState = captureState();
-    applyState(normalizeState(version.content));
-    body.classList.add('previewing');
-    $('#previewLabel').textContent = new Date(version.created_at).toLocaleString('ko-KR') + ' 저장본 미리보기';
-    $('#versionDialog').hidden = true;
-    setStatus('저장 버전 미리보기');
-  }
-
-  async function closePreview() {
-    if (previewReturnState) applyState(previewReturnState);
-    previewReturnState = null;
-    body.classList.remove('previewing');
-    resetInactivityTimer();
-    setStatus('보기 모드');
-  }
-
-  async function restoreVersion(version) {
-    const choice = await showChoice({
-      title: '이 버전을 복원할까요?',
-      message: '선택한 저장본이 새 버전으로 기록되고 공개 링크에 즉시 반영됩니다.',
-      choices: [
-        {label:'취소', value:'cancel', className:'action-muted'},
-        {label:'복원', value:'restore', className:'action-primary'}
-      ]
-    });
-    if (choice !== 'restore') return;
-    const restoredState = normalizeState(version.content);
-    const restored = await persistState(restoredState);
-    if (!restored) return;
-    applyState(restoredState);
-    lastSavedState = cloneState(restoredState);
-    $('#versionDialog').hidden = true;
-    resetInactivityTimer();
-    setStatus('선택한 버전을 복원했습니다.');
-  }
-
-  async function hydrateAndSubscribe() {
-    try {
-      const published = await fetchPublishedState();
-      if (published?.content?.html) {
-        lastSavedState = normalizeState(published.content);
-        localStorage.setItem(CACHE_KEY, JSON.stringify(lastSavedState));
-        applyState(lastSavedState);
-      }
-    } catch (error) {
-      console.warn('Supabase setup is not ready yet.', error.message);
-      try {
-        const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
-        if (cached?.html) { lastSavedState = normalizeState(cached); applyState(lastSavedState); }
-      } catch (_) {}
-    }
-    client
-      .channel('trip-document-' + TRIP_ID)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'trip_documents', filter: 'trip_id=eq.' + TRIP_ID }, payload => {
-        const next = payload.new;
-        if (!next?.content?.html || body.classList.contains('editing') || pendingDraft || body.classList.contains('previewing')) return;
-        lastSavedState = normalizeState(next.content);
-        localStorage.setItem(CACHE_KEY, JSON.stringify(lastSavedState));
-        applyState(lastSavedState);
-        setStatus('새 저장본을 반영했습니다.');
-      })
-      .subscribe();
-  }
-
-  $('#editBtn').onclick = async () => {
-    if (body.classList.contains('editing')) await requestFinishEditing();
-    else { if (body.classList.contains('previewing')) await closePreview(); await requireEditor('edit'); }
-  };
-
-  $('#undoBtn').onclick = () => moveHistory(-1);
-  $('#redoBtn').onclick = () => moveHistory(1);
-  $('#addTimeBtn').onclick = addTimeRow;
-  $('#addCheckBtn').onclick = addCheckRow;
-  $('#resetBtn').onclick = resetDraft;
-  $('#saveBtn').onclick = () => requireEditor('save');
-  $('#exportBtn').onclick = exportStaticHtml;
-  $('#versionsBtn').onclick = () => requireEditor('versions');
-  $('#tabsPrev').onclick = () => scrollTabs(-1);
-  $('#tabsNext').onclick = () => scrollTabs(1);
-  $('#closePreviewBtn').onclick = () => closePreview();
-  $('#authCancel').onclick = () => { $('#authDialog').hidden = true; pendingAuthAction = null; };
-  $('#closeVersionsBtn').onclick = () => { $('#versionDialog').hidden = true; resetInactivityTimer(); };
-  $('#authForm').onsubmit = async event => {
-    event.preventDefault();
-    const password = $('#editorPassword').value;
-    const { error } = await client.auth.signInWithPassword({ email: EDITOR_EMAIL, password });
-    if (error) {
-      $('#authError').textContent = '비밀번호를 확인해 주세요.';
-      return;
-    }
-    const session = await getEditorSession();
-    if (!session) {
-      $('#authError').textContent = '로그인 세션을 확인하지 못했습니다. 다시 시도해 주세요.';
-      return;
-    }
-    $('#authDialog').hidden = true;
-    resetInactivityTimer();
-    await runAuthenticatedPurpose(authPurpose);
-  };
-
-  document.addEventListener('click', event => {
-    if (event.target.id === 'addExpense') addExpense();
-    if (event.target.hasAttribute('data-remove')) deleteExpense(Number(event.target.dataset.remove));
-    if (event.target.classList.contains('row-delete') && body.classList.contains('editing')) {
-      event.target.closest('.timeline-row')?.remove();
-      recordHistory();
-    }
-    if (event.target.classList.contains('check-delete') && body.classList.contains('editing')) {
-      event.target.closest('label')?.remove();
-      recordHistory();
-    }
+  $('#editBtn').onclick=async()=>{if(body.classList.contains('editing'))await requestFinishEditing();else{if(body.classList.contains('previewing'))closePreview();await requireEditor('edit');}};
+  $('#undoBtn').onclick=()=>moveHistory(-1);$('#redoBtn').onclick=()=>moveHistory(1);$('#addTimeBtn').onclick=addTimeRow;$('#addCheckBtn').onclick=addCheckRow;$('#resetBtn').onclick=resetDraft;$('#saveBtn').onclick=()=>requireEditor('save');$('#exportMenuBtn').onclick=()=>$('#exportDialog').hidden=false;$('#exportBtn').onclick=()=>{$('#exportDialog').hidden=true;exportStaticHtml();};$('#offlineExportBtn').onclick=()=>{$('#exportDialog').hidden=true;exportOfflineHtml();};$('#exportCancel').onclick=()=>$('#exportDialog').hidden=true;$('#importBtn').onclick=chooseImportFile;$('#importFileInput').onchange=e=>{if(e.target.files[0])readImportFile(e.target.files[0]);};$('#versionsBtn').onclick=()=>requireEditor('versions');$('#tabsPrev').onclick=()=>scrollTabs(-1);$('#tabsNext').onclick=()=>scrollTabs(1);$('#closePreviewBtn').onclick=closePreview;$('#closeVersionsBtn').onclick=()=>{$('#versionDialog').hidden=true;resetInactivityTimer();};
+  $('#authCancel').onclick=()=>{$('#authDialog').hidden=true;pendingAuthAction=null;};
+  $('#authForm').onsubmit=async event=>{event.preventDefault();const {error}=await client.auth.signInWithPassword({email:EDITOR_EMAIL,password:$('#editorPassword').value});if(error){$('#authError').textContent='비밀번호를 확인해 주세요.';return;}const session=await getEditorSession();if(!session){$('#authError').textContent='로그인 세션을 확인하지 못했습니다.';return;}$('#authDialog').hidden=true;await runPurpose(authPurpose);};
+  $('#categoryCancel').onclick=()=>$('#categoryDialog').hidden=true;$('#categorySave').onclick=saveCategory;$('#mapCancel').onclick=()=>$('#mapDialog').hidden=true;$('#mapSave').onclick=saveMap;$('#importCancel').onclick=()=>{$('#importDialog').hidden=true;pendingImport=null;};$('#importApply').onclick=applyImportedDraft;$('#photoViewerClose').onclick=()=>$('#photoViewer').hidden=true;$('#photoInput').onchange=e=>{attachPhotos(Array.from(e.target.files||[]));e.target.value='';};$('#addCategoryBtn').onclick=()=>openCategoryDialog();$('#exchangeRate').onchange=updateExchangeRate;
+  document.addEventListener('click',event=>{
+    const media=event.target.closest('[data-media]');if(media&&body.classList.contains('editing')){activeScheduleRow=media.closest('.timeline-row');if(media.dataset.media==='photo')$('#photoInput').click();else openMapDialog(activeScheduleRow);return;}
+    const photo=event.target.closest('.schedule-photo img');if(photo&&!body.classList.contains('editing')){$('#photoViewerImage').src=photo.dataset.fullUrl||photo.src;$('#photoViewer').hidden=false;return;}
+    if(event.target.classList.contains('photo-delete')&&body.classList.contains('editing')){event.target.closest('.schedule-photo')?.remove();recordHistory();return;}
+    if(event.target.classList.contains('schedule-map-delete')&&body.classList.contains('editing')){event.target.closest('.schedule-map')?.remove();recordHistory();return;}
+    if(event.target.classList.contains('row-delete')&&body.classList.contains('editing')){event.target.closest('.timeline-row')?.remove();recordHistory();return;}
+    if(event.target.classList.contains('check-delete')&&body.classList.contains('editing')){event.target.closest('label')?.remove();recordHistory();return;}
+    const expenseId=event.target.dataset.removeExpense;if(expenseId){deleteExpense(expenseId);return;}
+    if(event.target.id==='addExpense'){addExpense();return;}
+    const editId=event.target.dataset.categoryEdit;if(editId){openCategoryDialog(editId);return;}
+    const deleteId=event.target.dataset.categoryDelete;if(deleteId){deleteCategory(deleteId);return;}
+    const icon=event.target.dataset.categoryIcon;if(icon){selectedCategoryIcon=icon;renderIconPicker();}
   });
+  document.addEventListener('input',event=>{if(body.classList.contains('editing')&&event.target.closest('main')&&!event.target.closest('.add-expense')&&event.target.id!=='exchangeRate')queueHistory();});
+  document.addEventListener('change',event=>{if(body.classList.contains('editing')&&event.target.closest('main')&&!event.target.closest('.add-expense')&&event.target.id!=='exchangeRate')recordHistory();if(event.target.matches('.day-radio')){updateContextControls();revealSelectedTab();}});
+  $('.tabs').addEventListener('wheel',event=>{const tabs=event.currentTarget;if(tabs.scrollWidth<=tabs.clientWidth||Math.abs(event.deltaX)>Math.abs(event.deltaY))return;event.preventDefault();tabs.scrollLeft+=event.deltaY;},{passive:false});
+  ['pointerdown','keydown'].forEach(type=>document.addEventListener(type,()=>{if(editorSession&&$('#noticeDialog').hidden)resetInactivityTimer();},{passive:true}));
+  if(client)client.auth.onAuthStateChange((_event,session)=>{editorSession=session?.user?.email===EDITOR_EMAIL?session:null;if(!editorSession){localStorage.removeItem(SESSION_ACTIVITY_KEY);clearSessionTimers();}});
 
-  document.addEventListener('input', event => {
-    if (body.classList.contains('editing') && event.target.closest('main') && !event.target.closest('.add-expense')) queueHistory();
-  });
-  document.addEventListener('change', event => {
-    if (body.classList.contains('editing') && event.target.closest('main') && !event.target.closest('.add-expense')) recordHistory();
-    if (event.target.matches('.day-radio')) { updateContextControls(); revealSelectedTab(); }
-  });
-  $('.tabs').addEventListener('wheel', event => {
-    const tabs = event.currentTarget;
-    if (tabs.scrollWidth <= tabs.clientWidth || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
-    event.preventDefault();
-    tabs.scrollLeft += event.deltaY;
-  }, {passive:false});
-  ['pointerdown','keydown'].forEach(type => document.addEventListener(type, () => {
-    if (editorSession && $('#noticeDialog').hidden) resetInactivityTimer();
-  }, {passive:true}));
-
-  client.auth.onAuthStateChange((_event, session) => {
-    editorSession = session?.user?.email === EDITOR_EMAIL ? session : null;
-    if (!editorSession) {
-      localStorage.removeItem(SESSION_ACTIVITY_KEY);
-      clearSessionTimers();
-    }
-  });
-
-  decorateDates();
-  decorateChecklist();
-  renderExpenses();
-  moneyTemplateHtml = $('.moneyday').outerHTML;
-  initialState = captureState();
-  lastSavedState = cloneState(initialState);
-  body.classList.add('viewing');
-  setEditable(false);
-  updateContextControls();
-  hydrateAndSubscribe();
-  getEditorSession();
-
+  decorateButtonIcons();decorateDates();decorateChecklist();renderLedger();moneyTemplateHtml=$('.moneyday').outerHTML;decorateScheduleRows();lastSavedState=normalizeState(captureState());body.classList.add('viewing');setEditable(false);updateContextControls();updateTripProgress();setInterval(updateTripProgress,60*60*1000);hydrate();
 })();
 </script>
 </body>

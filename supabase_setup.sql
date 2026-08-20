@@ -124,6 +124,39 @@ $$;
 revoke all on function public.save_trip_document(text, jsonb) from public, anon;
 grant execute on function public.save_trip_document(text, jsonb) to authenticated;
 
+-- Schedule photos are compressed to WebP in the browser before upload.
+-- The bucket is public so viewers can load thumbnails without signing in.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('trip-media', 'trip-media', true, 5242880, array['image/webp'])
+on conflict (id) do update
+set public = excluded.public,
+    file_size_limit = excluded.file_size_limit,
+    allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "anyone can read trip media" on storage.objects;
+-- Public buckets serve known public URLs without a SELECT policy. Keeping this
+-- policy absent also prevents anonymous clients from listing every object.
+
+drop policy if exists "editor can upload trip media" on storage.objects;
+create policy "editor can upload trip media"
+on storage.objects for insert
+to authenticated
+with check (
+  bucket_id = 'trip-media'
+  and name like 'us-west-2027/%'
+  and exists (
+    select 1
+    from public.trip_documents document
+    where document.trip_id = 'us-west-2027'
+      and document.editor_id = (select auth.uid())
+  )
+);
+
+drop policy if exists "editor can update trip media" on storage.objects;
+drop policy if exists "editor can delete trip media" on storage.objects;
+-- The page never overwrites or removes objects. Keeping UPDATE/DELETE denied
+-- preserves photos referenced by any of the retained document versions.
+
 do $$
 begin
   if not exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
