@@ -1,5 +1,5 @@
 -- Run this once in Supabase Dashboard > SQL Editor.
--- Create the editor account (pca01008@gmail.com) in Authentication > Users first.
+-- After this shared infrastructure is ready, run register_trip.sql once per trip.
 
 create table if not exists public.trip_documents (
   trip_id text primary key,
@@ -24,13 +24,6 @@ drop trigger if exists trip_documents_set_updated_at on public.trip_documents;
 create trigger trip_documents_set_updated_at
 before update on public.trip_documents
 for each row execute function public.set_trip_document_updated_at();
-
--- The editor account must already exist before this statement runs.
-insert into public.trip_documents (trip_id, editor_id)
-select 'us-west-2027', id
-from auth.users
-where email = 'pca01008@gmail.com'
-on conflict (trip_id) do nothing;
 
 alter table public.trip_documents enable row level security;
 
@@ -143,11 +136,10 @@ on storage.objects for insert
 to authenticated
 with check (
   bucket_id = 'trip-media'
-  and name like 'us-west-2027/%'
   and exists (
     select 1
     from public.trip_documents document
-    where document.trip_id = 'us-west-2027'
+    where document.trip_id = split_part(name, '/', 1)
       and document.editor_id = (select auth.uid())
   )
 );

@@ -4,8 +4,12 @@
 
 ## 구성
 
-- `index.html`: 여행 일정, 체크리스트, 경비를 확인·편집하는 단일 페이지
-- `supabase_setup.sql`: 실시간 공유, 버전 관리, 사진 Storage와 편집 권한을 위한 Supabase 설정
+- `index.html`: 여행 일정, 체크리스트, 경비를 확인·편집하는 공통 웹앱
+- `trip-config.js`: 현재 여행의 제목, 기간, 시간대, 기본 일정과 체크리스트
+- `trip-config.template.js`: 다른 여행을 시작할 때 복사하는 설정 예시
+- `supabase_setup.sql`: 모든 여행이 공유하는 실시간 저장, 버전 관리, 사진 Storage와 편집 권한 설정
+- `register_trip.sql`: Supabase에 여행 ID와 편집자 계정을 연결하는 등록문
+- `NEW_TRIP_GUIDE_KO.md`: 다른 여행으로 재사용하는 순서와 설정값 설명
 - `.gitattributes`: Windows와 WSL 환경의 줄바꿈을 LF로 통일하는 규칙
 
 ## 사용 방법
@@ -36,7 +40,8 @@
 
 1. Supabase Authentication에서 편집자 이메일 계정을 생성합니다.
 2. SQL Editor에서 `supabase_setup.sql` 전체를 실행합니다.
-3. `index.html`에 설정된 Supabase 프로젝트 URL과 publishable key를 확인합니다.
+3. `register_trip.sql`의 여행 ID와 이메일을 확인한 뒤 실행합니다.
+4. `trip-config.js`의 Supabase 프로젝트 URL, publishable key, 여행 ID와 편집자 이메일을 확인합니다.
 
 이전에 SQL을 실행했더라도 변경된 `supabase_setup.sql` 전체를 다시 실행해야 합니다. 스크립트는 기존 일정 데이터를 유지하면서 최근 50개 버전과 공개 `trip-media` Storage 버킷 및 편집자 전용 업로드 정책을 설정합니다.
 
@@ -44,13 +49,17 @@
 
 publishable key는 정적 웹페이지에 포함해도 되지만, service role key나 편집자 비밀번호는 저장소에 올리지 않습니다.
 
+## 다른 여행에 재사용
+
+화면과 기능은 `index.html`, 여행별 기본값은 `trip-config.js`에 분리되어 있습니다. `trip-config.template.js`를 새 설정 파일로 복사하고 고유한 `tripId`를 사용하면 여행 일수나 도시가 달라도 탭과 일정이 자동 생성됩니다. 자세한 순서는 [다른 여행 재사용 안내](./NEW_TRIP_GUIDE_KO.md)를 참고하세요.
+
 ## Git 작업 흐름
 
 WSL 또는 PowerShell 중 한 환경을 기준으로 작업하고, 변경 전후에 상태를 확인합니다.
 
 ```bash
 git status
-git add index.html supabase_setup.sql README.md .gitattributes
+git add index.html trip-config.js trip-config.template.js supabase_setup.sql register_trip.sql README.md NEW_TRIP_GUIDE_KO.md PROJECT_GUIDE_KO.md PROJECT_GUIDE_SUMMARY_KO.md .gitattributes
 git commit -m "Update travel planner"
 git push origin main
 ```

@@ -1,8 +1,8 @@
 # 미국 서부 2027 여행 프로젝트 동작 설명서
 
 > 대상 독자: 기본적인 HTML은 작성해 보았지만 JavaScript, 데이터베이스, SQL, Supabase, GitHub Pages는 익숙하지 않은 사람
-> 기준 파일: 현재 저장소의 `index.html`, `assets/`, `test.html`, `test2.html`, `supabase_setup.sql`, `README.md`, `.gitattributes`
-> 작성 기준일: 2026-08-21 (`schemaVersion 4`)
+> 기준 파일: 현재 저장소의 `index.html`, `trip-config.js`, `trip-config.template.js`, `assets/`, `test.html`, `test2.html`, `supabase_setup.sql`, `register_trip.sql`, `README.md`, `NEW_TRIP_GUIDE_KO.md`, `.gitattributes`
+> 작성 기준일: 2026-08-23 (`schemaVersion 4`)
 
 이 문서는 단순한 사용 설명서가 아니다. 이 프로젝트가 **어떤 부품으로 구성되어 있고**, 사용자가 버튼을 누르면 **어떤 순서로 일이 일어나며**, Supabase SQL Editor에서 `Run`을 눌렀을 때 **서버 쪽에 무엇이 만들어졌는지**를 가능한 한 쉬운 말로 설명한다.
 
@@ -39,6 +39,7 @@
 25. [처음부터 다시 구축한다면](#25-처음부터-다시-구축한다면)
 26. [용어 사전](#26-용어-사전)
 27. [공식 문서](#27-공식-문서)
+28. [다른 여행에 재사용하기](#28-다른-여행에-재사용하기)
 
 ---
 
@@ -78,9 +79,10 @@
 
 | 실제 기술 | 쉬운 비유 | 이 프로젝트에서 하는 일 |
 |---|---|---|
-| GitHub 저장소 | 안내판 설계도 보관함 | `index.html`, SQL 설정문, 설명서를 보관한다. |
+| GitHub 저장소 | 안내판 설계도 보관함 | `index.html`, `trip-config.js`, SQL 설정문, 설명서를 보관한다. |
 | GitHub Pages | 안내판을 설치해 주는 업체 | 저장소의 HTML/CSS/JavaScript를 공개 웹주소에 배포한다. |
 | `index.html` | 안내판의 틀, 버튼, 화면, 작동 장치 | 일정 UI와 모든 브라우저 동작을 담고 있다. |
+| `trip-config.js` | 여행별 내용 카드 | 제목, 기간, 시간대, 기본 일정과 연결 정보를 담고 있다. |
 | Supabase Database | 최신 여행 노트와 과거 노트 보관함 | 현재 일정과 최근 50개 저장 버전을 보관한다. |
 | Supabase Auth | 편집실 출입 확인 | 올바른 이메일 계정과 비밀번호인지 확인한다. |
 | Supabase Storage | 사진 창고 | 압축된 일정 사진과 미리보기를 보관한다. |
@@ -165,9 +167,9 @@ GitHub Pages는 정적 파일을 배포하는 서비스다. 서버에서 직접 
 
 ### 4.3 왜 이것이 헷갈리는가
 
-`index.html` 안에도 기본 일정 HTML이 들어 있고, Supabase에도 저장된 일정이 들어 있기 때문이다. 페이지를 처음 받는 순간에는 HTML 안의 기본 내용이 잠시 존재하지만, 시작 코드가 Supabase의 최신 저장본을 가져오면 `<main>` 영역을 그 내용으로 교체한다.
+`trip-config.js`에도 기본 일정이 있고, Supabase에도 저장된 일정이 들어 있기 때문이다. 페이지를 처음 열면 설정에서 기본 화면을 만들지만, 시작 코드가 같은 `tripId`의 Supabase 최신 저장본을 가져오면 `<main>` 영역을 그 내용으로 교체한다.
 
-따라서 `index.html`의 기본 일정을 직접 고쳐 push했는데 화면에서 예전 일정이 보인다면, Supabase에 저장된 내용이 HTML 기본 내용을 다시 덮어쓴 것일 수 있다.
+따라서 `trip-config.js`의 기본 일정을 고쳐 push했는데 화면에서 예전 일정이 보인다면, Supabase에 저장된 내용이 기본 내용을 다시 덮어쓴 것일 수 있다. 완전히 다른 여행은 반드시 새 `tripId`를 사용한다.
 
 ---
 
@@ -175,15 +177,21 @@ GitHub Pages는 정적 파일을 배포하는 서비스다. 서버에서 직접 
 
 ### 5.1 `index.html`
 
-실제 웹앱 본체다. 하나의 파일 안에 다음이 모두 들어 있다.
+여행 종류와 관계없이 재사용하는 웹앱 본체다. 다음이 들어 있다.
 
-- HTML: 제목, 탭, 일정 카드, 대화상자 같은 화면 구조
+- HTML: 중립적인 헤더 틀, 빈 날짜 탭과 일정 영역, 가계부 템플릿, 대화상자 같은 공통 화면 구조
 - CSS: 색상, 크기, 반응형 모바일/PC 배치, 타임라인 모양
 - JavaScript: 로그인, 편집, 저장, 버전, 가계부, 사진, 오프라인 파일 등 모든 동작
 
-브라우저가 직접 여는 파일이며 GitHub Pages의 시작 페이지이기도 하다.
+브라우저가 직접 여는 파일이며 GitHub Pages의 시작 페이지이기도 하다. 특정 여행의 제목, 날짜 탭 개수, 체크리스트와 일정 카드는 이 파일에 중복 저장하지 않는다.
 
-### 5.2 `supabase_setup.sql`
+### 5.2 `trip-config.js`, `trip-config.template.js`
+
+`trip-config.js`는 현재 여행의 제목, 기간, 시간대, 기본 일정, 체크리스트, 가계부 기본값, Supabase 연결 정보를 담는다. 페이지가 열리면 `index.html`이 이 설정을 읽어 날짜 수에 맞는 탭과 일정 화면을 자동 생성한다.
+
+`trip-config.template.js`는 다른 여행을 시작할 때 복사하는 짧은 예시다. 새 여행에서는 이 파일을 `trip-config.js`로 복사한 뒤 값만 바꾸면 된다.
+
+### 5.3 `supabase_setup.sql`, `register_trip.sql`
 
 Supabase 서버 환경을 만드는 설정문이다. 웹페이지 방문 때마다 실행되는 파일이 아니다.
 
@@ -198,13 +206,17 @@ Supabase 서버 환경을 만드는 설정문이다. 웹페이지 방문 때마�
 
 GitHub에 이 파일을 보관하는 이유는 나중에 어떤 설정을 했는지 확인하고, 새 Supabase 프로젝트를 만들 때 같은 구조를 재현하기 위해서다.
 
-### 5.3 `README.md`
+`register_trip.sql`은 공통 서버 구조를 만든 뒤 여행 한 건의 `tripId`와 편집자 계정을 연결한다. 같은 Supabase 프로젝트에서 여러 여행을 운영할 때 여행마다 한 번씩 실행한다.
+
+### 5.4 `README.md`, `NEW_TRIP_GUIDE_KO.md`
 
 프로젝트를 운영할 때 필요한 짧은 안내서다. 배포 주소, Supabase 초기 설정 순서, 주요 기능, 일반적인 관리 절차가 요약되어 있다.
 
 현재 읽고 있는 `PROJECT_GUIDE_KO.md`는 README보다 훨씬 자세한 학습용 설명서다.
 
-### 5.4 `.gitattributes`
+`NEW_TRIP_GUIDE_KO.md`는 현재 앱을 다른 여행으로 복제할 때 필요한 설정과 확인 순서를 따로 정리한다.
+
+### 5.5 `.gitattributes`
 
 Git이 텍스트 파일의 줄바꿈을 일관되게 관리하도록 한다.
 
@@ -214,25 +226,25 @@ Git이 텍스트 파일의 줄바꿈을 일관되게 관리하도록 한다.
 
 Windows PowerShell은 흔히 CRLF 줄바꿈을 사용하고, WSL/Linux는 LF를 사용한다. 같은 내용인데도 전체 파일이 수정된 것처럼 보이는 문제를 줄이기 위해 Git에 저장할 때 LF로 통일한다.
 
-### 5.5 `.git/`
+### 5.6 `.git/`
 
 Git의 내부 기록 폴더다. 커밋 이력, 브랜치, 원격 저장소 정보 등이 들어 있다. 사람이 직접 수정하면 저장소가 손상될 수 있으므로 열어보는 것은 괜찮지만 직접 편집하거나 삭제하지 않는다.
 
-### 5.6 `reference.html`
+### 5.7 `reference.html`
 
 UI와 기능을 비교하기 위한 참고 파일이다. 현재 `index.html`에서 불러오지 않으므로 공개 여행 페이지 실행에는 관여하지 않는다. 파일 크기도 크기 때문에 Git에 포함할지 여부는 별도로 판단해야 한다.
 
-### 5.7 `.agents/skills/`
+### 5.8 `.agents/skills/`
 
 코딩 도구가 디자인 작업을 할 때 참고하도록 둔 지침 자료다. 브라우저나 GitHub Pages가 이 파일을 실행하지 않는다. 즉, 공개 여행 페이지의 필수 실행 파일은 아니다.
 
-### 5.8 `assets/`
+### 5.9 `assets/`
 
 GitHub Pages가 `index.html`과 함께 배포하는 정적 이미지 폴더다. 현재 Airbnb 외관과 세 숙소 주변 지도 캡처의 최적화된 WebP 파일이 들어 있다.
 
 이 파일들은 사용자가 편집 화면에서 Supabase Storage로 올리는 사진과 저장 위치가 다르다. 파일 내용의 해시가 이름에 포함되어 있어 이미지가 바뀌면 파일명도 바뀌고, 바뀌지 않은 이미지는 브라우저 캐시를 재사용하기 쉽다.
 
-### 5.9 `test.html`, `test2.html`
+### 5.10 `test.html`, `test2.html`
 
 여행 진행률 헤더의 시간대별 상태를 확인하는 개발용 미리보기 파일이다.
 
@@ -254,21 +266,25 @@ GitHub Pages가 `index.html`과 함께 배포하는 정적 이미지 폴더다. 
     <title>여행 일정</title>
   </head>
   <body>
-    <h1>미국 서부 여행</h1>
+    <h1>여행 일정</h1>
   </body>
 </html>
 ```
 
-현재 `index.html`은 이 기본 구조에 CSS와 대규모 JavaScript가 합쳐진 **단일 파일 웹앱**이다.
+현재 `index.html`은 이 기본 구조에 CSS와 대규모 JavaScript가 합쳐진 웹앱 본체다. 여행별 내용은 별도 `trip-config.js`에서 읽는다.
 
 ### 6.1 문서 설정값
 
-최상단 `<html>` 요소에는 프로젝트를 식별하는 값이 있다.
+`trip-config.js`에는 프로젝트를 식별하고 초기 화면을 만드는 값이 있다.
 
-- `data-trip-id="us-west-2027"`: 어떤 여행 데이터인지 식별한다.
-- `data-schema-version="4"`: 저장 데이터 형식의 버전이다.
-- `data-offline="false"`: 온라인 원본인지 오프라인 작업본인지 표시한다.
-- `data-storage-key`: 브라우저 로컬 저장소에서 사용할 키와 관련된다.
+- `tripId`: Supabase 문서와 사진 폴더에서 어떤 여행인지 식별한다.
+- `schemaVersion`: 저장 데이터 형식의 버전이다.
+- `cacheNamespace`: 브라우저 로컬 저장소를 여행별로 분리한다.
+- `tripStart`, `tripEnd`: 여행 진행률 계산 범위다.
+- `clocks`: 헤더의 두 지역 시계와 시차 계산에 쓰는 시간대다.
+- `days`: 날짜 탭과 기본 일정 카드를 만든다.
+
+페이지 시작 시 JavaScript가 이 값을 최상단 `<html>`의 `data-trip-id`, `data-schema-version`, `data-storage-key`에도 반영한다. `data-offline`은 온라인 원본과 오프라인 작업본을 구분한다.
 
 오프라인 파일을 가져올 때도 이 값들을 확인해 전혀 다른 여행 파일이 섞이지 않게 한다.
 
@@ -291,16 +307,16 @@ CSS는 “무엇이 보이는가”와 “어디에 놓이는가”를 정하지
 `<body>`에는 대략 다음 영역이 있다.
 
 - 여행 제목, 기간, 진행률이 있는 헤더
-- 서울·미국 서부 디지털 시계와 자동 계산된 시차
-- PREP/가계부/DAY 1~DAY 11을 선택하는 탭
+- 설정에 지정한 두 지역의 디지털 시계와 자동 계산된 시차
+- PREP/가계부와 `days` 배열 길이에 맞춰 생성되는 날짜 탭
 - 편집 시작 또는 가계부 설정, 실행 취소, 다시 실행, 추가, 초기화, 변경사항 저장, 불러오기, 내보내기, 버전 관리 버튼
 - 인증, 알림, 버전, 가계부 설정·항목 수정, 카테고리, 지도, 가져오기, 내보내기용 대화상자
-- 실제 일정과 체크리스트와 가계부를 담는 `<main>`
+- 설정을 읽은 뒤 실제 일정과 체크리스트와 가계부를 채우는 빈 `<main>`
 - 큰 사진을 보는 사진 뷰어
 
 탭은 JavaScript 프레임워크 없이 라디오 버튼과 CSS를 활용한다. 특정 라디오 버튼이 선택되면 대응하는 패널을 보여 주는 방식이다.
 
-최초 탭은 미국 서부 시간대(`America/Los_Angeles`)의 날짜로 정한다. 여행 전에는 PREP, 2027년 1월 21일~31일에는 해당 DAY, 여행 후에는 가계부가 열린다. 사용자가 직접 탭을 바꾼 뒤에는 현재 페이지를 보는 동안 자동 선택이 다시 개입하지 않는다.
+최초 탭은 `clocks.destination.timeZone`에 지정한 목적지 시간대의 날짜로 정한다. 여행 전에는 PREP, 여행 중에는 `days`에서 그 날짜에 대응하는 DAY, 여행 후에는 가계부가 열린다. 사용자가 직접 탭을 바꾼 뒤에는 현재 페이지를 보는 동안 자동 선택이 다시 개입하지 않는다.
 
 ### 6.4 Supabase JavaScript 라이브러리
 
@@ -350,22 +366,22 @@ CSS는 “무엇이 보이는가”와 “어디에 놓이는가”를 정하지
 
 ### 7.1 온라인 공개 페이지의 순서
 
-1. 브라우저가 GitHub Pages에서 `index.html`을 내려받는다.
-2. HTML을 읽어 기본 화면을 만든다.
-3. CSS를 적용한다.
+1. 브라우저가 GitHub Pages에서 `index.html`과 `trip-config.js`를 내려받는다.
+2. CSS를 적용하고 설정 파일의 제목·기간·날짜별 일정을 읽는다.
+3. 여행 날짜 수만큼 라디오 입력, 탭, 일정 패널을 자동 생성한다.
 4. Supabase JavaScript 라이브러리를 내려받는다.
-5. 이 프로젝트의 JavaScript를 실행한다.
-6. Supabase URL과 publishable key로 클라이언트 연결 객체를 만든다.
-7. `trip_documents`에서 `trip_id = 'us-west-2027'`인 행을 요청한다.
-8. 서버 저장본이 있으면 브라우저의 `<main>` 내용을 서버 저장본으로 교체한다.
-9. 서버 저장본을 브라우저 `localStorage`에도 캐시한다.
-10. `trip_documents`의 변경을 받는 Realtime 구독을 시작한다.
-11. 현재 브라우저에 유효한 편집자 로그인 세션이 있는지 확인한다.
+5. 설정의 Supabase URL과 publishable key로 클라이언트 연결 객체를 만든다.
+6. `trip_documents`에서 `trip-config.js`의 `tripId`와 같은 행을 요청한다.
+7. 서버 저장본이 있으면 설정에서 만든 기본 `<main>` 내용을 서버 저장본으로 교체한다.
+8. 서버 저장본을 여행별 `localStorage`에도 캐시한다.
+9. 해당 `tripId` 문서의 변경을 받는 Realtime 구독을 시작한다.
+10. 현재 브라우저에 유효한 편집자 로그인 세션이 있는지 확인한다.
+11. 설정의 두 시간대 시계와 시차를 표시하고 1분마다 갱신한다.
 12. 여행 진행률을 표시하고 이후 한 시간마다 다시 계산한다.
 
 ### 7.2 Supabase 조회가 실패했을 때
 
-네트워크 장애 등으로 서버 저장본을 읽지 못하면 브라우저 `localStorage`에 남은 최근 캐시를 사용하려고 한다. 캐시도 없다면 `index.html` 안의 기본 내용을 그대로 보여 준다.
+네트워크 장애 등으로 서버 저장본을 읽지 못하면 브라우저 `localStorage`에 남은 최근 캐시를 사용하려고 한다. 캐시도 없다면 `trip-config.js`에서 만든 기본 내용을 그대로 보여 준다.
 
 이 캐시는 편의를 위한 보조 수단이다. 브라우저 데이터 삭제, 시크릿 창, 다른 기기에서는 없을 수 있으므로 공식 최신 저장본은 Supabase 데이터베이스다.
 
@@ -931,9 +947,9 @@ Supabase SQL Editor에서 이 파일을 붙여 넣고 `Run`을 눌렀다는 것�
 
 ### 18.1 사전 조건: 편집자 계정
 
-파일 첫 주석에는 먼저 Authentication의 Users에서 `pca01008@gmail.com` 계정을 만들라고 적혀 있다.
+`supabase_setup.sql`은 공통 표와 권한을 만든다. 여행을 실제로 등록하기 전에는 Authentication의 Users에서 `trip-config.js`에 적은 편집자 이메일 계정을 만들어야 한다.
 
-뒤의 초기 문서 생성문이 `auth.users`에서 해당 이메일의 UUID를 찾기 때문이다. 계정이 없다면 선택 결과가 없어서 초기 `us-west-2027` 문서 행이 만들어지지 않을 수 있다.
+이후 `register_trip.sql`이 `auth.users`에서 해당 이메일의 UUID를 찾아 여행 행과 연결한다. 계정이 없다면 원인을 바로 알 수 있도록 오류를 표시하고 여행 행을 만들지 않는다.
 
 ### 18.2 최신 문서 표 생성
 
@@ -954,11 +970,11 @@ Supabase SQL Editor에서 이 파일을 붙여 넣고 `Run`을 눌렀다는 것�
 
 JavaScript가 시간을 직접 보내지 않아도 데이터베이스 서버 시각으로 `updated_at = now()`가 된다.
 
-### 18.4 초기 여행 행 생성
+### 18.4 여행 행 등록
 
-Auth 사용자 중 이메일이 `pca01008@gmail.com`인 사용자의 UUID를 찾아 `trip_id = 'us-west-2027'` 행을 만든다.
+`supabase_setup.sql` 실행 후 `register_trip.sql`을 별도로 실행한다. 이 파일은 Auth 사용자 중 설정한 이메일의 UUID를 찾아 설정한 `trip_id` 행을 만든다.
 
-`on conflict (trip_id) do nothing`이 있으므로 같은 여행 행이 이미 있으면 덮어쓰지 않는다.
+같은 여행 ID가 이미 있으면 일정 `content`는 유지하고 `editor_id`만 지정한 계정으로 갱신한다. 따라서 편집자를 바꿀 때도 사용할 수 있지만 이메일과 여행 ID를 실행 전에 반드시 확인해야 한다.
 
 ### 18.5 최신 문서 RLS와 읽기 권한
 
@@ -1026,8 +1042,10 @@ Supabase Storage에 `trip-media` 버킷을 만든다.
 
 - 로그인한 사용자
 - `trip-media` 버킷
-- 경로가 `us-west-2027/`로 시작
-- 사용자의 UUID가 이 여행의 `editor_id`와 같음
+- 파일 경로의 첫 폴더가 등록된 `trip_id`와 같음
+- 사용자의 UUID가 해당 여행의 `editor_id`와 같음
+
+예를 들어 `us-west-2027/photos/...`는 `us-west-2027` 여행 행의 편집자만 업로드할 수 있다. 새 여행도 같은 정책을 사용하므로 SQL 정책을 여행마다 복제할 필요가 없다.
 
 `UPDATE`와 `DELETE` 정책은 만들지 않는다. 앱도 기존 사진 파일을 덮어쓰거나 삭제하지 않는다. 해시 기반 새 파일을 만들고 과거 버전의 사진 참조를 보존하기 위한 결정이다.
 
@@ -1065,7 +1083,7 @@ Supabase 설정을 실제로 바꾸려면 SQL Editor에서 새 SQL을 직접 실
 
 ## 19. 공개 키와 비밀번호는 어떻게 다른가
 
-`index.html`에는 다음 종류의 값이 들어 있다.
+`trip-config.js`에는 다음 종류의 값이 들어 있다.
 
 - Supabase 프로젝트 URL
 - Supabase publishable key
@@ -1088,7 +1106,7 @@ publishable key는 브라우저 같은 공개 환경에서 사용하도록 만�
 
 ### 19.2 절대 넣으면 안 되는 값
 
-다음은 `index.html`, GitHub 저장소, 공개 채팅에 넣으면 안 된다.
+다음은 `index.html`, `trip-config.js`, GitHub 저장소, 공개 채팅에 넣으면 안 된다.
 
 - 편집자 비밀번호
 - Supabase secret key 또는 `service_role` 키
@@ -1214,7 +1232,7 @@ Realtime은 변경 알림 통로다. 알림이 일시적으로 실패해도 데�
 4. 몇 분 기다린 뒤 강력 새로고침한다.
 5. 코드가 아니라 일정 데이터 변경이었다면 웹페이지에서 `저장`했는지 확인한다.
 
-### 23.2 `index.html` 일정을 고쳐 push했는데 예전 일정이 보인다
+### 23.2 `trip-config.js` 일정을 고쳐 push했는데 예전 일정이 보인다
 
 Supabase의 `trip_documents.content`가 페이지 시작 후 `<main>`을 덮어쓰고 있을 가능성이 높다.
 
@@ -1225,9 +1243,9 @@ Supabase의 `trip_documents.content`가 페이지 시작 후 `<main>`을 덮어�
 확인할 것:
 
 - Supabase Authentication에 편집자 계정이 존재하는가
-- 이메일이 `index.html`의 `EDITOR_EMAIL`과 같은가
+- 이메일이 `trip-config.js`의 `editorEmail`과 같은가
 - 비밀번호가 맞는가
-- Supabase URL과 publishable key가 현재 프로젝트 것인가
+- `trip-config.js`의 Supabase URL과 publishable key가 현재 프로젝트 것인가
 - 브라우저 콘솔/네트워크에 연결 오류가 있는가
 
 ### 23.4 로그인은 되지만 저장이 실패한다
@@ -1258,7 +1276,7 @@ SQL은 서버의 표와 권한을 만든다. 가계부 탭이나 버튼 UI는 `i
 - 브라우저 압축 결과가 Storage의 5MB 제한 이하인가
 - 파일이 이미지이고 WebP 변환을 지원하는 브라우저인가
 - `trip-media` 버킷과 INSERT 정책이 생성되었는가
-- 경로가 `us-west-2027/` 아래인가
+- 경로의 첫 폴더가 `trip-config.js`의 `tripId`와 같은가
 - 네트워크가 정상인가
 
 ### 23.7 다른 사람이 저장한 내용이 즉시 안 보인다
@@ -1361,24 +1379,25 @@ SQL은 서버의 표와 권한을 만든다. 가계부 탭이나 버튼 UI는 `i
 새 Supabase 프로젝트와 새 GitHub 저장소에서 이 앱을 다시 만든다고 가정한 순서다.
 
 1. GitHub에 저장소를 만든다.
-2. `index.html`, `.gitattributes`, README, SQL 파일을 저장소에 넣는다.
+2. `index.html`, `trip-config.js`, `.gitattributes`, README, SQL 파일을 저장소에 넣는다.
 3. GitHub Pages 배포 소스를 설정한다.
 4. Supabase 프로젝트를 만든다.
 5. Supabase Authentication의 Users에서 편집자 계정을 만든다.
-6. 계정 이메일을 SQL과 `index.html` 설정값에 맞춘다.
-7. Supabase 프로젝트 URL과 publishable key를 `index.html`에 설정한다.
+6. 새 여행용 `trip-config.js`에서 고유한 `tripId`, 제목, 기간, 시간대, 일정과 체크리스트를 설정한다.
+7. 계정 이메일, Supabase 프로젝트 URL과 publishable key를 `trip-config.js`에 설정한다.
 8. Supabase SQL Editor에서 `supabase_setup.sql`을 실행한다.
-9. SQL 실행 결과에 오류가 없는지 확인한다.
-10. Table Editor에서 `trip_documents`의 `us-west-2027` 행이 생겼는지 확인한다.
-11. Storage에서 `trip-media` 버킷이 생겼는지 확인한다.
-12. GitHub에 코드를 push하고 Pages 배포 완료를 기다린다.
-13. 공개 주소에서 로그인하지 않고 화면을 볼 수 있는지 확인한다.
-14. 편집자로 로그인해 작은 변경을 저장한다.
-15. 버전 표에 기록이 생겼는지 확인한다.
-16. 다른 브라우저에서 저장 내용이 보이는지 확인한다.
-17. 사진 업로드, 버전 복원, 오프라인 작업본까지 순서대로 시험한다.
+9. `register_trip.sql`의 여행 ID와 이메일을 설정 파일과 같게 바꾼 뒤 실행한다.
+10. SQL 실행 결과에 오류가 없는지 확인한다.
+11. Table Editor에서 설정한 `tripId` 행이 생겼는지 확인한다.
+12. Storage에서 `trip-media` 버킷이 생겼는지 확인한다.
+13. GitHub에 코드를 push하고 Pages 배포 완료를 기다린다.
+14. 공개 주소에서 로그인하지 않고 화면을 볼 수 있는지 확인한다.
+15. 편집자로 로그인해 작은 변경을 저장한다.
+16. 버전 표에 기록이 생겼는지 확인한다.
+17. 다른 브라우저에서 저장 내용이 보이는지 확인한다.
+18. 사진 업로드, 버전 복원, 오프라인 작업본까지 순서대로 시험한다.
 
-초기 `trip_documents.content`가 빈 JSON이라면 첫 화면은 `index.html`의 기본 `<main>`을 사용한다. 첫 저장이 성공한 뒤부터 Supabase 저장본이 우선하는 구조가 된다.
+초기 `trip_documents.content`가 빈 JSON이라면 첫 화면은 `trip-config.js`에서 자동 생성한 기본 일정을 사용한다. 첫 저장이 성공한 뒤부터 Supabase 저장본이 우선하는 구조가 된다.
 
 ---
 
@@ -1452,9 +1471,42 @@ SQL은 서버의 표와 권한을 만든다. 가계부 탭이나 버튼 UI는 `i
 
 ---
 
+## 28. 다른 여행에 재사용하기
+
+리팩터링된 구조에서는 역할이 다음처럼 나뉜다.
+
+```text
+index.html
+  공통 디자인과 모든 기능
+
+trip-config.js
+  현재 여행의 제목, 기간, 시간대, 기본 내용, Supabase 연결
+
+Supabase의 tripId 행
+  웹페이지에서 저장한 최신 내용과 과거 50개 버전
+```
+
+새 여행을 만들 때는 `trip-config.template.js`를 복사해 `trip-config.js`로 사용한다. `days` 배열의 길이에 따라 날짜 라디오 입력, 탭, 일정 패널이 자동 생성되므로 11일 여행에 맞춰 HTML 선택자를 추가할 필요가 없다.
+
+여행마다 다음 세 값은 반드시 새로 정한다.
+
+- `tripId`: Supabase 문서와 Storage 사진 경로를 구분한다.
+- `cacheNamespace`: 같은 브라우저의 로컬 캐시가 섞이지 않게 한다.
+- `exportBaseName`: 내려받는 오프라인 작업본과 보기용 사본의 파일명을 구분한다.
+
+특히 새 여행이 기존 `tripId`를 그대로 쓰면 Supabase에 이미 저장된 이전 여행 내용이 새 설정의 기본 일정을 덮어쓸 수 있다.
+
+같은 Supabase 프로젝트를 재사용할 경우 공통 표와 함수는 공유할 수 있다. 업데이트된 `supabase_setup.sql`의 Storage 정책은 업로드 경로 첫 폴더와 `trip_documents.trip_id`를 비교하므로 여행 ID가 달라도 같은 버킷을 안전하게 나누어 쓴다. 리팩터링 이전 SQL을 사용한 기존 프로젝트는 현재 `supabase_setup.sql`을 한 번 다시 실행하고, 이후 새 여행마다 `register_trip.sql`을 실행해 여행 ID와 편집자를 연결한다.
+
+오프라인 작업본은 외부 `trip-config.js`가 없어도 열리도록 내보낼 때 현재 설정을 HTML 안에 함께 삽입한다. 따라서 새 여행으로 만든 오프라인 파일도 사진과 일정, 시간대, 파일 식별 정보를 유지한다.
+
+실제 복사 순서와 설정 예시는 [NEW_TRIP_GUIDE_KO.md](./NEW_TRIP_GUIDE_KO.md)에 정리되어 있다.
+
+---
+
 ## 마지막으로 기억할 다섯 문장
 
-1. `index.html`은 화면뿐 아니라 이 앱의 거의 모든 브라우저 기능을 담은 단일 파일 웹앱이다.
+1. `index.html`은 공통 화면과 기능을, `trip-config.js`는 여행별 기본 내용을 담는다.
 2. GitHub Pages는 앱 코드를 배포하고, Supabase는 최신 여행 데이터·로그인·버전·사진·실시간 알림을 담당한다.
 3. 웹페이지의 `저장`은 Supabase를 바꾸고, Git의 `push`는 GitHub Pages에 배포할 코드를 바꾼다.
 4. SQL Editor의 `Run`은 Supabase 서버 안에 표와 권한과 함수를 실제로 만드는 작업이며, SQL 파일을 push하는 것과 다르다.

@@ -2,7 +2,7 @@
 
 > 이 문서는 빠르게 구조와 운영 방법을 확인하기 위한 요약본이다.
 > 더 자세한 원리, SQL 해설, 용어 설명은 [상세 설명서](./PROJECT_GUIDE_KO.md)를 참고한다.
-> 현재 기준: 2026-08-21 · `schemaVersion 4`
+> 현재 기준: 2026-08-23 · `schemaVersion 4`
 
 ---
 
@@ -33,6 +33,7 @@ Supabase
 | 구성 요소 | 쉬운 비유 | 역할 |
 |---|---|---|
 | `index.html` | 여행 안내판 본체 | 화면, 디자인, 버튼, 모든 JavaScript 기능 |
+| `trip-config.js` | 여행별 내용 카드 | 제목, 기간, 시간대, 기본 일정, 체크리스트, 가계부 기본값 |
 | GitHub | 안내판 설계도 보관함 | 코드와 문서의 변경 이력 보관 |
 | GitHub Pages | 안내판 설치 서비스 | `index.html`을 공개 웹주소에 배포 |
 | Supabase Database | 온라인 여행 노트 | 최신 일정과 최근 50개 저장본 보관 |
@@ -88,7 +89,11 @@ Supabase
 | 파일 또는 폴더 | 역할 | 직접 수정해도 되는가 |
 |---|---|---|
 | `index.html` | 웹앱 본체 | 기능과 디자인을 바꿀 때 수정 |
+| `trip-config.js` | 현재 여행의 기본 설정과 일정 | 여행을 새로 만들거나 기본값을 바꿀 때 수정 |
+| `trip-config.template.js` | 새 여행용 설정 예시 | 복사해 `trip-config.js`로 사용 |
 | `supabase_setup.sql` | Supabase 서버 설정 | 내용을 이해하고 SQL Editor에서 실행 |
+| `register_trip.sql` | 여행 ID와 편집자 연결 | 여행마다 값을 바꿔 한 번 실행 |
+| `NEW_TRIP_GUIDE_KO.md` | 다른 여행 재사용 안내 | 새 여행을 만들 때 참고 |
 | `README.md` | 짧은 운영 안내 | 필요하면 수정 가능 |
 | `PROJECT_GUIDE_KO.md` | 주 상세 설명서 | 이 프로젝트를 공부할 때 먼저 참고 |
 | `PROJECT_GUIDE_SUMMARY_KO.md` | 현재 요약 설명서 | 빠른 확인용 |
@@ -103,20 +108,20 @@ Supabase
 
 ## 5. 페이지를 열면 일어나는 일
 
-1. GitHub Pages가 방문자에게 `index.html`을 전달한다.
-2. 브라우저가 HTML 화면과 CSS 디자인을 표시한다.
+1. GitHub Pages가 방문자에게 `index.html`과 `trip-config.js`를 전달한다.
+2. 브라우저가 설정을 읽고 제목, 날짜 탭, 기본 일정과 체크리스트를 자동 생성한다.
 3. 브라우저 안에서 JavaScript가 실행된다.
-4. JavaScript가 Supabase의 최신 여행 저장본을 요청한다.
-5. 저장본이 있으면 `index.html`의 기본 일정을 Supabase 내용으로 교체한다.
-6. 최근 상태를 브라우저 `localStorage`에도 보조 캐시로 저장한다.
+4. JavaScript가 설정의 `tripId`로 Supabase 최신 저장본을 요청한다.
+5. 저장본이 있으면 설정에서 만든 기본 일정을 Supabase 내용으로 교체한다.
+6. 최근 상태를 브라우저 `localStorage`에도 여행별 보조 캐시로 저장한다.
 7. Supabase Realtime 변경 알림을 구독한다.
-8. 서울·미국 서부 시각과 시차를 표시하고 1분마다 갱신한다.
+8. 설정에 지정된 두 지역 시각과 시차를 표시하고 1분마다 갱신한다.
 9. 여행 진행률을 표시하고 한 시간마다 다시 계산한다.
-10. 미국 서부 날짜를 기준으로 여행 전에는 PREP, 여행 중에는 해당 날짜, 여행 후에는 가계부를 첫 화면으로 선택한다.
+10. 목적지 날짜를 기준으로 여행 전에는 PREP, 여행 중에는 해당 날짜, 여행 후에는 가계부를 첫 화면으로 선택한다.
 
-Supabase 연결이 실패하면 브라우저의 최근 캐시를 사용하고, 캐시도 없으면 HTML 안의 기본 내용을 표시한다.
+Supabase 연결이 실패하면 브라우저의 최근 캐시를 사용하고, 캐시도 없으면 `trip-config.js`에서 생성한 기본 내용을 표시한다.
 
-> `index.html`의 기본 일정을 직접 바꿔도 Supabase 최신 저장본이 있으면 페이지 로딩 후 다시 덮어쓸 수 있다.
+> `trip-config.js`의 기본 일정을 바꿔도 같은 `tripId`에 Supabase 최신 저장본이 있으면 페이지 로딩 후 다시 덮어쓸 수 있다.
 
 ---
 
@@ -364,7 +369,7 @@ SQL은 다음을 만든다.
 
 ## 13. 공개 키와 보안
 
-`index.html`에 Supabase 프로젝트 URL, publishable key, 편집자 이메일이 보이는 것은 구조상 예상된 일이다. 브라우저로 전달되는 코드는 방문자가 볼 수 있기 때문이다.
+`trip-config.js`에 Supabase 프로젝트 URL, publishable key, 편집자 이메일이 보이는 것은 구조상 예상된 일이다. 브라우저로 전달되는 설정은 방문자가 볼 수 있기 때문이다.
 
 publishable key 자체를 비밀번호로 사용하지 않는다. 실제 권한은 다음이 결정한다.
 
@@ -393,14 +398,14 @@ publishable key 자체를 비밀번호로 사용하지 않는다. 실제 권한�
 3. 몇 분 기다린 후 강력 새로고침
 4. 일정 변경이었다면 Git push가 아니라 웹페이지 `저장`이 필요한지 확인
 
-### HTML 기본 일정을 바꿨는데 옛 일정이 보임
+### 설정 파일의 기본 일정을 바꿨는데 옛 일정이 보임
 
-Supabase 저장본이 페이지 로딩 후 HTML 기본 내용을 덮어썼을 가능성이 높다.
+Supabase 저장본이 페이지 로딩 후 `trip-config.js`의 기본 내용을 덮어썼을 가능성이 높다. 새 여행이라면 기존과 다른 `tripId`를 사용한다.
 
 ### 저장 실패
 
 1. 편집자 로그인이 유효한지 확인
-2. Supabase에 `us-west-2027` 문서 행이 있는지 확인
+2. Supabase에 `trip-config.js`의 `tripId`와 같은 문서 행이 있는지 확인
 3. 문서의 `editor_id`와 로그인 계정 UUID가 같은지 확인
 4. 최신 `save_trip_document` SQL이 실행되었는지 확인
 5. 네트워크와 브라우저 오류 메시지 확인
@@ -467,9 +472,22 @@ Supabase 저장본이 페이지 로딩 후 HTML 기본 내용을 덮어썼을 �
 
 ---
 
-## 16. 최종 핵심 다섯 문장
+## 16. 다른 여행에 재사용
 
-1. `index.html`은 화면·디자인·JavaScript 기능을 모두 담은 웹앱 본체다.
+`trip-config.template.js`를 복사해 새 `trip-config.js`를 만들고 다음 값을 바꾼다.
+
+- 겹치지 않는 `tripId`, `cacheNamespace`, `exportBaseName`
+- 제목, 기간, 경로, 두 지역의 IANA 시간대
+- 체크리스트, 가계부 기본 환율과 카테고리, 날짜별 일정
+- Supabase URL, publishable key, 편집자 이메일
+
+새 Supabase 프로젝트에서는 `supabase_setup.sql`을 실행한 뒤 `register_trip.sql`을 실행한다. 리팩터링 이전 SQL을 사용한 기존 프로젝트라면 다중 여행 사진 권한을 적용하기 위해 현재 `supabase_setup.sql`을 한 번 다시 실행한다. 그 뒤 같은 Supabase에 여행만 추가할 때는 새 여행 값을 넣은 `register_trip.sql`만 실행한다. 전체 절차는 [NEW_TRIP_GUIDE_KO.md](./NEW_TRIP_GUIDE_KO.md)를 따른다.
+
+---
+
+## 17. 최종 핵심 다섯 문장
+
+1. `index.html`은 공통 화면·디자인·기능을, `trip-config.js`는 여행별 기본 내용을 담는다.
 2. GitHub Pages는 프로그램 코드를 배포하고 Supabase는 여행 데이터와 로그인을 담당한다.
 3. Git push와 웹페이지 저장은 서로 다른 저장 경로다.
 4. SQL Editor의 Run은 Supabase 서버에 표·함수·권한·사진 공간을 실제로 만드는 작업이다.
