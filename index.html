@@ -215,7 +215,7 @@ header .subtitle{
   font-size:10px!important;
   font-weight:800!important;
 }
-main{max-width:860px!important;padding:16px 0!important}
+main{max-width:860px!important;min-height:calc(100dvh - 120px)!important;padding:16px 0!important}
 .panel{
   overflow:visible!important;
   border:1px solid rgba(204,215,229,.82)!important;
@@ -661,6 +661,8 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
   let editingExpenseId = null;
   let selectedCategoryIcon = '📦';
   let pendingImport = null;
+  let tabScrollReleaseTimer = null;
+  let tabScrollReleaseHandler = null;
 
   function uid(prefix='id') {
     return prefix + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,9);
@@ -1046,8 +1048,25 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
   async function confirmSave(){if(!pendingDraft){setStatus('저장할 변경이 없습니다.');return;}const choice=await showChoice({title:OFFLINE_MODE?'오프라인 작업본 저장':'공유 일정에 저장',message:OFFLINE_MODE?'수정된 내용을 포함한 새 작업본을 내려받습니다.':'저장하면 공개 링크에 변경 내용이 반영됩니다.',choices:[{label:'취소',value:'cancel'},{label:'저장',value:'save',className:'action-primary'}]});if(choice==='save')await saveAndFinish();}
   async function openVersions(){if(OFFLINE_MODE)return;const list=$('#versionList');list.innerHTML='<div class="version-empty">버전을 불러오는 중입니다.</div>';$('#versionDialog').hidden=false;const {data,error}=await client.from('trip_document_versions').select('id,content,created_at').eq('trip_id',TRIP_ID).order('created_at',{ascending:false}).limit(50);if(error){list.innerHTML='<div class="version-empty">버전 목록을 불러오지 못했습니다.</div>';return;}list.innerHTML=data.length?'':'<div class="version-empty">아직 저장된 버전이 없습니다.</div>';data.forEach(version=>{const item=document.createElement('div');item.className='version-item';item.innerHTML='<div><strong>버전 #'+version.id+'</strong><small>'+escapeHtml(new Date(version.created_at).toLocaleString('ko-KR'))+'</small></div><button class="action-muted" type="button">미리보기</button><button class="action-primary" type="button">복원</button>';const buttons=item.querySelectorAll('button');buttons[0].onclick=()=>{previewReturnState=captureState();applyState(version.content);body.classList.add('previewing');$('#previewLabel').textContent=new Date(version.created_at).toLocaleString('ko-KR')+' 저장본 미리보기';$('#versionDialog').hidden=true;};buttons[1].onclick=async()=>{const choice=await showChoice({title:'이 버전을 복원할까요?',message:'선택한 저장본이 새 버전으로 저장되고 공개됩니다.',choices:[{label:'취소',value:'cancel'},{label:'복원',value:'restore',className:'action-primary'}]});if(choice==='restore'){const restored=normalizeState(version.content);if(await persistState(restored)){applyState(restored);$('#versionDialog').hidden=true;setStatus('선택한 버전을 복원했습니다.');}}};list.appendChild(item);});}
   function closePreview(){if(previewReturnState)applyState(previewReturnState);previewReturnState=null;body.classList.remove('previewing');setStatus('보기 모드');resetInactivityTimer();}
-  function scrollTabs(direction){const tabs=$('.tabs');tabs.scrollBy({left:direction*Math.min(480,tabs.clientWidth*.72),behavior:'smooth'});}
-  function revealSelectedTab(){const selected=$('.day-radio:checked'),label=selected?$('label[for="'+selected.id+'"]'):null;label?.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});}
+  function prefersReducedMotion(){return window.matchMedia('(prefers-reduced-motion: reduce)').matches;}
+  function tabAnchorTop(tabs){const header=$('header'),headerBottom=header?header.getBoundingClientRect().bottom+window.scrollY:0,marginTop=Number.parseFloat(getComputedStyle(tabs).marginTop)||0;return Math.max(0,Math.round(headerBottom+marginTop));}
+  function tabsArePinned(tabs){const stickyTop=Number.parseFloat(getComputedStyle(tabs).top)||0;return tabs.getBoundingClientRect().top<=stickyTop+1;}
+  function cancelTabScrollRelease(){clearTimeout(tabScrollReleaseTimer);tabScrollReleaseTimer=null;if(tabScrollReleaseHandler){window.removeEventListener('scrollend',tabScrollReleaseHandler);tabScrollReleaseHandler=null;}}
+  function holdMainHeight(){const main=$('main');if(main)main.style.setProperty('min-height',Math.ceil(main.getBoundingClientRect().height)+'px','important');}
+  function releaseMainHeight(){cancelTabScrollRelease();$('main')?.style.removeProperty('min-height');}
+  function alignPageToTabs(tabs){
+    const target=tabAnchorTop(tabs),behavior=prefersReducedMotion()?'auto':'smooth';
+    if(behavior==='auto'||Math.abs(window.scrollY-target)<=1){window.scrollTo({top:target,behavior:'auto'});requestAnimationFrame(releaseMainHeight);return;}
+    const finish=()=>releaseMainHeight();
+    tabScrollReleaseHandler=finish;window.addEventListener('scrollend',finish,{once:true});tabScrollReleaseTimer=setTimeout(finish,900);
+    window.scrollTo({top:target,behavior});
+  }
+  function scrollTabs(direction){const tabs=$('.tabs');tabs.scrollBy({left:direction*Math.min(480,tabs.clientWidth*.72),behavior:prefersReducedMotion()?'auto':'smooth'});}
+  function revealSelectedTab(behavior=prefersReducedMotion()?'auto':'smooth'){
+    const tabs=$('.tabs'),selected=$('.day-radio:checked'),label=selected?$('label[for="'+selected.id+'"]'):null;if(!tabs||!label)return;
+    const target=label.offsetLeft-(tabs.clientWidth-label.offsetWidth)/2,maximum=Math.max(0,tabs.scrollWidth-tabs.clientWidth);
+    tabs.scrollTo({left:Math.max(0,Math.min(target,maximum)),behavior});
+  }
 
   async function hydrate(){if(OFFLINE_MODE){body.classList.add('offline-mode');let embedded=null;try{embedded=JSON.parse($('#offlineEmbeddedState').textContent||'null');}catch(_){}let cached=null;try{cached=JSON.parse(localStorage.getItem(OFFLINE_CACHE_KEY)||'null');}catch(_){}applyState(normalizeState(cached?.html?cached:embedded?.html?embedded:captureState()));lastSavedState=normalizeState(captureState());initializeHistory();updateDirtyState();return;}try{const published=await fetchPublishedState();if(published?.content?.html){applyState(normalizeState(migratePublishedState(published.content)));lastSavedState=normalizeState(captureState());localStorage.setItem(CACHE_KEY,JSON.stringify(lastSavedState));}}catch(error){console.warn(error);try{const cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');if(cached?.html){applyState(normalizeState(migratePublishedState(cached)));lastSavedState=normalizeState(captureState());}}catch(_){}}initializeHistory();updateDirtyState();if(!client){setStatus('공유 서버 연결 실패 · 저장된 화면 표시 중');return;}client.channel('trip-document-'+TRIP_ID).on('postgres_changes',{event:'UPDATE',schema:'public',table:'trip_documents',filter:'trip_id=eq.'+TRIP_ID},payload=>{if(!payload.new?.content?.html||body.classList.contains('editing')||pendingDraft||body.classList.contains('previewing'))return;applyState(normalizeState(migratePublishedState(payload.new.content)));lastSavedState=normalizeState(captureState());localStorage.setItem(CACHE_KEY,JSON.stringify(lastSavedState));initializeHistory();setStatus('새 저장본을 반영했습니다.');}).subscribe();await getEditorSession();}
 
@@ -1077,12 +1096,12 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
     const icon=event.target.dataset.categoryIcon;if(icon){selectedCategoryIcon=icon;renderIconPicker();}
   });
   document.addEventListener('input',event=>{if(body.classList.contains('editing')&&event.target.closest('main')&&!event.target.closest('.add-expense')&&event.target.id!=='exchangeRate')queueHistory();});
-  document.addEventListener('change',async event=>{if(event.target.id==='settingsExchangeRate'||event.target.id==='exchangeRate'){const input=event.target,before=String(exchangeRate);await requireEditor('ledger',()=>updateExchangeRate(input),()=>{input.value=before;});return;}if(event.target.matches('.prepday .checklist input[type="checkbox"]')&&!body.classList.contains('editing')){const input=event.target,before=!input.checked;await requireEditor('checklist',()=>finishMutation(),()=>{input.checked=before;});return;}if(body.classList.contains('editing')&&event.target.closest('main')&&!event.target.closest('.add-expense')&&event.target.id!=='exchangeRate')recordHistory();if(event.target.matches('.day-radio')){updateContextControls();revealSelectedTab();}});
+  document.addEventListener('change',async event=>{if(event.target.id==='settingsExchangeRate'||event.target.id==='exchangeRate'){const input=event.target,before=String(exchangeRate);await requireEditor('ledger',()=>updateExchangeRate(input),()=>{input.value=before;});return;}if(event.target.matches('.prepday .checklist input[type="checkbox"]')&&!body.classList.contains('editing')){const input=event.target,before=!input.checked;await requireEditor('checklist',()=>finishMutation(),()=>{input.checked=before;});return;}if(body.classList.contains('editing')&&event.target.closest('main')&&!event.target.closest('.add-expense')&&event.target.id!=='exchangeRate')recordHistory();if(event.target.matches('.day-radio')){const tabs=$('.tabs'),keepTabsPinned=Boolean(tabs&&tabsArePinned(tabs));cancelTabScrollRelease();if(keepTabsPinned)holdMainHeight();else releaseMainHeight();updateContextControls();revealSelectedTab();if(keepTabsPinned)requestAnimationFrame(()=>alignPageToTabs(tabs));}});
   $('.tabs').addEventListener('wheel',event=>{const tabs=event.currentTarget;if(tabs.scrollWidth<=tabs.clientWidth||Math.abs(event.deltaX)>Math.abs(event.deltaY))return;event.preventDefault();tabs.scrollLeft+=event.deltaY;},{passive:false});
   ['pointerdown','keydown'].forEach(type=>document.addEventListener(type,()=>{if(editorSession&&$('#noticeDialog').hidden)resetInactivityTimer();},{passive:true}));
   if(client)client.auth.onAuthStateChange((_event,session)=>{editorSession=session?.user?.email===EDITOR_EMAIL?session:null;if(!editorSession){localStorage.removeItem(SESSION_ACTIVITY_KEY);clearSessionTimers();}});
 
-  selectInitialTab();decorateButtonIcons();decorateDates();decorateChecklist();renderLedger();moneyTemplateHtml=$('.moneyday').outerHTML;decorateScheduleRows();body.classList.add('viewing');setEditable(false);lastSavedState=normalizeState(captureState());updateContextControls();updateTripProgress();updateWorldClocks();setInterval(updateTripProgress,60*60*1000);setInterval(updateWorldClocks,60*1000);revealSelectedTab();hydrate();
+  selectInitialTab();decorateButtonIcons();decorateDates();decorateChecklist();renderLedger();moneyTemplateHtml=$('.moneyday').outerHTML;decorateScheduleRows();body.classList.add('viewing');setEditable(false);lastSavedState=normalizeState(captureState());updateContextControls();updateTripProgress();updateWorldClocks();setInterval(updateTripProgress,60*60*1000);setInterval(updateWorldClocks,60*1000);revealSelectedTab('auto');hydrate();
 })();
 </script>
 </body>
