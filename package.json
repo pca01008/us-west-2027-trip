@@ -1,0 +1,13 @@
+{
+  "name": "us-west-2027-trip",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node scripts/check-project.mjs",
+    "styles:consolidate": "node scripts/consolidate-styles.mjs",
+    "test": "node --test tests/*.test.mjs && npm run check"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

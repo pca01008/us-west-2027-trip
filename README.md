@@ -9,6 +9,8 @@
 - `trip-config.template.js`: 다른 여행을 시작할 때 복사하는 설정 예시
 - `supabase_setup.sql`: 모든 여행이 공유하는 실시간 저장, 버전 관리, 사진 Storage와 편집 권한 설정
 - `register_trip.sql`: Supabase에 여행 ID와 편집자 계정을 연결하는 등록문
+- `scripts/`, `tests/`: 설정·HTML·SQL 정적 검사와 회귀 테스트
+- `.github/workflows/validate.yml`: push와 pull request 때 자동으로 실행되는 검증
 - `NEW_TRIP_GUIDE_KO.md`: 다른 여행으로 재사용하는 순서와 설정값 설명
 - `.gitattributes`: Windows와 WSL 환경의 줄바꿈을 LF로 통일하는 규칙
 
@@ -16,7 +18,7 @@
 
 `index.html`을 브라우저로 열면 일정을 볼 수 있습니다. 누구나 열람할 수 있으며, 편집은 설정된 Supabase 편집자 계정으로 로그인한 경우에만 가능합니다.
 
-- 편집 내용은 초안으로 유지되며, 확인 후 `저장`해야 공개 페이지에 반영됩니다.
+- 편집 내용은 브라우저 IndexedDB 초안으로 유지되며, 확인 후 `저장`해야 공개 페이지에 반영됩니다. 새로고침이나 탭 종료 뒤에도 복구를 제안합니다.
 - 여행 전에는 PREP, 여행 중에는 미국 서부 현지 날짜의 일정, 여행 후에는 가계부가 첫 화면으로 열립니다.
 - 헤더에는 서울과 미국 서부의 현재 시각 및 자동 계산된 시차가 표시됩니다.
 - 편집 중에는 실행 취소와 다시 실행을 사용할 수 있습니다.
@@ -25,16 +27,16 @@
 - 체크리스트 항목은 편집 모드에서 추가·수정·삭제하고 위·아래 버튼으로 순서를 변경할 수 있습니다. 새 항목의 안내 문구는 실제 값이 아니므로 바로 입력하면 됩니다.
 - 일정은 시간·세로선·마커·카드로 이어지는 타임라인이며, 편집 모드에서 일정별 사진과 HTTPS 지도 링크를 첨부할 수 있습니다.
 - 지도는 장소명과 외부 지도 URL을 저장하는 방식이므로, 오프라인 파일에서도 링크는 보이지만 실제 지도를 열 때는 인터넷 연결이 필요합니다.
-- 사진 개수에는 제한이 없습니다. 업로드 전에 WebP 원본(최대 1600px)과 썸네일(최대 480px)로 압축되며, 화면에서는 썸네일을 지연 로드합니다. 개별 원본 파일은 20MB까지 선택할 수 있습니다.
+- 사진 개수에는 제한이 없습니다. 추가한 사진은 우선 초안에만 보관되고 최종 저장할 때 업로드됩니다. 업로드 전에 WebP 원본(최대 1600px)과 썸네일(최대 480px)로 압축되며, 화면에서는 썸네일을 지연 로드합니다. 개별 원본 파일은 20MB까지 선택할 수 있습니다.
 - 압축된 사진의 SHA-256 해시를 파일 경로로 사용하므로 동일한 사진은 같은 URL을 재사용합니다. 새 사진은 브라우저 캐시를 1년간 유지하고, 사진 내용이 바뀌면 새 URL을 생성해 변경된 파일만 다시 받습니다.
 - 가계부는 보기 모드에서도 날짜·카테고리·항목·금액·통화를 추가·수정·삭제할 수 있습니다. 실제 변경 시 유효한 편집자 세션을 확인하며, `변경사항 저장` 전까지는 공개되지 않습니다.
 - 가계부 탭의 `가계부 설정`에서 수동 환율과 카테고리를 관리합니다. 카테고리를 삭제하면 연결된 내역은 `삭제된 카테고리`로 이동합니다.
-- 가계부는 KRW와 USD 합계를 각각 표시하고, 입력한 환율을 이용한 원화 환산 합계와 카테고리별 합계도 함께 보여줍니다.
-- 저장본은 최근 50개까지 보관되며 `버전 관리`에서 미리보기와 복원이 가능합니다.
+- 가계부는 예산 진행률, 카테고리·검색 필터, KRW/USD 합계, 원화 환산 합계와 카테고리별 합계를 보여주며 현재 목록을 안전한 CSV로 내보낼 수 있습니다.
+- 저장본은 메모와 함께 최근 50개까지 보관됩니다. `버전 관리`는 목록에서 본문을 한꺼번에 내려받지 않고 선택한 버전만 불러와 비교·미리보기·복원합니다.
 - `내보내기`에서 목적에 따라 `오프라인 작업본` 또는 `인쇄·공유용 사본`을 선택합니다.
 - `오프라인 작업본`은 사진까지 파일 안에 포함하며 인터넷 없이 편집할 수 있습니다. 사진이 많아 100MB를 넘으면 다운로드 전에 경고합니다.
 - 오프라인 작업본에서 편집한 뒤 저장하면 새 작업본이 내려받아집니다. 온라인 페이지의 `편집본 불러오기`는 최신 공개본과 달라진 일정을 먼저 보여주며, 확인한 내용은 초안으로만 적용됩니다. 별도로 `저장`해야 공개됩니다.
-- `인쇄·공유용 사본`은 편집 기능과 Supabase 연결을 제거한 읽기 전용 스냅샷입니다. 온라인 일정에 다시 반영할 수 없으며, 사진과 지도 표시에는 인터넷 연결이 필요합니다.
+- `인쇄·공유용 사본`은 편집 기능과 Supabase 연결을 제거한 읽기 전용 스냅샷입니다. 가능한 사진은 파일에 포함하며, 포함하지 못한 사진과 지도 링크를 열 때만 인터넷 연결이 필요합니다.
 
 ## Supabase 초기 설정
 
@@ -43,11 +45,23 @@
 3. `register_trip.sql`의 여행 ID와 이메일을 확인한 뒤 실행합니다.
 4. `trip-config.js`의 Supabase 프로젝트 URL, publishable key, 여행 ID와 편집자 이메일을 확인합니다.
 
-이전에 SQL을 실행했더라도 변경된 `supabase_setup.sql` 전체를 다시 실행해야 합니다. 스크립트는 기존 일정 데이터를 유지하면서 최근 50개 버전과 공개 `trip-media` Storage 버킷 및 편집자 전용 업로드 정책을 설정합니다.
+이전에 SQL을 실행했더라도 변경된 `supabase_setup.sql` 전체를 **웹앱 배포 전에** 다시 실행해야 합니다. 스크립트는 기존 일정 데이터를 유지하면서 비공개 `trip_editors` 권한표, revision 충돌 방지, 최근 50개 버전, 공개 `trip-media` Storage 버킷과 편집자 전용 업로드 정책을 설정합니다.
 
 일정에서 사진을 삭제해도 Storage 원본은 즉시 삭제하지 않습니다. 이전 저장 버전에서 사진을 복원할 수 있게 하기 위한 동작입니다. 장기간 사용 후 사용하지 않는 파일을 정리하려면 보관 중인 50개 버전과 현재 문서에서 참조되지 않는 객체만 별도로 확인해 삭제해야 합니다.
 
 publishable key는 정적 웹페이지에 포함해도 되지만, service role key나 편집자 비밀번호는 저장소에 올리지 않습니다.
+
+외부 Supabase JavaScript SDK는 `index.html`에서 고정 버전과 SRI 무결성 해시를 사용합니다. 버전을 올릴 때는 URL과 해시를 함께 갱신하고 테스트를 실행합니다.
+
+## 로컬 검증
+
+Node.js 20 이상에서 다음 명령을 실행합니다.
+
+```bash
+npm test
+```
+
+이 명령은 회귀 테스트와 현재 여행 설정·이미지 경로·HTML 문법·SQL 핵심 규칙을 검사합니다. CSS 블록을 다시 합쳐야 할 때만 `npm run styles:consolidate`를 사용합니다. GitHub Actions도 `main` push와 pull request에서 같은 검사를 실행합니다.
 
 ## 다른 여행에 재사용
 
@@ -59,8 +73,9 @@ WSL 또는 PowerShell 중 한 환경을 기준으로 작업하고, 변경 전후
 
 ```bash
 git status
-git add index.html trip-config.js trip-config.template.js supabase_setup.sql register_trip.sql README.md NEW_TRIP_GUIDE_KO.md PROJECT_GUIDE_KO.md PROJECT_GUIDE_SUMMARY_KO.md .gitattributes
-git commit -m "Update travel planner"
+npm test
+git add index.html trip-config.js trip-config.template.js supabase_setup.sql register_trip.sql README.md NEW_TRIP_GUIDE_KO.md PROJECT_GUIDE_KO.md PROJECT_GUIDE_SUMMARY_KO.md .gitattributes .gitignore .github package.json scripts tests
+git commit -m "feat: update travel planner"
 git push origin main
 ```
 

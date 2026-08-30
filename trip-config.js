@@ -6,7 +6,7 @@
  * tripId는 영문 소문자, 숫자, 하이픈만 사용하세요.
  */
 window.TRIP_CONFIG = {
-  schemaVersion: 4,
+  schemaVersion: 5,
   tripId: 'us-west-2027',
   cacheNamespace: 'uswest2027',
   locale: 'ko-KR',
@@ -56,6 +56,7 @@ window.TRIP_CONFIG = {
   },
   ledger: {
     defaultExchangeRate: 1450,
+    defaultBudgetKrw: 0,
     categories: [
       { id: 'flight', name: '항공', icon: '✈️' },
       { id: 'hotel', name: '숙박', icon: '🏨' },
@@ -66,7 +67,7 @@ window.TRIP_CONFIG = {
       { id: 'parking', name: '주차', icon: '🅿️' },
       { id: 'ticket', name: '관광·티켓', icon: '🎟️' },
       { id: 'shopping', name: '쇼핑', icon: '🛍️' },
-      { id: 'misc', name: '기타', icon: '📦' },
+      { id: 'misc', name: '기타', icon: '📦', system: true },
       { id: 'deleted', name: '삭제된 카테고리', icon: '🗑️', system: true }
     ]
   },
@@ -95,7 +96,21 @@ window.TRIP_CONFIG = {
         { time: '05:30', title: 'Alexis Park All Suite Resort 체크아웃', detail: '투어 픽업 전 체크아웃 및 짐 정리', warnings: ['투어 차량에 캐리어 보관이 불가능하면 호텔에 짐을 맡겨야 합니다. 출발 전에 보관 가능 여부와 인수 시간을 반드시 확인합니다.'] },
         {
           time: '06:00', title: '그랜드캐니언 1박 2일 투어 픽업', detail: '라스베이거스 출발 · 지정 픽업 장소와 배낭 중심 준비물 재확인',
-          extraHtml: `<a class="reference-link" href="https://experiences.myrealtrip.com/products/3147877" target="_blank" rel="noopener">투어 상품 상세 보기</a><div class="tour-costs"><strong>현장 비용 · 1인 기준</strong><ul><li><span>앤텔로프 캐니언 입장료</span><b>$81</b></li><li><span>앤텔로프 인디언 가이드 팁</span><b>$3</b></li><li><span>4개 공원·명소 입장료</span><b>$35</b></li><li><span>CUA Permit</span><b>$20</b></li><li><span>ADOT Permit</span><b>$10</b></li><li><span>미국 비거주자 추가 입장료</span><b>$83</b></li><li><span>가이드 팁 · 2일</span><b>$60</b></li></ul><div class="tour-total">합계 $292 / 1인 + 불포함 식사</div><small>불포함 식사: 1일차 아침·점심, 2일차 점심. 현장 비용과 운영 조건은 출발 전 다시 확인합니다.</small></div>`
+          reference: { label: '투어 상품 상세 보기', url: 'https://experiences.myrealtrip.com/products/3147877' },
+          tourCosts: {
+            title: '현장 비용 · 1인 기준',
+            items: [
+              { label: '앤텔로프 캐니언 입장료', amount: '$81' },
+              { label: '앤텔로프 인디언 가이드 팁', amount: '$3' },
+              { label: '4개 공원·명소 입장료', amount: '$35' },
+              { label: 'CUA Permit', amount: '$20' },
+              { label: 'ADOT Permit', amount: '$10' },
+              { label: '미국 비거주자 추가 입장료', amount: '$83' },
+              { label: '가이드 팁 · 2일', amount: '$60' }
+            ],
+            total: '합계 $292 / 1인 + 불포함 식사',
+            note: '불포함 식사: 1일차 아침·점심, 2일차 점심. 현장 비용과 운영 조건은 출발 전 다시 확인합니다.'
+          }
         },
         { time: '오전', title: '자이언 캐니언', detail: '붉은 바위산과 와인딩 로드를 따라 자이언의 장대한 협곡 풍경을 감상합니다.' },
         { time: '점심', title: '자유 점심 식사', detail: '현지 아메리칸 레스토랑 또는 패스트푸드 · 투어 비용 불포함' },

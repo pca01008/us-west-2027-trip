@@ -5,7 +5,7 @@
  * tripId는 다른 여행과 겹치지 않는 영문 소문자·숫자·하이픈 조합을 사용합니다.
  */
 window.TRIP_CONFIG = {
-  schemaVersion: 4,
+  schemaVersion: 5,
   tripId: 'sample-trip-2028',
   cacheNamespace: 'sample_trip_2028',
   locale: 'ko-KR',
@@ -45,12 +45,13 @@ window.TRIP_CONFIG = {
   },
   ledger: {
     defaultExchangeRate: 10,
+    defaultBudgetKrw: 0,
     categories: [
       { id: 'flight', name: '항공', icon: '✈️' },
       { id: 'hotel', name: '숙박', icon: '🏨' },
       { id: 'food', name: '식비', icon: '🍽️' },
       { id: 'transport', name: '교통', icon: '🚗' },
-      { id: 'misc', name: '기타', icon: '📦' },
+      { id: 'misc', name: '기타', icon: '📦', system: true },
       { id: 'deleted', name: '삭제된 카테고리', icon: '🗑️', system: true }
     ]
   },
@@ -74,6 +75,16 @@ window.TRIP_CONFIG = {
           map: {
             name: '숙소',
             url: 'https://www.google.com/maps'
+          },
+          reference: {
+            label: '숙소 상세 보기',
+            url: 'https://example.com/reservation'
+          },
+          tourCosts: {
+            title: '현장 비용',
+            items: [{ label: '입장료', amount: 'USD 20' }],
+            total: '합계 USD 20',
+            note: '현장 결제 여부를 확인하세요.'
           }
         }
       ]

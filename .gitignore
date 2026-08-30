@@ -1,0 +1,15 @@
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+
+# Local design references and raw source assets (not deployed)
+/.agents/
+/reference.html
+/airbnb.png
+/google map - Airbnb.png
+/google map - Alexis Park Resort.png
+/google map - Waldof Astoria Las Vegas.png
+/여행 일정 업데이트 260820.txt
+/추후 요청 예정 사항.txt
+/투어 계획.txt
