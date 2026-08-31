@@ -61,6 +61,13 @@ test('브라우저 초안은 IndexedDB에 보존되고 저장 시 revision을 �
   assert.match(html, /metadata\.revision\?\?publishedRevision/);
   assert.doesNotMatch(html, /localStorage\.setItem\((?:OFFLINE_)?CACHE_KEY/);
   assert.match(html, /window\.addEventListener\('pagehide'/);
+  assert.match(html, /draftWriteGeneration\+\+/);
+  assert.match(html, /generation!==draftWriteGeneration/);
+  assert.match(html, /request\.onsuccess=\(\)=>resolve\(!request\.result\)/);
+  const recovery = html.match(/async function recoverOnlineDraft\(\) \{([\s\S]*?)\n  \}/)?.[1] || '';
+  assert.match(recovery, /pendingDraft=false/);
+  assert.match(recovery, /lastSavedState=clone\(normalizeState\(captureState\(\)\)\)/);
+  assert.match(recovery, /const cleared=await clearDraftRecord\(\)/);
 });
 
 test('현재 여행과 재사용 템플릿은 보존형 스키마 5를 사용한다', async () => {
