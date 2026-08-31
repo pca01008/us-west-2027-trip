@@ -524,16 +524,26 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
 
 }
 
+/* Keep the default scaffold out of sight until the published state is resolved. */
+.app-loading{display:none;width:calc(100% - 32px);max-width:860px;min-height:240px;margin:18px auto 48px;place-items:center}
+.hydrating .app-loading{display:grid}
+.hydrating>.tabs,.hydrating>.editor-bar,.hydrating>.preview-banner,.hydrating>main{display:none}
+.app-loading-card{display:flex;align-items:center;gap:14px;width:min(100%,420px);padding:20px 22px;border:1px solid rgba(188,201,214,.76);border-radius:18px;background:rgba(255,255,255,.92);box-shadow:0 18px 46px rgba(31,48,70,.1);backdrop-filter:blur(12px)}
+.app-loading-spinner{width:26px;height:26px;flex:0 0 26px;border:3px solid #e7edf3;border-top-color:#a93f35;border-radius:50%;animation:trip-loading-spin .8s linear infinite}
+.app-loading-copy{display:grid;gap:4px}.app-loading-copy strong{color:var(--navy);font-size:14px}.app-loading-copy small{color:var(--muted);font-size:11px;line-height:1.45}
+@keyframes trip-loading-spin{to{transform:rotate(1turn)}}
+
 /* Only state utilities that must beat every component layer remain important. */
 [hidden],.hidden{display:none!important}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 </style>
 </head>
-<body class="viewing">
+<body class="viewing hydrating">
 <header><div class="hero-shell"><div class="hero-top"><div class="hero-copy"><span class="hero-kicker">TRIP PLANNER</span><h1 class="title">여행 일정</h1></div><div class="hero-meta"><div class="hero-meta-card hero-meta-dates"><small>TRAVEL DATES</small><strong>여행 기간</strong></div><div class="hero-meta-card"><small>ROUTE</small><strong>여행 경로</strong></div></div></div><div class="world-clocks" aria-label="두 지역 현재 시각"><div class="world-clock"><div class="world-clock-copy"><small>HOME</small><span id="homeDate">날짜 계산 중</span></div><time id="homeClock">--:--</time></div><div class="world-clock"><div class="world-clock-copy"><small>DESTINATION</small><span id="destinationDate">날짜 계산 중</span></div><time id="destinationClock">--:--</time></div><div class="time-gap" id="timeGap">시차 계산 중</div></div><div class="trip-progress" id="tripProgress"><div class="trip-progress-head"><strong id="tripProgressLabel">여행 준비 중</strong><span id="tripProgressMeta">일정을 계산하고 있습니다.</span></div><div class="trip-progress-track" aria-label="여행 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" role="progressbar"><i id="tripProgressFill"></i></div></div></div></header>
 <nav class="tabs" aria-label="여행 날짜"></nav>
 <div class="editor-bar"><button class="primary" data-icon="edit" id="editBtn">편집 시작</button><button class="mode-only edit-only" data-icon="undo" id="undoBtn" disabled>실행 취소</button><button class="mode-only edit-only" data-icon="redo" id="redoBtn" disabled>다시 실행</button><button class="mode-only edit-only" data-icon="plus" id="addTimeBtn">일정 시간 추가</button><button class="mode-only edit-only" data-icon="check" id="addCheckBtn">체크 항목 추가</button><button class="mode-only edit-only danger" data-icon="reset" id="resetBtn">초기화</button><button class="mode-only view-only" data-icon="save" id="saveBtn" disabled>변경사항 저장</button><button class="mode-only view-only online-only" data-icon="upload" id="importBtn" title="오프라인 작업본을 최신 저장본과 비교해 초안으로 불러옵니다.">편집본 불러오기</button><button class="mode-only view-only" data-icon="export" id="exportMenuBtn">내보내기</button><button class="mode-only view-only online-only" data-icon="history" id="versionsBtn">버전 관리</button><button class="session-only" data-icon="logout" id="logoutBtn" type="button">로그아웃</button><button class="operation-only danger" data-icon="reset" id="cancelOperationBtn" type="button">작업 취소</button><span id="status" class="chip" role="status" aria-live="polite">보기 모드</span><input accept="text/html,.html" id="importFileInput" type="file" hidden></div>
 <div class="preview-banner" id="previewBanner"><span id="previewLabel">저장 버전 미리보기</span><button id="closePreviewBtn" type="button">미리보기 종료</button></div>
+<section class="app-loading" id="appLoading" role="status" aria-live="polite"><div class="app-loading-card"><span class="app-loading-spinner" aria-hidden="true"></span><div class="app-loading-copy"><strong>최신 여행 일정을 불러오는 중</strong><small>공유 저장본을 확인하고 있습니다.</small></div></div></section>
 <section class="auth-dialog" id="authDialog" hidden aria-modal="true" aria-labelledby="authTitle" role="dialog"><form class="auth-card" id="authForm"><h2 id="authTitle">편집자 확인</h2><p>일정은 누구나 볼 수 있지만, 수정하려면 편집 비밀번호가 필요합니다.</p><label for="editorPassword">편집 비밀번호</label><input autocomplete="current-password" id="editorPassword" required type="password"><div class="auth-actions"><button class="auth-cancel" id="authCancel" type="button">취소</button><button class="auth-submit" id="authSubmit" type="submit">확인</button></div><div aria-live="polite" class="auth-error" id="authError"></div></form></section>
 <section class="notice-dialog" id="noticeDialog" hidden aria-modal="true" aria-labelledby="noticeTitle" role="dialog"><div class="notice-card"><h2 id="noticeTitle"></h2><p id="noticeMessage"></p><p class="session-countdown" id="sessionCountdown" hidden></p><label class="dialog-field" id="noticeField" hidden><span id="noticeFieldLabel">버전 메모</span><input id="noticeInput" maxlength="120" placeholder="예: LA 일정 확정" type="text"></label><div class="notice-actions" id="noticeActions"></div></div></section>
 <section class="version-dialog" id="versionDialog" hidden aria-modal="true" aria-labelledby="versionTitle" role="dialog"><div class="version-card"><div class="version-head"><div><h2 id="versionTitle">저장 버전 관리</h2><p>최근 저장본 50개를 확인하고 복원할 수 있습니다.</p></div><button class="action-muted" id="closeVersionsBtn" type="button">닫기</button></div><div class="version-list" id="versionList"></div></div></section>
@@ -584,7 +594,7 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
     </div>
   </section>
 </template>
-<main></main>
+<main aria-busy="true"></main>
 <script id="tripConfigScript" src="trip-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.4" integrity="sha384-yiVMs0R/Jyz7OhoXa/DsEMUSBLjEhr/QJta2ONO+zB6I8/GmNg/7AUFrZmAJV7KV" crossorigin="anonymous"></script>
 <script id="offlineEmbeddedState" type="application/json">null</script>
@@ -758,6 +768,13 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
   function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function hashText(value) { let hash=2166136261; for (const c of String(value)) { hash^=c.charCodeAt(0); hash=Math.imul(hash,16777619); } return (hash>>>0).toString(36); }
   function setStatus(message) { if ($('#status')) $('#status').textContent = message; }
+  function finishHydration() {
+    if (!body.classList.contains('hydrating')) return;
+    body.classList.remove('hydrating');
+    const loading=$('#appLoading'),main=$('main');
+    if(loading){loading.hidden=true;loading.setAttribute('aria-hidden','true');}
+    if(main)main.removeAttribute('aria-busy');
+  }
   function todayLocal() { const now=new Date(); return new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().slice(0,10); }
   function formatKrw(value) { return '₩' + Math.round(Number(value)||0).toLocaleString('ko-KR'); }
   function formatUsd(value) { return '$' + (Number(value)||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
@@ -1340,7 +1357,9 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
     try {
       const embedded=await embedPhotos(sourceState),state=embedded.state,cloneDoc=document.documentElement.cloneNode(true);
       cloneDoc.dataset.offline='true';cloneDoc.dataset.offlineId=Date.now().toString(36);
-      cloneDoc.querySelector('body').className='viewing offline-mode';cloneDoc.querySelector('main').innerHTML=state.html;
+      const cloneBody=cloneDoc.querySelector('body'),cloneMain=cloneDoc.querySelector('main'),cloneLoading=cloneDoc.querySelector('#appLoading');
+      cloneBody.className='viewing offline-mode hydrating';cloneMain.innerHTML=state.html;cloneMain.setAttribute('aria-busy','true');
+      if(cloneLoading){cloneLoading.hidden=false;cloneLoading.removeAttribute('aria-hidden');}
       cloneDoc.querySelector('#offlineEmbeddedState').textContent=JSON.stringify(state).replace(/</g,'\\u003c');
       cloneDoc.querySelector('script[src*="supabase"]')?.remove();embedTripConfig(cloneDoc);stripTransient(cloneDoc);setArtifactBanner(cloneDoc,'editable');
       const source='<!doctype html>\n'+cloneDoc.outerHTML,size=new Blob([source]).size;
@@ -1382,7 +1401,7 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
       const embedded=await embedPhotos(captureState(),{strict:false}),cloneDoc=document.documentElement.cloneNode(true),photoData=new Map();
       const embeddedTemplate=document.createElement('template');embeddedTemplate.innerHTML=embedded.state.html;embeddedTemplate.content.querySelectorAll('.schedule-photo').forEach(figure=>{const img=figure.querySelector('img');photoData.set(figure.dataset.photoId,{src:img?.src||'',full:img?.dataset.fullUrl||img?.src||''});});
       cloneDoc.querySelectorAll('.schedule-photo').forEach(figure=>{const data=photoData.get(figure.dataset.photoId),img=figure.querySelector('img');if(data&&img){img.src=data.src;img.dataset.fullUrl=data.full;}});
-      cloneDoc.querySelectorAll('script,#moneyPanelTemplate,.editor-bar,.auth-dialog,.notice-dialog,.version-dialog,.preview-banner,.tab-scroll').forEach(el=>el.remove());
+      cloneDoc.querySelectorAll('script,#moneyPanelTemplate,.editor-bar,.auth-dialog,.notice-dialog,.version-dialog,.preview-banner,.app-loading,.tab-scroll').forEach(el=>el.remove());
       cloneDoc.querySelector('body').className='viewing';stripTransient(cloneDoc);cloneDoc.querySelectorAll('.expense-entry,.category-manager,.expense-actions').forEach(el=>el.remove());
       cloneDoc.querySelectorAll('main input,main select').forEach(control=>control.disabled=true);
       cloneDoc.querySelectorAll('input[type="checkbox"]').forEach((input,index)=>{if($$('main input[type="checkbox"]')[index]?.checked)input.setAttribute('checked','');else input.removeAttribute('checked');input.disabled=true;});
@@ -1515,7 +1534,7 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
         applyState(restored);
         setStatus(record.dirty?'저장하지 않은 오프라인 초안을 복구했습니다.':'오프라인 작업본');
       }else{applyState(embeddedState);lastSavedState=clone(embeddedState);}
-      initializeHistory();updateDirtyState();return;
+      initializeHistory();updateDirtyState();finishHydration();return;
     }
 
     let loadedFromCache=false;
@@ -1527,7 +1546,7 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
       if(cached?.state?.html){const state=normalizeState(migratePublishedState(cached.state));applyState(state);setPublishedBaseline({revision:cached.revision,updatedAt:cached.updatedAt},state);loadedFromCache=true;const cachedLabel=cached.cachedAt?new Date(cached.cachedAt).toLocaleString('ko-KR'):'최근';setStatus('오프라인 캐시 표시 · '+cachedLabel+' 기준');}
     }
     if(!lastSavedState)lastSavedState=normalizeState(captureState());
-    initializeHistory();updateDirtyState();await recoverOnlineDraft();
+    initializeHistory();updateDirtyState();await recoverOnlineDraft();finishHydration();
     if(!client){setStatus('공유 서버 연결 실패 · 저장된 화면 표시 중');return;}
     client.channel('trip-document-'+TRIP_ID).on('postgres_changes',{event:'UPDATE',schema:'public',table:'trip_documents',filter:'trip_id=eq.'+TRIP_ID},payload=>{
       if(!payload.new?.content?.html)return;
@@ -1586,7 +1605,7 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
   window.addEventListener('beforeunload',event=>{if(!pendingDraft&&!saveInFlight)return;void flushDraftPersistence();event.preventDefault();event.returnValue='';});
   if(client)client.auth.onAuthStateChange((_event,session)=>{const wasAuthenticated=Boolean(editorSession),valid=editorEmailMatches(session?.user?.email)?session:null;if(valid){setEditorSession(valid);return;}setEditorSession(null);if(wasAuthenticated&&!signingOut)setTimeout(()=>void handleExternalSignOut('Supabase 편집 세션이 종료되었습니다.'),0);});
 
-  initializeDialogAccessibility();selectInitialTab();decorateButtonIcons();decorateDates();decorateChecklist();renderLedger();moneyTemplateHtml=$('.moneyday').outerHTML;decorateScheduleRows();body.classList.add('viewing');setEditable(false);lastSavedState=normalizeState(captureState());updateContextControls();updateTripProgress();updateWorldClocks();setInterval(updateTripProgress,60*60*1000);setInterval(updateWorldClocks,60*1000);revealSelectedTab('auto');void hydrate();
+  initializeDialogAccessibility();selectInitialTab();decorateButtonIcons();decorateDates();decorateChecklist();renderLedger();moneyTemplateHtml=$('.moneyday').outerHTML;decorateScheduleRows();body.classList.add('viewing');setEditable(false);lastSavedState=normalizeState(captureState());updateContextControls();updateTripProgress();updateWorldClocks();setInterval(updateTripProgress,60*60*1000);setInterval(updateWorldClocks,60*1000);revealSelectedTab('auto');void hydrate().catch(error=>{console.error(error);setStatus('일정을 불러오지 못했습니다 · 현재 화면 유지');}).finally(finishHydration);
 })();
 </script>
 </body>

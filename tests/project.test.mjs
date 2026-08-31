@@ -70,6 +70,19 @@ test('브라우저 초안은 IndexedDB에 보존되고 저장 시 revision을 �
   assert.match(recovery, /const cleared=await clearDraftRecord\(\)/);
 });
 
+test('초기 기본 일정은 최신 공유본 확인이 끝날 때까지 노출하지 않는다', async () => {
+  const html = await readFile(path.join(root, 'index.html'), 'utf8');
+  assert.match(html, /<body class="viewing hydrating">/);
+  assert.match(html, /id="appLoading" role="status" aria-live="polite"/);
+  assert.match(html, /\.hydrating>\.tabs,[^\n]+\.hydrating>main\{display:none\}/);
+  assert.match(html, /function finishHydration\(\)/);
+  assert.match(html, /await recoverOnlineDraft\(\);finishHydration\(\)/);
+  assert.match(html, /hydrate\(\)\.catch\([\s\S]*?\.finally\(finishHydration\)/);
+  assert.match(html, /className='viewing offline-mode hydrating'/);
+  assert.match(html, /cloneLoading\.hidden=false/);
+  assert.match(html, /\.preview-banner,\.app-loading,\.tab-scroll/);
+});
+
 test('현재 여행과 재사용 템플릿은 보존형 스키마 5를 사용한다', async () => {
   for (const file of ['trip-config.js', 'trip-config.template.js']) {
     const source = await readFile(path.join(root, file), 'utf8');
