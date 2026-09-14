@@ -10,7 +10,39 @@ const context = vm.createContext({});
 vm.runInContext(calculations.slice(calculations.indexOf('function parseTimetableTime')), context);
 const { parseTimetableTime: parse, layoutTimetableEvents: layout, timetableWindow: windowRange } = context;
 const plain = value => JSON.parse(JSON.stringify(value));
-const { scheduleTimeValue: timeValue } = context;
+const { scheduleTimeValue: timeValue, scheduleClockMask: clockMask, scheduleClockValue: clockValue, editScheduleClock: editClock } = context;
+
+test('숫자를 한 자리씩 입력하면 콜론을 건너뛰고 네 자리만 채운다', () => {
+  let state = { value: clockMask(''), caret: 0 };
+  const expected = ['0_:__', '09:__', '09:3_', '09:30'];
+  [...'0930'].forEach((digit, index) => {
+    state = editClock(state.value, state.caret, state.caret, 'insertText', digit);
+    assert.equal(state.value, expected[index]);
+    assert.equal(state.caret, [1, 3, 4, 5][index]);
+  });
+  assert.equal(editClock(state.value, 5, 5, 'insertText', '9').value, '09:30');
+  assert.equal(timeValue({ start: clockValue(state.value) }).time, '09:30');
+});
+
+test('기존 시각의 숫자 덮어쓰기·선택 영역 교체·삭제에서도 콜론은 고정된다', () => {
+  assert.equal(editClock('09:30', 0, 0, 'insertText', '1').value, '19:30');
+  assert.equal(editClock('09:30', 3, 5, 'insertText', '45').value, '09:45');
+  assert.equal(editClock('09:30', 3, 3, 'deleteContentBackward').value, '0_:30');
+  assert.equal(editClock('09:30', 2, 2, 'deleteContentForward').value, '09:_0');
+  assert.equal(clockValue(editClock('09:30', 0, 5, 'deleteContentBackward').value), '');
+  assert.equal(editClock('09:30', 0, 5, 'insertText', '2130').value, '21:30');
+  assert.equal(editClock('09:30', 0, 5, 'insertText', '22:45').value, '22:45');
+  assert.equal(editClock('09:30', 0, 5, 'insertText', 'oops').value, '09:30');
+  assert.equal(editClock('09:30', 0, 5, 'insertText', '12345').value, '09:30');
+});
+
+test('흐린 예시는 실제 값이 아니며 네 자리를 모두 채우기 전에는 저장하지 않는다', () => {
+  assert.equal(clockValue(clockMask('')), '');
+  assert.equal(timeValue({ start: clockValue('__:__'), end: clockValue('__:__') }).time, '미정');
+  for (const value of ['0_:__', '09:__', '09:3_', '0_:30']) assert.equal(timeValue({ start: clockValue(value) }).field, 'start');
+  assert.equal(timeValue({ start: '09:00', end: clockValue('11:3_') }).field, 'end');
+  assert.equal(timeValue({ start: clockValue('23:00'), end: clockValue('01:30') }).overnight, true);
+});
 
 test('시간 설정은 종료를 선택적으로 입력하고 미정 표기를 유지한다', () => {
   assert.deepEqual(plain(timeValue({ start: '9:05' })), { time: '09:05', overnight: false });

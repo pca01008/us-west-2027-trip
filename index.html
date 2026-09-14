@@ -525,6 +525,7 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
 }
 
 @layer timetable {
+.schedule-clock{position:relative;display:block;min-width:0}.schedule-clock input,.schedule-clock-display{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:16px;font-weight:700;line-height:24px;letter-spacing:0}.schedule-clock input{color:transparent;-webkit-text-fill-color:transparent;caret-color:var(--navy)}.schedule-clock input::placeholder{color:transparent}.schedule-clock-display{position:absolute;top:12px;left:13px;pointer-events:none;color:var(--ink);white-space:pre}.schedule-clock-display .clock-placeholder{color:#909bab}@media(forced-colors:active){.schedule-clock input{color:CanvasText;-webkit-text-fill-color:CanvasText}.schedule-clock-display{display:none}}
 #scheduleTimeDialog{z-index:1300}.schedule-time-card{width:min(100%,480px)}.schedule-time-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.schedule-time-grid input{min-width:0;font-variant-numeric:tabular-nums}.schedule-time-card .schedule-time-help{margin:8px 0 0;color:var(--muted);font-size:12px;line-height:1.6}.schedule-time-card .schedule-time-preview{margin:18px 0 0;padding:12px 14px;border-radius:10px;background:#f2f5f8;color:var(--navy);font-size:14px;font-weight:800;overflow-wrap:anywhere}.schedule-time-preview:empty{display:none}.schedule-time-card .schedule-time-error{margin:10px 0 0;color:#a93f35;font-size:12px}.schedule-time-card input[aria-invalid="true"]{border-color:#a93f35}.schedule-time-end{display:block;margin-top:3px;font-size:.86em;font-weight:650}.timeline-row>.time:has(.schedule-time-end){white-space:normal;overflow-wrap:anywhere}
 .schedule-view-switch{display:flex;align-items:center;justify-content:space-between;gap:12px;width:calc(100% - 32px);max-width:860px;margin:18px auto 0;color:var(--muted);font-size:12px}
 .schedule-view-switch>div,.tt-range{display:flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:12px;background:#fff}
@@ -560,8 +561,6 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
 .tt-detail-card{width:min(100%,620px)}.tt-detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.tt-detail-head small{display:block;margin-bottom:6px;color:var(--muted);font-size:12px}.tt-detail-head button{flex:none;min-height:40px;padding:9px 12px;border:1px solid var(--line);border-radius:9px;background:#f3f6fa;color:var(--ink)}
 .tt-detail-content{margin-top:14px}.tt-detail-content .card{padding:0;box-shadow:none;border:0;background:transparent}.tt-detail-content .remark{white-space:pre-line}.tt-detail-content .schedule-gallery{margin:14px 0}.tt-detail-content .schedule-map{margin:12px 0}.tt-detail-content .schedule-warning{margin:12px 0}.tt-detail-content .chip{display:none}
 @media(max-width:620px){.schedule-view-switch,.timetable-view{width:calc(100% - 24px)}.schedule-view-switch{margin-top:12px}.schedule-view-switch>span{font-size:11px}.schedule-view-switch button{min-height:44px;padding:8px 12px}.tt-toolbar{padding:16px 14px 12px;gap:12px}.tt-heading h2{font-size:20px}.tt-controls{width:100%;justify-content:space-between;gap:8px}.tt-range button{padding:7px 10px}.tt-nav{width:100%}.tt-nav select{flex:1;max-width:none}.tt-range button,.tt-nav button,.tt-nav select{min-height:44px}.tt-meta{padding:0 14px 12px}.tt-legend{gap:9px;font-size:11px}.tt-scroll{max-height:68vh}.tt-help{padding:12px 14px}.tt-event{min-height:44px}.tt-day-header p{font-size:11px}.tt-grid{grid-template-columns:46px repeat(var(--tt-days),minmax(160px,1fr))}}
-.tt-compare{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin:0 24px 16px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#f8fafc}
-.tt-compare>span{color:var(--navy);font-size:12px;font-weight:750}.tt-compare-options{display:flex;gap:4px}.tt-compare-options button{min-height:40px;padding:8px 12px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--muted);font-size:12px;font-weight:750;white-space:nowrap}.tt-compare-options button[aria-pressed="true"]{border-color:var(--line-strong);background:#fff;color:var(--navy);box-shadow:0 2px 5px #172b4d0a}.tt-compare p{flex:1;min-width:180px;margin:0;color:var(--muted);font-size:11px;line-height:1.6}
 .tt-overview{border-top:1px solid var(--line)}
 .tt-overview-day .tt-overview-mobile-date{display:none}
 .tt-overview-grid{display:grid;grid-template-columns:38px repeat(var(--tt-days),minmax(0,1fr));width:100%;isolation:isolate}
@@ -574,7 +573,7 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
 .tt-overview-count{min-width:0;padding:8px 3px;border-top:1px solid var(--line);border-left:1px solid var(--line);background:#f8fafc;color:var(--muted);font-size:10px;line-height:1.5;text-align:center}.tt-overview-count b{display:block;color:var(--navy);font-size:12px}.tt-overview-count span{display:block;font-size:9px}.tt-overview-help{border-top:1px solid var(--line)}
 .tt-overview-axis,.tt-overview-column{height:calc(var(--tt-overview-height) + 22px)}
 @media(max-width:800px){.tt-overview-day p{display:none}.tt-overview-day{min-height:60px}.tt-overview-grid{grid-template-columns:32px repeat(var(--tt-days),minmax(0,1fr))}.tt-overview-empty{font-size:9px}.tt-overview-day strong{font-size:11px}}
-@media(max-width:620px){.tt-compare{margin:0 14px 12px;padding:10px;gap:8px}.tt-compare>span{width:100%;font-size:11px}.tt-compare-options{width:100%}.tt-compare-options button{flex:1;min-height:44px;padding:8px;font-size:11px}.tt-compare p{font-size:10px}.tt-overview-day{min-height:54px;padding:7px 0}.tt-overview-desktop-date{display:none}.tt-overview-mobile-date{display:block}.tt-overview-day strong{font-size:11px}.tt-overview-day small{font-size:9px}.tt-overview-day .tt-overview-day-index{display:none}.tt-overview-loose{align-items:center;min-height:48px;padding:5px 0;text-align:center}.tt-overview-loose-empty{min-height:48px}.tt-overview-loose>span{font-size:9px}.tt-overview-mobile-count{color:var(--navy);font-size:11px;font-weight:800}.tt-overview-axis span{right:4px;font-size:9px}.tt-overview-count{padding:6px 0;font-size:9px}.tt-overview-count b{font-size:10px}.tt-overview-count span{display:none}.tt-overview-column:focus-visible{z-index:3;outline-offset:-2px}.tt-overview-mobile-mark{position:absolute;display:block;min-height:3px;border-left:2px solid var(--tt-color);border-radius:2px;background:var(--tt-bg);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tt-color) 45%,transparent)}.tt-overview-mobile-mark.tt-point{background:var(--tt-color);box-shadow:none}.tt-overview-empty{display:none}}
+@media(max-width:620px){.tt-overview-day{min-height:54px;padding:7px 0}.tt-overview-desktop-date{display:none}.tt-overview-mobile-date{display:block}.tt-overview-day strong{font-size:11px}.tt-overview-day small{font-size:9px}.tt-overview-day .tt-overview-day-index{display:none}.tt-overview-loose{align-items:center;min-height:48px;padding:5px 0;text-align:center}.tt-overview-loose-empty{min-height:48px}.tt-overview-loose>span{font-size:9px}.tt-overview-mobile-count{color:var(--navy);font-size:11px;font-weight:800}.tt-overview-axis span{right:4px;font-size:9px}.tt-overview-count{padding:6px 0;font-size:9px}.tt-overview-count b{font-size:10px}.tt-overview-count span{display:none}.tt-overview-column:focus-visible{z-index:3;outline-offset:-2px}.tt-overview-mobile-mark{position:absolute;display:block;min-height:3px;border-left:2px solid var(--tt-color);border-radius:2px;background:var(--tt-bg);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tt-color) 45%,transparent)}.tt-overview-mobile-mark.tt-point{background:var(--tt-color);box-shadow:none}.tt-overview-empty{display:none}}
 @media(max-width:620px){.tt-overview-day .tt-overview-desktop-date{display:none}.tt-overview-day .tt-overview-mobile-date{display:block}}
 @media print{.schedule-view-switch,.timetable-view{display:none}}
 }
@@ -613,10 +612,10 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
     <label class="dialog-field"><span>시간 입력 방식</span><select id="scheduleTimeMode"><option value="exact">시작·종료 시간</option><option value="label">오전·오후·미정 등</option></select></label>
     <div id="scheduleTimeExact">
       <div class="schedule-time-grid">
-        <label class="dialog-field"><span>시작 시간</span><input id="scheduleTimeStart" type="text" inputmode="text" maxlength="5" placeholder="09:00" autocomplete="off" aria-describedby="scheduleTimeHelp scheduleTimeError"></label>
-        <label class="dialog-field"><span>종료 시간 (선택)</span><input id="scheduleTimeEnd" type="text" inputmode="text" maxlength="5" placeholder="11:30" autocomplete="off" aria-describedby="scheduleTimeHelp scheduleTimeError"></label>
+        <label class="dialog-field"><span>시작 시간</span><span class="schedule-clock"><input id="scheduleTimeStart" type="text" inputmode="numeric" placeholder="09:00" autocomplete="off" spellcheck="false" aria-describedby="scheduleTimeHelp scheduleTimeError"><span class="schedule-clock-display" aria-hidden="true"></span></span></label>
+        <label class="dialog-field"><span>종료 시간 (선택)</span><span class="schedule-clock"><input id="scheduleTimeEnd" type="text" inputmode="numeric" placeholder="11:30" autocomplete="off" spellcheck="false" aria-describedby="scheduleTimeHelp scheduleTimeError"><span class="schedule-clock-display" aria-hidden="true"></span></span></label>
       </div>
-      <p class="schedule-time-help" id="scheduleTimeHelp">24시간 형식으로 입력하세요. 종료 시간은 비워둘 수 있고, 둘 다 비우면 ‘미정’으로 표시합니다.</p>
+      <p class="schedule-time-help" id="scheduleTimeHelp">흐린 숫자는 입력 예시입니다. 숫자 4자리를 입력하면 시·분 자리만 채워지고 콜론은 자동으로 건너뜁니다. 종료 시간은 비워둘 수 있습니다.</p>
     </div>
     <label class="dialog-field" id="scheduleTimeLabelField" hidden><span>시간대 또는 상태</span><input id="scheduleTimeLabel" type="text" maxlength="80" placeholder="예: 오전, 오후, 종일, 미정"></label>
     <label class="dialog-field"><span>시간대 표기 (선택)</span><input id="scheduleTimeZone" type="text" maxlength="80" placeholder="예: KST" aria-describedby="scheduleTimeZoneHelp"></label>
@@ -671,10 +670,9 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
 <div class="schedule-view-switch" id="scheduleViewSwitch"><div role="group" aria-label="일정 보기 방식"><button type="button" id="listViewBtn" aria-pressed="true" aria-controls="tripMain">일별 일정</button><button type="button" id="timetableViewBtn" aria-pressed="false" aria-controls="timetableView">시간표</button></div><span id="scheduleViewHint">날짜별 상세 보기</span></div>
 <section class="timetable-view" id="timetableView" hidden aria-labelledby="timetableTitle">
   <div class="tt-toolbar"><div class="tt-heading"><h2 id="timetableTitle">여행 시간표</h2><p id="timetableZone"></p></div><div class="tt-controls"><div class="tt-range" role="group" aria-label="시간표 표시 범위"><button type="button" data-tt-range="1" aria-pressed="false">1일</button><button type="button" data-tt-range="all" aria-pressed="true">전체</button></div><div class="tt-nav"><button type="button" id="timetablePrev" aria-label="시간표 이전 날짜">‹</button><select id="timetableStart" aria-label="시간표 날짜"></select><button type="button" id="timetableNext" aria-label="시간표 다음 날짜">›</button></div></div></div>
-  <div class="tt-compare" id="timetableCompare" hidden><span>전체 보기 비교</span><div class="tt-compare-options" role="group" aria-label="전체 시간표 버전"><button type="button" data-tt-variant="classic" aria-pressed="true">기존 시간표</button><button type="button" data-tt-variant="overview" aria-pressed="false">한눈에 보기 · 초안</button></div><p id="timetableCompareHint"></p></div>
   <div class="tt-meta"><strong id="timetableSummary" role="status" aria-live="polite"></strong><div class="tt-legend" aria-label="일정 종류"><span class="tt-kind-activity"><i aria-hidden="true"></i>관광</span><span class="tt-kind-food"><i aria-hidden="true"></i>식사</span><span class="tt-kind-transit"><i aria-hidden="true"></i>이동</span><span class="tt-kind-stay"><i aria-hidden="true"></i>숙소·휴식</span><span class="tt-kind-other"><i aria-hidden="true"></i>기타</span></div></div>
-  <div class="tt-overview" id="timetableOverview" hidden role="region" aria-label="여행 전체 한눈에 보기 초안" aria-describedby="timetableOverviewHelp"><div class="tt-overview-grid" id="timetableOverviewGrid"></div><p class="tt-help tt-overview-help" id="timetableOverviewHelp"></p></div>
-  <div class="tt-scroll" id="timetableScroll" tabindex="0" role="region" aria-label="날짜별 시간표, 가로 및 세로 스크롤" aria-describedby="timetableHelp"><div class="tt-grid" id="timetableGrid"></div></div>
+  <div class="tt-overview" id="timetableOverview" hidden role="region" aria-label="여행 전체 한눈에 보기" aria-describedby="timetableOverviewHelp"><div class="tt-overview-grid" id="timetableOverviewGrid"></div><p class="tt-help tt-overview-help" id="timetableOverviewHelp"></p></div>
+  <div class="tt-scroll" id="timetableScroll" tabindex="0" role="region" aria-label="1일 상세 시간표, 세로 스크롤" aria-describedby="timetableHelp"><div class="tt-grid" id="timetableGrid"></div></div>
   <p class="tt-help" id="timetableHelp">점선 카드는 시작 시각만 있는 일정으로, 카드 높이가 소요 시간을 뜻하지 않습니다. 빈칸은 등록된 시간 일정이 없는 구간입니다. 시간 미정·종일·다른 시간대 일정은 상단에서 확인하세요. 일정을 누르면 상세 정보가 열립니다.</p>
 </section>
 <section class="notice-dialog" id="timetableDetail" hidden aria-modal="true" aria-labelledby="timetableDetailTitle" role="dialog"><div class="notice-card tt-detail-card"><div class="tt-detail-head"><div><small id="timetableDetailMeta"></small><h2 id="timetableDetailTitle"></h2></div><button type="button" id="timetableDetailClose">닫기</button></div><p id="timetableDetailTiming"></p><div class="tt-detail-content" id="timetableDetailContent"></div></div></section>
@@ -845,9 +843,8 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
   let timetableStart = 0;
   let timetableRange = window.matchMedia('(max-width:620px)').matches ? '1' : 'all';
   let timetableDays = [];
-  let timetableVariant = 'classic';
   let timetableOverviewResizeFrame = 0;
-  let timetableClassicScroll = {top:0,left:0};
+  let timetableDayScrollTop = 0;
   const versionContentCache = new Map();
   const dialogFocusOrigins = new WeakMap();
   const openDialogStack = [];
@@ -897,6 +894,29 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
     if(!parsed)return {error:'종료 시간은 시작과 달라야 하며, 00:00~24:00 범위여야 합니다.',field:'end'};
     const endMinutes=Number(end.split(':')[0])*60+Number(end.split(':')[1]);
     return {time:startText+'~'+clock(endMinutes),overnight:parsed.end>=1440};
+  }
+  function scheduleClockMask(value='') {
+    const raw=String(value);
+    if(/^[\d_]{2}:[\d_]{2}$/.test(raw))return raw;
+    const digits=raw.replace(/\D/g,'').slice(0,4).padEnd(4,'_');
+    return digits.slice(0,2)+':'+digits.slice(2);
+  }
+  function scheduleClockValue(value){const mask=scheduleClockMask(value);return /\d/.test(mask)?mask:'';}
+  function editScheduleClock(value,start,end,type,text='') {
+    const mask=scheduleClockMask(value).split(''),positions=[0,1,3,4];
+    let caret=start;
+    if(type==='insertText'){
+      const raw=String(text).normalize('NFKC').trim();
+      if(!/^\d+$/.test(raw)&&!/^\d{2}:\d{2}$/.test(raw))return {value:mask.join(''),caret};
+      const digits=raw.replace(':',''),available=positions.filter(position=>position>=start);
+      if(digits.length>available.length)return {value:mask.join(''),caret};
+      positions.filter(position=>position>=start&&position<end).forEach(position=>mask[position]='_');
+      digits.split('').forEach((digit,index)=>{const position=available[index];mask[position]=digit;caret=position===1?3:position+1;});
+    }else if(type.startsWith('delete')){
+      if(start!==end){positions.filter(position=>position>=start&&position<end).forEach(position=>mask[position]='_');caret=start===2?3:start;}
+      else {const position=type==='deleteContentBackward'?positions.filter(position=>position<start).at(-1):positions.find(position=>position>=start);if(position!==undefined){mask[position]='_';caret=position;}}
+    }
+    return {value:mask.join(''),caret};
   }
   function timetableKind(title,chip='') {
     const text=title+' '+chip;
@@ -984,13 +1004,12 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
     }).join('');
     content+='<div class="tt-overview-corner">일정</div>'+days.map(day=>'<div class="tt-overview-count"><b>'+day.events.length+'개</b><span>시간 '+day.timed.length+' · 별도 '+day.loose.length+'</span></div>').join('');
     const grid=$('#timetableOverviewGrid');grid.style.setProperty('--tt-days',String(days.length));grid.style.setProperty('--tt-overview-height',height+'px');grid.innerHTML=content;
-    $('#timetableOverviewHelp').textContent=(mobile?'날짜나 세로 열을 누르면 그날의 1일 보기로 이동합니다. 색상 표시는 일정 종류를 나타냅니다.':'날짜 제목을 누르면 1일 보기, 일정 블록을 누르면 상세 정보가 열립니다. 긴 이름은 줄여 표시합니다.')+' 시작 시각만 있는 일정의 '+(mobile?'짧은 표시는':'점선 블록은')+' 소요 시간을 뜻하지 않습니다. 전체 버튼으로 이 초안에 돌아올 수 있습니다.';
+    $('#timetableOverviewHelp').textContent=(mobile?'날짜나 세로 열을 누르면 그날의 1일 보기로 이동합니다. 색상 표시는 일정 종류를 나타냅니다.':'날짜 제목을 누르면 1일 보기, 일정 블록을 누르면 상세 정보가 열립니다. 긴 이름은 줄여 표시합니다.')+' 시작 시각만 있는 일정의 '+(mobile?'짧은 표시는':'점선 블록은')+' 소요 시간을 뜻하지 않습니다. 전체 버튼으로 한눈에 보기에 돌아올 수 있습니다.';
     if(fittedHeight===null){const fixedHeight=$('#timetableView').getBoundingClientRect().height-height,available=window.innerHeight-$('.tabs').getBoundingClientRect().height-24,target=Math.floor(Math.max(180,Math.min(420,available-fixedHeight)));if(target!==height)renderTimetableOverview(days,startHour,target);}
   }
   function renderTimetable({resetScroll=false}={}) {
     if(!timetableActive)return;
-    const scroller=$('#timetableScroll'),scrollTop=scroller.hidden?timetableClassicScroll.top:scroller.scrollTop,scrollLeft=scroller.hidden?timetableClassicScroll.left:scroller.scrollLeft;
-    timetableClassicScroll={top:scrollTop,left:scrollLeft};
+    const scroller=$('#timetableScroll');if(!scroller.hidden)timetableDayScrollTop=scroller.scrollTop;
     timetableDays=readTimetableDays();
     const range=timetableWindow(timetableDays.length,timetableStart,timetableRange);if(timetableRange!=='all')timetableStart=range.start;
     const days=timetableDays.slice(range.start,range.end),timed=days.flatMap(day=>day.timed),startHour=Math.min(6,...timed.map(event=>Math.floor(event.start/60))),endHour=24,hourHeight=64,height=(endHour-startHour)*hourHeight;
@@ -1000,10 +1019,8 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
     $$('#timetableView [data-tt-range]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.ttRange===timetableRange)));
     const eventCount=days.reduce((sum,day)=>sum+day.events.length,0),looseCount=days.reduce((sum,day)=>sum+day.loose.length,0);
     $('#timetableSummary').textContent=timetableDate(range.start)+' ~ '+timetableDate(range.end-1)+' · '+eventCount+'개 일정'+(looseCount?' · 상단 별도 표시 '+looseCount+'개':'');
-    const overview=timetableRange==='all'&&timetableVariant==='overview';
-    $('#timetableCompare').hidden=timetableRange!=='all';$('#timetableOverview').hidden=!overview;scroller.hidden=overview;$('#timetableHelp').hidden=overview;
-    $$('#timetableCompare [data-tt-variant]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.ttVariant===timetableVariant)));
-    $('#timetableCompareHint').textContent=overview?'날짜와 시간축을 한 화면에 압축했습니다. 날짜를 눌러 자세히 보세요.':'기존 크기의 일정 카드를 가로·세로로 넘기며 확인합니다.';
+    const overview=timetableRange==='all';
+    $('#timetableOverview').hidden=!overview;scroller.hidden=overview;$('#timetableHelp').hidden=overview;
     if(overview){renderTimetableOverview(days,startHour);return;}
     let content='<div class="tt-corner">시간</div>'+days.map(day=>'<div class="tt-day-header"><strong>'+escapeHtml(timetableDate(day.index))+' <small>'+escapeHtml(configDateParts(day.date).weekday.slice(0,1))+' · D'+(day.index+1)+'</small></strong><p>'+escapeHtml(day.subtitle)+'</p></div>').join('');
     content+='<div class="tt-loose-label">시간<br>미정<br>·<br>별도</div>'+days.map(day=>'<div class="tt-loose">'+(day.loose.length?'<details open><summary>미정·종일·다른 시간대 '+day.loose.length+'개</summary><div class="tt-loose-list">'+day.loose.map(event=>timetableEventButton(event)).join('')+'</div></details>':'<p>별도 일정 없음</p>')+'</div>').join('');
@@ -1022,7 +1039,7 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
       return '<div class="tt-day-footer">'+(stays.length?'체크인·숙박<b>'+stays.map(event=>escapeHtml(event.title)).join('<br>')+'</b>':'체크인·숙박 기록 없음')+'<span>'+escapeHtml(movement)+'</span></div>';
     }).join('');
     $('#timetableGrid').style.setProperty('--tt-days',String(days.length));$('#timetableGrid').innerHTML=content;
-    scroller.scrollTop=resetScroll?0:scrollTop;scroller.scrollLeft=resetScroll?0:scrollLeft;
+    scroller.scrollTop=resetScroll?0:timetableDayScrollTop;
   }
   function setScheduleView(mode) {
     timetableActive=mode==='timetable'&&!body.classList.contains('editing');
@@ -1048,7 +1065,6 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
   function initializeTimetable() {
     $('#listViewBtn').onclick=()=>setScheduleView('list');$('#timetableViewBtn').onclick=()=>setScheduleView('timetable');
     $('#timetableView').addEventListener('click',event=>{
-      const variant=event.target.closest('[data-tt-variant]');if(variant){timetableVariant=variant.dataset.ttVariant;renderTimetable();return;}
       const day=event.target.closest('[data-tt-open-day]');if(day){timetableStart=Number(day.dataset.ttOpenDay);timetableRange='1';renderTimetable({resetScroll:true});$('#timetableStart').focus({preventScroll:true});return;}
       const range=event.target.closest('[data-tt-range]');if(range){timetableRange=range.dataset.ttRange;renderTimetable({resetScroll:true});return;}
       const item=event.target.closest('[data-tt-event]');if(item)openTimetableDetail(item.dataset.ttEvent);
@@ -1060,7 +1076,7 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
     $('.tabs').addEventListener('click',event=>{const label=event.target.closest('label[for]'),radio=label?document.getElementById(label.htmlFor):null;if(timetableActive&&radio?.checked){event.preventDefault();radio.dispatchEvent(new Event('change',{bubbles:true}));}});
     window.addEventListener('beforeprint',()=>{$('main').hidden=false;});
     window.addEventListener('afterprint',()=>{$('main').hidden=timetableActive;});
-    window.addEventListener('resize',()=>{if(!timetableActive||timetableRange!=='all'||timetableVariant!=='overview')return;cancelAnimationFrame(timetableOverviewResizeFrame);timetableOverviewResizeFrame=requestAnimationFrame(()=>renderTimetable());});
+    window.addEventListener('resize',()=>{if(!timetableActive||timetableRange!=='all')return;cancelAnimationFrame(timetableOverviewResizeFrame);timetableOverviewResizeFrame=requestAnimationFrame(()=>renderTimetable());});
     document.addEventListener('change',event=>{if(!event.target.matches('.day-radio')||!timetableActive)return;if(/^d\d+$/.test(event.target.id)){timetableStart=Number(event.target.id.slice(1))-1;renderTimetable({resetScroll:true});}else setScheduleView('list');});
   }
   function todayLocal() { const now=new Date(); return new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().slice(0,10); }
@@ -1559,14 +1575,43 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
     $('#scheduleTimeContext').textContent=row?.querySelector('h3')?.textContent.trim()||panel.querySelector('.day-head h2')?.textContent.trim()||'새 일정';
     $('#scheduleTimeSave').textContent=row?'적용':'일정 추가';
     $('#scheduleTimeMode').value=parsed||!row?'exact':'label';
-    $('#scheduleTimeStart').value=parsed?timetableClock(parsed.start):'';
-    $('#scheduleTimeEnd').value=parsed?.end!=null?timetableClock(parsed.end>1440?parsed.end-1440:parsed.end):'';
+    setScheduleClock($('#scheduleTimeStart'),parsed?timetableClock(parsed.start):'');
+    setScheduleClock($('#scheduleTimeEnd'),parsed?.end!=null?timetableClock(parsed.end>1440?parsed.end-1440:parsed.end):'');
     $('#scheduleTimeLabel').value=row?time:'';
     $('#scheduleTimeZone').value=zone;
     updateScheduleTimePreview();$('#scheduleTimeDialog').hidden=false;
     $(parsed||!row?'#scheduleTimeStart':'#scheduleTimeLabel').focus();
   }
-  function scheduleTimeFormValue(){return scheduleTimeValue({mode:$('#scheduleTimeMode').value,start:$('#scheduleTimeStart').value,end:$('#scheduleTimeEnd').value,label:$('#scheduleTimeLabel').value});}
+  function scheduleTimeFormValue(){return scheduleTimeValue({mode:$('#scheduleTimeMode').value,start:scheduleClockValue($('#scheduleTimeStart').value),end:scheduleClockValue($('#scheduleTimeEnd').value),label:$('#scheduleTimeLabel').value});}
+  const scheduleClockHistory=new WeakMap();
+  function renderScheduleClock(input){const mask=scheduleClockMask(input.value);input.nextElementSibling.innerHTML=mask.split('').map((char,index)=>'<span'+(char==='_'?' class="clock-placeholder"':'')+'>'+escapeHtml(char==='_'?input.placeholder[index]:char)+'</span>').join('');}
+  function setScheduleClock(input,value){input.value=scheduleClockMask(value);scheduleClockHistory.set(input,{items:[{value:input.value,caret:0}],index:0});renderScheduleClock(input);}
+  function changeScheduleClock(input,type,text=''){
+    const result=editScheduleClock(input.value,input.selectionStart??0,input.selectionEnd??0,type,text),history=scheduleClockHistory.get(input);
+    if(history&&result.value!==input.value){history.items[history.index].caret=input.selectionStart??0;history.items=history.items.slice(0,history.index+1);history.items.push(result);history.index++;}
+    input.value=result.value;input.setSelectionRange(result.caret,result.caret);renderScheduleClock(input);updateScheduleTimePreview();
+  }
+  function undoScheduleClock(input,direction){const history=scheduleClockHistory.get(input),index=(history?.index??0)+direction;if(!history||index<0||index>=history.items.length)return;history.index=index;const result=history.items[index];input.value=result.value;input.setSelectionRange(result.caret,result.caret);renderScheduleClock(input);updateScheduleTimePreview();}
+  function initializeScheduleClocks(){
+    ['#scheduleTimeStart','#scheduleTimeEnd'].forEach(selector=>{
+      const input=$(selector);setScheduleClock(input,'');
+      input.addEventListener('focus',()=>input.setSelectionRange(0,0));
+      input.addEventListener('click',()=>{if(!/\d/.test(input.value))input.setSelectionRange(0,0);});
+      input.addEventListener('beforeinput',event=>{
+        if(!event.cancelable)return;event.preventDefault();
+        if(event.inputType==='historyUndo'||event.inputType==='historyRedo'){undoScheduleClock(input,event.inputType==='historyUndo'?-1:1);return;}
+        if(event.inputType.startsWith('delete'))changeScheduleClock(input,event.inputType);
+        else if(event.data)changeScheduleClock(input,'insertText',event.data);
+      });
+      input.addEventListener('paste',event=>{event.preventDefault();changeScheduleClock(input,'insertText',event.clipboardData?.getData('text/plain')||'');});
+      input.addEventListener('cut',event=>{const start=input.selectionStart,end=input.selectionEnd;if(start===end)return;event.preventDefault();event.clipboardData?.setData('text/plain',input.value.slice(start,end));changeScheduleClock(input,'deleteByCut');});
+      input.addEventListener('keydown',event=>{
+        if((event.ctrlKey||event.metaKey)&&['z','y'].includes(event.key.toLowerCase())){event.preventDefault();undoScheduleClock(input,event.key.toLowerCase()==='y'||event.shiftKey?1:-1);}
+        else if(event.key==='Backspace'||event.key==='Delete'){event.preventDefault();changeScheduleClock(input,event.key==='Backspace'?'deleteContentBackward':'deleteContentForward');}
+      });
+      input.addEventListener('input',()=>{input.value=scheduleClockMask(input.value);renderScheduleClock(input);});
+    });
+  }
   function updateScheduleTimePreview() {
     const exact=$('#scheduleTimeMode').value==='exact',result=scheduleTimeFormValue(),zone=$('#scheduleTimeZone').value.trim();
     $('#scheduleTimeExact').hidden=!exact;$('#scheduleTimeLabelField').hidden=exact;
@@ -1923,6 +1968,7 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
     const icon=event.target.dataset.categoryIcon;if(icon){selectedCategoryIcon=icon;renderIconPicker();}
   });
   $('#scheduleTimeCancel').onclick=closeScheduleTimeDialog;$('#scheduleTimeSave').onclick=saveScheduleTime;
+  initializeScheduleClocks();
   $('#scheduleTimeDialog').addEventListener('input',updateScheduleTimePreview);
   $('#scheduleTimeMode').onchange=updateScheduleTimePreview;
   $('#scheduleTimeDialog').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing&&event.target.matches('input')){event.preventDefault();saveScheduleTime();}});
