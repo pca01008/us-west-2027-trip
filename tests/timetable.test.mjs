@@ -12,6 +12,25 @@ const { parseTimetableTime: parse, layoutTimetableEvents: layout, timetableWindo
 const plain = value => JSON.parse(JSON.stringify(value));
 const { scheduleTimeValue: timeValue, scheduleClockMask: clockMask, scheduleClockValue: clockValue, editScheduleClock: editClock } = context;
 
+test('분류를 선택하지 않은 기존·새 일정은 제목에 따라 자동 분류한다', () => {
+  assert.equal(context.timetableKind('새 일정'), 'other');
+  assert.equal(context.timetableKind('점심 식사'), 'food');
+  assert.equal(context.timetableKind('공항 이동'), 'transit');
+  assert.equal(context.timetableKind('게티 센터', '관람'), 'activity');
+});
+
+test('수동 분류는 제목·태그보다 우선하며 자동으로 되돌리면 현재 제목을 따른다', () => {
+  for (const manual of ['activity', 'food', 'transit', 'stay', 'other']) {
+    assert.equal(context.timetableKind('공항 이동', '숙소', manual), manual);
+    assert.equal(context.timetableKind('점심 식사', '', manual), manual, '제목을 수정해도 수동 선택은 유지');
+  }
+  assert.equal(context.timetableKind('점심 식사', '', 'auto'), 'food');
+  for (const invalid of [undefined, '', 'invalid', '__proto__', 'constructor']) {
+    assert.equal(context.scheduleKindMode(invalid), 'auto');
+    assert.equal(context.timetableKind('공항 이동', '', invalid), 'transit');
+  }
+});
+
 test('숫자를 한 자리씩 입력하면 콜론을 건너뛰고 네 자리만 채운다', () => {
   let state = { value: clockMask(''), caret: 0 };
   const expected = ['0_:__', '09:__', '09:3_', '09:30'];
