@@ -1,0 +1,119 @@
+// Optional integration check: node scripts/check-pwa-browser.mjs [playwright/index.mjs]
+// Uses an isolated browser and a local API fixture; never contacts the live trip database.
+import assert from 'node:assert/strict';
+import { createServer } from 'node:http';
+import { readFile } from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
+
+const { chromium } = await import(process.argv[2] ? pathToFileURL(process.argv[2]).href : 'playwright');
+const root = new URL('../', import.meta.url);
+const mime = { html: 'text/html', js: 'text/javascript', webmanifest: 'application/manifest+json', png: 'image/png', svg: 'image/svg+xml', webp: 'image/webp' };
+let published = null;
+let disconnected = false;
+const server = createServer(async (req, res) => {
+  if (disconnected) { req.socket.destroy(); return; }
+  const url = new URL(req.url, 'http://localhost');
+  if (process.env.PWA_DEBUG) console.log('Request:', url.pathname);
+  if (url.pathname === '/rest/v1/trip_documents') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(published)); return;
+  }
+  const relative = url.pathname.replace(/^\/trip\//, '').replace(/^\//, '') || 'index.html';
+  if (!/^(index\.html|trip-config\.js|pwa\.js|sw\.js|manifest\.webmanifest|(?:icons|assets)\/[\w.-]+)$/.test(relative)) {
+    res.writeHead(404); res.end(); return;
+  }
+  try {
+    let body = await readFile(new URL(relative, root));
+    if (relative === 'trip-config.js') body = Buffer.from(body + `\nwindow.TRIP_CONFIG.supabase={url:'http://127.0.0.1:${server.address().port}',publishableKey:'sb_publishable_test'};`);
+    res.writeHead(200, { 'Content-Type': mime[relative.split('.').at(-1)], 'Cache-Control': 'no-cache' });
+    res.end(body);
+  } catch { res.writeHead(404); res.end(); }
+});
+await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+let browser;
+try {
+  browser = await chromium.launch({ headless: true, ...(process.env.PWA_BROWSER_CHANNEL ? { channel: process.env.PWA_BROWSER_CHANNEL } : {}) });
+  for (const basePath of ['/trip/', '/']) {
+    published = null;
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, deviceScaleFactor: 2 });
+    const page = await context.newPage(), errors = [];
+    page.setDefaultTimeout(10000);
+    page.on('pageerror', error => { errors.push(error.message); console.error('Browser error:', error.message); });
+    if (process.env.PWA_DEBUG) page.on('console', message => console.log('Browser:', message.text()));
+    const startURL = `http://127.0.0.1:${server.address().port}${basePath}`;
+    await page.goto(startURL);
+    await page.waitForFunction(() => !document.body.classList.contains('hydrating'));
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
+    assert.equal(await page.evaluate(() => typeof window.supabase?.createClient), 'function', 'SDK must load for the online fixture check');
+
+    const manifest = await page.evaluate(async () => (await fetch(document.querySelector('link[rel="manifest"]').href)).json());
+    assert.equal(new URL(manifest.start_url, startURL).href, startURL);
+    const cdp = await context.newCDPSession(page);
+    const { errors: manifestErrors } = await cdp.send('Page.getAppManifest');
+    assert.deepEqual(manifestErrors, []);
+    const { installabilityErrors } = await cdp.send('Page.getInstallabilityErrors');
+    // Playwright's isolated context is incognito; actual installation is disabled there.
+    assert.deepEqual(installabilityErrors.filter(error => error.errorId !== 'in-incognito'), []);
+
+    published = await page.evaluate(() => {
+      const main = document.querySelector('main').cloneNode(true);
+      main.querySelector('h3').textContent = 'PWA 저장본 검증';
+      return { revision: 41, updated_at: '2026-09-01T00:00:00Z', content: { schemaVersion: 5, html: main.innerHTML } };
+    });
+    await page.reload();
+    // The initial empty fixture may leave a baseline draft; use the real recovery UI.
+    await page.waitForFunction(() => !document.body.classList.contains('hydrating') || !document.querySelector('#noticeDialog').hidden);
+    if (await page.locator('#noticeDialog').isVisible()) await page.getByRole('button', { name: '초안 삭제', exact: true }).click();
+    await page.waitForFunction(() => !document.body.classList.contains('hydrating'));
+    assert.match(await page.locator('main').textContent(), /PWA 저장본 검증/);
+    await page.waitForFunction(async () => {
+      const config = window.TRIP_CONFIG;
+      return new Promise(resolve => {
+        const req = indexedDB.open(config.cacheNamespace + '_trip_drafts');
+        req.onsuccess = () => {
+          const db = req.result, get = db.transaction('records').objectStore('records').get('public:' + config.tripId);
+          get.onsuccess = () => { resolve(get.result?.revision === 41); db.close(); };
+        };
+      });
+    });
+    await context.setOffline(true);
+    disconnected = true;
+    await page.reload();
+    await page.waitForFunction(() => !document.body.classList.contains('hydrating'));
+    assert.match(await page.locator('main').textContent(), /PWA 저장본 검증/);
+    assert.match(await page.locator('#status').textContent(), /오프라인 캐시 표시/);
+    await page.locator('label[for="d1"]').click();
+    assert.equal(await page.locator('#d1').isChecked(), true);
+
+    // Verify the previously broken path when the CDN SDK is unavailable as well.
+    await page.evaluate(async () => {
+      for (const name of await caches.keys()) {
+        const cache = await caches.open(name);
+        for (const request of await cache.keys()) if (request.url.includes('cdn.jsdelivr.net')) await cache.delete(request);
+      }
+    });
+    await cdp.send('Network.clearBrowserCache');
+    await context.route('https://cdn.jsdelivr.net/**', route => route.abort());
+    await page.reload();
+    await page.waitForFunction(() => !document.body.classList.contains('hydrating'));
+    assert.equal(await page.evaluate(() => typeof window.supabase), 'undefined');
+    assert.match(await page.locator('main').textContent(), /PWA 저장본 검증/);
+    assert.match(await page.locator('#status').textContent(), /오프라인 캐시 표시/);
+
+    await context.setOffline(false);
+    disconnected = false;
+    await context.unroute('https://cdn.jsdelivr.net/**');
+    published.content.html = published.content.html.replace('PWA 저장본 검증', 'PWA 최신본 검증');
+    published.revision = 42;
+    await page.reload();
+    await page.waitForFunction(() => !document.body.classList.contains('hydrating'));
+    assert.match(await page.locator('main').textContent(), /PWA 최신본 검증/);
+    assert.deepEqual(errors, []);
+    console.log(`${basePath}: installability, mobile tabs, offline reload, missing SDK, online refresh passed`);
+    await context.close();
+  }
+} finally {
+  await browser?.close();
+  await new Promise(resolve => server.close(resolve));
+}

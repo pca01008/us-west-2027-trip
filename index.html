@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#142b3d">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="서부여행 2027">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<script id="pwaRegistration" src="./pwa.js" defer></script>
 <title>여행 일정</title>
 <style id="trip-app-styles">
 @layer base,itinerary,timeline,session,modern,features,ledger,timetable;
@@ -1194,13 +1201,13 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
     }catch(error){console.warn('기존 공개본 캐시를 읽지 못했습니다.',error);}
     return null;
   }
-  function setPublishedBaseline(row,state) {
+  function setPublishedBaseline(row,state,cacheMetadata={}) {
     const normalized=normalizeState(state),current=normalizeState(captureState());
     lastSavedState=clone(fingerprint(current)===fingerprint(normalized)?normalized:current);
     publishedRevision=Math.max(0,Number(row?.revision)||0);
     publishedUpdatedAt=String(row?.updated_at||row?.updatedAt||'');
     pendingRemoteState=null;
-    void writePublicCache(lastSavedState);
+    void writePublicCache(lastSavedState,cacheMetadata);
   }
   function currentDraftRecord() {
     return {tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:captureState(),baseState:clone(lastSavedState),baseRevision:publishedRevision,baseUpdatedAt:publishedUpdatedAt,savedAt:new Date().toISOString(),dirty:true};
@@ -1534,7 +1541,12 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
   async function requestManualLogout(){if(!editorSession||OFFLINE_MODE)return;if(isDirty()){const choice=await showChoice({title:'로그아웃할까요?',message:'저장하지 않은 변경사항이 있습니다.',choices:[{label:'계속 사용',value:'continue'},{label:'폐기 후 로그아웃',value:'discard',className:'action-danger'},{label:'저장 후 로그아웃',value:'save',className:'action-primary'}]});if(choice==='continue')return;if(choice==='save'){if(!await saveAndFinish('로그아웃 전 저장'))return;}else{if(lastSavedState)applyState(lastSavedState);await clearDraftRecord();}}setEditingUI(false);closeEditorDialogs();await signOutEditor();setStatus('편집자 로그아웃 완료');}
   function discardDraft(message='수정 내용을 폐기했습니다.'){if(lastSavedState)applyState(lastSavedState);initializeHistory();setEditingUI(false);closeEditorDialogs();void clearDraftRecord();resetInactivityTimer();setStatus(message);}
   async function discardAndLogout(message='수정 내용을 폐기하고 로그아웃했습니다.'){if(lastSavedState)applyState(lastSavedState);initializeHistory();setEditingUI(false);closeEditorDialogs();closeNotice('timeout');await clearDraftRecord();await signOutEditor();setStatus(message);}
-  async function fetchPublishedState(){if(OFFLINE_MODE||!client)return null;const {data,error}=await client.from('trip_documents').select('content,updated_at,revision').eq('trip_id',TRIP_ID).maybeSingle();if(error)throw error;return data;}
+  async function fetchPublishedState(){
+    if(OFFLINE_MODE||!client)return null;
+    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);
+    try{const {data,error}=await client.from('trip_documents').select('content,updated_at,revision').eq('trip_id',TRIP_ID).abortSignal(controller.signal).maybeSingle();if(error)throw error;return data;}
+    finally{clearTimeout(timeout);}
+  }
   function isRevisionConflict(error){return error?.code==='40001'||/revision conflict/i.test(String(error?.message||''));}
   function compactDiffMessage(groups){const items=groups.flatMap(group=>group.items.map(item=>group.title+' · '+item));return items.length?items.slice(0,4).join('\n')+(items.length>4?'\n외 '+(items.length-4)+'개 변경':''):'내용 구조가 변경되었습니다.';}
   async function resolveSaveConflict(localState,note){
@@ -1746,7 +1758,7 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
     normalized.html=template.innerHTML;return {state:normalized,failures};
   }
   function downloadHtml(source,name){const blob=new Blob([source],{type:'text/html;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);}
-  function setArtifactBanner(root,type){root.querySelectorAll('.artifact-banner').forEach(el=>el.remove());const banner=document.createElement('div'),date=todayLocal();banner.className='artifact-banner '+(type==='readonly'?'readonly':'editable');banner.innerHTML=type==='readonly'?'<strong>인쇄·공유용 사본</strong><span>읽기 전용 · 온라인 반영 불가 · '+date+' 생성</span>':'<strong>오프라인 작업본</strong><span>인터넷 없이 수정 가능 · 수정 후 온라인 페이지에서 “편집본 불러오기”를 사용하세요.</span>';root.querySelector('header')?.insertAdjacentElement('afterend',banner);root.dataset.artifactType=type;}
+  function setArtifactBanner(root,type){root.querySelectorAll('#pwaRegistration,link[rel="manifest"],link[rel="icon"],link[rel="apple-touch-icon"]').forEach(el=>el.remove());root.querySelectorAll('.artifact-banner').forEach(el=>el.remove());const banner=document.createElement('div'),date=todayLocal();banner.className='artifact-banner '+(type==='readonly'?'readonly':'editable');banner.innerHTML=type==='readonly'?'<strong>인쇄·공유용 사본</strong><span>읽기 전용 · 온라인 반영 불가 · '+date+' 생성</span>':'<strong>오프라인 작업본</strong><span>인터넷 없이 수정 가능 · 수정 후 온라인 페이지에서 “편집본 불러오기”를 사용하세요.</span>';root.querySelector('header')?.insertAdjacentElement('afterend',banner);root.dataset.artifactType=type;}
   function embedTripConfig(root){const external=root.querySelector('#tripConfigScript,script[src$="trip-config.js"]');if(!external)return;const inline=document.createElement('script');inline.id='embeddedTripConfig';inline.textContent='window.TRIP_CONFIG='+JSON.stringify(CONFIG).replace(/</g,'\\u003c')+';';external.replaceWith(inline);}
   async function exportOfflineHtml(sourceState=captureState()) {
     if(operationBusy)return;setOperationBusy(true,{cancelable:true,status:'오프라인 작업본 준비 중'});
@@ -1935,17 +1947,19 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
       initializeHistory();updateDirtyState();finishHydration();return;
     }
 
-    let loadedFromCache=false;
+    let loadedFromCache=false,cacheStatus='';
     try{
+      if(!client||!navigator.onLine)throw new Error('공유 서버에 연결할 수 없습니다.');
       const published=await fetchPublishedState();
       if(published?.content?.html){const state=normalizeState(migratePublishedState(published.content));applyState(state);setPublishedBaseline(published,state);}
     }catch(error){
       console.warn(error);const cached=await readPublicCache();
-      if(cached?.state?.html){const state=normalizeState(migratePublishedState(cached.state));applyState(state);setPublishedBaseline({revision:cached.revision,updatedAt:cached.updatedAt},state);loadedFromCache=true;const cachedLabel=cached.cachedAt?new Date(cached.cachedAt).toLocaleString('ko-KR'):'최근';setStatus('오프라인 캐시 표시 · '+cachedLabel+' 기준');}
+      if(cached?.state?.html){const state=normalizeState(migratePublishedState(cached.state));applyState(state);setPublishedBaseline({revision:cached.revision,updatedAt:cached.updatedAt},state,cached);loadedFromCache=true;const cachedLabel=cached.cachedAt?new Date(cached.cachedAt).toLocaleString('ko-KR'):'최근';cacheStatus='오프라인 캐시 표시 · '+cachedLabel+' 기준';}
+      else cacheStatus='연결 실패 · 기본 일정 표시 중 · 최신 공유본 미확인';
     }
     if(!lastSavedState)lastSavedState=normalizeState(captureState());
-    initializeHistory();updateDirtyState();await recoverOnlineDraft();finishHydration();
-    if(!client){setStatus('공유 서버 연결 실패 · 저장된 화면 표시 중');return;}
+    initializeHistory();updateDirtyState();if(cacheStatus)setStatus(cacheStatus);await recoverOnlineDraft();finishHydration();
+    if(!client)return;
     client.channel('trip-document-'+TRIP_ID).on('postgres_changes',{event:'UPDATE',schema:'public',table:'trip_documents',filter:'trip_id=eq.'+TRIP_ID},payload=>{
       if(!payload.new?.content?.html)return;
       const remoteState=normalizeState(migratePublishedState(payload.new.content));
