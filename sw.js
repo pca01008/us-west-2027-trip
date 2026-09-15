@@ -1,6 +1,6 @@
 // Bump VERSION when changing the precache list, icons/images or caching behavior.
 // Updates activate after existing app windows close; never reload unsaved edits.
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE_PREFIX = 'westbound-pwa:' + encodeURIComponent(self.registration.scope) + ':';
 const CACHE_NAME = CACHE_PREFIX + VERSION;
 const localURL = path => new URL(path, self.registration.scope).href;

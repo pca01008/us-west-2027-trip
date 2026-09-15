@@ -4,6 +4,49 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#142b3d">
+<meta name="color-scheme" content="only light">
+<script id="tripThemeBootstrap">
+(() => {
+  'use strict';
+  const root = document.documentElement;
+  // Directory-scoped, independent of shared trip data. Exports retain this scope.
+  const scope = root.dataset.themeScope || new URL('.', location.href).pathname;
+  root.dataset.themeScope = scope;
+  const key = 'westbound:theme:' + scope;
+  const valid = value => ['light', 'dark', 'system'].includes(value) ? value : 'light';
+  const media = window.matchMedia('(prefers-color-scheme: dark)');
+  let preference = 'light', storageFailed = false;
+  try { preference = valid(localStorage.getItem(key)); } catch (_) { storageFailed = true; }
+  function apply() {
+    const theme = preference === 'system' ? (media.matches ? 'dark' : 'light') : preference;
+    root.dataset.theme = theme;
+    root.dataset.themePreference = preference;
+    document.querySelector('meta[name="color-scheme"]').content = theme === 'dark' ? 'dark' : 'only light';
+    document.querySelector('meta[name="theme-color"]').content = theme === 'dark' ? '#101923' : '#142b3d';
+    const select = document.getElementById('themeSelect');
+    if (select) select.value = preference;
+    const status = document.getElementById('themeStorageStatus');
+    if (status) {
+      status.hidden = !storageFailed;
+      status.textContent = storageFailed ? '설정을 저장할 수 없어 이번 실행에만 적용됩니다.' : '';
+    }
+  }
+  apply(); // Before styles and the first paint; no dependency on the trip or SDK.
+  document.addEventListener('trip-theme-controls-ready', apply, { once: true });
+  document.addEventListener('DOMContentLoaded', apply, { once: true });
+  document.addEventListener('change', event => {
+    if (event.target.id !== 'themeSelect') return;
+    preference = valid(event.target.value);
+    try { localStorage.setItem(key, preference); storageFailed = false; } catch (_) { storageFailed = true; }
+    apply();
+  });
+  media.addEventListener('change', () => { if (preference === 'system') apply(); });
+  window.addEventListener('storage', event => {
+    try { if (event.storageArea !== localStorage) return; } catch (_) { return; }
+    if (event.key === key || event.key === null) { preference = valid(event.newValue); apply(); }
+  });
+})();
+</script>
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
@@ -13,7 +56,7 @@
 <script id="pwaRegistration" src="./pwa.js" defer></script>
 <title>여행 일정</title>
 <style id="trip-app-styles">
-@layer base,itinerary,timeline,session,modern,features,ledger,timetable;
+@layer base,itinerary,timeline,session,modern,features,ledger,timetable,theme;
 @layer base {
 /* base */
 :root{--navy:#142b3d;--blue:#2f6685;--sky:#dceaf0;--sand:#e6a15c;--cream:#f7f3eb;--paper:#fffdf8;--ink:#22313a;--muted:#71808a;--line:#dce2e2;--red:#b9584d}
@@ -586,13 +629,148 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
 @media print{.schedule-view-switch,.timetable-view{display:none}}
 }
 
+/* Theme tokens are independent of saved main HTML and apply to every app surface. */
+@layer theme {
+:root{
+  color-scheme:only light;
+  --surface:#fbfcfe;--surface-alt:#f4f7fb;--surface-hover:#edf2f8;--surface-selected:#eaf0f7;
+  --accent:#a93f35;--accent-hover:#91342c;--on-accent:#ffffff;--muted:#5f6e82;
+  --solid:#172b4d;--on-solid:#ffffff;--focus:#a93f35;--placeholder:#5f6e82;
+  --danger-bg:#fff3f1;--danger-line:#efc8c2;--edit-bg:#fff7f5;
+  --warning-bg:#fff8e9;--warning-ink:#725323;--warning-line:#f2d6a8;
+  --link:#245a7d;--link-bg:#f8fbff;--link-icon:#e1edf7;--link-line:#b9cfe2;
+  --overlay:rgba(12,25,43,.52);--track:#e4eaf1;
+}
+/* Screen-only dark overrides mean print always uses the light token set. */
+@media screen{
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --cream:#101923;--paper:#192532;--surface:#202e3d;--surface-alt:#243344;
+    --surface-hover:#2c3f52;--surface-selected:#30445a;
+    --ink:#e6edf5;--navy:#d4e3f5;--muted:#b0bfd0;--placeholder:#a5b6c9;
+    --line:#3a4c60;--line-strong:#5a7087;--blue:#f39887;--blue-dark:#ffb3a4;
+    --sky:#40302f;--sand:#f39887;--red:#ffb3ab;
+    --accent:#f39887;--accent-hover:#ffb3a4;--on-accent:#291d1c;
+    --solid:#304c6c;--on-solid:#ffffff;--focus:#ffb3a4;
+    --danger-bg:#472d32;--danger-line:#83535b;--edit-bg:#3b3033;
+    --warning-bg:#3f3525;--warning-ink:#f3d39d;--warning-line:#7e6843;
+    --link:#a7d3f0;--link-bg:#21394a;--link-icon:#304e63;--link-line:#4c718b;
+    --overlay:rgba(3,9,16,.72);--track:#3a4c60;
+    --shadow-sm:0 8px 24px rgba(0,0,0,.16);--shadow-lg:0 22px 60px rgba(0,0,0,.24);
+  }
+  :root[data-theme="dark"] .tt-kind-activity{--tt-color:#84c6a6;--tt-bg:#233e35;--tt-ink:#b4e4cd}
+  :root[data-theme="dark"] .tt-kind-food{--tt-color:#e3aa79;--tt-bg:#453327;--tt-ink:#f4cfaa}
+  :root[data-theme="dark"] .tt-kind-transit{--tt-color:#8bbce4;--tt-bg:#273c53;--tt-ink:#bcddf7}
+  :root[data-theme="dark"] .tt-kind-stay{--tt-color:#b6a6d3;--tt-bg:#383147;--tt-ink:#ddd0ef}
+  :root[data-theme="dark"] .tt-kind-other{--tt-color:#a6b7cb;--tt-bg:#303c4a;--tt-ink:#d1dce8}
+}
+.theme-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:0 16px;margin:0 0 20px}
+.theme-choice{display:flex;align-items:center;gap:10px}
+.theme-choice label{color:#e0e9f3;font-size:12px;font-weight:750}
+.theme-choice select{min-height:44px;max-width:160px;padding:8px 30px 8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);font-size:13px;font-weight:750}
+.theme-help{color:#c4d4e3;font-size:11px}
+.theme-help summary{display:list-item;min-height:44px;align-content:center;cursor:pointer;line-height:1.5}
+.theme-help[open]{flex-basis:100%}
+.theme-help p{max-width:620px;margin:0 0 8px auto;line-height:1.7;color:#e0e9f3}
+#themeStorageStatus{flex-basis:100%;margin:8px 0 0;color:#ffdab5;font-size:12px;text-align:right;line-height:1.5}
+.theme-help summary:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[contenteditable="true"]:focus-visible,.tabs [role="tab"]:focus-visible{outline-color:var(--focus)}
+.theme-help summary:focus-visible{outline:2px solid #ffb3a4;outline-offset:2px}
+.theme-choice select:focus-visible{outline-color:#ffb3a4}
+.tabs,.editor-bar{background:var(--paper);border-color:var(--line)}
+.tabs{scrollbar-color:var(--line-strong) transparent}
+.tabs label{color:var(--muted)}
+.tabs label:hover,.tab-scroll{background:var(--surface-alt);color:var(--navy)}
+.tabs label.is-active{background:var(--accent);color:var(--on-accent)}
+.tab-label-icon{background:var(--surface-selected)}
+.tabs label.is-active .tab-label-icon{background:transparent;color:inherit}
+.editor-bar button,.currency button{background:var(--paper);color:var(--ink);border-color:var(--line)}
+.editor-bar .primary,.currency button.active,.schedule-view-switch button[aria-pressed="true"],.tt-range button[aria-pressed="true"]{background:var(--solid);border-color:var(--solid);color:var(--on-solid)}
+.editor-bar .danger,.action-danger{background:#a93631;border-color:#a93631;color:#fff}
+.editor-bar .chip{background:var(--surface-alt);color:var(--muted)}
+.panel,.auth-card,.notice-card,.version-card{background:var(--paper);color:var(--ink);border-color:var(--line)}
+.day-head{background:var(--surface-alt);border-color:var(--line)}
+.day-head h2{background:var(--surface-selected);border-color:var(--line);box-shadow:none}
+.day-head p,.card h3,.checklist label,.expense b,.expense-date,.expense-primary b{color:var(--ink)}
+.day-head h2 span,.timeline-row>.time small,.remark,.checklist h3,.expense small,.expenses-head span,.add-expense label,.exchange-rate-heading small,.exchange-rate-updated,.budget-overview>span,.tour-costs li,.tt-overview-empty{color:var(--muted)}
+.timeline-row>.rail:before{background:var(--line)}
+.timeline-row .dot{box-shadow:0 0 0 4px var(--paper)}
+.timeline-row>.card,.checklist label,.checklist label:last-child{background:var(--surface);border-color:var(--line)}
+.timeline-row>.card:hover,.checklist label:hover{border-color:var(--line-strong)}
+.checklist label:hover{background:var(--surface-hover)}
+.map,.memo{background:var(--edit-bg);color:var(--ink)}
+.schedule-map{background:var(--link-bg);border-color:var(--link-line)}
+.schedule-map:hover{background:var(--link-bg);border-color:var(--link)}
+.schedule-map a,.reference-link{color:var(--link)}
+.schedule-map a>.button-icon{background:var(--link-icon);color:var(--link)}
+.schedule-map a:active{background:var(--link-icon)}
+.schedule-warning,.editing .schedule-warning[contenteditable="true"],.preview-banner{background:var(--warning-bg);color:var(--warning-ink);border-color:var(--warning-line)}
+.schedule-warning:before{background:var(--warning-ink);color:var(--warning-bg)}
+.warning-delete{background:var(--warning-line);color:var(--ink)}
+.tour-costs,.diff-group,.version-item,.export-option,.category-total,.category-manager,.ledger-settings-rate,.schedule-time-card .schedule-time-preview{background:var(--surface-alt);border-color:var(--line)}
+.category-total>span{color:var(--muted)}
+.tour-costs .tour-total,.schedule-media-tools{border-color:var(--line)}
+.schedule-photo{background:var(--surface-alt);border-color:var(--line)}
+/* Keep photographs/maps untouched; controls and captions provide their own surfaces. */
+.schedule-media-tools button,.check-move,.row-action,.photo-action,.expense-action,.category-chip,.icon-picker button{background:var(--paper);color:var(--ink);border-color:var(--line)}
+.check-delete,.row-delete,.editing .row-delete,.schedule-map-delete,.row-action.delete,.photo-action.delete,.expense-action.delete,.expense [data-remove]{background:var(--danger-bg);color:var(--red);border-color:var(--danger-line)}
+.editing [contenteditable="true"],.editing .time[contenteditable="true"],.editing .checklist label span[contenteditable="true"]{background:var(--edit-bg)}
+.editing [contenteditable="true"]:focus{background:var(--paper)}
+.editing .schedule-warning-text[contenteditable="true"]{background:transparent}
+.editing .checklist label span[data-placeholder]:empty:before{color:var(--placeholder)}
+.auth-dialog,.notice-dialog,.version-dialog{background:var(--overlay)}
+.auth-cancel,.action-muted,.tt-detail-head button{background:var(--surface-alt);color:var(--ink)}
+.btn,.action-primary,.auth-submit{background:var(--accent);color:var(--on-accent)}
+.btn:hover,.action-primary:hover,.auth-submit:hover{background:var(--accent-hover)}
+.dialog-field input,.dialog-field select,.auth-card input,.add-expense input,.add-expense select,.amount-with-currency select,.expense-entry .add-expense input,.expense-entry .add-expense select,.expense-filters input,.expense-filters select,.ledger-settings-rate-control input,.exchange-rate input,.schedule-kind-control select,.tt-nav select{background:var(--paper);color:var(--ink);border-color:var(--line)}
+input::placeholder,textarea::placeholder{color:var(--placeholder);opacity:1}
+input:disabled,select:disabled{opacity:.7}
+.schedule-clock input{color:transparent;-webkit-text-fill-color:transparent}
+.schedule-clock input::placeholder{color:transparent}
+.schedule-clock-display .clock-placeholder{color:var(--placeholder)}
+.schedule-time-card .schedule-time-error{color:var(--red)}
+.schedule-time-card input[aria-invalid="true"]{border-color:var(--red)}
+.icon-picker button.active{border-color:var(--accent);background:var(--edit-bg)}
+.export-option:hover{background:var(--surface-hover);border-color:var(--line-strong)}
+.export-option>.button-icon{background:var(--surface-selected)}
+.expense-entry,.add-expense,.exchange-rate,.budget-overview,.expense-filters{background:var(--surface-alt);border-color:var(--line)}
+.exchange-rate-icon{background:var(--link-icon);color:var(--link)}
+.exchange-rate-control{background:var(--paper);color:var(--muted);border-color:var(--line)}
+.exchange-rate-control b{color:var(--muted)}
+.exchange-rate{box-shadow:inset 0 1px 0 var(--line)}
+.viewing .exchange-rate input{background:transparent;border-color:transparent}
+.expenses-section,.expense{background:var(--paper);border-color:var(--line)}
+.expenses-head{background:var(--surface-alt);border-color:var(--line)}
+.expense-action:hover{background:var(--surface-hover);border-color:var(--line-strong)}
+.expense-filters button,.expense-filter-summary{border-color:var(--line)}
+.budget-track{background:var(--track)}
+.budget-overview.over-budget{background:var(--danger-bg);border-color:var(--danger-line)}
+.schedule-view-switch>div,.tt-range,.tt-loose-label,.tt-loose,.tt-overview-loose,.tt-overview-loose-empty,.tt-overview-column{background:var(--paper)}
+.tt-corner,.tt-day-header,.tt-axis,.tt-footer-label,.tt-day-footer,.tt-overview-corner,.tt-overview-day,.tt-overview-axis,.tt-overview-count{background:var(--surface-alt)}
+.tt-overview-day:hover,.tt-overview-loose:hover{background:var(--surface-hover)}
+.tt-scroll{scrollbar-color:var(--line-strong) var(--surface-alt)}
+.tt-event{border-color:color-mix(in srgb,var(--tt-color) 40%,var(--paper));border-left-color:var(--tt-color)}
+.tt-day-column{background:repeating-linear-gradient(to bottom,var(--line) 0,var(--line) 1px,transparent 1px,transparent 64px),repeating-linear-gradient(to bottom,transparent 0,transparent 31px,var(--surface-alt) 31px,var(--surface-alt) 32px,transparent 32px,transparent 64px)}
+.tt-overview-line{background:var(--line)}
+.artifact-banner{background:var(--warning-bg);color:var(--warning-ink);border-color:var(--warning-line)}
+.artifact-banner.readonly{background:var(--surface-alt);color:var(--ink);border-color:var(--line)}
+@media(forced-colors:active){.schedule-clock input{color:CanvasText;-webkit-text-fill-color:CanvasText}.schedule-clock-display{display:none}}
+@media(max-width:520px){.theme-toolbar{gap:0 12px;margin-bottom:16px}.theme-help{font-size:10px}.theme-help summary{min-height:44px}.theme-choice{margin-left:auto}}
+@media print{
+  .theme-toolbar{display:none}
+  html,body{background:#fff}
+  header,header *,.money-total,.money-total:nth-child(2),.money-total strong,.money-total small{background:none;color:var(--ink);box-shadow:none;text-shadow:none;backdrop-filter:none}
+  header:before,header:after,.money-total:after{display:none}
+  .panel,.timeline-row>.card{box-shadow:none}
+}
+}
+
 /* Keep the default scaffold out of sight until the published state is resolved. */
 .app-loading{display:none;width:calc(100% - 32px);max-width:860px;min-height:240px;margin:18px auto 48px;place-items:center}
 .hydrating .app-loading{display:grid}
 .hydrating>.tabs,.hydrating>.editor-bar,.hydrating>.preview-banner,.hydrating>main{display:none}
 .hydrating>.schedule-view-switch,.hydrating>.timetable-view{display:none}
-.app-loading-card{display:flex;align-items:center;gap:14px;width:min(100%,420px);padding:20px 22px;border:1px solid rgba(188,201,214,.76);border-radius:18px;background:rgba(255,255,255,.92);box-shadow:0 18px 46px rgba(31,48,70,.1);backdrop-filter:blur(12px)}
-.app-loading-spinner{width:26px;height:26px;flex:0 0 26px;border:3px solid #e7edf3;border-top-color:#a93f35;border-radius:50%;animation:trip-loading-spin .8s linear infinite}
+.app-loading-card{display:flex;align-items:center;gap:14px;width:min(100%,420px);padding:20px 22px;border:1px solid var(--line);border-radius:18px;background:var(--paper);box-shadow:var(--shadow-lg);backdrop-filter:blur(12px)}
+.app-loading-spinner{width:26px;height:26px;flex:0 0 26px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:trip-loading-spin .8s linear infinite}
 .app-loading-copy{display:grid;gap:4px}.app-loading-copy strong{color:var(--navy);font-size:14px}.app-loading-copy small{color:var(--muted);font-size:11px;line-height:1.45}
 @keyframes trip-loading-spin{to{transform:rotate(1turn)}}
 
@@ -602,7 +780,8 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
 </style>
 </head>
 <body class="viewing hydrating">
-<header><div class="hero-shell"><div class="hero-top"><div class="hero-copy"><span class="hero-kicker">TRIP PLANNER</span><h1 class="title">여행 일정</h1></div><div class="hero-meta"><div class="hero-meta-card hero-meta-dates"><small>TRAVEL DATES</small><strong>여행 기간</strong></div><div class="hero-meta-card"><small>ROUTE</small><strong>여행 경로</strong></div></div></div><div class="world-clocks" aria-label="두 지역 현재 시각"><div class="world-clock"><div class="world-clock-copy"><small>HOME</small><span id="homeDate">날짜 계산 중</span></div><time id="homeClock">--:--</time></div><div class="world-clock"><div class="world-clock-copy"><small>DESTINATION</small><span id="destinationDate">날짜 계산 중</span></div><time id="destinationClock">--:--</time></div><div class="time-gap" id="timeGap">시차 계산 중</div></div><div class="trip-progress" id="tripProgress"><div class="trip-progress-head"><strong id="tripProgressLabel">여행 준비 중</strong><span id="tripProgressMeta">일정을 계산하고 있습니다.</span></div><div class="trip-progress-track" aria-label="여행 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" role="progressbar"><i id="tripProgressFill"></i></div></div></div></header>
+<header><div class="hero-shell"><div class="theme-toolbar"><div class="theme-choice"><label for="themeSelect">화면 테마</label><select id="themeSelect" aria-describedby="themeStorageStatus"><option value="light">밝게</option><option value="dark">어둡게</option><option value="system">기기 설정</option></select></div><p id="themeStorageStatus" role="status" hidden></p><details class="theme-help"><summary>선택한 테마와 다르게 보이나요?</summary><p>삼성 인터넷의 ‘웹 콘텐츠 강제 다크모드’가 켜져 있으면 앱의 색상이 바뀔 수 있습니다. 삼성 인터넷 설정에서 해당 옵션을 끈 뒤 앱을 다시 열어 주세요. ‘기기 설정’은 브라우저가 전달하는 밝기 설정을 따릅니다.</p></details></div><div class="hero-top"><div class="hero-copy"><span class="hero-kicker">TRIP PLANNER</span><h1 class="title">여행 일정</h1></div><div class="hero-meta"><div class="hero-meta-card hero-meta-dates"><small>TRAVEL DATES</small><strong>여행 기간</strong></div><div class="hero-meta-card"><small>ROUTE</small><strong>여행 경로</strong></div></div></div><div class="world-clocks" aria-label="두 지역 현재 시각"><div class="world-clock"><div class="world-clock-copy"><small>HOME</small><span id="homeDate">날짜 계산 중</span></div><time id="homeClock">--:--</time></div><div class="world-clock"><div class="world-clock-copy"><small>DESTINATION</small><span id="destinationDate">날짜 계산 중</span></div><time id="destinationClock">--:--</time></div><div class="time-gap" id="timeGap">시차 계산 중</div></div><div class="trip-progress" id="tripProgress"><div class="trip-progress-head"><strong id="tripProgressLabel">여행 준비 중</strong><span id="tripProgressMeta">일정을 계산하고 있습니다.</span></div><div class="trip-progress-track" aria-label="여행 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" role="progressbar"><i id="tripProgressFill"></i></div></div></div></header>
+<script id="tripThemeControls">document.dispatchEvent(new Event('trip-theme-controls-ready'));</script>
 <nav class="tabs" aria-label="여행 날짜"></nav>
 <div class="editor-bar"><button class="primary" data-icon="edit" id="editBtn">편집 시작</button><button class="mode-only edit-only" data-icon="undo" id="undoBtn" disabled>실행 취소</button><button class="mode-only edit-only" data-icon="redo" id="redoBtn" disabled>다시 실행</button><button class="mode-only edit-only" data-icon="plus" id="addTimeBtn">일정 시간 추가</button><button class="mode-only edit-only" data-icon="check" id="addCheckBtn">체크 항목 추가</button><button class="mode-only edit-only danger" data-icon="reset" id="resetBtn">초기화</button><button class="mode-only view-only" data-icon="save" id="saveBtn" disabled>변경사항 저장</button><button class="mode-only view-only online-only" data-icon="upload" id="importBtn" title="오프라인 작업본을 최신 저장본과 비교해 초안으로 불러옵니다.">편집본 불러오기</button><button class="mode-only view-only" data-icon="export" id="exportMenuBtn">내보내기</button><button class="mode-only view-only online-only" data-icon="history" id="versionsBtn">버전 관리</button><button class="session-only" data-icon="logout" id="logoutBtn" type="button">로그아웃</button><button class="operation-only danger" data-icon="reset" id="cancelOperationBtn" type="button">작업 취소</button><span id="status" class="chip" role="status" aria-live="polite">보기 모드</span><input accept="text/html,.html" id="importFileInput" type="file" hidden></div>
 <div class="preview-banner" id="previewBanner"><span id="previewLabel">저장 버전 미리보기</span><button id="closePreviewBtn" type="button">미리보기 종료</button></div>
@@ -1758,7 +1937,17 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
     normalized.html=template.innerHTML;return {state:normalized,failures};
   }
   function downloadHtml(source,name){const blob=new Blob([source],{type:'text/html;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);}
-  function setArtifactBanner(root,type){root.querySelectorAll('#pwaRegistration,link[rel="manifest"],link[rel="icon"],link[rel="apple-touch-icon"]').forEach(el=>el.remove());root.querySelectorAll('.artifact-banner').forEach(el=>el.remove());const banner=document.createElement('div'),date=todayLocal();banner.className='artifact-banner '+(type==='readonly'?'readonly':'editable');banner.innerHTML=type==='readonly'?'<strong>인쇄·공유용 사본</strong><span>읽기 전용 · 온라인 반영 불가 · '+date+' 생성</span>':'<strong>오프라인 작업본</strong><span>인터넷 없이 수정 가능 · 수정 후 온라인 페이지에서 “편집본 불러오기”를 사용하세요.</span>';root.querySelector('header')?.insertAdjacentElement('afterend',banner);root.dataset.artifactType=type;}
+  function resetArtifactTheme(root,type){
+    // Never copy the author's personal preference into a shared/exported document.
+    root.removeAttribute('data-theme');root.removeAttribute('data-theme-preference');
+    root.querySelector('meta[name="color-scheme"]').content='only light';
+    root.querySelector('meta[name="theme-color"]').content='#142b3d';
+    root.querySelectorAll('#themeSelect option').forEach(option=>option.removeAttribute('selected'));
+    const status=root.querySelector('#themeStorageStatus');if(status){status.hidden=true;status.textContent='';}
+    root.querySelector('.theme-help')?.removeAttribute('open');
+    if(type==='readonly')root.querySelectorAll('.theme-toolbar,#tripThemeBootstrap').forEach(el=>el.remove());
+  }
+  function setArtifactBanner(root,type){resetArtifactTheme(root,type);root.querySelectorAll('#pwaRegistration,link[rel="manifest"],link[rel="icon"],link[rel="apple-touch-icon"]').forEach(el=>el.remove());root.querySelectorAll('.artifact-banner').forEach(el=>el.remove());const banner=document.createElement('div'),date=todayLocal();banner.className='artifact-banner '+(type==='readonly'?'readonly':'editable');banner.innerHTML=type==='readonly'?'<strong>인쇄·공유용 사본</strong><span>읽기 전용 · 온라인 반영 불가 · '+date+' 생성</span>':'<strong>오프라인 작업본</strong><span>인터넷 없이 수정 가능 · 수정 후 온라인 페이지에서 “편집본 불러오기”를 사용하세요.</span>';root.querySelector('header')?.insertAdjacentElement('afterend',banner);root.dataset.artifactType=type;}
   function embedTripConfig(root){const external=root.querySelector('#tripConfigScript,script[src$="trip-config.js"]');if(!external)return;const inline=document.createElement('script');inline.id='embeddedTripConfig';inline.textContent='window.TRIP_CONFIG='+JSON.stringify(CONFIG).replace(/</g,'\\u003c')+';';external.replaceWith(inline);}
   async function exportOfflineHtml(sourceState=captureState()) {
     if(operationBusy)return;setOperationBusy(true,{cancelable:true,status:'오프라인 작업본 준비 중'});

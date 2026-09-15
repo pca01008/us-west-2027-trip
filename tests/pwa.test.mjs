@@ -111,7 +111,7 @@ test('인증·API·POST·다른 페이지 요청은 가로채지 않는다', asy
 
 test('캐시 정리는 같은 앱·경로의 이전 버전에만 적용된다', async () => {
   const app = worker(); await app.install();
-  const current = [...app.stores.keys()][0], old = current.replace(/v1$/, 'v0');
+  const current = [...app.stores.keys()][0], old = current.replace(/v\d+$/, 'v0');
   app.stores.set(old, new Map()); app.stores.set('another-app', new Map());
   app.stores.set('westbound-pwa:other-scope:v0', new Map());
   await app.activate();

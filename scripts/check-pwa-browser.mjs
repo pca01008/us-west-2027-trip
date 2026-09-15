@@ -78,12 +78,16 @@ try {
         };
       });
     });
+    await page.locator('#themeSelect').selectOption('dark');
     await context.setOffline(true);
     disconnected = true;
     await page.reload();
     await page.waitForFunction(() => !document.body.classList.contains('hydrating'));
     assert.match(await page.locator('main').textContent(), /PWA 저장본 검증/);
     assert.match(await page.locator('#status').textContent(), /오프라인 캐시 표시/);
+    assert.equal(await page.locator('html').getAttribute('data-theme'), 'dark', 'Offline restart restores theme');
+    await page.locator('#themeSelect').selectOption('light');
+    assert.equal(await page.locator('html').getAttribute('data-theme'), 'light', 'Theme changes work offline');
     await page.locator('label[for="d1"]').click();
     assert.equal(await page.locator('#d1').isChecked(), true);
 
@@ -99,6 +103,7 @@ try {
     await page.reload();
     await page.waitForFunction(() => !document.body.classList.contains('hydrating'));
     assert.equal(await page.evaluate(() => typeof window.supabase), 'undefined');
+    assert.equal(await page.locator('html').getAttribute('data-theme'), 'light', 'Theme bootstrap has no SDK dependency');
     assert.match(await page.locator('main').textContent(), /PWA 저장본 검증/);
     assert.match(await page.locator('#status').textContent(), /오프라인 캐시 표시/);
 
@@ -111,7 +116,7 @@ try {
     await page.waitForFunction(() => !document.body.classList.contains('hydrating'));
     assert.match(await page.locator('main').textContent(), /PWA 최신본 검증/);
     assert.deepEqual(errors, []);
-    console.log(`${basePath}: installability, mobile tabs, offline reload, missing SDK, online refresh passed`);
+    console.log(`${basePath}: installability, mobile tabs, offline reload, theme persistence, missing SDK, online refresh passed`);
     await context.close();
   }
 } finally {
