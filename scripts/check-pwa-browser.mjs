@@ -50,8 +50,9 @@ try {
     const manifest = await page.evaluate(async () => (await fetch(document.querySelector('link[rel="manifest"]').href)).json());
     assert.equal(new URL(manifest.start_url, startURL).href, startURL);
     const cdp = await context.newCDPSession(page);
-    const { errors: manifestErrors } = await cdp.send('Page.getAppManifest');
+    const { errors: manifestErrors, manifest: parsedManifest } = await cdp.send('Page.getAppManifest');
     assert.deepEqual(manifestErrors, []);
+    assert.equal(parsedManifest.id, startURL, '앱 ID는 여행 시작 주소로 해석되어야 합니다.');
     const { installabilityErrors } = await cdp.send('Page.getInstallabilityErrors');
     // Playwright's isolated context is incognito; actual installation is disabled there.
     assert.deepEqual(installabilityErrors.filter(error => error.errorId !== 'in-incognito'), []);

@@ -49,6 +49,9 @@ test('설치 리소스는 하위 경로에서 해석되고 PNG 크기와 SDK 해
   const manifest = JSON.parse(await read('manifest.webmanifest'));
   assert.equal(new URL(manifest.start_url, scope).href, scope);
   assert.equal(new URL(manifest.scope, scope).href, scope);
+  // Unlike start_url, relative id values resolve against the origin, not the directory.
+  const resolvedId = manifest.id ? new URL(manifest.id, new URL(scope).origin).href : new URL(manifest.start_url, scope).href;
+  assert.equal(resolvedId, scope, '앱 식별자가 도메인 루트가 아닌 여행 경로여야 합니다.');
   assert.equal(manifest.display, 'standalone');
   for (const icon of manifest.icons) {
     assert.ok(new URL(icon.src, scope).href.startsWith(scope));
