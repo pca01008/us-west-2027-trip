@@ -1031,6 +1031,7 @@ input:disabled,select:disabled{opacity:.7}
   let checklistAuthPending = false;
   let checklistEditorBase = [];
   let checklistEditorItems = [];
+  const newChecklistItemIds = new Set();
   let checklistEditorSaving = false;
   let history = [];
   let historyIndex = -1;
@@ -1747,11 +1748,19 @@ input:disabled,select:disabled{opacity:.7}
     if(!OFFLINE_MODE&&checklistShape(checklistEditorBase)===checklistShape(checklistItems(lastSavedState))){
       try{const latest=await fetchPublishedState();if(latest?.content?.html)checklistEditorBase=checklistItems(normalizeState(migratePublishedState(latest.content)));}catch(_){}
     }
-    checklistEditorItems=clone(checklistEditorBase);
+    checklistEditorItems=clone(checklistEditorBase);newChecklistItemIds.clear();
     $('#checklistEditorError').textContent='';renderChecklistEditor();$('#checklistDialog').hidden=false;syncChecklistControls();
   }
   function renderChecklistEditor() {
     $('#checklistEditorRows').innerHTML=checklistEditorItems.map((item,index)=>'<div class="checklist-editor-row"><input type="checkbox" disabled aria-label="완료 상태"'+(item.checked?' checked':'')+'><textarea class="checklist-text" rows="2" data-check-index="'+index+'" aria-label="항목 '+(index+1)+'" placeholder="새 체크 항목">'+escapeHtml(item.text)+'</textarea><div class="checklist-row-actions"><button type="button" data-check-action="up" data-index="'+index+'" aria-label="위로 이동"'+(index===0?' disabled':'')+'>↑</button><button type="button" data-check-action="down" data-index="'+index+'" aria-label="아래로 이동"'+(index===checklistEditorItems.length-1?' disabled':'')+'>↓</button><button type="button" data-check-action="delete" data-index="'+index+'">삭제</button></div></div>').join('');
+  }
+  function addChecklistItem() {
+    if(checklistEditorSaving||$('#checklistDialog').hidden)return;
+    let id;do{id=uid('check');}while(checklistEditorItems.some(item=>item.id===id));
+    newChecklistItemIds.add(id);checklistEditorItems.push({id,text:'',checked:false});
+    renderChecklistEditor();
+    const row=$$('#checklistEditorRows .checklist-editor-row').at(-1),checkbox=row.querySelector('input[type="checkbox"]');
+    checkbox.defaultChecked=false;checkbox.checked=false;row.querySelector('.checklist-text').focus();
   }
   async function saveChecklistEditor() {
     if(checklistEditorSaving)return;
@@ -1766,7 +1775,7 @@ input:disabled,select:disabled{opacity:.7}
         if(remotePass){
           const latest=checklistItems(state),shape=checklistShape(latest);
           if(shape!==checklistShape(checklistEditorBase)&&shape!==checklistShape(items))throw new Error('다른 곳에서 목록이 변경되었습니다. 취소 후 다시 열어 주세요.');
-          publishedItems=items.map(item=>({...item,checked:latest.find(old=>old.id===item.id)?.checked??false}));
+          publishedItems=items.map(item=>({...item,checked:newChecklistItemIds.has(item.id)?false:latest.find(old=>old.id===item.id)?.checked??false}));
         }
         return patchChecklist(state,publishedItems);
       },'준비 목록 편집');
@@ -2070,7 +2079,7 @@ input:disabled,select:disabled{opacity:.7}
   }
   function addScheduleWarning(row){const card=row?.querySelector('.card');if(!card)return;const warning=document.createElement('div');warning.className='schedule-warning';warning.innerHTML='<span class="schedule-warning-text" contenteditable="true"></span><button class="warning-delete" type="button">삭제</button>';card.insertBefore(warning,card.querySelector('.schedule-media-tools'));decorateEditablePlaceholders(card);warning.querySelector('.schedule-warning-text').focus();recordHistory();}
   function moveScheduleRow(row,direction){if(!body.classList.contains('editing')||!row)return;const panel=row.parentElement,rows=Array.from(panel.querySelectorAll(':scope > .timeline-row')),index=rows.indexOf(row),next=index+direction;if(index<0||next<0||next>=rows.length)return;if(direction<0)rows[next].before(row);else rows[next].after(row);updateScheduleMoveButtons();recordHistory();row.scrollIntoView({block:'nearest',behavior:prefersReducedMotion()?'auto':'smooth'});}
-  function addCheckRow(){if($('.day-radio:checked')?.id!=='prep')return;const label=document.createElement('label');label.dataset.checkId=uid('check');label.innerHTML='<input type="checkbox"><span contenteditable="true" data-placeholder="새 체크 항목"></span><button class="check-delete" type="button">삭제</button>';$('.prepday .checklist').appendChild(label);decorateChecklist();label.querySelector('span').focus();recordHistory();}
+  async function addCheckRow(){if($('.day-radio:checked')?.id!=='prep')return;await requireEditor('checklist',async()=>{await openChecklistEditor();addChecklistItem();});}
   function moveCheck(id,direction){if(!body.classList.contains('editing'))return;const labels=$$('.prepday .checklist label'),index=labels.findIndex(label=>label.dataset.checkId===id),next=index+direction;if(index<0||next<0||next>=labels.length)return;const label=labels[index],target=labels[next];if(direction<0)target.before(label);else target.after(label);updateChecklistMoveButtons();recordHistory();}
   function finishMutation(){if(body.classList.contains('editing'))recordHistory();else updateDirtyState();resetInactivityTimer();}
   async function addExpense(){const name=$('#expenseName').value.trim(),amount=Number($('#expenseAmount').value.replace(/,/g,'').trim()),currency=$('#expenseCurrency').value==='USD'?'USD':'KRW',date=$('#expenseDate').value||todayLocal(),categoryId=$('#expenseCategory').value||'misc';if(!name||!Number.isFinite(amount)||amount<=0){setStatus('가계부 항목과 올바른 금액을 입력해 주세요.');return;}await requireEditor('ledger',async()=>{expenses.push({id:uid('expense'),name,amount,currency,date,categoryId});$('#expenseName').value='';$('#expenseAmount').value='';renderLedger();finishMutation();});}
@@ -2457,7 +2466,7 @@ input:disabled,select:disabled{opacity:.7}
   if(client)client.auth.onAuthStateChange((_event,session)=>{const wasAuthenticated=Boolean(editorSession),valid=editorEmailMatches(session?.user?.email)?session:null;if(valid){setEditorSession(valid);return;}setEditorSession(null);if(wasAuthenticated&&!signingOut)setTimeout(()=>void handleExternalSignOut('편집 세션이 종료되었습니다.'),0);});
 
   document.addEventListener('click',event=>{if((pendingChecks.size||checklistSaving)&&event.target.closest('.editor-bar')){event.preventDefault();event.stopImmediatePropagation();}},true);
-  $('#checklistAdd').onclick=()=>{checklistEditorItems.push({id:uid('check'),text:'',checked:false});renderChecklistEditor();const fields=$$('#checklistEditorRows .checklist-text');fields.at(-1)?.focus();};
+  $('#checklistAdd').onclick=addChecklistItem;
   $('#checklistCancel').onclick=()=>{if(!checklistEditorSaving){$('#checklistDialog').hidden=true;syncChecklistControls();}};
   $('#checklistSave').onclick=()=>void saveChecklistEditor();
   $('#checklistEditorRows').addEventListener('input',event=>{const index=Number(event.target.dataset.checkIndex);if(event.target.matches('.checklist-text')&&checklistEditorItems[index])checklistEditorItems[index].text=event.target.value;resetInactivityTimer();});

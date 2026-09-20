@@ -42,7 +42,7 @@ const server = createServer(async (req, res) => {
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
       .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, stub)
       .replace('initializeTimetable();initializeDialogAccessibility();', `window.__prepTest={captureState,applyState,normalizeState,checklistItems,patchChecklist,patchCheck,isDirty,finishMutation,recordHistory,refreshPublishedState,
-        pending:()=>pendingChecks.size,base:()=>lastSavedState,revision:()=>publishedRevision,
+        pending:()=>pendingChecks.size,base:()=>lastSavedState,revision:()=>publishedRevision,editorItems:()=>clone(checklistEditorItems),
         draft:()=>{expenses.push({id:'unsaved-expense',name:'Unsaved meal',amount:25,currency:'USD',date:'2027-05-01',categoryId:'misc'});renderLedger();finishMutation();},
         storageFailure:()=>{writeDraftRecord=async()=>false;}};initializeTimetable();initializeDialogAccessibility();`)
       .replace('data-offline="false"', url.searchParams.has('offline') ? 'data-offline="true"' : 'data-offline="false"');
@@ -148,6 +148,42 @@ try {
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No horizontal overflow');
     console.log(`${mobile?'Mobile':'Desktop'}: authentication, auto-save/reload, queue, rollback/retry, revision conflict, editor, cancel, blank input and draft isolation passed.`);
     await context.close();
+  }
+  // New rows always start incomplete, even among completed rows and after a save retry.
+  for(const mobile of [false,true]) {
+    reset();
+    const context=await browser.newContext({viewport:{width:mobile?390:1440,height:900},isMobile:mobile,hasTouch:mobile});
+    await context.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
+    const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));
+    const ready=()=>page.waitForFunction(()=>!document.body.classList.contains('hydrating'));
+    await page.goto(origin);await ready();row.content=await page.evaluate(()=>window.__prepTest.captureState());row.content.checks.fill(true);
+    await page.reload();await ready();
+    await page.locator('#editBtn').click();await page.locator('#checklistAdd').click();
+    const originalCount=row.content.checks.length;
+    await page.locator('.checklist-text').last().fill('첫 번째 새 항목');
+    for(let i=originalCount;i>0;i--)await page.locator('[data-check-action="up"]').nth(i).click();
+    await page.locator('#checklistAdd').click();await page.locator('.checklist-text').last().fill('두 번째 새 항목');
+    const items=await page.evaluate(()=>window.__prepTest.editorItems());
+    assert.equal(await page.locator('#checklistEditorRows input').first().isChecked(),false);
+    assert.equal(await page.locator('#checklistEditorRows input').last().isChecked(),false);
+    // Simulate a conflicting server snapshot carrying checked flags for the new IDs.
+    const stale=await page.evaluate(({state,items})=>window.__prepTest.patchChecklist(state,items.map(item=>({...item,checked:true}))),{state:row.content,items});
+    conflict=doc=>{doc.content=stale;};
+    await page.locator('#checklistSave').click();await page.locator('#checklistDialog').waitFor({state:'hidden'});
+    assert.deepEqual(row.content.checks,[false,...Array(originalCount).fill(true),false],'New IDs cannot inherit checked defaults at save');
+    await page.reload();await ready();
+    assert.equal(await page.locator('.prepday .checklist input').first().isChecked(),false);
+    assert.equal(await page.locator('.prepday .checklist input').last().isChecked(),false);
+    await page.locator('.prepday .checklist input').first().click();await page.waitForFunction(()=>window.__prepTest.pending()===0);
+    await page.locator('#editBtn').click();await page.locator('.checklist-text').first().fill('사용자가 완료한 항목');
+    await page.locator('#checklistSave').click();await page.locator('#checklistDialog').waitFor({state:'hidden'});
+    assert.equal(row.content.checks[0],true,'Later edits preserve an explicitly completed item');
+    // The legacy add button also goes through the editor, never an editable checkbox label.
+    await page.locator('#addCheckBtn').evaluate(button=>button.click());await page.locator('#checklistDialog').waitFor({state:'visible'});
+    await page.locator('.checklist-text').last().fill('이전 추가 버튼의 새 항목');
+    await page.locator('#checklistSave').click();await page.locator('#checklistDialog').waitFor({state:'hidden'});
+    assert.equal(row.content.checks.at(-1),false);
+    await context.close();console.log(`${mobile?'Mobile':'Desktop'}: new items remain unchecked after reorder, save conflict and reload; existing completion is preserved.`);
   }
   reset();
   const context=await browser.newContext();await context.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
