@@ -613,7 +613,9 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
 .tt-detail-content{margin-top:14px}.tt-detail-content .card{padding:0;box-shadow:none;border:0;background:transparent}.tt-detail-content .remark{white-space:pre-line}.tt-detail-content .schedule-gallery{margin:14px 0}.tt-detail-content .schedule-map{margin:12px 0}.tt-detail-content .schedule-warning{margin:12px 0}.tt-detail-content .chip{display:none}
 @media(max-width:620px){.schedule-view-switch,.timetable-view{width:calc(100% - 24px)}.schedule-view-switch{margin-top:12px}.schedule-view-switch>span{font-size:11px}.schedule-view-switch button{min-height:44px;padding:8px 12px}.tt-toolbar{padding:16px 14px 12px;gap:12px}.tt-heading h2{font-size:20px}.tt-controls{width:100%;justify-content:space-between;gap:8px}.tt-range button{padding:7px 10px}.tt-nav{width:100%}.tt-nav select{flex:1;max-width:none}.tt-range button,.tt-nav button,.tt-nav select{min-height:44px}.tt-meta{padding:0 14px 12px}.tt-legend{gap:9px;font-size:11px}.tt-scroll{max-height:68vh}.tt-help{padding:12px 14px}.tt-event{min-height:44px}.tt-day-header p{font-size:11px}.tt-grid{grid-template-columns:46px repeat(var(--tt-days),minmax(160px,1fr))}}
 .tt-overview{border-top:1px solid var(--line)}
-.tt-overview-day .tt-overview-mobile-date{display:none}
+.tt-overview-scroll{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-color:var(--line-strong) var(--surface-alt)}
+.tt-overview-scroll:focus-visible{outline:2px solid var(--navy);outline-offset:-2px}
+.tt-overview-scroll-hint{display:none}
 .tt-overview-grid{display:grid;grid-template-columns:38px repeat(var(--tt-days),minmax(0,1fr));width:100%;isolation:isolate}
 .tt-overview-corner{display:flex;align-items:center;justify-content:center;min-width:0;padding:6px 2px;background:#f8fafc;color:var(--muted);font-size:10px;line-height:1.6;text-align:center}
 .tt-overview-day{display:block;min-width:0;min-height:72px;padding:10px 6px;border:0;border-left:1px solid var(--line);border-radius:0;background:#f8fafc;color:var(--navy);text-align:center;cursor:pointer}.tt-overview-day:hover{transform:none;background:#edf2f8}.tt-overview-day:focus-visible{position:relative;z-index:3;outline-offset:-3px}.tt-overview-day strong{display:block;font-size:13px;font-variant-numeric:tabular-nums}.tt-overview-day small{display:block;margin-top:3px;font-size:10px;color:var(--muted)}.tt-overview-day p{margin:5px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:var(--muted)}.tt-overview-mobile-date{display:none}
@@ -623,9 +625,19 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
 .tt-overview-event.tt-event{position:absolute;display:block;z-index:1;min-height:0;padding:1px 3px;border-radius:4px;border-left-width:2px;line-height:1.4}.tt-overview-event.tt-event small{display:none}.tt-overview-event.tt-event strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0;font-size:10px;line-height:16px}.tt-overview-event.tt-event .tt-event-note{display:none}.tt-overview-event.tt-event:focus-visible{z-index:3;outline-offset:0}
 .tt-overview-count{min-width:0;padding:8px 3px;border-top:1px solid var(--line);border-left:1px solid var(--line);background:#f8fafc;color:var(--muted);font-size:10px;line-height:1.5;text-align:center}.tt-overview-count b{display:block;color:var(--navy);font-size:12px}.tt-overview-count span{display:block;font-size:9px}.tt-overview-help{border-top:1px solid var(--line)}
 .tt-overview-axis,.tt-overview-column{height:calc(var(--tt-overview-height) + 22px)}
-@media(max-width:800px){.tt-overview-day p{display:none}.tt-overview-day{min-height:60px}.tt-overview-grid{grid-template-columns:32px repeat(var(--tt-days),minmax(0,1fr))}.tt-overview-empty{font-size:9px}.tt-overview-day strong{font-size:11px}}
-@media(max-width:620px){.tt-overview-day{min-height:54px;padding:7px 0}.tt-overview-desktop-date{display:none}.tt-overview-mobile-date{display:block}.tt-overview-day strong{font-size:11px}.tt-overview-day small{font-size:9px}.tt-overview-day .tt-overview-day-index{display:none}.tt-overview-loose{align-items:center;min-height:48px;padding:5px 0;text-align:center}.tt-overview-loose-empty{min-height:48px}.tt-overview-loose>span{font-size:9px}.tt-overview-mobile-count{color:var(--navy);font-size:11px;font-weight:800}.tt-overview-axis span{right:4px;font-size:9px}.tt-overview-count{padding:6px 0;font-size:9px}.tt-overview-count b{font-size:10px}.tt-overview-count span{display:none}.tt-overview-column:focus-visible{z-index:3;outline-offset:-2px}.tt-overview-mobile-mark{position:absolute;display:block;min-height:3px;border-left:2px solid var(--tt-color);border-radius:2px;background:var(--tt-bg);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tt-color) 45%,transparent)}.tt-overview-mobile-mark.tt-point{background:var(--tt-color);box-shadow:none}.tt-overview-empty{display:none}}
-@media(max-width:620px){.tt-overview-day .tt-overview-desktop-date{display:none}.tt-overview-day .tt-overview-mobile-date{display:block}}
+@media(max-width:800px){
+  .tt-overview-scroll-hint{display:block;margin:0;padding:8px 14px;color:var(--muted);font-size:11px;text-align:right;border-bottom:1px solid var(--line)}
+  .tt-overview-grid{grid-template-columns:44px repeat(var(--tt-days),180px);width:max-content;min-width:100%}
+  .tt-overview-corner,.tt-overview-axis{position:sticky;left:0;z-index:4;box-shadow:2px 0 4px #0000000d}
+  .tt-overview-axis,.tt-overview-column{height:calc(var(--tt-overview-height) + 46px)}
+  .tt-overview-day{padding:10px 8px}
+  .tt-overview-loose{padding:7px 8px}
+  .tt-overview-loose>span{font-size:11px}
+  .tt-overview-axis span{font-size:11px}
+  .tt-overview-event.tt-event{padding:4px 5px}
+  .tt-overview-event.tt-event small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;line-height:14px}
+  .tt-overview-event.tt-event strong{margin-top:2px;font-size:12px;line-height:18px}
+}
 @media print{.schedule-view-switch,.timetable-view{display:none}}
 }
 
@@ -881,7 +893,7 @@ input:disabled,select:disabled{opacity:.7}
 <section class="timetable-view" id="timetableView" hidden aria-labelledby="timetableTitle">
   <div class="tt-toolbar"><div class="tt-heading"><h2 id="timetableTitle">여행 시간표</h2><p id="timetableZone"></p></div><div class="tt-controls"><div class="tt-range" role="group" aria-label="시간표 표시 범위"><button type="button" data-tt-range="1" aria-pressed="false">1일</button><button type="button" data-tt-range="all" aria-pressed="true">전체</button></div><div class="tt-nav"><button type="button" id="timetablePrev" aria-label="시간표 이전 날짜">‹</button><select id="timetableStart" aria-label="시간표 날짜"></select><button type="button" id="timetableNext" aria-label="시간표 다음 날짜">›</button></div></div></div>
   <div class="tt-meta"><strong id="timetableSummary" role="status" aria-live="polite"></strong><div class="tt-legend" aria-label="일정 종류"><span class="tt-kind-activity"><i aria-hidden="true"></i>관광</span><span class="tt-kind-food"><i aria-hidden="true"></i>식사</span><span class="tt-kind-transit"><i aria-hidden="true"></i>이동</span><span class="tt-kind-stay"><i aria-hidden="true"></i>숙소·휴식</span><span class="tt-kind-other"><i aria-hidden="true"></i>기타</span></div></div>
-  <div class="tt-overview" id="timetableOverview" hidden role="region" aria-label="여행 전체 한눈에 보기" aria-describedby="timetableOverviewHelp"><div class="tt-overview-grid" id="timetableOverviewGrid"></div><p class="tt-help tt-overview-help" id="timetableOverviewHelp"></p></div>
+  <div class="tt-overview" id="timetableOverview" hidden role="region" aria-label="여행 전체 한눈에 보기" aria-describedby="timetableOverviewHelp"><p class="tt-overview-scroll-hint">← 좌우로 넘겨 날짜 보기 →</p><div class="tt-overview-scroll" id="timetableOverviewScroll" tabindex="0" role="region" aria-label="전체 시간표"><div class="tt-overview-grid" id="timetableOverviewGrid"></div></div><p class="tt-help tt-overview-help" id="timetableOverviewHelp"></p></div>
   <div class="tt-scroll" id="timetableScroll" tabindex="0" role="region" aria-label="1일 상세 시간표, 세로 스크롤" aria-describedby="timetableHelp"><div class="tt-grid" id="timetableGrid"></div></div>
   <p class="tt-help" id="timetableHelp">점선: 종료 시간 미정</p>
 </section>
@@ -1198,16 +1210,16 @@ input:disabled,select:disabled{opacity:.7}
     return '<button type="button" class="tt-event tt-kind-'+event.kind+(event.end===null&&!event.loose?' tt-point':'')+(compact?' tt-short':'')+(overview?' tt-overview-event':'')+'" data-tt-event="'+event.key+'" aria-haspopup="dialog" aria-label="'+escapeHtml(label)+'" title="'+escapeHtml(label)+'"'+(position?' style="'+position+'"':'')+'><small>'+escapeHtml(timing)+'</small><strong>'+escapeHtml(event.title)+'</strong>'+(!compact&&note?'<span class="tt-event-note">'+escapeHtml(note)+'</span>':'')+'</button>';
   }
   function renderTimetableOverview(days,startHour,fittedHeight=null) {
-    const mobile=window.matchMedia('(max-width:620px)').matches,height=fittedHeight??Math.round(Math.max(180,Math.min(420,window.innerHeight*.45))),minutes=(24-startHour)*60,pixelsPerHour=height/(24-startHour),minHeight=mobile?7:20;
+    const narrow=window.matchMedia('(max-width:800px)').matches,height=narrow?(24-startHour)*48:fittedHeight??Math.round(Math.max(180,Math.min(420,window.innerHeight*.45))),minutes=(24-startHour)*60,pixelsPerHour=height/(24-startHour),minHeight=narrow?44:20;
     const dayLabel=day=>timetableDate(day.index)+' · DAY '+(day.index+1)+' · '+day.events.length+'개 일정 · 1일 보기 열기';
     let content='<div class="tt-overview-corner">날짜</div>'+days.map(day=>{
       const parts=configDateParts(day.date);
-      return '<button type="button" class="tt-overview-day" data-tt-open-day="'+day.index+'" aria-label="'+escapeHtml(dayLabel(day))+'" title="'+escapeHtml(day.subtitle+' · '+dayLabel(day))+'"><strong class="tt-overview-desktop-date">'+escapeHtml(timetableDate(day.index))+'</strong><strong class="tt-overview-mobile-date">'+escapeHtml(parts.day)+'</strong><small>'+escapeHtml(parts.weekday.slice(0,1))+'<span class="tt-overview-day-index"> · D'+(day.index+1)+'</span></small><p>'+escapeHtml(day.subtitle)+'</p></button>';
+      return '<button type="button" class="tt-overview-day" data-tt-open-day="'+day.index+'" aria-label="'+escapeHtml(dayLabel(day))+'" title="'+escapeHtml(day.subtitle+' · '+dayLabel(day))+'"><strong>'+escapeHtml(timetableDate(day.index))+'</strong><small>'+escapeHtml(parts.weekday.slice(0,1))+' · D'+(day.index+1)+'</small><p>'+escapeHtml(day.subtitle)+'</p></button>';
     }).join('');
     content+='<div class="tt-overview-corner">별도</div>'+days.map(day=>{
       if(!day.loose.length)return '<div class="tt-overview-loose-empty" aria-label="'+escapeHtml(timetableDate(day.index)+' 별도 일정 없음')+'"></div>';
       const label=timetableDate(day.index)+' 시간 미정·종일·다른 시간대 '+day.loose.length+'개 · 1일 보기 열기';
-      const items=mobile?'<span class="tt-overview-mobile-count">'+day.loose.length+'</span><span>개</span>':day.loose.slice(0,2).map(event=>'<span class="tt-overview-loose-item tt-kind-'+event.kind+'" title="'+escapeHtml(event.time+' '+event.zone+' · '+event.title)+'">'+escapeHtml(event.time+(event.zone?' '+event.zone:'')+' · '+event.title)+'</span>').join('')+(day.loose.length>2?'<span class="tt-overview-loose-more">+'+(day.loose.length-2)+'개 더 보기</span>':'');
+      const items=day.loose.slice(0,2).map(event=>'<span class="tt-overview-loose-item tt-kind-'+event.kind+'" title="'+escapeHtml(event.time+' '+event.zone+' · '+event.title)+'">'+escapeHtml(event.time+(event.zone?' '+event.zone:'')+' · '+event.title)+'</span>').join('')+(day.loose.length>2?'<span class="tt-overview-loose-more">+'+(day.loose.length-2)+'개 더 보기</span>':'');
       return '<button type="button" class="tt-overview-loose" data-tt-open-day="'+day.index+'" aria-label="'+escapeHtml(label)+'">'+items+'</button>';
     }).join('');
     const hours=[];for(let hour=startHour;hour<=24;hour++)if(hour===startHour||hour===24||(hour%2===0&&hour-startHour>=2))hours.push(hour);
@@ -1217,15 +1229,15 @@ input:disabled,select:disabled{opacity:.7}
       const events=layoutTimetableEvents(day.timed,{pixelsPerHour,minHeight}).map(event=>{
         const top=(event.start-startHour*60)/minutes*height,blockHeight=Math.max(minHeight,((event.end??event.start)-event.start)/60*pixelsPerHour-2);
         const position='top:'+top+'px;height:'+blockHeight+'px;left:calc('+event.lane/event.lanes*100+'% + 2px);width:calc('+100/event.lanes+'% - 4px)';
-        return mobile?'<span aria-hidden="true" class="tt-overview-mobile-mark tt-kind-'+event.kind+(event.end===null?' tt-point':'')+'" style="'+position+'"></span>':timetableEventButton(event,{position,compact:true,overview:true});
+        return timetableEventButton(event,{position,compact:true,overview:true});
       }).join('');
       const empty=events?'':'<span class="tt-overview-empty">'+(day.loose.length?'상단 일정<br>확인':'일정 없음')+'</span>';
-      return mobile?'<button type="button" class="tt-overview-column" data-tt-open-day="'+day.index+'" aria-label="'+escapeHtml(dayLabel(day))+'">'+lines+events+empty+'</button>':'<div class="tt-overview-column" role="group" aria-label="'+escapeHtml(timetableDate(day.index)+' 시간 일정 요약')+'">'+lines+events+empty+'</div>';
+      return '<div class="tt-overview-column" role="group" aria-label="'+escapeHtml(timetableDate(day.index)+' 시간 일정 요약')+'">'+lines+events+empty+'</div>';
     }).join('');
     content+='<div class="tt-overview-corner">일정</div>'+days.map(day=>'<div class="tt-overview-count"><b>'+day.events.length+'개</b><span>시간 '+day.timed.length+' · 별도 '+day.loose.length+'</span></div>').join('');
     const grid=$('#timetableOverviewGrid');grid.style.setProperty('--tt-days',String(days.length));grid.style.setProperty('--tt-overview-height',height+'px');grid.innerHTML=content;
-    $('#timetableOverviewHelp').textContent=mobile?'짧은 표시: 종료 시간 미정':'점선: 종료 시간 미정';
-    if(fittedHeight===null){const fixedHeight=$('#timetableView').getBoundingClientRect().height-height,available=window.innerHeight-$('.tabs').getBoundingClientRect().height-24,target=Math.floor(Math.max(180,Math.min(420,available-fixedHeight)));if(target!==height)renderTimetableOverview(days,startHour,target);}
+    $('#timetableOverviewHelp').textContent='점선: 종료 시간 미정';
+    if(!narrow&&fittedHeight===null){const fixedHeight=$('#timetableView').getBoundingClientRect().height-height,available=window.innerHeight-$('.tabs').getBoundingClientRect().height-24,target=Math.floor(Math.max(180,Math.min(420,available-fixedHeight)));if(target!==height)renderTimetableOverview(days,startHour,target);}
   }
   function renderTimetable({resetScroll=false}={}) {
     if(!timetableActive)return;
