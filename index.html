@@ -1865,13 +1865,34 @@ input:disabled,select:disabled{opacity:.7}
 
   function blobToDataUrl(blob){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=reject;reader.readAsDataURL(blob);});}
   function dataUrlToBlob(dataUrl){const [head,data]=dataUrl.split(','),mime=(head.match(/data:([^;]+)/)||[])[1]||'image/webp',bytes=atob(data),array=new Uint8Array(bytes.length);for(let i=0;i<bytes.length;i++)array[i]=bytes.charCodeAt(i);return new Blob([array],{type:mime});}
-  async function compressImage(file,maxSide,quality=.8){const bitmap=await createImageBitmap(file);const scale=Math.min(1,maxSide/Math.max(bitmap.width,bitmap.height));const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();return await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('이미지 압축 실패')),'image/webp',quality));}
+  function photoExtension(blob){
+    const extension={'image/webp':'webp','image/jpeg':'jpg'}[blob?.type];
+    if(!extension)throw new Error('사진 형식을 변환하지 못했습니다. 다른 사진을 선택해 주세요.');
+    if(!blob.size||blob.size>5*1024*1024)throw new Error('사진은 압축 후 5MB 이하여야 합니다. 크기를 줄여 다시 추가해 주세요.');
+    return extension;
+  }
+  async function compressImage(file,maxSide,quality=.8){
+    const bitmap=await createImageBitmap(file),canvas=document.createElement('canvas');
+    const scale=Math.min(1,maxSide/Math.max(bitmap.width,bitmap.height));
+    canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+    const context=canvas.getContext('2d');
+    try{context.drawImage(bitmap,0,0,canvas.width,canvas.height);}finally{bitmap.close();}
+    const encode=type=>new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('이미지 압축 실패')),type,quality));
+    let blob=await encode('image/webp');
+    if(blob.type!=='image/webp'){
+      // Safari can return PNG for a WebP request. Flatten transparency before JPEG encoding.
+      context.globalCompositeOperation='destination-over';context.fillStyle='#fff';context.fillRect(0,0,canvas.width,canvas.height);
+      blob=await encode('image/jpeg');
+      if(blob.type!=='image/jpeg')throw new Error('사진 형식을 변환하지 못했습니다. 다른 사진을 선택해 주세요.');
+    }
+    photoExtension(blob);return blob;
+  }
   async function hashBlob(blob){const digest=await crypto.subtle.digest('SHA-256',await blob.arrayBuffer());return Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,'0')).join('');}
   function publicMediaUrl(path){return client.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl;}
   function isDuplicateUpload(error){return /already exists|duplicate/i.test(String(error?.message||error?.error||''));}
   async function immutableBlobExists(path){try{return (await fetch(publicMediaUrl(path),{method:'HEAD',cache:'force-cache'})).ok;}catch(_){return false;}}
-  async function uploadImmutableBlob(path,blob){if(await immutableBlobExists(path))return;const {error}=await client.storage.from(MEDIA_BUCKET).upload(path,blob,{cacheControl:'31536000',contentType:'image/webp',upsert:false});if(error&&!isDuplicateUpload(error))throw error;}
-  async function uploadPhotoBlobs(full,thumb){const [fullHash,thumbHash]=await Promise.all([hashBlob(full),hashBlob(thumb)]),fullPath=TRIP_ID+'/photos/'+fullHash+'.webp',thumbPath=TRIP_ID+'/thumbs/'+thumbHash+'.webp';await Promise.all([uploadImmutableBlob(fullPath,full),uploadImmutableBlob(thumbPath,thumb)]);return {fullPath,thumbPath,fullUrl:publicMediaUrl(fullPath),thumbUrl:publicMediaUrl(thumbPath)};}
+  async function uploadImmutableBlob(path,blob){photoExtension(blob);if(await immutableBlobExists(path))return;const {error}=await client.storage.from(MEDIA_BUCKET).upload(path,blob,{cacheControl:'31536000',contentType:blob.type,upsert:false});if(error&&!isDuplicateUpload(error))throw error;}
+  async function uploadPhotoBlobs(full,thumb){const fullExtension=photoExtension(full),thumbExtension=photoExtension(thumb),[fullHash,thumbHash]=await Promise.all([hashBlob(full),hashBlob(thumb)]),fullPath=TRIP_ID+'/photos/'+fullHash+'.'+fullExtension,thumbPath=TRIP_ID+'/thumbs/'+thumbHash+'.'+thumbExtension;await Promise.all([uploadImmutableBlob(fullPath,full),uploadImmutableBlob(thumbPath,thumb)]);return {fullPath,thumbPath,fullUrl:publicMediaUrl(fullPath),thumbUrl:publicMediaUrl(thumbPath)};}
   async function materializeStagedPhotos(state){
     const normalized=normalizeState(state);if(OFFLINE_MODE)return normalized;
     const template=document.createElement('template');template.innerHTML=normalized.html;
@@ -1880,8 +1901,8 @@ input:disabled,select:disabled{opacity:.7}
       if(operationCancelled)throw new Error('사진 업로드가 취소되었습니다.');
       const figure=figures[index],img=figure.querySelector('img'),fullData=img.dataset.fullUrl||img.src;if(!fullData?.startsWith('data:image/'))continue;
       setStatus('사진 업로드 '+(index+1)+'/'+figures.length);
-      const source=dataUrlToBlob(fullData),full=source.type==='image/webp'?source:await compressImage(source,1600,.8);
-      const hasDistinctThumb=img.src?.startsWith('data:image/')&&img.src!==fullData,thumbSource=hasDistinctThumb?dataUrlToBlob(img.src):null,thumb=thumbSource?.type==='image/webp'?thumbSource:await compressImage(full,480,.76);
+      const source=dataUrlToBlob(fullData),full=['image/webp','image/jpeg'].includes(source.type)?source:await compressImage(source,1600,.8);
+      const hasDistinctThumb=img.src?.startsWith('data:image/')&&img.src!==fullData,thumbSource=hasDistinctThumb?dataUrlToBlob(img.src):null,thumb=['image/webp','image/jpeg'].includes(thumbSource?.type)?thumbSource:await compressImage(full,480,.76);
       const uploaded=await uploadPhotoBlobs(full,thumb);
       figure.dataset.fullPath=uploaded.fullPath;figure.dataset.thumbPath=uploaded.thumbPath;delete figure.dataset.staged;
       img.src=uploaded.thumbUrl;img.dataset.fullUrl=uploaded.fullUrl;

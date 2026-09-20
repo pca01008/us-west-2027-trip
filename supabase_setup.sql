@@ -216,10 +216,10 @@ $$;
 revoke all on function public.save_trip_document(text, jsonb, bigint, text) from public, anon;
 grant execute on function public.save_trip_document(text, jsonb, bigint, text) to authenticated;
 
--- Photos are immutable WebP objects. Viewers use public object URLs, while only
+-- Photos are immutable WebP or JPEG objects. Viewers use public object URLs, while only
 -- the assigned editor can upload into that trip's content-addressed folder.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('trip-media', 'trip-media', true, 5242880, array['image/webp'])
+values ('trip-media', 'trip-media', true, 5242880, array['image/webp','image/jpeg'])
 on conflict (id) do update
 set public = excluded.public,
     file_size_limit = excluded.file_size_limit,
@@ -234,7 +234,7 @@ to authenticated
 with check (
   bucket_id = 'trip-media'
   and public.is_trip_editor(split_part(name, '/', 1))
-  and name ~ '^[a-z0-9]+(?:-[a-z0-9]+)*/(photos|thumbs)/[a-f0-9]{64}\.webp$'
+  and name ~ '^[a-z0-9]+(?:-[a-z0-9]+)*/(photos|thumbs)/[a-f0-9]{64}\.(webp|jpg)$'
 );
 
 drop policy if exists "editor can update trip media" on storage.objects;

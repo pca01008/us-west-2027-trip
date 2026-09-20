@@ -9,12 +9,15 @@
 - `trip-config.template.js`: 다른 여행을 시작할 때 복사하는 설정 예시
 - `supabase_setup.sql`: 모든 여행이 공유하는 실시간 저장, 버전 관리, 사진 Storage와 편집 권한 설정
 - `register_trip.sql`: Supabase에 여행 ID와 편집자 계정을 연결하는 등록문
+- `migrations/20260920_photo_jpeg_fallback.sql`: 기존 서버의 JPEG 사진 업로드 허용 설정. 앱 배포 전에 Supabase SQL Editor에서 실행한다.
 - `scripts/`, `tests/`: 설정·HTML·SQL 정적 검사와 회귀 테스트
 - `.github/workflows/validate.yml`: push와 pull request 때 자동으로 실행되는 검증
 - `NEW_TRIP_GUIDE_KO.md`: 다른 여행으로 재사용하는 순서와 설정값 설명
 - `.gitattributes`: Windows와 WSL 환경의 줄바꿈을 LF로 통일하는 규칙
 
 ## 사용 방법
+
+사진 업로드 브라우저 검증은 `node scripts/check-photos-browser.mjs [playwright/index.mjs]`로 실행한다. 설치된 Chrome에서 실제 이미지 변환과 PNG 대체 반환 상황, 초안 저장 경로를 검사한다. 저장소는 테스트 대역을 사용하며 운영 서버에는 요청하지 않는다. 아이폰 실기기 검증은 별도다.
 
 `index.html`을 브라우저로 열면 일정을 볼 수 있습니다. 누구나 열람할 수 있으며, 편집은 설정된 Supabase 편집자 계정으로 로그인한 경우에만 가능합니다.
 
