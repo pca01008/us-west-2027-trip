@@ -794,6 +794,7 @@ input:disabled,select:disabled{opacity:.7}
   .card .remark[data-empty="true"],.schedule-warning:has(>.schedule-warning-text[data-empty="true"]){display:none}
 }
 /* PREP: completion is independent of list editing. */
+.prepday .checklist label>input:checked+span{text-decoration:line-through;color:var(--muted)}
 .editing .prepday .check-actions,.editing .prepday .check-delete{display:none}
 .check-feedback{display:flex;align-items:center;gap:8px;margin:-4px 0 10px 30px;color:var(--muted);font-size:12px}
 .check-feedback button{padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--red);font:inherit}
@@ -1632,7 +1633,11 @@ input:disabled,select:disabled{opacity:.7}
   function patchCheck(state,id,value) {
     const next=clone(state),items=checklistItems(next),index=items.findIndex(item=>item.id===id);
     if(index<0)throw new Error('항목이 삭제되었습니다. 목록을 새로 확인해 주세요.');
-    next.checks=items.map(item=>item.checked);next.checks[index]=value;return next;
+    if(items[index].checked===value)return next;
+    const [item]=items.splice(index,1);item.checked=value;
+    const firstIncomplete=items.findIndex(entry=>!entry.checked);
+    items.splice(firstIncomplete<0?items.length:firstIncomplete,0,item);
+    return patchChecklist(next,items);
   }
   function patchChecklist(state,items) {
     const next=clone(state),template=document.createElement('template');template.innerHTML=next.html;

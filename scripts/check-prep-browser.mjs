@@ -62,32 +62,35 @@ try {
     const page = await context.newPage();page.setDefaultTimeout(10000);page.on('pageerror',error=>{errors.push(error.message);console.error(error.message);});
     const ready = () => page.waitForFunction(()=>!document.body.classList.contains('hydrating'));
     const idle = () => page.waitForFunction(()=>window.__prepTest.pending()===0 && !document.querySelector('#editBtn').disabled);
-    const check = index => page.locator('.prepday .checklist label input').nth(index);
+    let originalIds=[];
+    const check=index=>page.locator('.prepday .checklist label[data-check-id="'+originalIds[index]+'"] input');
+    const storedCheck=index=>row.content.checks[Array.from(row.content.html.matchAll(/data-check-id="([^"]+)"/g)).findIndex(match=>match[1]===originalIds[index])];
     await page.goto(origin);await ready();
     row.content=await page.evaluate(()=>window.__prepTest.captureState());
+    originalIds=await page.evaluate(()=>window.__prepTest.checklistItems(window.__prepTest.captureState()).map(item=>item.id));
     assert.equal(await page.locator('#editBtn').innerText(),'목록 편집');
     // Authentication precedes mutation, and cancellation is a true no-op.
     await page.evaluate(()=>window.__signedIn=false);await check(0).click();
     await page.locator('#authDialog').waitFor({state:'visible'});assert.equal(await check(0).isChecked(),false);
     await page.locator('#authCancel').click();assert.equal(writes.length,0);assert.equal(await check(0).isEnabled(),true);
     await check(0).click();await page.locator('#editorPassword').fill('fixture');await page.locator('#authSubmit').click();await idle();
-    assert.equal(row.content.checks[0],true);
+    assert.equal(storedCheck(0),true);
     if(await page.evaluate(()=>window.__prepTest.isDirty()))console.log(await page.evaluate(()=>{const api=window.__prepTest,a=JSON.stringify(api.normalizeState(api.captureState())),b=JSON.stringify(api.normalizeState(api.base()));let i=0;while(a[i]===b[i]&&i<a.length)i++;return {i,a:a.slice(i-120,i+300),b:b.slice(i-120,i+300),checks:api.captureState().checks,base:api.base().checks};}));
     assert.equal(await page.evaluate(()=>window.__prepTest.isDirty()),false,'Auto-save leaves no manual-save draft');
     await page.reload();await ready();assert.equal(await check(0).isChecked(),true,'Check survives reload');
-    await check(0).focus();await page.keyboard.press('Space');await idle();assert.equal(row.content.checks[0],false);
+    await check(0).focus();await page.keyboard.press('Space');await idle();assert.equal(storedCheck(0),false);
     assert.equal(await check(0).evaluate(el=>document.activeElement===el),true,'Keyboard focus survives auto-save');
-    await page.keyboard.press('Space');await idle();assert.equal(row.content.checks[0],true);
+    await page.keyboard.press('Space');await idle();assert.equal(storedCheck(0),true);
     // Queue independent rows and retain the last toggle after completion.
     delay=200;await check(1).click();await check(2).click();await idle();delay=0;
-    assert.equal(row.content.checks[1],true);assert.equal(row.content.checks[2],true);
-    await check(1).click();await idle();assert.equal(row.content.checks[1],false);
+    assert.equal(storedCheck(1),true);assert.equal(storedCheck(2),true);
+    await check(1).click();await idle();assert.equal(storedCheck(1),false);
     failures=1;await check(1).click();await idle();assert.equal(await check(1).isChecked(),false,'Failure rolls back');
     assert.match(await page.locator('.check-feedback[data-error="true"]').innerText(),/저장 실패/);
-    await page.locator('[data-retry-check]').click();await idle();assert.equal(row.content.checks[1],true);
+    await page.locator('[data-retry-check]').click();await idle();assert.equal(storedCheck(1),true);
     // A concurrent write is merged from the new remote snapshot on CAS retry.
     conflict=doc=>{doc.content.checks[3]=true;doc.content.budgetKrw=432100;};
-    await check(4).click();await idle();assert.equal(row.content.checks[3],true);assert.equal(row.content.checks[4],true);assert.equal(row.content.budgetKrw,432100);
+    await check(4).click();await idle();assert.equal(storedCheck(3),true);assert.equal(storedCheck(4),true);assert.equal(row.content.budgetKrw,432100);
     assert.equal(await page.evaluate(()=>window.__prepTest.isDirty()),false);
     // Content editing uses distinct text inputs and disabled completion controls.
     await page.locator('#editBtn').click();await page.locator('#checklistDialog').waitFor({state:'visible'});
@@ -117,7 +120,7 @@ try {
     await page.locator('#checklistSave').click();await page.locator('#checklistDialog').waitFor({state:'hidden'});
     // A remote completion change during list save must survive a CAS retry.
     await page.locator('#editBtn').click();await page.locator('.checklist-text').last().fill('동시 체크 보존');
-    conflict=doc=>{doc.content.checks[6]=true;};await page.locator('#checklistSave').click();await page.locator('#checklistDialog').waitFor({state:'hidden'});assert.equal(row.content.checks[6],true);
+    conflict=doc=>{doc.content.checks[6]=true;};await page.locator('#checklistSave').click();await page.locator('#checklistDialog').waitFor({state:'hidden'});assert.equal(storedCheck(6),true);
     // Concurrent list edits must not be overwritten; reopening fetches the new list.
     await page.locator('#editBtn').click();await page.locator('.checklist-text').last().fill('내 목록 편집');
     conflict=doc=>{doc.content.html=doc.content.html.replace('동시 체크 보존','다른 기기 편집');};
@@ -156,7 +159,31 @@ try {
     await context.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
     const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));
     const ready=()=>page.waitForFunction(()=>!document.body.classList.contains('hydrating'));
-    await page.goto(origin);await ready();row.content=await page.evaluate(()=>window.__prepTest.captureState());row.content.checks.fill(true);
+    await page.goto(origin);await ready();row.content=await page.evaluate(()=>window.__prepTest.captureState());
+    const ids=await page.evaluate(()=>window.__prepTest.checklistItems(window.__prepTest.captureState()).map(item=>item.id));
+    const order=()=>page.locator('.prepday .checklist label').evaluateAll(labels=>labels.map(label=>label.dataset.checkId));
+    const toggle=async id=>{await page.locator('[data-check-id="'+id+'"] input').click();await page.waitForFunction(()=>window.__prepTest.pending()===0);};
+    const decorated=id=>page.locator('[data-check-id="'+id+'"]>span').first().evaluate(span=>getComputedStyle(span).textDecorationLine);
+    await toggle(ids[5]);
+    assert.deepEqual(await order(),[ids[5],...ids.filter(id=>id!==ids[5])]);
+    assert.equal(await decorated(ids[5]),'line-through');
+    await toggle(ids[8]);
+    assert.deepEqual(await order(),[ids[5],ids[8],...ids.filter(id=>id!==ids[5]&&id!==ids[8])],'New completion joins the bottom of the completed group');
+    await toggle(ids[5]);
+    assert.deepEqual(await order(),[ids[8],ids[5],...ids.filter(id=>id!==ids[5]&&id!==ids[8])],'Unchecking returns the item to the first incomplete position');
+    assert.equal(await decorated(ids[5]),'none');
+    failures=1;const beforeFailure=await order();await toggle(ids[10]);
+    assert.deepEqual(await order(),beforeFailure,'Failed save preserves order');assert.equal(await decorated(ids[10]),'none');
+    await page.locator('[data-retry-check]').click();await page.waitForFunction(()=>window.__prepTest.pending()===0);
+    const savedOrder=[ids[8],ids[10],ids[5],...ids.filter(id=>![ids[5],ids[8],ids[10]].includes(id))];
+    assert.deepEqual(await order(),savedOrder);
+    await page.reload();await ready();assert.deepEqual(await order(),savedOrder);assert.equal(await decorated(ids[10]),'line-through');
+    // Last incomplete item and repeated writes must not disturb an all-complete list.
+    for(const id of savedOrder.filter(id=>![ids[8],ids[10]].includes(id)))await toggle(id);
+    assert.deepEqual(await order(),savedOrder);assert.ok(row.content.checks.every(Boolean));
+    const idempotent=await page.evaluate(({state,id})=>window.__prepTest.patchCheck(state,id,true),{state:row.content,id:ids[8]});
+    assert.deepEqual(idempotent,row.content);
+    console.log(`${mobile?'Mobile':'Desktop'}: completion order, strike-through, uncheck, retry, reload and all-complete cases passed.`);
     await page.reload();await ready();
     await page.locator('#editBtn').click();await page.locator('#checklistAdd').click();
     const originalCount=row.content.checks.length;
