@@ -12,7 +12,7 @@ await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const origin = `http://127.0.0.1:${server.address().port}`;
 let browser;
 try {
-  browser = await chromium.launch({ headless: true, channel: process.env.PWA_BROWSER_CHANNEL || 'chrome' });
+  browser = await chromium.launch({ headless: true, ...(process.env.PWA_BROWSER_CHANNEL ? {channel:process.env.PWA_BROWSER_CHANNEL} : {}) });
   const context = await browser.newContext();
   await context.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
   const page = await context.newPage();

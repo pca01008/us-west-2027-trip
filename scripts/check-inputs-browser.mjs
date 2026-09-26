@@ -38,7 +38,7 @@ const origin = `http://127.0.0.1:${server.address().port}`;
 let browser;
 const errors = [];
 try {
-  browser = await chromium.launch({ headless: true, channel: process.env.PWA_BROWSER_CHANNEL || 'chrome' });
+  browser = await chromium.launch({ headless: true, ...(process.env.PWA_BROWSER_CHANNEL ? {channel:process.env.PWA_BROWSER_CHANNEL} : {}) });
   for (const mobile of [false, true]) {
     const context = await browser.newContext({ viewport: { width: mobile ? 390 : 1440, height: 900 }, isMobile: mobile, hasTouch: mobile, reducedMotion: 'reduce', acceptDownloads: true });
     await context.route('**/*', route => /^(file:|data:)/.test(route.request().url()) || route.request().url().startsWith(origin) ? route.continue() : route.abort());

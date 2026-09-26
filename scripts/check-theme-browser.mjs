@@ -43,7 +43,7 @@ const origin = `http://127.0.0.1:${server.address().port}`;
 let browser;
 const errors = [];
 try {
-  browser = await chromium.launch({ headless: true, channel: process.env.PWA_BROWSER_CHANNEL || 'chrome' });
+  browser = await chromium.launch({ headless: true, ...(process.env.PWA_BROWSER_CHANNEL ? {channel:process.env.PWA_BROWSER_CHANNEL} : {}) });
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, colorScheme: 'dark', reducedMotion: 'reduce', acceptDownloads: true });
   await context.route('**/*', route => route.request().url().startsWith(origin) || route.request().url().startsWith('file:') ? route.continue() : route.abort());
   context.on('page', page => { page.setDefaultTimeout(10000); page.on('pageerror', error => { errors.push(error.message); console.error('Browser error:', error.message); }); });

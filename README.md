@@ -17,11 +17,11 @@
 
 ## 사용 방법
 
-사진 업로드 브라우저 검증은 `node scripts/check-photos-browser.mjs [playwright/index.mjs]`로 실행한다. 설치된 Chrome에서 실제 이미지 변환과 PNG 대체 반환 상황, 초안 저장 경로를 검사한다. 저장소는 테스트 대역을 사용하며 운영 서버에는 요청하지 않는다. 아이폰 실기기 검증은 별도다.
+사진 업로드 브라우저 검증은 `node scripts/check-photos-browser.mjs [playwright/index.mjs]`로 실행한다. Playwright Chromium에서 실제 이미지 변환과 PNG 대체 반환 상황, 초안 저장 경로를 검사한다. 저장소는 테스트 대역을 사용하며 운영 서버에는 요청하지 않는다. 아이폰 실기기 검증은 별도다.
 
 `index.html`을 브라우저로 열면 일정을 볼 수 있습니다. 누구나 열람할 수 있으며, 편집은 설정된 Supabase 편집자 계정으로 로그인한 경우에만 가능합니다.
 
-- 편집 내용은 브라우저 IndexedDB 초안으로 유지되며, 확인 후 `저장`해야 공개 페이지에 반영됩니다. 새로고침이나 탭 종료 뒤에도 복구를 제안합니다.
+- 편집 내용은 브라우저 IndexedDB에 탭별 초안으로 유지되며, 확인 후 `저장`해야 공개 페이지에 반영됩니다. 새로고침이나 탭 종료 뒤에도 복구를 제안합니다. 다른 열린 탭의 초안은 덮어쓰거나 삭제하지 않으며, 실행 취소로 변경을 모두 되돌리면 복구 대상에서도 제거됩니다.
 - 여행 전에는 PREP, 여행 중에는 미국 서부 현지 날짜의 일정, 여행 후에는 가계부가 첫 화면으로 열립니다.
 - 헤더에는 서울과 미국 서부의 현재 시각 및 자동 계산된 시차가 표시됩니다.
 - 편집 중에는 실행 취소와 다시 실행을 사용할 수 있습니다.
@@ -82,7 +82,7 @@ HTTPS로 배포한 주소에서 설치하면 지정된 아이콘과 이름으로
 
 캐시 목록·전략·아이콘·이미지를 바꿀 때는 `sw.js`의 `VERSION`을 올립니다. 새 서비스 워커는 기존 앱 창을 모두 닫은 후 활성화되며, 편집 중인 창을 강제 새로고침하지 않습니다. SDK 버전을 올리면 HTML의 URL·SRI와 `sw.js`의 `SDK_URL`·`SDK_INTEGRITY`도 함께 맞춥니다. 아이콘은 `icons/icon.svg`와 같은 도형을 `scripts/generate-icons.ps1`로 PNG로 생성했습니다.
 
-선택적인 실제 Chromium 검증은 Playwright와 Chromium이 설치된 환경에서 `node scripts/check-pwa-browser.mjs`로 실행합니다. Playwright 모듈의 절대 경로를 첫 인자로 지정할 수도 있습니다. 검증은 로컬 가상 API를 사용하며 실제 여행 데이터는 변경하지 않습니다.
+실제 Chromium 검증은 `npm ci`와 `npx playwright install chromium` 후 `node scripts/check-pwa-browser.mjs`로 실행합니다. Playwright 모듈의 절대 경로를 첫 인자로 지정할 수도 있습니다. 검증은 로컬 가상 API와 앱과 같은 버전의 npm SDK를 사용하며 실제 여행 데이터는 변경하지 않습니다. 테스트용 SDK의 주소와 무결성 해시만 로컬 파일에 맞게 대체하므로 CDN 연결 없이 실행됩니다.
 
 ## 화면 테마
 
@@ -100,9 +100,21 @@ HTTPS로 배포한 주소에서 설치하면 지정된 아이콘과 이름으로
 
 ## 로컬 검증
 
-입력 동작 브라우저 검증: `node scripts/check-inputs-browser.mjs [playwright/index.mjs]`. 설치된 Chrome에서 데스크톱·모바일 화면의 입력, 취소 불가능한 입력 이벤트, 한글 조합 이벤트, 실행 취소·다시 실행, 저장 데이터, 불러오기, 내보내기와 파일 재실행을 검사합니다. 운영 서버 요청은 차단하며 실제 휴대폰의 키보드 검증은 별도입니다.
+입력 동작 브라우저 검증: `node scripts/check-inputs-browser.mjs [playwright/index.mjs]`. Chromium에서 데스크톱·모바일 화면의 입력, 취소 불가능한 입력 이벤트, 한글 조합 이벤트, 실행 취소·다시 실행, 저장 데이터, 불러오기, 내보내기와 파일 재실행을 검사합니다. 운영 서버 요청은 차단하며 실제 휴대폰의 키보드 검증은 별도입니다.
 
-Node.js 20 이상에서 다음 명령을 실행합니다.
+전체 브라우저 검사는 Node.js 22 이상에서 다음과 같이 실행합니다. 설치된 Chrome을 사용하려면 `PWA_BROWSER_CHANNEL=chrome`을 설정합니다(PowerShell: `$env:PWA_BROWSER_CHANNEL='chrome'`).
+
+```sh
+npm ci
+npx playwright install chromium
+npm run test:browser
+```
+
+초안·입력·체크리스트·사진·테마·PWA 6개 검사를 실행하며 하나라도 실패하면 실패 코드를 반환합니다. 초안 회귀 검사는 로그아웃 취소, 탭별 보관과 복제 탭, 닫힌 탭 복구, 기존 초안 이전, 실행 취소·재실행, 오프라인 저장본 유지, 날짜별 설명만 바뀐 작업본 불러오기를 포함합니다. 탭 간 안전한 초안 복구에는 Web Locks를 사용하며, 이를 지원하지 않는 환경에서는 다른 페이지의 초안을 자동으로 가져오지 않습니다.
+
+GitHub Actions는 push·pull request 때 단위·정적 검사와 브라우저 검사를 별도 작업으로 실행합니다. 브라우저 작업은 잠금 파일로 의존성과 Chromium을 설치하며, 실패 시 생성된 스크린샷·작업본을 진단 자료로 보관합니다.
+
+Node.js 22 이상에서 다음 명령을 실행합니다.
 
 ```bash
 npm test

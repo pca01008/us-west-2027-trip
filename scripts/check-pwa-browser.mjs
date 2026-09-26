@@ -4,15 +4,28 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
+import { createHash } from 'node:crypto';
 
 const { chromium } = await import(process.argv[2] ? pathToFileURL(process.argv[2]).href : 'playwright');
 const root = new URL('../', import.meta.url);
+// npm ci supplies the same SDK version locally. jsDelivr may reformat its UMD
+// response, so only this fixture gets an integrity hash for the local bytes.
+const htmlSource = await readFile(new URL('index.html', root), 'utf8');
+const sdkURL = htmlSource.match(/https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@[^"\s]+/)[0];
+const sdkIntegrity = htmlSource.match(/integrity="(sha384-[^"]+)"/)[1];
+const sdkPackage = JSON.parse(await readFile(new URL('node_modules/@supabase/supabase-js/package.json', root), 'utf8'));
+assert.ok(sdkURL.endsWith('@' + sdkPackage.version), 'PWA fixture must use the deployed SDK version');
+const sdk = await readFile(new URL('node_modules/@supabase/supabase-js/dist/umd/supabase.js', root));
+const localIntegrity = 'sha384-' + createHash('sha384').update(sdk).digest('base64');
 const mime = { html: 'text/html', js: 'text/javascript', webmanifest: 'application/manifest+json', png: 'image/png', svg: 'image/svg+xml', webp: 'image/webp' };
 let published = null;
 let disconnected = false;
 const server = createServer(async (req, res) => {
   if (disconnected) { req.socket.destroy(); return; }
   const url = new URL(req.url, 'http://localhost');
+  if (url.pathname === '/fixture-supabase.js') {
+    res.writeHead(200, { 'Content-Type': 'text/javascript' }); res.end(sdk); return;
+  }
   if (process.env.PWA_DEBUG) console.log('Request:', url.pathname);
   if (url.pathname === '/rest/v1/trip_documents') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -24,6 +37,9 @@ const server = createServer(async (req, res) => {
   }
   try {
     let body = await readFile(new URL(relative, root));
+    if (relative === 'index.html' || relative === 'sw.js') body = Buffer.from(body.toString()
+      .replaceAll(sdkURL, `http://127.0.0.1:${server.address().port}/fixture-supabase.js`)
+      .replaceAll(sdkIntegrity, localIntegrity));
     if (relative === 'trip-config.js') body = Buffer.from(body + `\nwindow.TRIP_CONFIG.supabase={url:'http://127.0.0.1:${server.address().port}',publishableKey:'sb_publishable_test'};`);
     res.writeHead(200, { 'Content-Type': mime[relative.split('.').at(-1)], 'Cache-Control': 'no-cache' });
     res.end(body);
@@ -36,6 +52,7 @@ try {
   for (const basePath of ['/trip/', '/']) {
     published = null;
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, deviceScaleFactor: 2 });
+    await context.route('**/*', route => route.request().url().startsWith(`http://127.0.0.1:${server.address().port}/`) ? route.continue() : route.abort());
     const page = await context.newPage(), errors = [];
     page.setDefaultTimeout(10000);
     page.on('pageerror', error => { errors.push(error.message); console.error('Browser error:', error.message); });
@@ -95,11 +112,10 @@ try {
     await page.evaluate(async () => {
       for (const name of await caches.keys()) {
         const cache = await caches.open(name);
-        for (const request of await cache.keys()) if (request.url.includes('cdn.jsdelivr.net')) await cache.delete(request);
+        for (const request of await cache.keys()) if (request.url.endsWith('/fixture-supabase.js')) await cache.delete(request);
       }
     });
     await cdp.send('Network.clearBrowserCache');
-    await context.route('https://cdn.jsdelivr.net/**', route => route.abort());
     await page.reload();
     await page.waitForFunction(() => !document.body.classList.contains('hydrating'));
     assert.equal(await page.evaluate(() => typeof window.supabase), 'undefined');
@@ -109,7 +125,6 @@ try {
 
     await context.setOffline(false);
     disconnected = false;
-    await context.unroute('https://cdn.jsdelivr.net/**');
     published.content.html = published.content.html.replace('PWA 저장본 검증', 'PWA 최신본 검증');
     published.revision = 42;
     await page.reload();
