@@ -1,8 +1,8 @@
 # 미국 서부 2027 여행 프로젝트 동작 설명서
 
 > 대상 독자: 기본적인 HTML은 작성해 보았지만 JavaScript, 데이터베이스, SQL, Supabase, GitHub Pages는 익숙하지 않은 사람
-> 기준 파일: 현재 저장소의 `index.html`, `trip-config.js`, `trip-config.template.js`, `assets/`, `test.html`, `test2.html`, `supabase_setup.sql`, `register_trip.sql`, `README.md`, `NEW_TRIP_GUIDE_KO.md`, `.gitattributes`, `package.json`, `scripts/`, `tests/`, `.github/workflows/validate.yml`
-> 작성 기준일: 2026-08-30 (`schemaVersion 5`)
+> 기준 파일: 현재 저장소의 `index.html`, `trip-config.js`, `trip-config.template.js`, `assets/`, `test.html`, `test2.html`, `supabase_setup.sql`, `register_trip.sql`, `README.md`, `NEW_TRIP_GUIDE_KO.md`, `supabase/functions/trip-db-health/`, `migrations/20261005_db_healthcheck.sql`, `DB_HEALTH_SETUP_KO.md`, `DB_HEALTH_VERIFICATION_KO.md`, `.gitattributes`, `package.json`, `scripts/`, `tests/`, `.github/workflows/validate.yml`
+> 작성 기준일: 2026-08-30 (`schemaVersion 5`) · DB 점검 운영 설명 추가: 2026-10-05
 
 이 문서는 단순한 사용 설명서가 아니다. 이 프로젝트가 **어떤 부품으로 구성되어 있고**, 사용자가 버튼을 누르면 **어떤 순서로 일이 일어나며**, Supabase SQL Editor에서 `Run`을 눌렀을 때 **서버 쪽에 무엇이 만들어졌는지**를 가능한 한 쉬운 말로 설명한다.
 
@@ -40,6 +40,7 @@
 26. [용어 사전](#26-용어-사전)
 27. [공식 문서](#27-공식-문서)
 28. [다른 여행에 재사용하기](#28-다른-여행에-재사용하기)
+29. [자동 DB 점검과 실패·복구 알림](#29-자동-db-점검과-실패복구-알림)
 
 ---
 
@@ -113,6 +114,10 @@ flowchart LR
     I --> F
     I --> G
     I --> H
+
+    J[cron-job.org 예약 호출] -->|호출 토큰 확인| K[Supabase Edge Function\ntrip-db-health]
+    K -->|점검 행 한 건 조회| E
+    J -->|실패·복구·비활성화| L[운영자 이메일]
 ```
 
 조금 더 단순하게 쓰면 아래와 같다.
@@ -253,6 +258,10 @@ GitHub Pages가 `index.html`과 함께 배포하는 정적 이미지 폴더다. 
 - `test2.html`: 미국 서부 현재 시각을 2027년 2월 15일 00:00로 고정해 여행 종료 `D+15` 상태와 가계부 첫 화면을 보여 준다.
 
 두 파일은 iframe에서 `index.html?previewDate=...`를 열기 때문에 실제 페이지 디자인 변경을 그대로 사용한다. 공개 원본 `index.html`을 일반 주소로 열면 `previewDate`가 없으므로 실제 현재 시간을 사용한다.
+
+### 5.11 자동 DB 점검 파일과 안내서
+
+`supabase/functions/trip-db-health/`는 Supabase에서 실행하는 점검 함수이며, `migrations/20261005_db_healthcheck.sql`은 별도 점검 표를 만든다. `scripts/`의 DB 점검 스크립트는 비밀값 준비·예약 등록·검증을 담당한다. [설정 안내](./DB_HEALTH_SETUP_KO.md)와 [검증 기록](./DB_HEALTH_VERIFICATION_KO.md)은 재배포와 운영 확인에 사용한다. 전체 동작은 [29장](#29-자동-db-점검과-실패복구-알림)에 설명한다.
 
 ---
 
@@ -874,7 +883,11 @@ PostgreSQL이라는 관계형 데이터베이스다. 현재 문서와 버전 기
 
 Supabase는 데이터베이스와 Auth/Storage 기능을 웹에서 호출할 수 있는 API를 자동 제공한다. `@supabase/supabase-js` 라이브러리는 이 API를 JavaScript 함수처럼 사용하게 해 준다.
 
-이 프로젝트 폴더 안에 별도의 Node.js, Python, PHP 서버 프로그램이 없는 이유가 이것이다. 서버 역할의 상당 부분을 외부 Supabase 프로젝트가 담당한다.
+웹앱 화면을 제공하기 위해 별도 Node.js, Python, PHP 서버를 운영하지 않는다. 서버 역할의 상당 부분을 외부 Supabase 프로젝트가 담당한다.
+
+### 16.6 Edge Functions
+
+Supabase에서 실행하는 서버 함수다. 이 저장소의 `trip-db-health`가 호출 토큰을 확인하고 DB 점검 행을 조회한다. GitHub Pages에서 실행되는 코드와 배포 경로가 다르며, 함수 소스는 Supabase에 별도로 배포한다.
 
 ---
 
@@ -1236,6 +1249,9 @@ Realtime은 변경 알림 통로다. 알림이 일시적으로 실패해도 데�
 | 버튼 기능 변경 | `index.html` JavaScript | commit + push | GitHub Pages 재배포 후 |
 | 자동 로그아웃 시간 변경 | `index.html` 상수 | commit + push | GitHub Pages 재배포 후 |
 | 저장 권한 규칙 변경 | `supabase_setup.sql` 또는 별도 SQL | Supabase SQL Editor에서 Run | Supabase 서버 |
+| DB 점검 함수 변경 | `supabase/functions/trip-db-health/` | Supabase 함수 배포 | Supabase 점검 API |
+| DB 점검 표·권한 변경 | `migrations/20261005_db_healthcheck.sql` | Supabase에 SQL 적용 | Supabase 서버 |
+| DB 점검 주기·알림 변경 | cron-job.org 또는 예약 등록 스크립트 | 예약 설정 저장 후 재조회 | 외부 예약 작업 |
 | 설명서 변경 | `.md` 파일 | 공유하려면 commit + push | GitHub 저장소 |
 | 과거 여행 내용 복원 | 웹페이지 버전 관리 | 복원 확인 | Supabase에 새 버전으로 저장 |
 | 코드 과거 버전 복원 | Git | 되돌림 커밋 + push | GitHub Pages 코드 |
@@ -1336,6 +1352,10 @@ SQL은 서버의 표와 권한을 만든다. 가계부 탭이나 버튼 UI는 `i
 ### 23.11 PowerShell과 WSL에서 전체 파일이 수정된 것처럼 보인다
 
 줄바꿈 방식 차이일 수 있다. `.gitattributes`가 LF를 강제하므로 Git 설정을 적용해 다시 체크아웃한 뒤 실제 내용 차이인지 확인한다. 단순 줄바꿈 변경과 사용자 코드 변경을 섞어 커밋하지 않는 것이 좋다.
+
+### 23.12 DB 점검 실패 또는 일시정지 알림을 받았다
+
+cron-job.org 실행 기록과 Supabase 프로젝트 상태를 먼저 확인한다. 일시정지 상태는 Resume 하고, 401은 호출 토큰, 503은 DB·점검 행·권한·함수 설정을 확인한다. 원인 해결 후 다음 성공 실행과 복구 이메일까지 확인한다. 상세 순서는 [29.4절](#294-실패-알림을-받았을-때)을 따른다.
 
 ---
 
@@ -1524,6 +1544,59 @@ Supabase의 tripId 행
 오프라인 작업본은 외부 `trip-config.js`가 없어도 열리도록 내보낼 때 현재 설정을 HTML 안에 함께 삽입한다. 따라서 새 여행으로 만든 오프라인 파일도 사진과 일정, 시간대, 파일 식별 정보를 유지한다.
 
 실제 복사 순서와 설정 예시는 [NEW_TRIP_GUIDE_KO.md](./NEW_TRIP_GUIDE_KO.md)에 정리되어 있다.
+
+---
+
+## 29. 자동 DB 점검과 실패·복구 알림
+
+### 29.1 목적과 실행 흐름
+
+Supabase 무료 프로젝트는 최근 7일 동안 데이터베이스 활동이 적으면 자동 일시정지 대상이 될 수 있다. 일정 편집 여부만으로 판단되는 것은 아니며, DB 조회도 활동에 포함된다. 이 프로젝트는 별도의 점검 행을 정기적으로 읽고, 조회에 실패하면 이메일을 받도록 구성했다. 자동 일시정지를 반드시 방지한다고 보장하는 기능은 아니다. 정책은 [Supabase 공식 안내](https://supabase.com/docs/guides/platform/free-project-pausing)를 확인한다.
+
+`cron-job.org → trip-db-health Edge Function → public.healthcheck의 id=1 조회`
+
+cron-job.org가 예약 시각에 호출하면 Supabase에서 실행되는 함수가 먼저 `X-Healthcheck-Token`을 확인한다. 유효한 호출만 공개 publishable key로 DB의 비민감 점검 행 한 건을 읽는다. 관리자 키는 사용하지 않는다. RLS를 켜고 익명 역할에는 점검 `id` 조회만 허용하며 쓰기 권한은 제거했다.
+
+이 작업은 브라우저나 PC를 켜 두지 않아도 실행된다. 여행 일정, revision, 수정 시각, 버전 기록은 변경하지 않는다. 로그인·저장·사진 업로드 기능까지 모두 검사하는 것은 아니다.
+
+### 29.2 현재 운영 설정
+
+2026-10-05에 SQL 적용, 함수 배포, 예약 등록과 실제 이메일 수신 검증을 완료했다.
+
+| 항목 | 설정 |
+|---|---|
+| Supabase 프로젝트 | `xuzhcogshnjqtunkbsuo` |
+| 점검 함수 | `trip-db-health` |
+| 예약 작업 | cron-job.org 작업 ID `8582896`, 활성 상태 |
+| 시간대·주기 | Asia/Seoul, 매일 **00:17·06:17·12:17·18:17** |
+| 알림 주소 | `pca01008@gmail.com` |
+| 알림 조건 | 실패 1회, 실패 후 복구, 예약 작업 자동 비활성화 |
+| 응답 제한 | DB 요청과 본문 읽기를 각 10초로 제한, 실패 시 1초 뒤 1회 재시도, 전체 약 21초 |
+| 예약 호출 제한 | 30초 |
+
+정상은 HTTP 200과 `{"ok":true}`, DB 오류·점검 행 누락·설정 오류는 503과 `{"ok":false}`다. 토큰 누락·오류는 401, GET 이외 요청은 405다. 모든 응답은 캐시하지 않는다.
+
+### 29.3 파일과 배포 관리
+
+- `migrations/20261005_db_healthcheck.sql`: 별도 점검 표, 한 행, RLS와 읽기 권한을 만든다. 새 프로젝트에서는 별도로 실행한다.
+- `supabase/functions/trip-db-health/`: 토큰 검증, DB 조회, 제한시간과 재시도를 수행한다. 변경 후 Supabase에 함수를 다시 배포한다.
+- `supabase/config.toml`: 함수의 JWT 검증을 끄고 함수 자체 호출 토큰으로 인증한다.
+- `scripts/prepare-db-health.mjs`: 로컬 비밀값 파일을 준비하며 기존 토큰을 유지한다.
+- `scripts/configure-db-health-cron.mjs`: 설정 미리보기 또는 API 등록·수정과 저장 결과 검증을 수행한다.
+- `tests/db-health.test.mjs`, `scripts/check-db-health-*.mjs`: 단위·SQL·Deno HTTP·운영 API 검사를 수행한다.
+
+호출 토큰과 cron-job.org API 키는 Git에서 제외된 `.secrets/`에 보관한다. HTML, 문서, GitHub에 넣지 않는다. Git push는 소스와 문서를 배포하는 작업이며, SQL 적용·함수 배포·예약 등록은 [DB_HEALTH_SETUP_KO.md](./DB_HEALTH_SETUP_KO.md)의 별도 절차를 따른다. 같은 Supabase 프로젝트에 여행만 추가할 때는 기존 점검 한 개를 공유할 수 있다. 다른 프로젝트를 만들면 해당 프로젝트의 SQL·함수·토큰·예약을 새로 설정한다.
+
+### 29.4 실패 알림을 받았을 때
+
+1. cron-job.org 실행 기록에서 HTTP 상태와 최근 성공 시각을 확인한다. 반복 실패 후 예약 작업이 비활성화됐다면 원인을 해결한 뒤 다시 활성화한다.
+2. Supabase Dashboard에서 프로젝트 상태를 확인한다. 일시정지된 상태라면 Resume 한다. 이 점검이 프로젝트를 자동 복구하지는 않는다.
+3. 401이면 함수와 예약 헤더의 호출 토큰이 같은지, 503이면 DB 연결·함수 환경 변수·점검 행과 권한을 확인한다.
+4. 다음 실제 예약 실행이 성공하고 복구 이메일이 도착하는지 확인한다. 단순한 예약 설정 변경만으로 복구 알림 검증을 대신하지 않는다.
+
+cron-job.org 자체가 호출을 실행하지 못하는 상황을 감지하는 별도 감시 기능은 없다. 필요할 때 실행 기록도 확인한다. 초기 검증에서 받은 실패·복구 이메일은 시험용 알림이며, 임시 작업은 비활성화하고 임시 함수는 제거했다.
+
+전체 Node.js 테스트 110개, SQL 16개, Deno HTTP 39개, 운영 API 12개 검사가 통과했다. 실제 외부 예약 호출과 실패·복구 이메일도 확인했으며, 여행 데이터의 revision·수정 시각·내용 해시는 배포 전후 일치했다. 상세 증거는 [DB_HEALTH_VERIFICATION_KO.md](./DB_HEALTH_VERIFICATION_KO.md)에 기록했다.
 
 ---
 

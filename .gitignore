@@ -13,3 +13,7 @@ Thumbs.db
 /여행 일정 업데이트 260820.txt
 /추후 요청 예정 사항.txt
 /투어 계획.txt
+/.secrets/
+/supabase/.temp/
+.env
+.env.*

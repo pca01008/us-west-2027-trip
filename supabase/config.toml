@@ -1,0 +1,6 @@
+project_id = "us-west-2027-trip"
+
+# Authentication is enforced by X-Healthcheck-Token in the handler.
+# The scheduler does not hold a user JWT or a Supabase administrator key.
+[functions.trip-db-health]
+verify_jwt = false

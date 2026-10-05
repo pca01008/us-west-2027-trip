@@ -2,7 +2,7 @@
 
 > 이 문서는 빠르게 구조와 운영 방법을 확인하기 위한 요약본이다.
 > 더 자세한 원리, SQL 해설, 용어 설명은 [상세 설명서](./PROJECT_GUIDE_KO.md)를 참고한다.
-> 현재 기준: 2026-08-30 · `schemaVersion 5`
+> 현재 기준: 2026-08-30 · `schemaVersion 5` · DB 점검 운영 설명 추가: 2026-10-05
 
 ---
 
@@ -93,6 +93,11 @@ Supabase
 | `trip-config.template.js` | 새 여행용 설정 예시 | 복사해 `trip-config.js`로 사용 |
 | `supabase_setup.sql` | Supabase 서버 설정 | 내용을 이해하고 SQL Editor에서 실행 |
 | `register_trip.sql` | 여행 ID와 편집자 연결 | 여행마다 값을 바꿔 한 번 실행 |
+| `migrations/20261005_db_healthcheck.sql` | 별도 DB 점검 표·권한 | 새 프로젝트에 별도 실행 |
+| `supabase/functions/trip-db-health/` | Supabase 점검 함수 | 변경 후 Supabase에 배포 |
+| `supabase/config.toml` | 점검 함수 인증 설정 | 함수 자체 호출 토큰 사용 |
+| `scripts/prepare-db-health.mjs`, `scripts/configure-db-health-cron.mjs` | 비밀값 준비·예약 등록 | 설정 안내에 따라 실행 |
+| `DB_HEALTH_SETUP_KO.md`, `DB_HEALTH_VERIFICATION_KO.md` | 설정 절차·실제 검증 기록 | 재배포와 운영 확인 때 참고 |
 | `NEW_TRIP_GUIDE_KO.md` | 다른 여행 재사용 안내 | 새 여행을 만들 때 참고 |
 | `README.md` | 짧은 운영 안내 | 필요하면 수정 가능 |
 | `PROJECT_GUIDE_KO.md` | 주 상세 설명서 | 이 프로젝트를 공부할 때 먼저 참고 |
@@ -446,6 +451,10 @@ Supabase 저장본이 페이지 로딩 후 `trip-config.js`의 기본 내용을 
 3. `file://` 로컬 파일과 `https://` 공개 주소를 번갈아 쓰는지 확인
 4. 다른 브라우저나 시크릿 창인지 확인
 
+### DB 점검 실패 또는 Supabase 일시정지
+
+cron-job.org 실행 기록과 Supabase 상태를 확인한다. 일시정지 상태는 Resume 한다. 401은 호출 토큰, 503은 DB·점검 행·권한·함수 설정을 확인한다. 원인 해결 후 예약이 활성 상태인지, 다음 실행이 성공하고 복구 이메일이 도착하는지 확인한다.
+
 ### PowerShell과 WSL의 Git 결과가 다름
 
 줄바꿈 차이를 의심한다. `.gitattributes`가 LF로 통일하도록 설정되어 있으므로 실제 내용 변경과 줄바꿈 변경을 구분한다.
@@ -506,5 +515,25 @@ Supabase 저장본이 페이지 로딩 후 `trip-config.js`의 기본 내용을 
 3. Git push와 웹페이지 저장은 서로 다른 저장 경로다.
 4. SQL Editor의 Run은 Supabase 서버에 표·함수·권한·사진 공간을 실제로 만드는 작업이다.
 5. publishable key는 공개 사용을 전제로 하지만 비밀번호와 secret/service role 키는 절대로 공개하면 안 된다.
+
+---
+
+## 18. 자동 DB 점검과 실패·복구 알림
+
+cron-job.org가 Supabase의 `trip-db-health` 함수를 호출하고, 함수가 토큰을 확인한 뒤 `public.healthcheck`의 `id=1` 한 건만 읽는다. 브라우저·PC를 켜 두지 않아도 동작하며 여행 일정·수정 시각·버전은 바꾸지 않는다.
+
+- **실행 시각:** 매일 한국 시각 **00:17·06:17·12:17·18:17**
+- **알림:** 실패 1회·복구·예약 자동 비활성화 시 `pca01008@gmail.com`으로 이메일
+- **운영 작업:** cron-job.org ID `8582896`, 2026-10-05 활성화 및 검증 완료
+- **응답:** 정상 200, 조회 실패 503, 토큰 오류 401, GET 이외 405. 조회를 각 10초로 제한하고 1회 재시도한다.
+- **비밀값:** 호출 토큰·cron API 키는 Git에서 제외된 `.secrets/`에 보관한다.
+
+무료 프로젝트의 낮은 DB 활동에 따른 일시정지 위험을 줄이기 위한 점검이다. 일시정지 방지나 자동 Resume를 보장하지 않으며, 로그인·저장·사진 업로드 전체를 검사하지는 않는다. 예약 서비스 자체의 실행 누락을 감지하는 별도 감시 기능도 없다.
+
+Git push로는 SQL·함수·예약 설정이 자동 적용되지 않는다. 새 Supabase 프로젝트에서는 별도로 설정하고, 같은 프로젝트에 여행만 추가할 때는 기존 점검을 공유할 수 있다. [설정 안내](./DB_HEALTH_SETUP_KO.md)와 [상세 설명서 29장](./PROJECT_GUIDE_KO.md#29-자동-db-점검과-실패복구-알림)을 참고한다.
+
+전체 Node.js 테스트 110개, SQL 16개, Deno HTTP 39개, 운영 API 12개가 통과했다. 실제 예약 호출과 실패·복구 이메일 수신, 기존 여행 데이터 보존도 확인했다. 시험 작업은 비활성화하고 임시 함수는 제거했다. [검증 기록](./DB_HEALTH_VERIFICATION_KO.md)에 결과를 남겼다.
+
+---
 
 더 상세한 설명은 [PROJECT_GUIDE_KO.md](./PROJECT_GUIDE_KO.md)를 참고한다.
