@@ -268,9 +268,13 @@ test('production deadlines abort actual stalled HTTP bodies within the cron limi
     assert.equal(response.status, 503);
     assert.equal(attempts, 2);
     assert.ok(elapsed >= 20_000 && elapsed < 27_000, `Expected about 21s, observed ${elapsed}ms`);
-    // Allow the cancellation to reach the fixture server before checking sockets.
-    await new Promise(resolve => setTimeout(resolve, 50));
-    assert.equal(closed, 2);
+    // Socket close events arrive asynchronously after fetch rejects.
+    // Bound the observation wait separately from the handler's measured deadline.
+    const closeDeadline = performance.now() + 3_000;
+    while (closed < 2 && performance.now() < closeDeadline) {
+      await new Promise(resolve => setTimeout(resolve, 20));
+    }
+    assert.equal(closed, 2, 'Both cancelled response streams must close within 3s');
   } finally {
     server.closeAllConnections();
     await new Promise(resolve => server.close(resolve));
