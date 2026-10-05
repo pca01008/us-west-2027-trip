@@ -144,6 +144,8 @@ git push origin main
 
 GitHub 저장소의 **Settings → Pages**에서 `main` 브랜치와 루트(`/`)를 배포 대상으로 설정합니다. 배포 후 생성되는 GitHub Pages 주소로 일정을 공유할 수 있습니다.
 
+`PROJECT_GUIDE_KO.md`와 `PROJECT_GUIDE_SUMMARY_KO.md`는 GitHub 저장소에서 읽는 문서입니다. `_config.yml`에서 Pages 빌드 대상에서 제외하므로 별도의 HTML 안내 페이지로 배포하지 않습니다.
+
 ## DB 점검과 실패 알림
 
 `supabase/functions/trip-db-health/`의 Edge Function은 별도 호출 토큰을 검증한 뒤 점검 행 한 건을 읽습니다. 조회 실패 시 1회 재시도하고, 응답 본문 읽기까지 포함해 각 10초로 제한합니다. cron-job.org에서 한국 시각 00:17·06:17·12:17·18:17에 호출하고 실패·복구·자동 비활성화 이메일을 받도록 구성합니다.

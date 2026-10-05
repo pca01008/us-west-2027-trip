@@ -1,0 +1,6 @@
+# Keep project manuals in GitHub without publishing HTML copies on Pages.
+exclude:
+  - node_modules
+  - vendor
+  - PROJECT_GUIDE_KO.md
+  - PROJECT_GUIDE_SUMMARY_KO.md
