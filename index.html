@@ -1061,6 +1061,8 @@ input:disabled,select:disabled{opacity:.7}
   let publishedRevision = 0;
   let publishedUpdatedAt = '';
   let pendingRemoteState = null;
+  let draftBaselineUnknown = false;
+  let deferredDraftRecovery = false;
   let draftWriteTimer = null;
   let draftDatabasePromise = null;
   let memoryDraftRecord = null;
@@ -1402,6 +1404,7 @@ input:disabled,select:disabled{opacity:.7}
     return draftStoragePromise;
   }
   async function writeDraftRecord(record) {
+    deferredDraftRecovery=false;
     const generation=draftWriteGeneration;
     memoryDraftRecord=clone(record);
     await prepareDraftStorage();
@@ -1426,6 +1429,7 @@ input:disabled,select:disabled{opacity:.7}
     });
   }
   async function clearDraftRecord() {
+    deferredDraftRecovery=false;
     draftWriteGeneration++;memoryDraftRecord=null;clearTimeout(draftWriteTimer);draftWriteTimer=null;
     await prepareDraftStorage();
     const database=await openDraftDatabase();if(!database)return true;
@@ -1481,11 +1485,11 @@ input:disabled,select:disabled{opacity:.7}
     lastSavedState=clone(fingerprint(current)===fingerprint(normalized)?normalized:current);
     publishedRevision=Math.max(0,Number(row?.revision)||0);
     publishedUpdatedAt=String(row?.updated_at||row?.updatedAt||'');
-    pendingRemoteState=null;
+    pendingRemoteState=null;draftBaselineUnknown=false;
     void writePublicCache(lastSavedState,cacheMetadata);
   }
   function currentDraftRecord() {
-    return {tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:captureState(),baseState:clone(lastSavedState),baseRevision:publishedRevision,baseUpdatedAt:publishedUpdatedAt,savedAt:new Date().toISOString(),dirty:true};
+    return {tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:captureState(),baseState:draftBaselineUnknown?null:clone(lastSavedState),baseRevision:publishedRevision,baseUpdatedAt:publishedUpdatedAt,savedAt:new Date().toISOString(),dirty:true};
   }
   async function flushDraftPersistence() {
     clearTimeout(draftWriteTimer);
@@ -1501,6 +1505,7 @@ input:disabled,select:disabled{opacity:.7}
   }
 
   function clearCleanDraft() {
+    if(deferredDraftRecovery)return;
     // Offline saved changes live in IndexedDB too. Keep their clean baseline
     // rather than reverting to the file's older embedded state on reload.
     draftWriteGeneration++;clearTimeout(draftWriteTimer);draftWriteTimer=null;
@@ -1764,10 +1769,10 @@ input:disabled,select:disabled{opacity:.7}
         if(noOtherDraft&&!OFFLINE_MODE){
           applyChecklistSave(saved);
           // captureState deliberately excludes optimistic values still in flight.
-          lastSavedState=normalizeState(captureState());publishedRevision=Number(result.revision);publishedUpdatedAt=result.updated_at;pendingRemoteState=null;
+          lastSavedState=normalizeState(captureState());publishedRevision=Number(result.revision);publishedUpdatedAt=result.updated_at;pendingRemoteState=null;draftBaselineUnknown=false;
         }else{
           applyChecklistSave(nextLocal);lastSavedState=nextBase;
-          if(OFFLINE_MODE||fingerprint(nextBase)===fingerprint(saved)){publishedRevision=Number(result.revision);publishedUpdatedAt=result.updated_at;pendingRemoteState=null;}
+          if(OFFLINE_MODE||(!draftBaselineUnknown&&fingerprint(nextBase)===fingerprint(saved))){publishedRevision=Number(result.revision);publishedUpdatedAt=result.updated_at;pendingRemoteState=null;}
           else pendingRemoteState={row:{...result,content:saved},state:saved};
         }
         history=history.map(state=>{try{return transform(state);}catch(_){return state;}});
@@ -1799,7 +1804,7 @@ input:disabled,select:disabled{opacity:.7}
         const before=pendingChecks.get(id)?.before,restoreFocus=document.activeElement===document.body;pendingChecks.delete(id);
         const current=$$('.prepday .checklist label').find(label=>label.dataset.checkId===id)?.querySelector('input');if(current)current.checked=saved?value:before;
         updateDirtyState();renderCheckFeedback();if(restoreFocus&&current&&$('.day-radio:checked')?.id==='prep'&&$('#authDialog').hidden)current.focus({preventScroll:true});resetInactivityTimer();
-        if(saved&&!pendingDraft&&!OFFLINE_MODE)await clearDraftRecord();
+        if(saved&&!pendingDraft&&!OFFLINE_MODE&&!deferredDraftRecovery)await clearDraftRecord();
         if(saved){const feedback=checkFeedback.get(id);setTimeout(()=>{if(checkFeedback.get(id)===feedback){checkFeedback.delete(id);renderCheckFeedback();}},3500);}
       }
     });
@@ -1996,7 +2001,7 @@ input:disabled,select:disabled{opacity:.7}
   function resetInactivityTimer(){if(OFFLINE_MODE||!editorSession)return;const now=Date.now();try{localStorage.setItem(SESSION_ACTIVITY_KEY,String(now));}catch(error){console.warn(error);}scheduleSessionTimers(now);if(now-lastActivityBroadcast>1000){sessionChannel?.postMessage({type:'activity',at:now});lastActivityBroadcast=now;}}
   async function getEditorSession(){if(OFFLINE_MODE){setEditorSession({offline:true,user:{email:EDITOR_EMAIL}});return editorSession;}if(!client)return null;const {data:{session}}=await client.auth.getSession();setEditorSession(session);if(!editorSession){try{localStorage.removeItem(SESSION_ACTIVITY_KEY);}catch(_){}return null;}let stored=0;try{stored=Number(localStorage.getItem(SESSION_ACTIVITY_KEY)||0);}catch(_){}if(stored&&Date.now()-stored>=SESSION_MS){await discardAndLogout('편집 세션이 만료되어 초안을 폐기하고 로그아웃했습니다.');return null;}const at=stored||Date.now();try{localStorage.setItem(SESSION_ACTIVITY_KEY,String(at));}catch(_){}scheduleSessionTimers(at);return editorSession;}
   async function showInactivityWarning(){let seconds=60;const countdown=$('#sessionCountdown');countdown.textContent=seconds+'초 후 저장하지 않은 변경이 폐기됩니다.';countdownTimer=setInterval(()=>{seconds--;countdown.textContent=Math.max(0,seconds)+'초 후 저장하지 않은 변경이 폐기됩니다.';},1000);const dirty=isDirty();const choice=await showChoice({title:'자동 로그아웃 예정',message:dirty?'1분 안에 선택하지 않으면 초안을 폐기하고 자동 로그아웃합니다.':'1분 안에 선택하지 않으면 자동 로그아웃합니다.',countdown:true,choices:dirty?[{label:'저장 후 로그아웃',value:'save',className:'action-primary'},{label:'계속 사용',value:'continue'},{label:'폐기 후 로그아웃',value:'discard',className:'action-danger'}]:[{label:'계속 사용',value:'continue',className:'action-primary'},{label:'로그아웃',value:'discard',className:'action-danger'}]});clearSessionTimers();if(choice==='save'){if(await saveAndFinish('자동 로그아웃 전 저장')){await signOutEditor();setStatus('변경사항을 저장하고 로그아웃했습니다.');}else resetInactivityTimer();}else if(choice==='continue')resetInactivityTimer();else if(choice==='discard')await discardAndLogout();}
-  async function signOutEditor({broadcast=true}={}){if(OFFLINE_MODE)return;clearSessionTimers();signingOut=true;try{localStorage.removeItem(SESSION_ACTIVITY_KEY);}catch(_){}if(broadcast)sessionChannel?.postMessage({type:'signout'});try{if(client)await client.auth.signOut();}catch(error){console.warn('서버 로그아웃 요청에 실패했지만 이 브라우저 세션은 종료합니다.',error);}finally{setEditorSession(null);signingOut=false;}}
+  async function signOutEditor({broadcast=true}={}){if(OFFLINE_MODE)return;clearSessionTimers();signingOut=true;try{localStorage.removeItem(SESSION_ACTIVITY_KEY);}catch(_){}if(broadcast)sessionChannel?.postMessage({type:'signout'});try{if(client)await client.auth.signOut({scope:'local'});}catch(error){console.warn('서버 로그아웃 요청에 실패했지만 이 브라우저 세션은 종료합니다.',error);}finally{setEditorSession(null);signingOut=false;}}
   function closeEditorDialogs(){closeScheduleTimeDialog();['checklistDialog','ledgerSettingsDialog','categoryDialog','expenseDialog','mapDialog','photoEditDialog','importDialog','exportDialog','versionDialog','versionCompareDialog','photoViewer'].forEach(id=>{const dialog=$('#'+id);if(dialog)dialog.hidden=true;});editingCategoryId=null;editingExpenseId=null;activeScheduleRow=null;activePhotoFigure=null;selectedVersion=null;pendingImport=null;}
   async function handleExternalSignOut(message='편집 세션이 다른 탭에서 종료되었습니다.') {const hadDraft=pendingDraft;if(hadDraft)await flushDraftPersistence();if(lastSavedState)applyState(lastSavedState);initializeHistory();setEditingUI(false,{preserveDraft:true});closeEditorDialogs();closeNotice('signed-out');setEditorSession(null);setStatus(hadDraft?message+' 초안은 이 브라우저에 보관했습니다.':message);}
   async function requestManualLogout(){if(!editorSession||OFFLINE_MODE)return;if(isDirty()){const choice=await showChoice({title:'로그아웃할까요?',message:'저장하지 않은 변경사항이 있습니다.',choices:[{label:'계속 사용',value:'continue'},{label:'폐기 후 로그아웃',value:'discard',className:'action-danger'},{label:'저장 후 로그아웃',value:'save',className:'action-primary'}]});if(choice!=='save'&&choice!=='discard')return;if(choice==='save'){if(!await saveAndFinish('로그아웃 전 저장'))return;}else{if(lastSavedState)applyState(lastSavedState);await clearDraftRecord();}}setEditingUI(false);closeEditorDialogs();await signOutEditor();setStatus('편집자 로그아웃 완료');}
@@ -2022,6 +2027,7 @@ input:disabled,select:disabled{opacity:.7}
       applyState(remoteState);setPublishedBaseline(remoteRow,remoteState);initializeHistory();await clearDraftRecord();updateDirtyState();setStatus('최신 저장본으로 전환했습니다.');return false;
     }
     if(choice==='overwrite'){
+      lastSavedState=clone(remoteState);draftBaselineUnknown=false;
       publishedRevision=Math.max(0,Number(remoteRow.revision)||0);publishedUpdatedAt=String(remoteRow.updated_at||'');pendingRemoteState=null;
       return persistState(localState,{note:'충돌 확인 후 저장'+(note?' · '+note:'')});
     }
@@ -2037,20 +2043,41 @@ input:disabled,select:disabled{opacity:.7}
     }
     if(!client){setStatus('저장할 수 없습니다.');return false;}
     saveInFlight=true;setOperationBusy(true,{cancelable:true,status:'저장 준비 중'});
-    try{normalized=await materializeStagedPhotos(normalized);}catch(error){console.error(error);saveInFlight=false;setOperationBusy(false);setStatus(error.message||'사진 업로드 실패');return false;}
-    if(operationCancelled){saveInFlight=false;setOperationBusy(false);setStatus('저장을 취소했습니다. 초안은 유지됩니다.');return false;}
-    setOperationBusy(true,{cancelable:false,status:'공유 저장 중'});
-    const {data,error}=await client.rpc('save_trip_document',{p_trip_id:TRIP_ID,p_content:normalized,p_expected_revision:publishedRevision,p_version_note:note});
-    saveInFlight=false;setOperationBusy(false);
-    if(error){
-      console.error(error);
-      if(isRevisionConflict(error))return resolveSaveConflict(normalized,note);
-      setStatus('저장할 수 없습니다.');
-      return false;
-    }
-    applyState(normalized);setPublishedBaseline({revision:Number(data?.revision)||publishedRevision+1,updated_at:data?.updated_at||new Date().toISOString()},normalized);pendingDraft=false;await clearDraftRecord();updateDirtyState();return data||{saved:true};
+    let failure,timeout;
+    try{
+      normalized=await materializeStagedPhotos(normalized);
+      if(operationCancelled)throw new Error('저장을 취소했습니다. 초안은 유지됩니다.');
+      setOperationBusy(true,{cancelable:false,status:'공유 저장 중'});
+      const controller=new AbortController();timeout=setTimeout(()=>controller.abort(),12000);
+      let response;
+      try{
+        response=await client.rpc('save_trip_document',{p_trip_id:TRIP_ID,p_content:normalized,p_expected_revision:publishedRevision,p_version_note:note}).abortSignal(controller.signal);
+      }catch(error){if(!controller.signal.aborted)throw error;}
+      finally{clearTimeout(timeout);}
+      if(controller.signal.aborted){
+        // The server may have committed even though its response never arrived.
+        // Reconcile once; never resend an uncertain write automatically.
+        setStatus('저장 결과를 확인 중입니다.');
+        let remoteRow;try{remoteRow=await fetchPublishedState();}catch(error){console.warn(error);}
+        const remoteState=remoteRow?.content?.html?normalizeState(migratePublishedState(remoteRow.content)):null;
+        if(remoteState&&fingerprint(remoteState)===fingerprint(normalized)){
+          response={data:{revision:remoteRow.revision,updated_at:remoteRow.updated_at}};
+        }else{
+          if(remoteState)pendingRemoteState={row:remoteRow,state:remoteState};
+          throw new Error('저장 시간이 초과되었습니다. 초안은 유지됩니다. 연결을 확인한 뒤 다시 저장해 주세요.');
+        }
+      }
+      const {data,error}=response;
+      if(error)throw error;
+      applyState(normalized);setPublishedBaseline({revision:Number(data?.revision)||publishedRevision+1,updated_at:data?.updated_at||new Date().toISOString()},normalized);pendingDraft=false;await clearDraftRecord();updateDirtyState();return data||{saved:true};
+    }catch(error){failure=error;}
+    finally{clearTimeout(timeout);saveInFlight=false;setOperationBusy(false);}
+    if(isRevisionConflict(failure))return resolveSaveConflict(normalized,note);
+    console.error(failure);await flushDraftPersistence();
+    setStatus(failure?.message||'저장할 수 없습니다. 초안은 유지됩니다.');return false;
   }
-  async function saveAndFinish(note='수동 저장'){const state=captureState(),wasEditing=body.classList.contains('editing');setEditingUI(false);const saved=await persistState(state,{note});if(!saved){pendingDraft=true;$('#saveBtn').disabled=false;if(wasEditing)setEditingUI(true);return false;}initializeHistory();updateDirtyState();resetInactivityTimer();setStatus(OFFLINE_MODE?'오프라인 작업본 생성 중':'공유 저장 완료');if(OFFLINE_MODE)await exportOfflineHtml(lastSavedState);return true;}
+
+  async function saveAndFinish(note='수동 저장'){const state=captureState(),wasEditing=body.classList.contains('editing');setEditingUI(false);const saved=await persistState(state,{note});if(!saved){const message=$('#status').textContent;updateDirtyState();if(wasEditing)setEditingUI(true);setStatus(message);return false;}initializeHistory();updateDirtyState();resetInactivityTimer();setStatus(OFFLINE_MODE?'오프라인 작업본 생성 중':'공유 저장 완료');if(OFFLINE_MODE)await exportOfflineHtml(lastSavedState);return true;}
   async function requestFinishEditing(){clearTimeout(historyTimer);recordHistory();if(!isDirty()){setEditingUI(false);resetInactivityTimer();return;}setEditingUI(false);const choice=await showChoice({title:'편집을 완료할까요?',message:OFFLINE_MODE?'저장하면 수정된 오프라인 작업본을 새 파일로 내려받습니다.':'저장해야 공개 링크에 변경 내용이 반영됩니다.',input:OFFLINE_MODE?null:{label:'버전 메모 (선택)','placeholder':'예: 라스베이거스 일정 확정'},choices:[{label:'저장하고 종료',value:'save',className:'action-primary'},{label:'계속 편집',value:'continue'},{label:'변경사항 폐기',value:'discard',className:'action-danger'}]});if(choice==='save')await saveAndFinish(noticeInputValue||'편집 완료');else if(choice==='continue'){setEditingUI(true);resetInactivityTimer();}else if(choice==='discard')discardDraft();}
   async function beginEditing(){if(!OFFLINE_MODE&&!pendingDraft){try{const published=await fetchPublishedState();if(published?.content?.html){const state=normalizeState(migratePublishedState(published.content));applyState(state);setPublishedBaseline(published,state);}}catch(error){console.warn(error);setStatus('최신 저장본 확인 실패 · 현재 화면에서 편집합니다.');}}setEditingUI(true);initializeHistory();resetInactivityTimer();setStatus(pendingDraft?'편집 중 · 저장되지 않음':'편집 모드');}
   function requestAuthentication(purpose){authPurpose=purpose;$('#authTitle').textContent=purpose==='edit'?'편집자 확인':purpose==='versions'?'버전 관리자 확인':purpose==='import'?'편집본 불러오기 권한 확인':purpose==='ledger-settings'?'가계부 설정 권한 확인':purpose==='checklist'?'체크리스트 편집자 확인':purpose==='ledger'?'가계부 편집자 확인':'저장 권한 확인';$('#authError').textContent='';$('#editorPassword').value='';$('#authDialog').hidden=false;$('#editorPassword').focus();}
@@ -2368,7 +2395,7 @@ input:disabled,select:disabled{opacity:.7}
   async function chooseImportFile(){await requireEditor('import',()=>$('#importFileInput').click());}
   async function readImportFile(file){try{const source=await file.text(),doc=new DOMParser().parseFromString(source,'text/html');if(doc.documentElement.dataset.tripId!==TRIP_ID||doc.documentElement.dataset.offline!=='true')throw new Error('이 여행에서 만든 오프라인 작업본이 아닙니다.');const fileVersion=Number(doc.documentElement.dataset.schemaVersion||0);if(!fileVersion)throw new Error('파일 버전을 확인할 수 없습니다.');if(fileVersion>SCHEMA_VERSION)throw new Error('더 새로운 버전에서 만든 파일입니다. 온라인 페이지를 먼저 업데이트해 주세요.');const embedded=doc.querySelector('#offlineEmbeddedState');if(!embedded)throw new Error('편집 데이터가 없습니다.');const incoming=normalizeState(JSON.parse(embedded.textContent),true),published=await fetchPublishedState();const current=normalizeState(published?.content?.html?migratePublishedState(published.content):lastSavedState),groups=buildDiff(current,incoming);pendingImport={state:incoming,baselineRevision:Math.max(0,Number(published?.revision)||0),baselineUpdatedAt:published?.updated_at||'',current};renderImportDiff(groups);$('#importDialog').hidden=false;}catch(error){console.error(error);await showChoice({title:'작업본을 불러올 수 없습니다.',message:error.message,choices:[{label:'확인',value:'ok',className:'action-primary'}]});}finally{$('#importFileInput').value='';}}
   async function materializeImportedPhotos(state){const normalized=normalizeState(state,true),template=document.createElement('template');template.innerHTML=normalized.html;for(const figure of template.content.querySelectorAll('.schedule-photo')){const img=figure.querySelector('img'),fullPath=figure.dataset.fullPath,thumbPath=figure.dataset.thumbPath;if(fullPath&&thumbPath){img.src=publicMediaUrl(thumbPath);img.dataset.fullUrl=publicMediaUrl(fullPath);continue;}if(!img.src.startsWith('data:image/'))continue;img.dataset.fullUrl=img.dataset.fullUrl||img.src;figure.dataset.staged='true';delete figure.dataset.fullPath;delete figure.dataset.thumbPath;}normalized.html=template.innerHTML;return normalized;}
-  async function applyImportedDraft(){if(!pendingImport)return;try{const published=await fetchPublishedState(),remoteRevision=Math.max(0,Number(published?.revision)||0);if(remoteRevision!==pendingImport.baselineRevision){if(!published?.content?.html)throw new Error('최신 저장본을 다시 확인하지 못했습니다.');const current=normalizeState(migratePublishedState(published.content)),groups=buildDiff(current,pendingImport.state);pendingImport.current=current;pendingImport.baselineRevision=remoteRevision;pendingImport.baselineUpdatedAt=published.updated_at||'';renderImportDiff(groups,'비교 중 최신 저장본이 변경되어 차이를 다시 계산했습니다. 내용을 확인하고 한 번 더 불러오세요.');return;}setStatus('편집본 사진을 준비 중입니다.');const incoming=await materializeImportedPhotos(pendingImport.state);lastSavedState=clone(pendingImport.current);publishedRevision=pendingImport.baselineRevision;publishedUpdatedAt=pendingImport.baselineUpdatedAt;applyState(incoming);initializeHistory();updateDirtyState();$('#importDialog').hidden=true;pendingImport=null;setStatus('편집본 불러옴 · 저장되지 않음');}catch(error){console.error(error);setStatus('편집본 적용 실패');await showChoice({title:'편집본 적용 실패',message:error.message,choices:[{label:'확인',value:'ok',className:'action-primary'}]});}}
+  async function applyImportedDraft(){if(!pendingImport)return;try{const published=await fetchPublishedState(),remoteRevision=Math.max(0,Number(published?.revision)||0);if(remoteRevision!==pendingImport.baselineRevision){if(!published?.content?.html)throw new Error('최신 저장본을 다시 확인하지 못했습니다.');const current=normalizeState(migratePublishedState(published.content)),groups=buildDiff(current,pendingImport.state);pendingImport.current=current;pendingImport.baselineRevision=remoteRevision;pendingImport.baselineUpdatedAt=published.updated_at||'';renderImportDiff(groups,'비교 중 최신 저장본이 변경되어 차이를 다시 계산했습니다. 내용을 확인하고 한 번 더 불러오세요.');return;}setStatus('편집본 사진을 준비 중입니다.');const incoming=await materializeImportedPhotos(pendingImport.state);lastSavedState=clone(pendingImport.current);draftBaselineUnknown=false;publishedRevision=pendingImport.baselineRevision;publishedUpdatedAt=pendingImport.baselineUpdatedAt;applyState(incoming);initializeHistory();updateDirtyState();$('#importDialog').hidden=true;pendingImport=null;setStatus('편집본 불러옴 · 저장되지 않음');}catch(error){console.error(error);setStatus('편집본 적용 실패');await showChoice({title:'편집본 적용 실패',message:error.message,choices:[{label:'확인',value:'ok',className:'action-primary'}]});}}
 
   async function resetDraft(){const choice=await showChoice({title:'마지막 저장본으로 초기화',message:'현재 변경을 삭제하고 마지막 저장본으로 되돌립니다.',choices:[{label:'취소',value:'cancel'},{label:'초기화',value:'reset',className:'action-danger'}]});if(choice==='reset')discardDraft('마지막 저장본으로 초기화했습니다.');}
   async function confirmSave(){if(!pendingDraft){setStatus('저장할 변경이 없습니다.');return;}const choice=await showChoice({title:OFFLINE_MODE?'오프라인 작업본 저장':'공유 일정에 저장',message:OFFLINE_MODE?'수정된 내용을 포함한 새 작업본을 내려받습니다.':'저장하면 공개 링크에 변경 내용이 반영됩니다.',input:OFFLINE_MODE?null:{label:'버전 메모 (선택)','placeholder':'예: 항공편 시간 수정'},choices:[{label:'취소',value:'cancel'},{label:'저장',value:'save',className:'action-primary'}]});if(choice==='save')await saveAndFinish(noticeInputValue||'수동 저장');}
@@ -2407,7 +2434,7 @@ input:disabled,select:disabled{opacity:.7}
     const serverChanged=Number(record.baseRevision||0)!==publishedRevision;
     const savedAt=record.savedAt?new Date(record.savedAt).toLocaleString('ko-KR'):'이전 접속';
     const choice=await showChoice({title:'저장하지 않은 초안을 찾았습니다.',message:savedAt+'에 이 브라우저에 보관한 초안입니다.'+(serverChanged?' 그 뒤 공유 저장본이 변경되어 저장할 때 차이를 다시 확인합니다.':''),choices:[{label:'초안 삭제',value:'discard',className:'action-danger'},{label:'초안 복구',value:'restore',className:'action-primary'}]});
-    if(choice!=='restore'){
+    if(choice==='discard'){
       pendingDraft=false;
       if(lastSavedState){applyState(lastSavedState);lastSavedState=clone(normalizeState(captureState()));}
       initializeHistory();
@@ -2417,7 +2444,17 @@ input:disabled,select:disabled{opacity:.7}
       else await showChoice({title:'초안을 삭제하지 못했습니다.',message:'브라우저 저장소에서 초안을 지우지 못했습니다. 사이트 저장 공간을 확인한 뒤 다시 시도해 주세요.',choices:[{label:'확인',value:'ok',className:'action-primary'}]});
       return;
     }
-    applyState(incoming);publishedRevision=Math.max(0,Number(record.baseRevision)||0);publishedUpdatedAt=String(record.baseUpdatedAt||'');initializeHistory();updateDirtyState();setStatus('초안 복구됨 · 저장되지 않음');
+    // Dismissing recovery keeps the stored draft and the current shared view.
+    if(choice!=='restore'){deferredDraftRecovery=true;setStatus('초안을 이 브라우저에 보관했습니다.');return;}
+    deferredDraftRecovery=false;
+    const latestState=clone(lastSavedState),latestRow={revision:publishedRevision,updated_at:publishedUpdatedAt,content:latestState};
+    // A legacy draft without a baseline must not adopt a newer revision through
+    // a checklist patch. Keep that uncertainty across subsequent draft writes.
+    draftBaselineUnknown=serverChanged&&!record.baseState?.html;
+    lastSavedState=record.baseState?.html?normalizeState(migratePublishedState(record.baseState)):latestState;
+    publishedRevision=Math.max(0,Number(record.baseRevision)||0);publishedUpdatedAt=String(record.baseUpdatedAt||'');
+    pendingRemoteState=serverChanged?{row:latestRow,state:latestState}:null;
+    applyState(incoming);initializeHistory();updateDirtyState();setStatus('초안 복구됨 · 저장되지 않음');
   }
 
   async function refreshPublishedState(reason='refresh') {

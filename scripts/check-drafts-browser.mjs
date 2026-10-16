@@ -8,26 +8,35 @@ import { pathToFileURL } from 'node:url';
 const { chromium } = await import(process.argv[2] ? pathToFileURL(process.argv[2]).href : 'playwright');
 const root = new URL('../', import.meta.url);
 const original = await readFile(new URL('index.html', root), 'utf8');
-let row;
-const reset = () => { row = { content: {}, revision: 0, updated_at: new Date().toISOString() }; };
+let row,saveMode,saveCalls,readFailures;
+const reset = () => { saveMode='normal';saveCalls=0;readFailures=0;row = { content: {}, revision: 0, updated_at: new Date().toISOString() }; };
 reset();
 const stub = `<script>
 window.__signedIn=true;
+const nativeSetTimeout=window.setTimeout.bind(window);
+window.setTimeout=(callback,delay,...args)=>nativeSetTimeout(callback,window.__shortSaveTimeout&&delay===12000?80:delay,...args);
 window.supabase={createClient:()=>({
-  auth:{getSession:async()=>({data:{session:window.__signedIn?{user:{email:window.TRIP_CONFIG.editorEmail}}:null}}),onAuthStateChange:()=>{},signOut:async()=>{window.__signedIn=false;return {};},signInWithPassword:async()=>{window.__signedIn=true;return {};}},
+  auth:{getSession:async()=>({data:{session:window.__signedIn?{user:{email:window.TRIP_CONFIG.editorEmail}}:null}}),onAuthStateChange:()=>{},signOut:async options=>{window.__signOutOptions=options;window.__signedIn=false;return {};},signInWithPassword:async()=>{window.__signedIn=true;return {};}},
   from:()=>{const q={select:()=>q,eq:()=>q,abortSignal:()=>q,maybeSingle:async()=>({data:await(await fetch('/mock/doc')).json()})};return q;},
-  rpc:(_name,args)=>{const call=fetch('/mock/save',{method:'POST',body:JSON.stringify(args)}).then(r=>r.json());call.abortSignal=()=>call;return call;},
+  rpc:(_name,args)=>({abortSignal:async signal=>{if(window.__throwNextRpc){window.__throwNextRpc=false;throw Error('Simulated transport exception');}return (await fetch('/mock/save',{method:'POST',body:JSON.stringify(args),signal})).json();}}),
   channel:()=>({on:()=>({subscribe:()=>{}})})
 })};</script>`;
 const server = createServer(async (req, res) => {
   try {
-    if (req.url === '/mock/doc') { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(row)); return; }
+    if (req.url === '/mock/doc') { if(readFailures>0){readFailures--;res.writeHead(503).end('Unavailable');return;}res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(row)); return; }
     if (req.url === '/mock/save') {
       let body = ''; for await (const part of req) body += part;
-      const args = JSON.parse(body);
+      const args = JSON.parse(body);saveCalls++;
+      const mode=saveMode;saveMode='normal';
+      if(mode==='timeout-before') {setTimeout(()=>res.end('{}'),300);return;}
       const result = args.p_expected_revision !== row.revision
         ? { error: { code: '40001', message: 'Revision conflict' } }
         : (row = { content: args.p_content, revision: row.revision + 1, updated_at: new Date().toISOString() }, { data: { revision: row.revision, updated_at: row.updated_at } });
+      if(mode.startsWith('timeout-')) {
+        if(mode==='timeout-newer')row={...row,content:{...row.content,budgetKrw:987654},revision:row.revision+1};
+        if(mode==='timeout-unverified')readFailures=1;
+        setTimeout(()=>res.end(JSON.stringify(result)),300);return;
+      }
       res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(result)); return;
     }
     const url = new URL(req.url, 'http://localhost');
@@ -38,7 +47,10 @@ const server = createServer(async (req, res) => {
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
       .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, stub)
       .replace('data-offline="false"', url.searchParams.has('offline') ? 'data-offline="true"' : 'data-offline="false"')
-      .replace('initializeTimetable();initializeDialogAccessibility();', `window.__draftTest={captureState,normalizeState,buildDiff,isDirty,recordHistory,flushDraftPersistence,readDraftRecord,writeDraftRecord,clearDraftRecord,moveHistory,discardDraft,persistState,handleExternalSignOut,closeNotice,
+      .replace('initializeTimetable();initializeDialogAccessibility();', `window.__draftTest={captureState,normalizeState,buildDiff,isDirty,recordHistory,flushDraftPersistence,readDraftRecord,writeDraftRecord,clearDraftRecord,moveHistory,discardDraft,persistState,saveAndFinish,handleExternalSignOut,closeNotice,
+        busy:()=>saveInFlight||operationBusy,
+        base:()=>lastSavedState,revision:()=>publishedRevision,pending:()=>pendingChecks.size,
+        legacyDraft:async()=>{const record=await readDraftRecord();delete record.baseState;await writeDraftRecord(record);pendingDraft=false;clearTimeout(draftWriteTimer);},
         key:DRAFT_RECORD_KEY,legacyKey:LEGACY_DRAFT_RECORD_KEY,db:DRAFT_DB_NAME,sessionKey:DRAFT_SESSION_KEY};initializeTimetable();initializeDialogAccessibility();`);
     res.setHeader('Content-Type', file.endsWith('.html') ? 'text/html; charset=utf-8' : file.endsWith('.js') ? 'text/javascript; charset=utf-8' : 'image/webp');
     res.end(body);
@@ -88,7 +100,90 @@ try {
     await page.locator('#logoutBtn').click(); await page.getByRole('button', { name: '폐기 후 로그아웃', exact: true }).click();
     await page.waitForFunction(() => !window.__signedIn);
     assert.equal(await stored(page), null);
+    assert.deepEqual(await page.evaluate(()=>window.__signOutOptions),{scope:'local'});
     await ctx.close(); console.log('Logout: Escape/replaced preserve drafts; explicit discard removes them.');
+  }
+  // Recovery dismissal must retain the record through hydration and reload.
+  {
+    reset(); const ctx=await context(),page=await ctx.newPage();await page.goto(origin);await ready(page);
+    const originalTitle=await title(page).textContent();await edit(page,'Recovery dismissal draft');
+    for(const response of ['Escape','replaced']) {
+      await page.reload();await page.locator('#noticeDialog').waitFor({state:'visible'});
+      if(response==='Escape')await page.keyboard.press('Escape');
+      else await page.evaluate(()=>window.__draftTest.closeNotice('replaced'));
+      await ready(page);await page.waitForTimeout(850);
+      assert.equal(await title(page).textContent(),originalTitle);
+      assert.ok((await stored(page)).state.html.includes('Recovery dismissal draft'));
+    }
+    await page.locator('.tabs label[for="prep"]').click();await page.locator('.prepday .checklist input').first().click();
+    await page.waitForFunction(()=>window.__draftTest.pending()===0);
+    assert.ok((await stored(page)).state.html.includes('Recovery dismissal draft'),'Unrelated checklist save cannot clear deferred recovery');
+    await page.reload();await page.getByRole('button',{name:'초안 삭제',exact:true}).click();await ready(page);
+    assert.equal(await stored(page),null);await page.reload();await ready(page);
+    assert.equal(await page.locator('#noticeDialog').isVisible(),false);
+    await ctx.close();console.log('Recovery: Escape/replaced retain the draft; explicit deletion removes it across reload.');
+  }
+  // Checklist auto-save cannot bless a recovered stale document with its revision.
+  for(const legacy of [false,true])for(const mobile of [false,true]) {
+    reset();const ctx=await context(mobile?{viewport:{width:390,height:844},isMobile:true,hasTouch:true}:{});
+    const page=await ctx.newPage();await page.goto(origin);await ready(page);
+    row.content=await page.evaluate(()=>window.__draftTest.captureState());row.revision=1;
+    await page.reload();await ready(page);const originalBudget=row.content.budgetKrw;
+    await edit(page,'Recovered stale schedule');
+    if(legacy)await page.evaluate(()=>window.__draftTest.legacyDraft());
+    row={...row,content:{...row.content,budgetKrw:987654},revision:2};
+    await page.reload();await recover(page);
+    assert.equal(await page.evaluate(()=>window.__draftTest.captureState().budgetKrw),originalBudget);
+    if(!legacy)assert.equal(await page.evaluate(()=>window.__draftTest.base().budgetKrw),originalBudget);
+    await page.locator('.tabs label[for="prep"]').click();await page.locator('.prepday .checklist input').first().click();
+    await page.waitForFunction(()=>window.__draftTest.pending()===0);
+    assert.equal(row.revision,3,'Checklist patch succeeds against the latest remote revision');
+    assert.equal(row.content.budgetKrw,987654);assert.ok(row.content.checks.some(Boolean));
+    assert.equal(await page.evaluate(()=>window.__draftTest.revision()),1,'Stale draft keeps its revision');
+    await page.evaluate(()=>window.__draftTest.flushDraftPersistence());
+    if(legacy)assert.equal((await stored(page)).baseState,null,'Unknown baseline remains unknown after persistence');
+    await page.reload();await recover(page);
+    await page.evaluate(()=>{window.__saveResult=undefined;window.__draftTest.persistState(window.__draftTest.captureState()).then(result=>window.__saveResult=Boolean(result));});
+    await page.locator('#noticeDialog').waitFor({state:'visible'});
+    assert.equal(await page.locator('#noticeTitle').textContent(),'다른 저장본이 먼저 반영되었습니다.');
+    assert.equal(row.content.budgetKrw,987654);assert.equal(row.revision,3);
+    await page.getByRole('button',{name:'계속 편집',exact:true}).click();await page.waitForFunction(()=>window.__saveResult===false);
+    assert.ok((await stored(page)).state.html.includes('Recovered stale schedule'));
+    await page.evaluate(()=>{window.__saveResult=undefined;window.__draftTest.saveAndFinish().then(result=>window.__saveResult=Boolean(result));});
+    await page.locator('#noticeDialog').waitFor({state:'visible'});
+    await page.getByRole('button',{name:mobile?'최신본으로 전환':'내 초안으로 덮어쓰기',exact:true}).click();
+    await page.waitForFunction(()=>window.__saveResult!==undefined);
+    assert.equal(await page.evaluate(()=>window.__draftTest.isDirty()),false);
+    assert.equal(await stored(page),null);
+    assert.equal(row.content.budgetKrw,mobile?987654:originalBudget,'Overwrite requires explicit confirmation; latest-view choice preserves remote content');
+    assert.equal(await page.evaluate(()=>window.__draftTest.revision()),row.revision);
+    await ctx.close();console.log('Recovered '+(legacy?'legacy':'current')+' draft ('+(mobile?'mobile':'desktop')+'): checklist patch, reload and full-save conflict preserve remote budget.');
+  }
+  // Abort only the stalled response, then reconcile without an automatic retry.
+  for(const mode of ['timeout-before','timeout-committed','timeout-newer','timeout-unverified','throw']) {
+    reset();const ctx=await context(),page=await ctx.newPage();await page.goto(origin);await ready(page);
+    row.content=await page.evaluate(()=>window.__draftTest.captureState());row.revision=1;await page.reload();await ready(page);
+    await edit(page,'Save failure draft '+mode);
+    await page.evaluate(mode=>{window.__shortSaveTimeout=true;window.__throwNextRpc=mode==='throw';},mode);
+    saveMode=mode;
+    const success=await page.evaluate(()=>window.__draftTest.saveAndFinish().then(Boolean));
+    assert.equal(await page.evaluate(()=>window.__draftTest.busy()),false,'Every result releases save and operation flags');
+    assert.equal(saveCalls,mode==='throw'?0:1,'No automatic retry');
+    if(mode==='timeout-committed') {
+      assert.equal(success,true);assert.equal(row.revision,2);assert.equal(await stored(page),null);
+      assert.equal(await page.evaluate(()=>window.__draftTest.revision()),2);
+    }else{
+      assert.equal(success,false);assert.ok((await stored(page)).state.html.includes('Save failure draft '+mode));
+      assert.equal(await page.evaluate(()=>window.__draftTest.revision()),1,'Unverified saves keep the old revision');
+      assert.match(await page.locator('#status').textContent(),mode==='throw'?/transport exception/:/시간이 초과/);
+      if(mode==='timeout-newer')assert.equal(row.content.budgetKrw,987654);
+      if(mode==='timeout-before'||mode==='throw') {
+        assert.equal(row.revision,1);saveMode='normal';
+        assert.equal(await page.evaluate(()=>window.__draftTest.saveAndFinish().then(Boolean)),true,'An explicit retry is available');
+        assert.equal(row.revision,2);
+      }
+    }
+    await ctx.close();console.log('Full save '+mode+': reconciliation, draft retention, flag cleanup and explicit retry passed.');
   }
   // Undo removes persisted drafts and cancels pending debounce writes.
   {
