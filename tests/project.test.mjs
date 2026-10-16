@@ -224,18 +224,26 @@ test('기본 일정은 자유 HTML 대신 구조화된 링크와 비용 데이�
 });
 
 test('문서와 GitHub 검증 설정은 스키마 5 운영 방식과 일치한다', async () => {
-  const [readme, guide, summary, workflow, ignore] = await Promise.all([
-    readFile(path.join(root, 'README.md'), 'utf8'),
-    readFile(path.join(root, 'PROJECT_GUIDE_KO.md'), 'utf8'),
-    readFile(path.join(root, 'PROJECT_GUIDE_SUMMARY_KO.md'), 'utf8'),
+  const docs = ['README.md', 'docs/USER_GUIDE_KO.md', 'docs/PROJECT_GUIDE_KO.md', 'docs/OPERATIONS_KO.md'];
+  const contents = await Promise.all(docs.map(file => readFile(path.join(root, file), 'utf8')));
+  const [readme, , guide] = contents;
+  const [workflow, ignore, pages] = await Promise.all([
     readFile(path.join(root, '.github/workflows/validate.yml'), 'utf8'),
-    readFile(path.join(root, '.gitignore'), 'utf8')
+    readFile(path.join(root, '.gitignore'), 'utf8'),
+    readFile(path.join(root, '_config.yml'), 'utf8')
   ]);
   assert.match(guide, /schemaVersion 5/);
-  assert.match(summary, /schemaVersion 5/);
   assert.doesNotMatch(guide, /trip_documents\.editor_id/);
-  assert.doesNotMatch(summary, /trip_documents\.editor_id/);
   assert.match(readme, /npm test/);
   assert.match(workflow, /run: npm test/);
   assert.match(ignore, /\/reference\.html/);
+  assert.match(pages, /^  - docs\s*$/m);
+  for (const [index, content] of contents.entries()) {
+    for (const [, href] of content.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) {
+      if (/^(?:[a-z][a-z\d+.-]*:|#)/i.test(href)) continue;
+      const file = decodeURIComponent(href.split('#')[0]);
+      assert.ok((await readFile(path.resolve(root, path.dirname(docs[index]), file))).length > 0,
+        `${docs[index]} has an empty link target: ${href}`);
+    }
+  }
 });

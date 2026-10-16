@@ -1,6 +1,5 @@
-# Keep project manuals in GitHub without publishing HTML copies on Pages.
+# Keep project manuals and dated records in GitHub, not Pages.
 exclude:
   - node_modules
   - vendor
-  - PROJECT_GUIDE_KO.md
-  - PROJECT_GUIDE_SUMMARY_KO.md
+  - docs
