@@ -39,6 +39,54 @@ let browser;
 const errors = [];
 try {
   browser = await chromium.launch({ headless: true, ...(process.env.PWA_BROWSER_CHANNEL ? {channel:process.env.PWA_BROWSER_CHANNEL} : {}) });
+  // Use real pointer and keyboard activation: label forwarding used to focus
+  // an off-screen radio before change, losing the sticky tab position.
+  for(const mobile of [false,true])for(const reducedMotion of ['reduce','no-preference']) {
+    const context=await browser.newContext({viewport:{width:mobile?390:1440,height:mobile?844:900},isMobile:mobile,hasTouch:mobile,reducedMotion});
+    await context.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
+    const page=await context.newPage();page.setDefaultTimeout(5000);page.on('pageerror',error=>errors.push(error.message));
+    await page.goto(origin);await page.waitForFunction(()=>!document.body.classList.contains('hydrating'));
+    const snapshot=await page.evaluate(()=>{const api=window.__inputsTest;return api.normalizeState(api.captureState());});
+    const label=id=>page.locator('.tabs label[for="'+id+'"]');
+    const activate=locator=>mobile?locator.tap():locator.click();
+    const settled=()=>page.waitForFunction(()=>Math.abs(document.querySelector('.tabs').getBoundingClientRect().top)<=2&&!document.querySelector('main').style.minHeight);
+    const deep=async()=>{
+      await activate(label('d3'));
+      await page.waitForFunction(()=>!document.querySelector('main').style.minHeight);
+      await page.evaluate(()=>window.scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'}));
+      await page.waitForFunction(()=>Math.abs(document.querySelector('.tabs').getBoundingClientRect().top)<=1);
+    };
+    // A page still showing its header should not be forced down to the tab bar.
+    await activate(label('money'));assert.ok(await page.evaluate(()=>scrollY<=1));
+    for(const target of ['money','prep','d11']) {
+      await deep();
+      await activate(target==='d11'?label(target).locator('span').last():label(target));
+      await settled();assert.equal(await page.locator('#'+target).isChecked(),true);
+      assert.equal(await label(target).getAttribute('aria-selected'),'true');
+      assert.equal(await label(target).evaluate(el=>document.activeElement===el),true,'Focus remains on the visible tab');
+    }
+    await deep();await activate(label('d3'));await settled();
+    assert.equal(await page.locator('#d3').isChecked(),true,'Reselecting a tab must not jump to the hidden radio');
+    for(const [key,target] of [['ArrowRight','d4'],['Home','prep'],['End','d11'],['Enter','d11'],['Space','d11']]) {
+      await page.keyboard.press(key);await settled();assert.equal(await page.locator('#'+target).isChecked(),true);
+      assert.equal(await label(target).evaluate(el=>document.activeElement===el),true);
+    }
+    await deep();await page.evaluate(()=>{document.querySelector('label[for="money"]').click();document.querySelector('label[for="prep"]').click();document.querySelector('label[for="d11"]').click();});
+    await settled();assert.equal(await page.locator('#d11').isChecked(),true,'Rapid switching keeps the final selection');
+    // Timetable reselect still returns to the tab's date, exactly once.
+    await activate(label('d3'));await activate(page.locator('#timetableViewBtn'));await activate(page.locator('[data-tt-range="1"]'));
+    await activate(page.locator('#timetableNext'));assert.equal(await page.locator('#timetableStart').inputValue(),'3');
+    await page.evaluate(()=>{window.__tabChanges=0;document.addEventListener('change',event=>{if(event.target.matches('.day-radio'))window.__tabChanges++;});});
+    await activate(label('d3'));assert.equal(await page.locator('#timetableStart').inputValue(),'2');
+    assert.equal(await page.evaluate(()=>window.__tabChanges),1);
+    await activate(label('d4'));assert.equal(await page.locator('#timetableStart').inputValue(),'3');
+    assert.equal(await page.evaluate(()=>window.__tabChanges),2,'Each timetable tab activation fires one change');
+    await activate(label('money'));assert.equal(await page.locator('#timetableView').isHidden(),true);
+    await page.waitForFunction(()=>!document.querySelector('main').style.minHeight);
+    assert.deepEqual(await page.evaluate(()=>{const api=window.__inputsTest;return api.normalizeState(api.captureState());}),snapshot,'Tab navigation does not change trip data');
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+    await context.close();console.log((mobile?'Mobile':'Desktop')+' tabs ('+reducedMotion+'): header position, long-to-short switches, nested labels, reselect, keyboard, rapid switches, timetable and data preservation passed.');
+  }
   for (const mobile of [false, true]) {
     const context = await browser.newContext({ viewport: { width: mobile ? 390 : 1440, height: 900 }, isMobile: mobile, hasTouch: mobile, reducedMotion: 'reduce', acceptDownloads: true });
     await context.route('**/*', route => /^(file:|data:)/.test(route.request().url()) || route.request().url().startsWith(origin) ? route.continue() : route.abort());

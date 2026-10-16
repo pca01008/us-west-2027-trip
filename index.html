@@ -1314,7 +1314,6 @@ input:disabled,select:disabled{opacity:.7}
     $('#timetableNext').onclick=()=>{timetableStart++;renderTimetable({resetScroll:true});};
     $('#timetableStart').onchange=event=>{timetableStart=Number(event.target.value);renderTimetable({resetScroll:true});};
     $('#timetableDetailClose').onclick=()=>{$('#timetableDetail').hidden=true;};
-    $('.tabs').addEventListener('click',event=>{const label=event.target.closest('label[for]'),radio=label?document.getElementById(label.htmlFor):null;if(timetableActive&&radio?.checked){event.preventDefault();radio.dispatchEvent(new Event('change',{bubbles:true}));}});
     window.addEventListener('beforeprint',()=>{$('main').hidden=false;});
     window.addEventListener('afterprint',()=>{$('main').hidden=timetableActive;});
     window.addEventListener('resize',()=>{if(!timetableActive||timetableRange!=='all')return;cancelAnimationFrame(timetableOverviewResizeFrame);timetableOverviewResizeFrame=requestAnimationFrame(()=>renderTimetable());});
@@ -2554,7 +2553,16 @@ input:disabled,select:disabled{opacity:.7}
   document.addEventListener('compositionend',refreshEditablePlaceholder);
   document.addEventListener('input',event=>{refreshEditablePlaceholder(event);if(event.target.id==='expenseFilterQuery'){ledgerFilterQuery=event.target.value;renderLedger();return;}if(body.classList.contains('editing')&&event.target.closest('main')&&!event.target.closest('.add-expense')&&event.target.id!=='exchangeRate')queueHistory();});
   document.addEventListener('change',async event=>{if(event.target.id==='expenseFilterCategory'){ledgerFilterCategory=event.target.value;renderLedger();return;}if(event.target.id==='expenseFilterFrom'){ledgerFilterFrom=event.target.value;renderLedger();return;}if(event.target.id==='expenseFilterTo'){ledgerFilterTo=event.target.value;renderLedger();return;}if(event.target.id==='settingsExchangeRate'||event.target.id==='exchangeRate'){const input=event.target,before=String(exchangeRate);await requireEditor('ledger',()=>updateExchangeRate(input),()=>{input.value=before;});return;}if(event.target.matches('.prepday .checklist input[type="checkbox"]')){await requestCheckToggle(event.target);return;}if(body.classList.contains('editing')&&event.target.closest('main')&&!event.target.closest('.add-expense')&&event.target.id!=='exchangeRate')recordHistory();if(event.target.matches('.day-radio')){const tabs=$('.tabs'),keepTabsPinned=Boolean(tabs&&tabsArePinned(tabs));cancelTabScrollRelease();if(keepTabsPinned)holdMainHeight();else releaseMainHeight();updateContextControls();revealSelectedTab();if(keepTabsPinned)requestAnimationFrame(()=>alignPageToTabs(tabs));}});
-  $('.tabs').addEventListener('keydown',event=>{const current=event.target.closest('[role="tab"]');if(!current)return;const tabs=$$('.tabs [role="tab"]'),index=tabs.indexOf(current);let next=index;if(event.key==='ArrowRight')next=(index+1)%tabs.length;else if(event.key==='ArrowLeft')next=(index-1+tabs.length)%tabs.length;else if(event.key==='Home')next=0;else if(event.key==='End')next=tabs.length-1;else if(event.key==='Enter'||event.key===' '){event.preventDefault();current.click();return;}else return;event.preventDefault();tabs[next].click();tabs[next].focus();});
+  // Native label activation focuses the hidden radio and scrolls to the header
+  // before change fires. Activate it without moving focus off the visible tab.
+  $('.tabs').addEventListener('click',event=>{
+    const tab=event.target.closest('label[for]'),radio=tab?document.getElementById(tab.htmlFor):null;
+    if(!radio?.matches('.day-radio'))return;
+    event.preventDefault();tab.focus({preventScroll:true});
+    if(!radio.checked)radio.click();
+    else if(timetableActive)radio.dispatchEvent(new Event('change',{bubbles:true}));
+  });
+  $('.tabs').addEventListener('keydown',event=>{const current=event.target.closest('[role="tab"]');if(!current)return;const tabs=$$('.tabs [role="tab"]'),index=tabs.indexOf(current);let next=index;if(event.key==='ArrowRight')next=(index+1)%tabs.length;else if(event.key==='ArrowLeft')next=(index-1+tabs.length)%tabs.length;else if(event.key==='Home')next=0;else if(event.key==='End')next=tabs.length-1;else if(event.key==='Enter'||event.key===' '){event.preventDefault();current.click();return;}else return;event.preventDefault();tabs[next].click();tabs[next].focus({preventScroll:true});});
   $('.tabs').addEventListener('wheel',event=>{const tabs=event.currentTarget;if(tabs.scrollWidth<=tabs.clientWidth||Math.abs(event.deltaX)>Math.abs(event.deltaY))return;event.preventDefault();tabs.scrollLeft+=event.deltaY;},{passive:false});
   ['pointerdown','keydown'].forEach(type=>document.addEventListener(type,()=>{if(editorSession&&$('#noticeDialog').hidden)resetInactivityTimer();},{passive:true}));
   sessionChannel?.addEventListener('message',event=>{if(event.data?.type==='activity')acceptSharedActivity(Number(event.data.at));if(event.data?.type==='signout'&&editorSession&&!signingOut)void handleExternalSignOut();});
