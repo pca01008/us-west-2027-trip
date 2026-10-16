@@ -8,8 +8,8 @@ import { pathToFileURL } from 'node:url';
 const { chromium } = await import(process.argv[2] ? pathToFileURL(process.argv[2]).href : 'playwright');
 const root = new URL('../', import.meta.url);
 const original = await readFile(new URL('index.html', root), 'utf8');
-let row,saveMode,saveCalls,readFailures;
-const reset = () => { saveMode='normal';saveCalls=0;readFailures=0;row = { content: {}, revision: 0, updated_at: new Date().toISOString() }; };
+let row,saveMode,saveCalls,readFailures,versions;
+const reset = () => { versions=[];saveMode='normal';saveCalls=0;readFailures=0;row = { content: {}, revision: 0, updated_at: new Date().toISOString() }; };
 reset();
 const stub = `<script>
 window.__signedIn=true;
@@ -17,12 +17,13 @@ const nativeSetTimeout=window.setTimeout.bind(window);
 window.setTimeout=(callback,delay,...args)=>nativeSetTimeout(callback,window.__shortSaveTimeout&&delay===12000?80:delay,...args);
 window.supabase={createClient:()=>({
   auth:{getSession:async()=>({data:{session:window.__signedIn?{user:{email:window.TRIP_CONFIG.editorEmail}}:null}}),onAuthStateChange:()=>{},signOut:async options=>{window.__signOutOptions=options;window.__signedIn=false;return {};},signInWithPassword:async()=>{window.__signedIn=true;return {};}},
-  from:()=>{const q={select:()=>q,eq:()=>q,abortSignal:()=>q,maybeSingle:async()=>({data:await(await fetch('/mock/doc')).json()})};return q;},
+  from:()=>{let id;const q={select:()=>q,eq:(key,value)=>{if(key==='id')id=value;return q;},order:()=>q,limit:async()=>({data:await(await fetch('/mock/versions')).json()}),single:async()=>({data:(await(await fetch('/mock/versions')).json()).find(item=>item.id===id)}),abortSignal:()=>q,maybeSingle:async()=>({data:await(await fetch('/mock/doc')).json()})};return q;},
   rpc:(_name,args)=>({abortSignal:async signal=>{if(window.__throwNextRpc){window.__throwNextRpc=false;throw Error('Simulated transport exception');}return (await fetch('/mock/save',{method:'POST',body:JSON.stringify(args),signal})).json();}}),
   channel:()=>({on:()=>({subscribe:()=>{}})})
 })};</script>`;
 const server = createServer(async (req, res) => {
   try {
+    if (req.url === '/mock/versions') {res.setHeader('Content-Type','application/json');res.end(JSON.stringify(versions));return;}
     if (req.url === '/mock/doc') { if(readFailures>0){readFailures--;res.writeHead(503).end('Unavailable');return;}res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(row)); return; }
     if (req.url === '/mock/save') {
       let body = ''; for await (const part of req) body += part;
@@ -32,6 +33,7 @@ const server = createServer(async (req, res) => {
       const result = args.p_expected_revision !== row.revision
         ? { error: { code: '40001', message: 'Revision conflict' } }
         : (row = { content: args.p_content, revision: row.revision + 1, updated_at: new Date().toISOString() }, { data: { revision: row.revision, updated_at: row.updated_at } });
+      if(mode==='delayed') {setTimeout(()=>res.end(JSON.stringify(result)),1500);return;}
       if(mode.startsWith('timeout-')) {
         if(mode==='timeout-newer')row={...row,content:{...row.content,budgetKrw:987654},revision:row.revision+1};
         if(mode==='timeout-unverified')readFailures=1;
@@ -47,7 +49,7 @@ const server = createServer(async (req, res) => {
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
       .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, stub)
       .replace('data-offline="false"', url.searchParams.has('offline') ? 'data-offline="true"' : 'data-offline="false"')
-      .replace('initializeTimetable();initializeDialogAccessibility();', `window.__draftTest={captureState,normalizeState,buildDiff,isDirty,recordHistory,flushDraftPersistence,readDraftRecord,writeDraftRecord,clearDraftRecord,moveHistory,discardDraft,persistState,saveAndFinish,handleExternalSignOut,closeNotice,
+      .replace('initializeTimetable();initializeDialogAccessibility();', `window.__draftTest={captureState,normalizeState,buildDiff,isDirty,recordHistory,flushDraftPersistence,queueDraftPersistence,readDraftRecord,writeDraftRecord,clearDraftRecord,moveHistory,discardDraft,discardAndLogout,persistState,saveAndFinish,handleExternalSignOut,closeNotice,
         busy:()=>saveInFlight||operationBusy,
         base:()=>lastSavedState,revision:()=>publishedRevision,pending:()=>pendingChecks.size,
         legacyDraft:async()=>{const record=await readDraftRecord();delete record.baseState;await writeDraftRecord(record);pendingDraft=false;clearTimeout(draftWriteTimer);},
@@ -60,7 +62,7 @@ await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const origin = `http://127.0.0.1:${server.address().port}`;
 let browser;
 const errors = [];
-const ready = page => page.waitForFunction(() => !document.body.classList.contains('hydrating'));
+const ready = page => page.waitForFunction(() => Boolean(window.__draftTest)&&Boolean(document.body)&&!document.body.classList.contains('hydrating'));
 const stored = page => page.evaluate(() => window.__draftTest.readDraftRecord());
 const title = page => page.locator('.day1 .timeline-row h3').first();
 async function edit(page, text) {
@@ -82,9 +84,146 @@ async function context(options = {}) {
   ctx.on('page', page => { page.setDefaultTimeout(10000); page.on('pageerror', error => errors.push(error.message)); });
   return ctx;
 }
+async function seed(page) {
+  row.content=await page.evaluate(()=>window.__draftTest.captureState());
+  versions=[{id:1,created_at:new Date().toISOString(),note:'Historical version',content:{...structuredClone(row.content),budgetKrw:0}}];
+  row={...row,content:{...row.content,budgetKrw:987654},revision:2};
+  await page.reload();await ready(page);
+}
+async function preview(page) {
+  await page.locator('#versionsBtn').click();
+  await page.locator('.version-item').getByRole('button',{name:'미리보기',exact:true}).click();
+  await page.waitForFunction(()=>document.body.classList.contains('previewing'));
+}
+async function enterExpense(page,name='New expense') {
+  await page.locator('.tabs label[for="money"]').click();
+  await page.locator('#expenseName').fill(name);await page.locator('#expenseAmount').fill('25');
+  await page.locator('#addExpense').click();
+}
 
 try {
   browser = await chromium.launch({ headless: true, ...(process.env.PWA_BROWSER_CHANNEL ? { channel: process.env.PWA_BROWSER_CHANNEL } : {}) });
+  for(const mobile of [false,true]) {
+    const options=mobile?{viewport:{width:390,height:844},isMobile:true,hasTouch:true}:{};
+    // The actual version buttons must preserve a draft through timers, pagehide,
+    // nested previews, and reload, while every ordinary save remains blocked.
+    {
+      reset();const ctx=await context(options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
+      await enterExpense(page,'Original unsaved expense');
+      await page.evaluate(()=>window.__draftTest.flushDraftPersistence());
+      const originalDraft=await stored(page);
+      await preview(page);await preview(page);
+      assert.equal(await page.evaluate(()=>window.__draftTest.captureState().budgetKrw),0);
+      assert.equal(await page.locator('#saveBtn').isDisabled(),true);
+      await enterExpense(page,'Blocked preview expense');
+      assert.deepEqual(await page.evaluate(()=>window.__draftTest.captureState().expenses),[]);
+      assert.equal(await page.evaluate(()=>window.__draftTest.persistState(window.__draftTest.captureState()).then(Boolean)),false);
+      assert.equal(await page.evaluate(()=>window.__draftTest.saveAndFinish().then(Boolean)),false);
+      await page.evaluate(()=>{window.__draftTest.queueDraftPersistence();window.dispatchEvent(new Event('pagehide'));Object.defineProperty(document,'visibilityState',{configurable:true,value:'hidden'});document.dispatchEvent(new Event('visibilitychange'));});
+      await page.waitForTimeout(850);
+      assert.deepEqual((await stored(page)).state,originalDraft.state);
+      assert.equal(saveCalls,0);assert.equal(row.content.budgetKrw,987654);
+      await page.reload();await recover(page);
+      assert.deepEqual(await page.evaluate(()=>window.__draftTest.captureState().expenses),originalDraft.state.expenses);
+      assert.equal(await page.evaluate(()=>window.__draftTest.captureState().budgetKrw),987654);
+      await preview(page);await page.locator('#closePreviewBtn').click();
+      await enterExpense(page,'After preview');
+      assert.equal(await page.evaluate(()=>window.__draftTest.saveAndFinish().then(Boolean)),true);
+      assert.equal(row.content.budgetKrw,987654);assert.equal(row.content.expenses.length,2);
+      await ctx.close();console.log(`Preview (${mobile?'mobile':'desktop'}): draft survives timers/pagehide/reload; edits and saves blocked; normal save after close passed.`);
+    }
+    // A clean preview creates no dirty draft; only explicit version restore may
+    // publish the historical document, after its dedicated confirmation.
+    {
+      reset();const ctx=await context(options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
+      await preview(page);
+      assert.equal(await page.evaluate(()=>window.__draftTest.isDirty()),false);
+      await page.evaluate(()=>window.__draftTest.flushDraftPersistence());assert.equal(await stored(page),null);
+      await page.locator('#versionsBtn').click();
+      await page.locator('.version-item').getByRole('button',{name:'복원',exact:true}).click();
+      await page.locator('#versionCompareRestore').click();
+      await page.getByRole('button',{name:'취소',exact:true}).click();
+      assert.equal(row.content.budgetKrw,987654);assert.equal(saveCalls,0);
+      await page.locator('#versionCompareRestore').click();
+      await page.locator('#noticeDialog').getByRole('button',{name:'복원',exact:true}).click();
+      await page.waitForFunction(()=>!document.body.classList.contains('previewing')&&!window.__draftTest.busy());
+      assert.equal(row.content.budgetKrw,0);assert.equal(row.revision,3);assert.equal(saveCalls,1);
+      assert.equal(await stored(page),null);
+      await ctx.close();console.log(`Preview (${mobile?'mobile':'desktop'}): clean view and explicit restore confirmation passed.`);
+    }
+    for(const exit of ['save','discard','external','timeout','reset']) {
+      reset();const ctx=await context(options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
+      await enterExpense(page,'Original before preview exit');await preview(page);
+      if(exit==='external')await page.evaluate(()=>window.__draftTest.handleExternalSignOut());
+      else if(exit==='timeout')await page.evaluate(()=>window.__draftTest.discardAndLogout());
+      else if(exit==='reset')await page.evaluate(()=>window.__draftTest.discardDraft());
+      else{
+        await page.locator('#logoutBtn').click();
+        await page.getByRole('button',{name:exit==='save'?'저장 후 로그아웃':'폐기 후 로그아웃',exact:true}).click();
+        await page.waitForFunction(()=>!window.__signedIn);
+      }
+      assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('previewing')),false);
+      assert.equal(await page.evaluate(()=>window.__draftTest.isDirty()),false);
+      assert.equal(row.content.budgetKrw,987654);
+      assert.equal(row.content.expenses.length,exit==='save'?1:0);
+      if(exit==='external')assert.equal((await stored(page)).state.expenses[0].name,'Original before preview exit');
+      else await page.waitForFunction(async()=>await window.__draftTest.readDraftRecord()===null);
+      await ctx.close();
+    }
+    console.log(`Preview (${mobile?'mobile':'desktop'}): logout save/discard, external sign-out, timeout and reset all leave preview safely.`);
+    for(const choice of ['초안 복구','초안 삭제']) {
+      reset();const ctx=await context(options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
+      const sharedTitle=await title(page).textContent();await edit(page,'Original unrecovered title');
+      await page.reload();await page.locator('#noticeDialog').waitFor({state:'visible'});await page.keyboard.press('Escape');await ready(page);
+      // Schedule editing, ledger settings, and import must resolve the same
+      // deferred draft before opening an editor or the system file picker.
+      for(const panel of ['d1','money','import']){
+        if(panel!=='import')await page.locator('.tabs label[for="'+panel+'"]').click();
+        await page.locator(panel==='import'?'#importBtn':'#editBtn').click();
+        await page.locator('#noticeDialog').waitFor({state:'visible'});await page.keyboard.press('Escape');
+        assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('editing')),false);
+        assert.equal(await page.locator('#ledgerSettingsDialog').isVisible(),false);
+        assert.ok((await stored(page)).state.html.includes('Original unrecovered title'));
+      }
+      await enterExpense(page,'After deferred recovery');
+      await page.locator('#noticeDialog').waitFor({state:'visible'});await page.keyboard.press('Escape');
+      await page.waitForTimeout(850);
+      assert.ok((await stored(page)).state.html.includes('Original unrecovered title'));
+      assert.equal(await page.evaluate(()=>window.__draftTest.captureState().expenses.length),0);
+      // A background writer must also refuse to replace the deferred record.
+      assert.equal(await page.evaluate(()=>window.__draftTest.writeDraftRecord({state:window.__draftTest.captureState(),dirty:true})),false);
+      await page.locator('#addExpense').click();await page.locator('#noticeDialog').waitFor({state:'visible'});
+      await page.getByRole('button',{name:choice,exact:true}).click();
+      await page.waitForFunction(()=>window.__draftTest.captureState().expenses.some(item=>item.name==='After deferred recovery'));
+      assert.equal(await title(page).textContent(),choice==='초안 복구'?'Original unrecovered title':sharedTitle);
+      await page.evaluate(()=>window.__draftTest.flushDraftPersistence());
+      await page.reload();await recover(page);
+      assert.equal(await title(page).textContent(),choice==='초안 복구'?'Original unrecovered title':sharedTitle);
+      assert.equal(await page.evaluate(()=>window.__draftTest.captureState().expenses[0].name),'After deferred recovery');
+      assert.equal(saveCalls,0);
+      await ctx.close();console.log(`Deferred draft (${mobile?'mobile':'desktop'}, ${choice}): cancel preserves original; explicit choice protects new work across reload.`);
+    }
+    // Hold the real save response while typing the next entry. Verify every
+    // field, focus/caret and that the entry is not silently submitted.
+    {
+      reset();const ctx=await context(options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
+      await enterExpense(page,'First saved expense');saveMode='delayed';
+      await page.evaluate(()=>{window.__saveResult=undefined;window.__draftTest.saveAndFinish().then(result=>window.__saveResult=Boolean(result));});
+      await page.waitForFunction(()=>window.__draftTest.busy());
+      await page.locator('#expenseName').fill('During save');await page.locator('#expenseAmount').fill('25');
+      await page.locator('#expenseDate').fill('2027-03-15');await page.locator('#expenseCurrency').selectOption('USD');
+      await page.locator('#expenseCategory').selectOption('misc');
+      await page.locator('#expenseName').focus();await page.locator('#expenseName').evaluate(el=>el.setSelectionRange(3,6));
+      await page.waitForFunction(()=>window.__saveResult===true);
+      for(const [id,value] of Object.entries({expenseName:'During save',expenseAmount:'25',expenseDate:'2027-03-15',expenseCurrency:'USD',expenseCategory:'misc'}))assert.equal(await page.locator('#'+id).inputValue(),value);
+      assert.deepEqual(await page.evaluate(()=>[document.activeElement.id,document.activeElement.selectionStart,document.activeElement.selectionEnd]),['expenseName',3,6]);
+      assert.equal(row.content.expenses.length,1);assert.equal(await stored(page),null);
+      await page.locator('#addExpense').click();await page.evaluate(()=>window.__draftTest.flushDraftPersistence());
+      assert.equal((await stored(page)).state.expenses.length,2);
+      assert.equal(row.content.expenses.length,1);
+      await ctx.close();console.log(`Save inputs (${mobile?'mobile':'desktop'}): all next-entry fields and focus survive delayed save, then submit normally.`);
+    }
+  }
   // Escape, replacement by another dialog, and explicit discard are distinct.
   {
     const ctx = await context(), page = await ctx.newPage(); await page.goto(origin); await ready(page);

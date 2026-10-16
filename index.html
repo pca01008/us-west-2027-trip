@@ -1403,7 +1403,7 @@ input:disabled,select:disabled{opacity:.7}
     return draftStoragePromise;
   }
   async function writeDraftRecord(record) {
-    deferredDraftRecovery=false;
+    if(deferredDraftRecovery)return false;
     const generation=draftWriteGeneration;
     memoryDraftRecord=clone(record);
     await prepareDraftStorage();
@@ -1488,7 +1488,7 @@ input:disabled,select:disabled{opacity:.7}
     void writePublicCache(lastSavedState,cacheMetadata);
   }
   function currentDraftRecord() {
-    return {tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:captureState(),baseState:draftBaselineUnknown?null:clone(lastSavedState),baseRevision:publishedRevision,baseUpdatedAt:publishedUpdatedAt,savedAt:new Date().toISOString(),dirty:true};
+    return {tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:previewReturnState?clone(previewReturnState):captureState(),baseState:draftBaselineUnknown?null:clone(lastSavedState),baseRevision:publishedRevision,baseUpdatedAt:publishedUpdatedAt,savedAt:new Date().toISOString(),dirty:true};
   }
   async function flushDraftPersistence() {
     clearTimeout(draftWriteTimer);
@@ -1713,6 +1713,7 @@ input:disabled,select:disabled{opacity:.7}
     $$('.prepday .checklist input[type="checkbox"]').forEach(input=>{input.disabled=body.classList.contains('editing')||body.classList.contains('previewing')||operationBusy||checklistAuthPending||pendingChecks.has(input.closest('label').dataset.checkId)||!$('#checklistDialog').hidden;});
     if(busy){$('#editBtn').disabled=true;$('#saveBtn').disabled=true;}
     else $('#editBtn').disabled=false;
+    if(body.classList.contains('previewing'))$('#saveBtn').disabled=true;
   }
   function renderCheckFeedback() {
     $$('.check-feedback').forEach(el=>el.remove());
@@ -1727,15 +1728,15 @@ input:disabled,select:disabled{opacity:.7}
     });
     syncChecklistControls();
   }
-  function applyChecklistSave(state) {
+  function applyStatePreservingInputs(state) {
     // Preserve unsubmitted expense entry and keyboard focus across rendering.
     const fields=$$('.add-expense input,.add-expense select').map(input=>({id:input.id,value:input.value}));
-    const active=document.activeElement,focusId=active?.id,checkId=active?.closest('.prepday [data-check-id]')?.dataset.checkId;
+    const active=document.activeElement,wasInMain=Boolean(active?.closest('main')),focusId=active?.id,checkId=active?.closest('.prepday [data-check-id]')?.dataset.checkId;
     const selection=active instanceof HTMLInputElement?[active.selectionStart,active.selectionEnd]:null;
     applyState(state);
     fields.forEach(({id,value})=>{const input=document.getElementById(id);if(input&&(input.tagName!=='SELECT'||Array.from(input.options).some(option=>option.value===value)))input.value=value;});
     const focus=checkId?$$('.prepday [data-check-id]').find(label=>label.dataset.checkId===checkId)?.querySelector('input'):focusId?document.getElementById(focusId):null;
-    if(focus&&active?.closest('main')&&!focus.disabled){focus.focus({preventScroll:true});if(selection&&selection[0]!==null)focus.setSelectionRange(...selection);}
+    if(focus&&wasInMain&&!focus.disabled){focus.focus({preventScroll:true});if(selection&&selection[0]!==null)focus.setSelectionRange(...selection);}
   }
   async function commitChecklistPatch(transform,note) {
     if(saveInFlight||operationBusy)throw new Error('다른 저장이 끝난 뒤 다시 시도해 주세요.');
@@ -1766,11 +1767,11 @@ input:disabled,select:disabled{opacity:.7}
         const persistedItems=checklistItems(nextLocal);pendingChecks.forEach((pending,id)=>{const item=persistedItems.find(item=>item.id===id);if(item)pending.before=item.checked;});
         const noOtherDraft=fingerprint(localBefore)===fingerprint(baseBefore)&&!body.classList.contains('editing');
         if(noOtherDraft&&!OFFLINE_MODE){
-          applyChecklistSave(saved);
+          applyStatePreservingInputs(saved);
           // captureState deliberately excludes optimistic values still in flight.
           lastSavedState=normalizeState(captureState());publishedRevision=Number(result.revision);publishedUpdatedAt=result.updated_at;pendingRemoteState=null;draftBaselineUnknown=false;
         }else{
-          applyChecklistSave(nextLocal);lastSavedState=nextBase;
+          applyStatePreservingInputs(nextLocal);lastSavedState=nextBase;
           if(OFFLINE_MODE||(!draftBaselineUnknown&&fingerprint(nextBase)===fingerprint(saved))){publishedRevision=Number(result.revision);publishedUpdatedAt=result.updated_at;pendingRemoteState=null;}
           else pendingRemoteState={row:{...result,content:saved},state:saved};
         }
@@ -1966,7 +1967,7 @@ input:disabled,select:disabled{opacity:.7}
     setEditable(body.classList.contains('editing'));updateContextControls();applyingHistory=false;renderCheckFeedback();
   }
   function fingerprint(state){return JSON.stringify(normalizeState(state||{}));}
-  function isDirty(){return Boolean(lastSavedState&&fingerprint(captureState())!==fingerprint(lastSavedState));}
+  function isDirty(){return Boolean(lastSavedState&&fingerprint(previewReturnState||captureState())!==fingerprint(lastSavedState));}
   function updateDirtyState({preserveDraft=false}={}){const wasDirty=pendingDraft;pendingDraft=isDirty();$('#saveBtn').disabled=!pendingDraft;setStatus(body.classList.contains('editing')?(pendingDraft?'편집 중 · 저장되지 않음':'편집 모드'):(pendingDraft?'저장 대기 중':(OFFLINE_MODE?'오프라인 작업본':'보기 모드')));if(pendingDraft)queueDraftPersistence();else if(wasDirty&&!preserveDraft&&!body.classList.contains('hydrating'))clearCleanDraft();syncChecklistControls();}
   function setEditable(on){$$('main [contenteditable],.checklist label>span:not(.check-actions),.schedule-warning-text,main .day:not(.prepday):not(.moneyday) .day-head p').forEach(el=>el.contentEditable=on?'true':'false');$('#exchangeRate').disabled=true;$$('.check-actions,.time,.time [contenteditable]').forEach(el=>el.contentEditable='false');$$('.prepday [contenteditable]').forEach(el=>el.contentEditable='false');syncChecklistControls();if(!on)closeScheduleTimeDialog();}
   function recordHistory(){if(!body.classList.contains('editing')||applyingHistory)return;const next=captureState();if(historyIndex>=0&&fingerprint(history[historyIndex])===fingerprint(next))return;history=history.slice(0,historyIndex+1);history.push(clone(next));if(history.length>100)history.shift();historyIndex=history.length-1;updateHistoryControls();updateDirtyState();}
@@ -2002,10 +2003,10 @@ input:disabled,select:disabled{opacity:.7}
   async function showInactivityWarning(){let seconds=60;const countdown=$('#sessionCountdown');countdown.textContent=seconds+'초 후 저장하지 않은 변경이 폐기됩니다.';countdownTimer=setInterval(()=>{seconds--;countdown.textContent=Math.max(0,seconds)+'초 후 저장하지 않은 변경이 폐기됩니다.';},1000);const dirty=isDirty();const choice=await showChoice({title:'자동 로그아웃 예정',message:dirty?'1분 안에 선택하지 않으면 초안을 폐기하고 자동 로그아웃합니다.':'1분 안에 선택하지 않으면 자동 로그아웃합니다.',countdown:true,choices:dirty?[{label:'저장 후 로그아웃',value:'save',className:'action-primary'},{label:'계속 사용',value:'continue'},{label:'폐기 후 로그아웃',value:'discard',className:'action-danger'}]:[{label:'계속 사용',value:'continue',className:'action-primary'},{label:'로그아웃',value:'discard',className:'action-danger'}]});clearSessionTimers();if(choice==='save'){if(await saveAndFinish('자동 로그아웃 전 저장')){await signOutEditor();setStatus('변경사항을 저장하고 로그아웃했습니다.');}else resetInactivityTimer();}else if(choice==='continue')resetInactivityTimer();else if(choice==='discard')await discardAndLogout();}
   async function signOutEditor({broadcast=true}={}){if(OFFLINE_MODE)return;clearSessionTimers();signingOut=true;try{localStorage.removeItem(SESSION_ACTIVITY_KEY);}catch(_){}if(broadcast)sessionChannel?.postMessage({type:'signout'});try{if(client)await client.auth.signOut({scope:'local'});}catch(error){console.warn('서버 로그아웃 요청에 실패했지만 이 브라우저 세션은 종료합니다.',error);}finally{setEditorSession(null);signingOut=false;}}
   function closeEditorDialogs(){closeScheduleTimeDialog();['checklistDialog','ledgerSettingsDialog','categoryDialog','expenseDialog','mapDialog','photoEditDialog','importDialog','exportDialog','versionDialog','versionCompareDialog','photoViewer'].forEach(id=>{const dialog=$('#'+id);if(dialog)dialog.hidden=true;});editingCategoryId=null;editingExpenseId=null;activeScheduleRow=null;activePhotoFigure=null;selectedVersion=null;pendingImport=null;}
-  async function handleExternalSignOut(message='편집 세션이 다른 탭에서 종료되었습니다.') {const hadDraft=pendingDraft;if(hadDraft)await flushDraftPersistence();if(lastSavedState)applyState(lastSavedState);initializeHistory();setEditingUI(false,{preserveDraft:true});closeEditorDialogs();closeNotice('signed-out');setEditorSession(null);setStatus(hadDraft?message+' 초안은 이 브라우저에 보관했습니다.':message);}
-  async function requestManualLogout(){if(!editorSession||OFFLINE_MODE)return;if(isDirty()){const choice=await showChoice({title:'로그아웃할까요?',message:'저장하지 않은 변경사항이 있습니다.',choices:[{label:'계속 사용',value:'continue'},{label:'폐기 후 로그아웃',value:'discard',className:'action-danger'},{label:'저장 후 로그아웃',value:'save',className:'action-primary'}]});if(choice!=='save'&&choice!=='discard')return;if(choice==='save'){if(!await saveAndFinish('로그아웃 전 저장'))return;}else{if(lastSavedState)applyState(lastSavedState);await clearDraftRecord();}}setEditingUI(false);closeEditorDialogs();await signOutEditor();setStatus('편집자 로그아웃 완료');}
-  function discardDraft(message='수정 내용을 폐기했습니다.'){if(lastSavedState)applyState(lastSavedState);initializeHistory();setEditingUI(false);closeEditorDialogs();void clearDraftRecord();resetInactivityTimer();setStatus(message);}
-  async function discardAndLogout(message='수정 내용을 폐기하고 로그아웃했습니다.'){if(lastSavedState)applyState(lastSavedState);initializeHistory();setEditingUI(false);closeEditorDialogs();closeNotice('timeout');await clearDraftRecord();await signOutEditor();setStatus(message);}
+  async function handleExternalSignOut(message='편집 세션이 다른 탭에서 종료되었습니다.') {const hadDraft=pendingDraft;if(hadDraft)await flushDraftPersistence();if(previewReturnState)closePreview();if(lastSavedState)applyState(lastSavedState);initializeHistory();setEditingUI(false,{preserveDraft:true});closeEditorDialogs();closeNotice('signed-out');setEditorSession(null);setStatus(hadDraft?message+' 초안은 이 브라우저에 보관했습니다.':message);}
+  async function requestManualLogout(){if(!editorSession||OFFLINE_MODE)return;if(previewReturnState)closePreview();if(isDirty()){const choice=await showChoice({title:'로그아웃할까요?',message:'저장하지 않은 변경사항이 있습니다.',choices:[{label:'계속 사용',value:'continue'},{label:'폐기 후 로그아웃',value:'discard',className:'action-danger'},{label:'저장 후 로그아웃',value:'save',className:'action-primary'}]});if(choice!=='save'&&choice!=='discard')return;if(choice==='save'){if(!await saveAndFinish('로그아웃 전 저장'))return;}else{if(lastSavedState)applyState(lastSavedState);await clearDraftRecord();}}setEditingUI(false);closeEditorDialogs();await signOutEditor();setStatus('편집자 로그아웃 완료');}
+  function discardDraft(message='수정 내용을 폐기했습니다.'){if(previewReturnState)closePreview();if(lastSavedState)applyState(lastSavedState);initializeHistory();setEditingUI(false);closeEditorDialogs();void clearDraftRecord();resetInactivityTimer();setStatus(message);}
+  async function discardAndLogout(message='수정 내용을 폐기하고 로그아웃했습니다.'){if(previewReturnState)closePreview();if(lastSavedState)applyState(lastSavedState);initializeHistory();setEditingUI(false);closeEditorDialogs();closeNotice('timeout');await clearDraftRecord();await signOutEditor();setStatus(message);}
   async function fetchPublishedState(){
     if(OFFLINE_MODE||!client)return null;
     const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);
@@ -2033,6 +2034,8 @@ input:disabled,select:disabled{opacity:.7}
     setStatus('내 초안을 유지했습니다. 저장 전 충돌을 다시 확인합니다.');return false;
   }
   async function persistState(state,{note='수동 저장'}={}){
+    if(body.classList.contains('previewing')){setStatus('미리보기를 닫은 뒤 저장해 주세요.');return false;}
+    if(deferredDraftRecovery){setStatus('보관한 초안을 복구하거나 삭제한 뒤 편집해 주세요.');return false;}
     if(saveInFlight||operationBusy||checklistSaving||pendingChecks.size){setStatus('다른 작업이 끝난 뒤 저장해 주세요.');return false;}
     let normalized=normalizeState(state);
     if(OFFLINE_MODE){
@@ -2068,7 +2071,7 @@ input:disabled,select:disabled{opacity:.7}
       }
       const {data,error}=response;
       if(error)throw error;
-      applyState(normalized);setPublishedBaseline({revision:Number(data?.revision)||publishedRevision+1,updated_at:data?.updated_at||new Date().toISOString()},normalized);pendingDraft=false;await clearDraftRecord();updateDirtyState();return data||{saved:true};
+      applyStatePreservingInputs(normalized);setPublishedBaseline({revision:Number(data?.revision)||publishedRevision+1,updated_at:data?.updated_at||new Date().toISOString()},normalized);pendingDraft=false;await clearDraftRecord();updateDirtyState();return data||{saved:true};
     }catch(error){failure=error;}
     finally{clearTimeout(timeout);saveInFlight=false;setOperationBusy(false);}
     if(isRevisionConflict(failure))return resolveSaveConflict(normalized,note);
@@ -2080,7 +2083,15 @@ input:disabled,select:disabled{opacity:.7}
   async function requestFinishEditing(){clearTimeout(historyTimer);recordHistory();if(!isDirty()){setEditingUI(false);resetInactivityTimer();return;}setEditingUI(false);const choice=await showChoice({title:'편집을 완료할까요?',message:OFFLINE_MODE?'저장하면 수정된 오프라인 작업본을 새 파일로 내려받습니다.':'저장해야 공개 링크에 변경 내용이 반영됩니다.',input:OFFLINE_MODE?null:{label:'버전 메모 (선택)','placeholder':'예: 라스베이거스 일정 확정'},choices:[{label:'저장하고 종료',value:'save',className:'action-primary'},{label:'계속 편집',value:'continue'},{label:'변경사항 폐기',value:'discard',className:'action-danger'}]});if(choice==='save')await saveAndFinish(noticeInputValue||'편집 완료');else if(choice==='continue'){setEditingUI(true);resetInactivityTimer();}else if(choice==='discard')discardDraft();}
   async function beginEditing(){if(!OFFLINE_MODE&&!pendingDraft){try{const published=await fetchPublishedState();if(published?.content?.html){const state=normalizeState(migratePublishedState(published.content));applyState(state);setPublishedBaseline(published,state);}}catch(error){console.warn(error);setStatus('최신 저장본 확인 실패 · 현재 화면에서 편집합니다.');}}setEditingUI(true);initializeHistory();resetInactivityTimer();setStatus(pendingDraft?'편집 중 · 저장되지 않음':'편집 모드');}
   function requestAuthentication(purpose){authPurpose=purpose;$('#authTitle').textContent=purpose==='edit'?'편집자 확인':purpose==='versions'?'버전 관리자 확인':purpose==='import'?'편집본 불러오기 권한 확인':purpose==='ledger-settings'?'가계부 설정 권한 확인':purpose==='checklist'?'체크리스트 편집자 확인':purpose==='ledger'?'가계부 편집자 확인':'저장 권한 확인';$('#authError').textContent='';$('#editorPassword').value='';$('#authDialog').hidden=false;$('#editorPassword').focus();}
-  async function runPurpose(purpose){resetInactivityTimer();if(purpose==='edit')await beginEditing();if(purpose==='versions')await openVersions();if(purpose==='save')await confirmSave();if(purpose==='ledger-settings')openLedgerSettings();if((purpose==='ledger'||purpose==='checklist'||purpose==='import')&&pendingAuthAction){const action=pendingAuthAction;pendingAuthAction=null;pendingAuthCancel=null;await action();}}
+  async function runPurpose(purpose){
+    const cancel=()=>{const action=pendingAuthCancel;pendingAuthAction=null;pendingAuthCancel=null;if(action)action();};
+    if(body.classList.contains('previewing')&&purpose!=='versions'){cancel();setStatus('미리보기를 닫은 뒤 편집해 주세요.');return;}
+    if(deferredDraftRecovery&&['edit','ledger','ledger-settings','import','save'].includes(purpose)){
+      await recoverOnlineDraft();
+      if(deferredDraftRecovery){cancel();return;}
+    }
+    resetInactivityTimer();if(purpose==='edit')await beginEditing();if(purpose==='versions')await openVersions();if(purpose==='save')await confirmSave();if(purpose==='ledger-settings')openLedgerSettings();if((purpose==='ledger'||purpose==='checklist'||purpose==='import')&&pendingAuthAction){const action=pendingAuthAction;pendingAuthAction=null;pendingAuthCancel=null;await action();}
+  }
   async function requireEditor(purpose,action=null,cancelAction=null){if(action)pendingAuthAction=action;if(cancelAction)pendingAuthCancel=cancelAction;if(OFFLINE_MODE){await runPurpose(purpose);return;}if(!client){pendingAuthAction=null;const cancel=pendingAuthCancel;pendingAuthCancel=null;if(cancel)cancel();await showChoice({title:'편집할 수 없습니다.',message:'잠시 후 다시 시도해 주세요.',choices:[{label:'확인',value:'ok',className:'action-primary'}]});return;}if(await getEditorSession()){await runPurpose(purpose);return;}requestAuthentication(purpose);}
 
   function addTimeRow(){const id=$('.day-radio:checked')?.id||'';if(!/^d\d+$/.test(id))return;openScheduleTimeDialog(null,$('.day'+id.slice(1)));}
@@ -2400,9 +2411,30 @@ input:disabled,select:disabled{opacity:.7}
   async function confirmSave(){if(!pendingDraft){setStatus('저장할 변경이 없습니다.');return;}const choice=await showChoice({title:OFFLINE_MODE?'오프라인 작업본 저장':'공유 일정에 저장',message:OFFLINE_MODE?'수정된 내용을 포함한 새 작업본을 내려받습니다.':'저장하면 공개 링크에 변경 내용이 반영됩니다.',input:OFFLINE_MODE?null:{label:'버전 메모 (선택)','placeholder':'예: 항공편 시간 수정'},choices:[{label:'취소',value:'cancel'},{label:'저장',value:'save',className:'action-primary'}]});if(choice==='save')await saveAndFinish(noticeInputValue||'수동 저장');}
   function formatBytes(value){const size=Number(value)||0;if(size<1024)return size+' B';if(size<1024*1024)return (size/1024).toFixed(1)+' KB';return (size/1024/1024).toFixed(1)+' MB';}
   async function loadVersionContent(version){if(versionContentCache.has(version.id))return clone(versionContentCache.get(version.id));setStatus('버전 #'+version.id+' 불러오는 중');const {data,error}=await client.from('trip_document_versions').select('content').eq('trip_id',TRIP_ID).eq('id',version.id).single();if(error||!data?.content)throw error||new Error('버전 본문이 없습니다.');const state=normalizeState(migratePublishedState(data.content));versionContentCache.set(version.id,state);while(versionContentCache.size>5)versionContentCache.delete(versionContentCache.keys().next().value);return clone(state);}
-  async function previewVersion(version){try{const state=await loadVersionContent(version);previewReturnState=captureState();applyState(state);body.classList.add('previewing');$('#previewLabel').textContent='버전 #'+version.id+' · '+new Date(version.created_at).toLocaleString('ko-KR')+' 미리보기';$('#versionDialog').hidden=true;setStatus('과거 저장본 미리보기');}catch(error){console.error(error);setStatus('버전 본문을 불러오지 못했습니다.');}}
+  async function previewVersion(version){
+    if(saveInFlight||operationBusy||checklistSaving||pendingChecks.size)return;
+    try{
+      const state=await loadVersionContent(version);
+      if(saveInFlight||operationBusy||checklistSaving||pendingChecks.size)return;
+      clearTimeout(historyTimer);recordHistory();await flushDraftPersistence();
+      if(saveInFlight||operationBusy||checklistSaving||pendingChecks.size)return;
+      // Keep the original working copy even when switching between previews.
+      if(!previewReturnState)previewReturnState=captureState();
+      body.classList.add('previewing');setEditingUI(false);applyState(state);
+      $('#previewLabel').textContent='버전 #'+version.id+' · '+new Date(version.created_at).toLocaleString('ko-KR')+' 미리보기';
+      $('#versionDialog').hidden=true;setStatus('과거 저장본 미리보기 · 편집하려면 미리보기를 닫아 주세요.');
+    }catch(error){console.error(error);setStatus('버전 본문을 불러오지 못했습니다.');}
+  }
   async function compareVersion(version){try{const state=await loadVersionContent(version),groups=buildDiff(captureState(),state);selectedVersion={...version,state};$('#versionCompareTitle').textContent='버전 #'+version.id+' 차이';renderDiff($('#versionCompareSummary'),$('#versionCompareDiff'),groups,(version.note?version.note+' · ':'')+new Date(version.created_at).toLocaleString('ko-KR')+' 저장본과 현재 화면 비교');$('#versionCompareDialog').hidden=false;}catch(error){console.error(error);setStatus('버전 비교에 실패했습니다.');}}
-  async function restoreSelectedVersion(){if(!selectedVersion)return;const hasDraft=isDirty(),choice=await showChoice({title:'버전 #'+selectedVersion.id+'을 복원할까요?',message:hasDraft?'현재 저장하지 않은 초안은 복원본으로 대체됩니다. 복원본은 새 버전으로 저장되어 공개됩니다.':'복원본은 새 버전으로 저장되어 공개됩니다.',choices:[{label:'취소',value:'cancel'},{label:'복원',value:'restore',className:'action-primary'}]});if(choice!=='restore')return;const restored=clone(selectedVersion.state),id=selectedVersion.id;if(await persistState(restored,{note:'버전 #'+id+' 복원'})){initializeHistory();$('#versionCompareDialog').hidden=true;$('#versionDialog').hidden=true;selectedVersion=null;setStatus('버전 #'+id+'을 새 저장본으로 복원했습니다.');}}
+  async function restoreSelectedVersion(){
+    if(!selectedVersion)return;
+    if(deferredDraftRecovery){if(previewReturnState)closePreview();await recoverOnlineDraft();if(deferredDraftRecovery)return;}
+    const hasDraft=isDirty(),choice=await showChoice({title:'버전 #'+selectedVersion.id+'을 복원할까요?',message:hasDraft?'현재 저장하지 않은 초안은 복원본으로 대체됩니다. 복원본은 새 버전으로 저장되어 공개됩니다.':'복원본은 새 버전으로 저장되어 공개됩니다.',choices:[{label:'취소',value:'cancel'},{label:'복원',value:'restore',className:'action-primary'}]});
+    if(choice!=='restore')return;
+    const restored=clone(selectedVersion.state),id=selectedVersion.id;
+    if(body.classList.contains('previewing'))closePreview();
+    if(await persistState(restored,{note:'버전 #'+id+' 복원'})){initializeHistory();$('#versionCompareDialog').hidden=true;$('#versionDialog').hidden=true;selectedVersion=null;setStatus('버전 #'+id+'을 새 저장본으로 복원했습니다.');}
+  }
   async function openVersions(){if(OFFLINE_MODE)return;const list=$('#versionList');list.innerHTML='<div class="version-empty">저장 목록을 불러오는 중입니다.</div>';$('#versionDialog').hidden=false;const {data,error}=await client.from('trip_document_versions').select('id,note,content_size,created_at').eq('trip_id',TRIP_ID).order('created_at',{ascending:false}).limit(50);if(error){console.error(error);list.innerHTML='<div class="version-empty">목록을 불러오지 못했습니다.</div>';return;}list.innerHTML=data.length?'':'<div class="version-empty">아직 저장된 버전이 없습니다.</div>';data.forEach(version=>{const item=document.createElement('div');item.className='version-item';item.innerHTML='<div><strong>'+escapeHtml(version.note||'버전 #'+version.id)+'</strong><small>#'+version.id+' · '+escapeHtml(new Date(version.created_at).toLocaleString('ko-KR'))+' · '+escapeHtml(formatBytes(version.content_size))+'</small></div><button class="action-muted" type="button">비교</button><button class="action-muted" type="button">미리보기</button><button class="action-primary" type="button">복원</button>';const buttons=item.querySelectorAll('button');buttons[0].onclick=()=>compareVersion(version);buttons[1].onclick=()=>previewVersion(version);buttons[2].onclick=async()=>{await compareVersion(version);};list.appendChild(item);});}
   function closePreview(){if(previewReturnState)applyState(previewReturnState);previewReturnState=null;body.classList.remove('previewing');updateDirtyState();setStatus(pendingDraft?'저장 대기 중':'보기 모드');resetInactivityTimer();}
   function prefersReducedMotion(){return window.matchMedia('(prefers-reduced-motion: reduce)').matches;}
@@ -2427,7 +2459,7 @@ input:disabled,select:disabled{opacity:.7}
 
   async function recoverOnlineDraft() {
     const record=await readDraftRecord();
-    if(!record?.dirty||record.tripId!==TRIP_ID||!record.state?.html)return;
+    if(!record?.dirty||record.tripId!==TRIP_ID||!record.state?.html){deferredDraftRecovery=false;return;}
     const incoming=normalizeState(migratePublishedState(record.state));
     if(lastSavedState&&fingerprint(incoming)===fingerprint(lastSavedState)){pendingDraft=false;await clearDraftRecord();return;}
     const serverChanged=Number(record.baseRevision||0)!==publishedRevision;
@@ -2438,6 +2470,7 @@ input:disabled,select:disabled{opacity:.7}
       if(lastSavedState){applyState(lastSavedState);lastSavedState=clone(normalizeState(captureState()));}
       initializeHistory();
       const cleared=await clearDraftRecord();
+      if(!cleared)deferredDraftRecovery=true;
       updateDirtyState();
       if(cleared)setStatus('브라우저 초안을 삭제했습니다.');
       else await showChoice({title:'초안을 삭제하지 못했습니다.',message:'브라우저 저장소에서 초안을 지우지 못했습니다. 사이트 저장 공간을 확인한 뒤 다시 시도해 주세요.',choices:[{label:'확인',value:'ok',className:'action-primary'}]});
