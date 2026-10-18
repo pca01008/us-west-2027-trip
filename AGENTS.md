@@ -34,3 +34,9 @@
 - Keep one source per topic: `README.md` for overview/navigation, `docs/USER_GUIDE_KO.md` for user behavior, `docs/PROJECT_GUIDE_KO.md` for internals, `docs/OPERATIONS_KO.md` for setup, reuse, testing, deployment, and troubleshooting. Link instead of duplicating details.
 - Check docs when changing UI, save/draft behavior, configuration, schema, permissions, dependencies, tests, or deployment. Preserve dated evidence in `docs/archive/`; never present old results as current verification.
 - When moving or deleting docs, update links, test file paths, and Pages exclusions in `_config.yml`. Run relevant checks and report doc updates, or briefly explain why none were needed.
+
+## Proportional design
+
+- This app is intended for two users. Keep complexity and maintenance effort proportional to their actual needs.
+- Prefer simple solutions using existing patterns and dependencies. Add abstractions, infrastructure, or scalability features only when they solve a concrete current problem.
+- Avoid speculative work for hypothetical future growth. Preserve security, data integrity, and reliability.
