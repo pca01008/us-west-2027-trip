@@ -1848,7 +1848,7 @@ input:disabled,select:disabled{opacity:.7}
         return patchChecklist(state,publishedItems);
       },'준비 목록 편집');
       $('#checklistDialog').hidden=true;checkFeedback.clear();renderCheckFeedback();updateDirtyState();
-      if(!pendingDraft&&!OFFLINE_MODE)await clearDraftRecord();
+      if(!pendingDraft&&!OFFLINE_MODE&&!deferredDraftRecovery)await clearDraftRecord();
       setStatus(OFFLINE_MODE?'목록을 이 브라우저에 저장했습니다.':'목록 저장됨');
     }catch(error){$('#checklistEditorError').textContent=/다른 곳|브라우저/.test(error.message||'')?error.message:'저장 실패 · 다시 시도해 주세요.';}
     finally{checklistEditorSaving=false;$('#checklistSave').textContent='저장';$('#checklistSave').disabled=false;$('#checklistCancel').disabled=false;$('#checklistAdd').disabled=false;renderChecklistEditor();syncChecklistControls();resetInactivityTimer();}

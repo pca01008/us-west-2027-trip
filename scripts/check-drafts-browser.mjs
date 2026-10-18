@@ -105,6 +105,33 @@ try {
   browser = await chromium.launch({ headless: true, ...(process.env.PWA_BROWSER_CHANNEL ? { channel: process.env.PWA_BROWSER_CHANNEL } : {}) });
   for(const mobile of [false,true]) {
     const options=mobile?{viewport:{width:390,height:844},isMobile:true,hasTouch:true}:{};
+    // Saving the PREP list must leave an unapplied, deferred schedule draft intact.
+    {
+      reset();const ctx=await context(options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
+      const sharedTitle=await title(page).textContent();await edit(page,'Deferred schedule before PREP save');
+      const sharedRevision=row.revision;
+      await page.reload();await page.locator('#noticeDialog').waitFor({state:'visible'});await page.keyboard.press('Escape');await ready(page);
+      const originalDraft=await stored(page);
+      assert.ok(originalDraft?.state.html.includes('Deferred schedule before PREP save'));
+      assert.equal(await page.evaluate(()=>window.__draftTest.isDirty()),false,'Deferred draft is not applied to the shared view');
+      await page.locator('.tabs label[for="prep"]').click();await page.locator('#editBtn').click();
+      await page.locator('#checklistDialog').waitFor({state:'visible'});
+      await page.locator('.checklist-text').first().fill('PREP saved while recovery deferred');
+      await page.locator('#checklistSave').click();await page.locator('#checklistDialog').waitFor({state:'hidden'});
+      await page.waitForFunction(()=>document.querySelector('#status').textContent==='목록 저장됨');
+      assert.equal(saveCalls,1);assert.equal(row.revision,sharedRevision+1);
+      assert.ok(row.content.html.includes('PREP saved while recovery deferred'));
+      assert.ok(!row.content.html.includes('Deferred schedule before PREP save'),'PREP save does not publish the schedule draft');
+      assert.equal(await title(page).textContent(),sharedTitle);
+      assert.deepEqual(await stored(page),originalDraft,'PREP list save must not delete or replace the deferred draft');
+      await page.reload();await page.locator('#noticeDialog').waitFor({state:'visible'});
+      assert.match(await page.locator('.prepday .checklist').textContent(),/PREP saved while recovery deferred/);
+      await recover(page);
+      assert.equal(await title(page).textContent(),'Deferred schedule before PREP save');
+      assert.equal(await page.evaluate(()=>window.__draftTest.isDirty()),true);
+      assert.equal(saveCalls,1,'Recovery does not automatically publish the draft');
+      await ctx.close();console.log(`Deferred draft (${mobile?'mobile':'desktop'}): PREP list saves independently; original draft survives and restores after reload.`);
+    }
     // The actual version buttons must preserve a draft through timers, pagehide,
     // nested previews, and reload, while every ordinary save remains blocked.
     {
