@@ -14,7 +14,7 @@ const photoObjects=new Set();
 const reset = () => { versions=[];saveMode='normal';saveCalls=0;readFailures=0;row = { content: {}, revision: 0, updated_at: new Date().toISOString() }; };
 reset();
 const stub = `<script>
-window.__signedIn=true;
+window.__signedIn=!window.__startSignedOut;
 const nativeSetTimeout=window.setTimeout.bind(window);
 window.setTimeout=(callback,delay,...args)=>nativeSetTimeout(callback,window.__shortPhotoTimeout&&[10000,60000].includes(delay)?150:window.__shortSaveTimeout&&delay===12000?80:delay,...args);
 window.supabase={createClient:()=>({
@@ -72,13 +72,13 @@ const server = createServer(async (req, res) => {
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
       .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, stub)
       .replace('data-offline="false"', url.searchParams.has('offline') ? 'data-offline="true"' : 'data-offline="false"')
-      .replace('initializeTimetable();initializeDialogAccessibility();', `window.__draftTest={captureState,normalizeState,buildDiff,isDirty,recordHistory,flushDraftPersistence,queueDraftPersistence,readDraftRecord,writeDraftRecord,clearDraftRecord,moveHistory,discardDraft,discardAndLogout,persistState,saveAndFinish,handleExternalSignOut,closeNotice,
+      .replace('initializeTimetable();initializeDialogAccessibility();', `window.__draftTest={captureState,normalizeState,buildDiff,isDirty,recordHistory,flushDraftPersistence,queueDraftPersistence,readDraftRecord,writeDraftRecord,clearDraftRecord,moveHistory,discardDraft,discardAndLogout,logoutPreservingDraft,scheduleSessionTimers,getEditorSession,persistState,saveAndFinish,handleExternalSignOut,closeNotice,
         refreshPublishedState,exportOfflineHtml,exportStaticHtml,busy:()=>saveInFlight||operationBusy,
         stagePhoto:async()=>{const canvas=document.createElement('canvas');canvas.width=8;canvas.height=8;const full=canvas.toDataURL('image/jpeg'),thumb=canvas.toDataURL('image/webp');let row=$('.day1 .timeline-row');activeScheduleRow=row;const card=row.querySelector('.card');let gallery=card.querySelector('.schedule-photos');if(!gallery){gallery=document.createElement('div');gallery.className='schedule-photos';card.appendChild(gallery);}gallery.appendChild(createPhotoFigure({fullUrl:full,thumbUrl:thumb,staged:true},'Network draft'));recordHistory();await flushDraftPersistence();},
         remotePhotoState:()=>{const state=captureState(),template=document.createElement('template');template.innerHTML=state.html;const img=template.content.querySelector('.schedule-photo img');img.src=location.origin+'/storage/v1/object/public/trip-media/download.jpg';img.dataset.fullUrl=img.src;state.html=template.innerHTML;return state;},
         base:()=>lastSavedState,revision:()=>publishedRevision,pending:()=>pendingChecks.size,
         legacyDraft:async()=>{const record=await readDraftRecord();delete record.baseState;await writeDraftRecord(record);pendingDraft=false;clearTimeout(draftWriteTimer);},
-        key:DRAFT_RECORD_KEY,legacyKey:LEGACY_DRAFT_RECORD_KEY,db:DRAFT_DB_NAME,sessionKey:DRAFT_SESSION_KEY};initializeTimetable();initializeDialogAccessibility();`);
+        activityKey:SESSION_ACTIVITY_KEY,key:DRAFT_RECORD_KEY,legacyKey:LEGACY_DRAFT_RECORD_KEY,db:DRAFT_DB_NAME,sessionKey:DRAFT_SESSION_KEY};initializeTimetable();initializeDialogAccessibility();`);
     if(file==='trip-config.js')body=body+`\nwindow.TRIP_CONFIG.supabase={url:'http://127.0.0.1:${server.address().port}',publishableKey:'fixture-key'};`;
     res.setHeader('Content-Type', file.endsWith('.html') ? 'text/html; charset=utf-8' : file.endsWith('.js') ? 'text/javascript; charset=utf-8' : 'image/webp');
     res.end(body);
@@ -270,7 +270,7 @@ try {
       reset();const ctx=await context(options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
       await enterExpense(page,'Original before preview exit');await preview(page);
       if(exit==='external')await page.evaluate(()=>window.__draftTest.handleExternalSignOut());
-      else if(exit==='timeout')await page.evaluate(()=>window.__draftTest.discardAndLogout());
+      else if(exit==='timeout')await page.evaluate(()=>window.__draftTest.logoutPreservingDraft('자동 로그아웃되었습니다.'));
       else if(exit==='reset')await page.evaluate(()=>window.__draftTest.discardDraft());
       else{
         await page.locator('#logoutBtn').click();
@@ -281,18 +281,19 @@ try {
       assert.equal(await page.evaluate(()=>window.__draftTest.isDirty()),false);
       assert.equal(row.content.budgetKrw,987654);
       assert.equal(row.content.expenses.length,exit==='save'?1:0);
-      if(exit==='external')assert.equal((await stored(page)).state.expenses[0].name,'Original before preview exit');
+      if(exit==='external'||exit==='timeout')assert.equal((await stored(page)).state.expenses[0].name,'Original before preview exit');
       else await page.waitForFunction(async()=>await window.__draftTest.readDraftRecord()===null);
       await ctx.close();
     }
     console.log(`Preview (${mobile?'mobile':'desktop'}): logout save/discard, external sign-out, timeout and reset all leave preview safely.`);
-    for(const source of ['reload','external']) for(const choice of ['초안 복구','초안 삭제']) {
+    for(const source of ['reload','external','timeout']) for(const choice of ['초안 복구','초안 삭제']) {
       reset();const ctx=await context(options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
       const sharedTitle=await title(page).textContent();await edit(page,'Original unrecovered title');
       if(source==='reload'){
         await page.reload();await page.locator('#noticeDialog').waitFor({state:'visible'});await page.keyboard.press('Escape');await ready(page);
       }else{
-        await page.evaluate(async()=>{window.__signedIn=false;await window.__draftTest.handleExternalSignOut();});
+        if(source==='timeout')await page.evaluate(()=>window.__draftTest.logoutPreservingDraft('자동 로그아웃되었습니다.'));
+        else await page.evaluate(async()=>{window.__signedIn=false;await window.__draftTest.handleExternalSignOut();});
         assert.equal(await title(page).textContent(),sharedTitle);
         assert.equal(await page.evaluate(()=>window.__draftTest.isDirty()),false);
         // Duplicate external notifications must not release the recovery guard.
@@ -304,7 +305,7 @@ try {
       for(const panel of ['d1','money','import']){
         if(panel!=='import')await page.locator('.tabs label[for="'+panel+'"]').click();
         await page.locator(panel==='import'?'#importBtn':'#editBtn').click();
-        if(source==='external'&&panel==='d1'){
+        if(source!=='reload'&&panel==='d1'){
           await page.locator('#authDialog').waitFor({state:'visible'});
           await page.locator('#editorPassword').fill('local-test-password');await page.locator('#authSubmit').click();
         }
@@ -387,6 +388,65 @@ try {
       assert.equal(row.content.expenses.length,1);
       await ctx.close();console.log(`Save inputs (${mobile?'mobile':'desktop'}): all next-entry fields and focus survive delayed save, then submit normally.`);
     }
+  }
+  // Exercise the actual inactivity timers and warning actions with a virtual clock.
+  for(const choice of ['timeout','continue','save','discard','clean','deferred']) {
+    reset();const ctx=await context(),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
+    const sharedTitle=await title(page).textContent();
+    if(choice!=='clean')await edit(page,'Inactivity draft');
+    if(choice==='deferred'){
+      await page.reload();await page.locator('#noticeDialog').waitFor({state:'visible'});await page.keyboard.press('Escape');await ready(page);
+    }
+    await page.clock.install();
+    await page.evaluate(()=>window.__draftTest.scheduleSessionTimers(Date.now()));
+    await page.clock.fastForward(29*60*1000);
+    await page.locator('#noticeDialog').waitFor({state:'visible'});
+    assert.equal(await page.locator('#noticeTitle').textContent(),'자동 로그아웃 예정');
+    assert.match(await page.locator('#sessionCountdown').textContent(),/자동 로그아웃/);
+    assert.equal(await page.evaluate(()=>window.__signedIn),true);
+    if(['timeout','clean','deferred'].includes(choice))await page.clock.fastForward(60*1000);
+    else await page.getByRole('button',{name:{continue:'계속 사용',save:'저장 후 로그아웃',discard:'폐기 후 로그아웃'}[choice],exact:true}).click();
+    if(choice==='continue'){
+      await page.clock.fastForward(60*1000);
+      assert.equal(await page.evaluate(()=>window.__signedIn),true);
+      assert.equal(await title(page).textContent(),'Inactivity draft');
+      assert.ok((await stored(page)).state.html.includes('Inactivity draft'));
+    }else{
+      await page.waitForFunction(()=>!window.__signedIn);
+      assert.deepEqual(await page.evaluate(()=>window.__signOutOptions),{scope:'local'});
+      assert.equal(await page.locator('#noticeDialog').isVisible(),false);
+      assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('editing')||el.classList.contains('authenticated')),false);
+      if(choice==='timeout'||choice==='deferred'){
+        assert.equal(await title(page).textContent(),sharedTitle);
+        const draft=await stored(page);assert.ok(draft.state.html.includes('Inactivity draft'));
+        await page.clock.resume();
+        // Reload while signed out cannot apply or delete the retained draft.
+        await page.addInitScript(()=>window.__startSignedOut=true);
+        await page.reload();await ready(page);
+        assert.equal(await page.locator('#noticeDialog').isVisible(),false);
+        assert.equal(await title(page).textContent(),sharedTitle);assert.deepEqual(await stored(page),draft);
+        await page.locator('.tabs label[for="d1"]').click();await page.locator('#editBtn').click();
+        await page.locator('#authDialog').waitFor({state:'visible'});
+        assert.equal(await page.locator('#noticeDialog').isVisible(),false);
+        await page.locator('#editorPassword').fill('local-test-password');await page.locator('#authSubmit').click();
+        await recover(page);assert.equal(await title(page).textContent(),'Inactivity draft');
+      }else assert.equal(await stored(page),null);
+    }
+    assert.equal(saveCalls,choice==='save'?1:0);
+    await ctx.close();console.log('Inactivity '+choice+': warning, session and draft policy passed.');
+  }
+  // Expiry discovered by an auth check and during startup must also retain drafts.
+  for(const reload of [false,true]){
+    reset();const ctx=await context(),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
+    const sharedTitle=await title(page).textContent();await edit(page,'Expired session draft');const draft=await stored(page);
+    await page.evaluate(()=>localStorage.setItem(window.__draftTest.activityKey,String(Date.now()-31*60*1000)));
+    if(reload){await page.reload();await ready(page);}
+    else assert.equal(await page.evaluate(()=>window.__draftTest.getEditorSession()),null);
+    await page.waitForFunction(()=>!window.__signedIn);
+    const retained=await stored(page);assert.ok(retained.savedAt>=draft.savedAt);
+    assert.deepEqual({...retained,savedAt:draft.savedAt},draft);assert.equal(await title(page).textContent(),sharedTitle);
+    assert.equal(await page.locator('#noticeDialog').isVisible(),false);
+    assert.equal(saveCalls,0);await ctx.close();console.log('Expired session '+(reload?'startup':'auth check')+': retained draft and signed out.');
   }
   // Escape, replacement by another dialog, and explicit discard are distinct.
   {
