@@ -4,6 +4,7 @@ node_modules/
 Thumbs.db
 
 # Local design references and raw source assets (not deployed)
+/.codex-remote-attachments/
 /.agents/
 /reference.html
 /airbnb.png
