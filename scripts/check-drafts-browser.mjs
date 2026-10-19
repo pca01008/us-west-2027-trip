@@ -198,24 +198,37 @@ try {
       await ctx.close();
     }
     console.log(`Preview (${mobile?'mobile':'desktop'}): logout save/discard, external sign-out, timeout and reset all leave preview safely.`);
-    for(const choice of ['초안 복구','초안 삭제']) {
+    for(const source of ['reload','external']) for(const choice of ['초안 복구','초안 삭제']) {
       reset();const ctx=await context(options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
       const sharedTitle=await title(page).textContent();await edit(page,'Original unrecovered title');
-      await page.reload();await page.locator('#noticeDialog').waitFor({state:'visible'});await page.keyboard.press('Escape');await ready(page);
+      if(source==='reload'){
+        await page.reload();await page.locator('#noticeDialog').waitFor({state:'visible'});await page.keyboard.press('Escape');await ready(page);
+      }else{
+        await page.evaluate(async()=>{window.__signedIn=false;await window.__draftTest.handleExternalSignOut();});
+        assert.equal(await title(page).textContent(),sharedTitle);
+        assert.equal(await page.evaluate(()=>window.__draftTest.isDirty()),false);
+        // Duplicate external notifications must not release the recovery guard.
+        await page.evaluate(()=>window.__draftTest.handleExternalSignOut());
+      }
+      const originalDraft=await stored(page);
       // Schedule editing, ledger settings, and import must resolve the same
       // deferred draft before opening an editor or the system file picker.
       for(const panel of ['d1','money','import']){
         if(panel!=='import')await page.locator('.tabs label[for="'+panel+'"]').click();
         await page.locator(panel==='import'?'#importBtn':'#editBtn').click();
+        if(source==='external'&&panel==='d1'){
+          await page.locator('#authDialog').waitFor({state:'visible'});
+          await page.locator('#editorPassword').fill('local-test-password');await page.locator('#authSubmit').click();
+        }
         await page.locator('#noticeDialog').waitFor({state:'visible'});await page.keyboard.press('Escape');
         assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('editing')),false);
         assert.equal(await page.locator('#ledgerSettingsDialog').isVisible(),false);
-        assert.ok((await stored(page)).state.html.includes('Original unrecovered title'));
+        assert.deepEqual(await stored(page),originalDraft);
       }
       await enterExpense(page,'After deferred recovery');
       await page.locator('#noticeDialog').waitFor({state:'visible'});await page.keyboard.press('Escape');
       await page.waitForTimeout(850);
-      assert.ok((await stored(page)).state.html.includes('Original unrecovered title'));
+      assert.deepEqual(await stored(page),originalDraft);
       assert.equal(await page.evaluate(()=>window.__draftTest.captureState().expenses.length),0);
       // A background writer must also refuse to replace the deferred record.
       assert.equal(await page.evaluate(()=>window.__draftTest.writeDraftRecord({state:window.__draftTest.captureState(),dirty:true})),false);
@@ -228,7 +241,7 @@ try {
       assert.equal(await title(page).textContent(),choice==='초안 복구'?'Original unrecovered title':sharedTitle);
       assert.equal(await page.evaluate(()=>window.__draftTest.captureState().expenses[0].name),'After deferred recovery');
       assert.equal(saveCalls,0);
-      await ctx.close();console.log(`Deferred draft (${mobile?'mobile':'desktop'}, ${choice}): cancel preserves original; explicit choice protects new work across reload.`);
+      await ctx.close();console.log(`Deferred draft (${mobile?'mobile':'desktop'}, ${source}, ${choice}): cancel preserves original; explicit choice protects new work across reload.`);
     }
     // Hold the real save response while typing the next entry. Verify every
     // field, focus/caret and that the entry is not silently submitted.
