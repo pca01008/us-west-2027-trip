@@ -1624,7 +1624,9 @@ input:disabled,select:disabled{opacity:.7}
     });
     template.content.querySelectorAll('a[href]').forEach(a => { if (!/^https:\/\//i.test(a.getAttribute('href')||'')) a.removeAttribute('href'); });
     template.content.querySelectorAll('a[href]').forEach(a=>{a.target='_blank';a.rel='noopener noreferrer';});
-    template.content.querySelectorAll('img[src]').forEach(img => {
+    template.content.querySelectorAll('img').forEach(img => {
+      // Only the validated src may choose an image resource.
+      img.removeAttribute('srcset');
       const src=img.getAttribute('src')||'';
       if (!/^data:image\/(webp|jpeg|png);base64,/i.test(src) && !src.startsWith(SUPABASE_URL+'/storage/') && !/^assets\/[a-zA-Z0-9._/-]+$/.test(src)) img.removeAttribute('src');
       const full=img.getAttribute('data-full-url')||'';
@@ -1638,6 +1640,19 @@ input:disabled,select:disabled{opacity:.7}
     const savedMoney=template.content.querySelector('.moneyday');
     if (savedMoney && moneyTemplateHtml) { const replacement=document.createElement('template'); replacement.innerHTML=moneyTemplateHtml; savedMoney.replaceWith(replacement.content.firstElementChild); }
     if(imported){
+      // Repair IDs before comparison, so duplicate entries cannot hide changes.
+      for(const [selector,attribute,prefix] of [['.timeline-row','data-row-id','row'],['.checklist label','data-check-id','check'],['.schedule-photo','data-photo-id','photo']]){
+        const elements=Array.from(template.content.querySelectorAll(selector)),reserved=new Set(elements.map(el=>el.getAttribute(attribute)).filter(Boolean)),seen=new Set();
+        elements.forEach((el,index)=>{
+          let id=el.getAttribute(attribute);
+          if(!id||seen.has(id)){
+            const base='import-'+prefix+'-'+index+'-'+hashText(el.textContent||'');let suffix=0;id=base;
+            while(reserved.has(id)||seen.has(id))id=base+'-'+(++suffix);
+            el.setAttribute(attribute,id);
+          }
+          seen.add(id);
+        });
+      }
       Array.from(template.content.querySelectorAll('.moneyday')).slice(1).forEach(panel=>panel.remove());
       const seenIds=new Set();
       template.content.querySelectorAll('[id]').forEach(element=>{
@@ -2468,7 +2483,22 @@ input:disabled,select:disabled{opacity:.7}
   function renderDiff(summary,list,groups,message=''){const count=groups.reduce((sum,group)=>sum+group.items.length,0);summary.textContent=message||(count?count+'개 변경 사항이 있습니다.':'변경 사항이 없습니다.');list.innerHTML=groups.length?groups.map(group=>'<div class="diff-group"><strong>'+escapeHtml(group.title)+'</strong><ul>'+group.items.slice(0,80).map(item=>'<li>'+escapeHtml(item)+'</li>').join('')+'</ul></div>').join(''):'<div class="diff-empty">변경 사항이 없습니다.</div>';return count;}
   function renderImportDiff(groups,message=''){const count=renderDiff($('#importSummary'),$('#importDiff'),groups,message||(groups.length?'불러오면 현재 화면의 초안으로 적용됩니다.':'최신 저장본과 동일합니다.'));$('#importApply').disabled=!count;}
   async function chooseImportFile(){await requireEditor('import',()=>$('#importFileInput').click());}
-  async function readImportFile(file){try{const source=await file.text(),doc=new DOMParser().parseFromString(source,'text/html');if(doc.documentElement.dataset.tripId!==TRIP_ID||doc.documentElement.dataset.offline!=='true')throw new Error('이 여행에서 만든 오프라인 작업본이 아닙니다.');const fileVersion=Number(doc.documentElement.dataset.schemaVersion||0);if(!fileVersion)throw new Error('파일 버전을 확인할 수 없습니다.');if(fileVersion>SCHEMA_VERSION)throw new Error('더 새로운 버전에서 만든 파일입니다. 온라인 페이지를 먼저 업데이트해 주세요.');const embedded=doc.querySelector('#offlineEmbeddedState');if(!embedded)throw new Error('편집 데이터가 없습니다.');const incoming=normalizeState(JSON.parse(embedded.textContent),true),published=await fetchPublishedState();const current=normalizeState(published?.content?.html?migratePublishedState(published.content):lastSavedState),groups=buildDiff(current,incoming);pendingImport={state:incoming,baselineRevision:Math.max(0,Number(published?.revision)||0),baselineUpdatedAt:published?.updated_at||'',current};renderImportDiff(groups);$('#importDialog').hidden=false;}catch(error){console.error(error);await showChoice({title:'작업본을 불러올 수 없습니다.',message:error.message,choices:[{label:'확인',value:'ok',className:'action-primary'}]});}finally{$('#importFileInput').value='';}}
+  async function readImportFile(file){
+    try{
+      const source=await file.text(),doc=new DOMParser().parseFromString(source,'text/html');
+      if(doc.documentElement.dataset.tripId!==TRIP_ID||doc.documentElement.dataset.offline!=='true')throw new Error('이 여행에서 만든 오프라인 작업본이 아닙니다.');
+      const validateVersion=value=>{const version=Number(value);if(!Number.isInteger(version)||version<1)throw new Error('파일 버전을 확인할 수 없습니다.');if(version>SCHEMA_VERSION)throw new Error('더 새로운 버전에서 만든 파일입니다. 온라인 페이지를 먼저 업데이트해 주세요.');return version;};
+      const fileVersion=validateVersion(doc.documentElement.dataset.schemaVersion);
+      const embedded=doc.querySelector('#offlineEmbeddedState');if(!embedded)throw new Error('편집 데이터가 없습니다.');
+      const raw=JSON.parse(embedded.textContent);
+      if(!raw||typeof raw!=='object'||Array.isArray(raw)||typeof raw.html!=='string'||!raw.html.trim())throw new Error('편집 데이터가 없습니다.');
+      const schemaVersion=raw.schemaVersion===undefined?fileVersion:validateVersion(raw.schemaVersion);
+      const incoming=normalizeState(migratePublishedState({...raw,schemaVersion}),true),published=await fetchPublishedState();
+      const current=normalizeState(published?.content?.html?migratePublishedState(published.content):lastSavedState),groups=buildDiff(current,incoming);
+      pendingImport={state:incoming,baselineRevision:Math.max(0,Number(published?.revision)||0),baselineUpdatedAt:published?.updated_at||'',current};renderImportDiff(groups);$('#importDialog').hidden=false;
+    }catch(error){console.error(error);await showChoice({title:'작업본을 불러올 수 없습니다.',message:error.message,choices:[{label:'확인',value:'ok',className:'action-primary'}]});}
+    finally{$('#importFileInput').value='';}
+  }
   async function materializeImportedPhotos(state){const normalized=normalizeState(state,true),template=document.createElement('template');template.innerHTML=normalized.html;for(const figure of template.content.querySelectorAll('.schedule-photo')){const img=figure.querySelector('img'),fullPath=figure.dataset.fullPath,thumbPath=figure.dataset.thumbPath;if(fullPath&&thumbPath){img.src=publicMediaUrl(thumbPath);img.dataset.fullUrl=publicMediaUrl(fullPath);continue;}if(!img.src.startsWith('data:image/'))continue;img.dataset.fullUrl=img.dataset.fullUrl||img.src;figure.dataset.staged='true';delete figure.dataset.fullPath;delete figure.dataset.thumbPath;}normalized.html=template.innerHTML;return normalized;}
   async function applyImportedDraft(){if(!pendingImport)return;try{const published=await fetchPublishedState(),remoteRevision=Math.max(0,Number(published?.revision)||0);if(remoteRevision!==pendingImport.baselineRevision){if(!published?.content?.html)throw new Error('최신 저장본을 다시 확인하지 못했습니다.');const current=normalizeState(migratePublishedState(published.content)),groups=buildDiff(current,pendingImport.state);pendingImport.current=current;pendingImport.baselineRevision=remoteRevision;pendingImport.baselineUpdatedAt=published.updated_at||'';renderImportDiff(groups,'비교 중 최신 저장본이 변경되어 차이를 다시 계산했습니다. 내용을 확인하고 한 번 더 불러오세요.');return;}setStatus('편집본 사진을 준비 중입니다.');const incoming=await materializeImportedPhotos(pendingImport.state);lastSavedState=clone(pendingImport.current);draftBaselineUnknown=false;publishedRevision=pendingImport.baselineRevision;publishedUpdatedAt=pendingImport.baselineUpdatedAt;applyState(incoming);initializeHistory();updateDirtyState();$('#importDialog').hidden=true;pendingImport=null;setStatus('편집본 불러옴 · 저장되지 않음');}catch(error){console.error(error);setStatus('편집본 적용 실패');await showChoice({title:'편집본 적용 실패',message:error.message,choices:[{label:'확인',value:'ok',className:'action-primary'}]});}}
 

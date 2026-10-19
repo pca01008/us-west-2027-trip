@@ -2,7 +2,7 @@
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const suites = ['drafts', 'inputs', 'prep', 'photos', 'theme', 'pwa'];
+const suites = ['drafts', 'inputs', 'imports', 'prep', 'photos', 'theme', 'pwa'];
 const failed = [];
 for (const suite of suites) {
   console.log(`\nBrowser suite: ${suite}`);
@@ -17,4 +17,4 @@ for (const suite of suites) {
 if (failed.length) {
   console.error(`Browser suites failed: ${failed.join(', ')}`);
   process.exitCode = 1;
-} else console.log('\nAll 6 browser suites passed.');
+} else console.log(`\nAll ${suites.length} browser suites passed.`);

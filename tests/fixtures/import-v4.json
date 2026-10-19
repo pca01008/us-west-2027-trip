@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 4,
+  "html": "<section class=\"panel day prepday\"><div class=\"checklist\"><label data-check-id=\"kept-check\"><input type=\"checkbox\"><span>여권 확인</span></label><label><input type=\"checkbox\"><span>충전기 챙기기</span></label></div></section><section class=\"panel day moneyday\"></section><section class=\"panel day day1\"><div class=\"day-head\"><h2>예전 날짜</h2><p>직접 수정한 여행 설명</p></div><div class=\"timeline-row\" data-row-id=\"kept-row\"><div class=\"time\">09:30</div><article class=\"card\"><h3>직접 추가한 아침 일정</h3><div class=\"remark\">구버전 메모 보존</div><div class=\"schedule-photos\"><figure class=\"schedule-photo\" data-photo-id=\"kept-photo\"><img src=\"assets/airbnb.webp\" alt=\"기존 사진\"><figcaption>사진 설명 보존</figcaption></figure></div></article></div><div class=\"timeline-row\"><div class=\"time\">12:00</div><article class=\"card\"><h3>식당 예약</h3><div class=\"remark\">창가 자리</div></article></div></section>",
+  "checks": [true, false],
+  "categories": [{"id":"food","name":"식비","icon":"🍽️"}],
+  "expenses": [{"id":"kept-expense","name":"예약금","amount":25.5,"currency":"USD","date":"2027-01-21","category":"식비"}],
+  "exchangeRate": 1400,
+  "budgetKrw": 1000000
+}

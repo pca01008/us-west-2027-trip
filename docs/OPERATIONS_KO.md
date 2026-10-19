@@ -182,9 +182,10 @@ docker stop trip-sql-test
 
 | 검사 | 명령·범위 |
 |---|---|
-| 전체 브라우저 | `node scripts/check-browsers.mjs`: 아래 6개, 하나라도 실패하면 실패 코드 |
+| 전체 브라우저 | `node scripts/check-browsers.mjs`: 아래 7개, 하나라도 실패하면 실패 코드 |
 | 초안 | `node scripts/check-drafts-browser.mjs`: 탭·복제 탭·복구·보류·충돌·미리보기·로그아웃·저장 제한·가계부 입력 보존, PC·모바일에서 PREP 목록 저장 후 보류 초안 유지·새로고침 복구, 외부 로그아웃·중복 알림 후 재인증과 새 편집 진입 시 복구·삭제·보류, 앱 복귀·재연결 재조회와 Realtime 갱신 시 미추가 입력·초점·선택 범위 보존 및 삭제된 카테고리 대체·후속 추가 |
 | 입력 | `node scripts/check-inputs-browser.mjs`: PC·모바일, 한글 조합·취소 불가능 입력·실행 취소·불러오기·내보내기 |
+| 가져오기 | `node scripts/check-imports-browser.mjs`: PC·모바일 실제 파일 입력으로 잘못된 파일 거부·기존 초안 보존, 위험 HTML·주소·중복 ID·비정상 숫자 정제, 구버전 내용·체크·ID 보존, 비교 중 revision 변경 시 재확인·취소·명시적 저장 |
 | PREP | `node scripts/check-prep-browser.mjs`: 즉시 저장, 인증 취소·실패·재시도, 목록 편집과 다른 초안 보호 |
 | 사진 | `node scripts/check-photos-browser.mjs`: 실제 변환·PNG 반환 대체·초안 저장 |
 | 테마 | `node scripts/check-theme-browser.mjs`: 테마 선택·저장·내보내기 |
@@ -193,6 +194,8 @@ docker stop trip-sql-test
 개별 브라우저 스크립트는 첫 인자로 Playwright 모듈의 절대 경로를 받을 수 있다. 설치된 Chrome을 사용하려면 PowerShell에서 `$env:PWA_BROWSER_CHANNEL='chrome'`을 설정한다. PWA 검사는 앱과 같은 npm SDK를 로컬 파일로 제공하고 테스트 페이지의 URL·SRI만 대체하므로 CDN 연결 없이 실행된다.
 
 자동 로그아웃 회귀 검사는 `scripts/check-drafts-browser.mjs`에서 가상 시계로 29분 경고·30분 만료, 계속 사용·저장·명시적 폐기, 변경 없는 화면·보류 초안, 인증 확인·재접속 시 만료 처리를 확인한다. 로그아웃 상태의 새로고침에서 초안을 적용하지 않고 보관하며 재인증 후 복구하는지, PC·모바일에서 후속 편집의 복구·삭제·보류와 버전 미리보기 종료도 검사한다.
+
+가져오기 검사는 [스키마 4 fixture](../tests/fixtures/import-v4.json)와 생성한 HTML 파일을 실제 `input[type=file]`에 넣는다. 다른 여행·온라인 파일·미지원/잘못된 버전·편집 데이터 누락·깨진 JSON 14종의 거부 시 화면, IndexedDB 초안, 서버 문서가 유지되는지 확인한다. 정제 검사는 스크립트·이벤트·위험 링크·이미지 `srcset` 요청 차단과 정상 링크·사진·일정 보존을 함께 검사한다. revision 검증에는 로컬 모의 API를 사용하며 실제 DB 동시성 검증을 대신하지 않는다.
 
 사진 통신 회귀 검사는 `tests/photos.test.mjs`와 `scripts/check-drafts-browser.mjs`에 있다. 단위 검사는 인증 지연·본문 지연·중복 객체 응답을 확인한다. 브라우저 검사는 PC·모바일 화면의 로컬 모의 서버에서 HEAD·업로드·다운로드와 응답 본문을 멈추고, 제한 시간·취소 시 실제 연결 중단, 공유 저장 방지, 초안 보존, 작업 상태 해제와 재시도를 확인한다. 인쇄·공유용 사본의 시간 초과 시 온라인 주소 유지와 취소 시 다운로드 방지도 검사한다. 테스트에서만 제한 시간을 단축하며 운영 서버에는 요청하지 않는다.
 
