@@ -6,13 +6,15 @@
     "check": "node scripts/check-project.mjs",
     "styles:consolidate": "node scripts/consolidate-styles.mjs",
     "test": "node --test tests/*.test.mjs && node scripts/check-project.mjs",
-    "test:browser": "node scripts/check-browsers.mjs"
+    "test:browser": "node scripts/check-browsers.mjs",
+    "test:sql": "node --test scripts/check-trip-sql.mjs"
   },
   "engines": {
     "node": ">=22"
   },
   "devDependencies": {
     "@supabase/supabase-js": "2.112.4",
+    "pg": "8.16.3",
     "playwright": "1.62.1"
   }
 }

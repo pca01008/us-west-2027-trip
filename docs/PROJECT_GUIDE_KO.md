@@ -68,6 +68,7 @@ GitHub Pages는 정적 파일을 전달하고 브라우저의 JavaScript가 화�
 - `test.html`, `test2.html`: `index.html?previewDate=...`를 iframe으로 열어 진행 중·종료 후 상태를 확인합니다. 일반 주소는 실제 현재 시간을 사용합니다.
 - `manifest.webmanifest`, `pwa.js`, `sw.js`, `icons/`: 설치 정보·서비스 워커·정적 캐시.
 - `supabase/functions/trip-db-health/`: 별도 배포하는 점검 함수. [운영 설명](OPERATIONS_KO.md#db-health)을 참고합니다.
+- `scripts/check-trip-sql.mjs`, `tests/fixtures/trip-sql-*.sql`: 격리 PostgreSQL에서 저장 함수·권한·동시성·업그레이드를 실행 검증합니다. 실행 방법과 서비스 검증 범위는 [운영 안내서](OPERATIONS_KO.md#validation)에 있습니다.
 - `.gitattributes`: LF 줄바꿈 통일. `.git/`은 직접 수정하지 않는 버전 관리 메타데이터입니다.
 - 로컬 `reference.html`·`.agents/skills/`는 디자인 참고 자료이며 배포 필수 파일이 아닙니다.
 

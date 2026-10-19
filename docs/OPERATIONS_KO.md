@@ -147,6 +147,37 @@ npm run test:browser
 
 `npm test`는 단위 회귀와 `scripts/check-project.mjs`의 설정·이미지 경로·HTML·SQL 구조 검사를 수행한다. npm이 PATH에 없으면 설치된 Node로 `node --test tests/*.test.mjs`와 `node scripts/check-project.mjs`를 실행할 수 있다.
 
+### 저장·권한 SQL 실행 검사
+
+`npm run test:sql`은 [SQL 실행 검사](../scripts/check-trip-sql.mjs)에서 실제 `supabase_setup.sql`과 `register_trip.sql`을 PostgreSQL에 적용한다. Node.js 24, `npm ci`, 별도로 실행한 로컬 테스트용 PostgreSQL 17이 필요하다. 예를 들어 Docker가 설치되어 있으면 다음처럼 일회용 서버를 실행한다.
+
+```sh
+docker run --rm --name trip-sql-test -e POSTGRES_PASSWORD=trip-sql-local-only -p 127.0.0.1:55439:5432 -d postgres:17
+```
+
+서버가 준비된 뒤 PowerShell에서 실행한다.
+
+```powershell
+$env:TRIP_SQL_TEST_URL='postgresql://postgres:trip-sql-local-only@127.0.0.1:55439/postgres'
+npm run test:sql
+# npm이 PATH에 없는 경우: node --test scripts/check-trip-sql.mjs
+docker stop trip-sql-test
+```
+
+연결 계정은 DB·역할·publication을 만들 수 있는 테스트 서버의 관리자여야 한다. 스크립트는 loopback 주소만 허용하고 앱 설정이나 `DATABASE_URL`은 읽지 않는다. 신규 설치와 구버전 업그레이드에 각각 무작위 이름의 DB를 생성하고 종료 시 삭제한다. `anon`·`authenticated` 역할이 없으면 임시로 만들었다가 제거하며 기존 역할은 수정하지 않는다. 강제 종료로 정리가 중단되면 일회용 서버를 폐기한다. 운영 DB를 연결하거나 운영 서버를 로컬 포트로 전달해 실행하지 않는다.
+
+검사 범위는 다음과 같다.
+
+- 익명·비편집자·다른 여행 편집자의 저장 및 비공개 버전 접근 차단, 직접 문서·버전·편집자 변경 차단.
+- 정상 저장의 revision·내용·메타데이터, 충돌·잘못된 문서·용량 초과 시 문서와 이력 보존, UTF-8 직렬화 기준 4 MiB 경계.
+- 별도 연결 두 개에서 실제 잠금 대기를 확인한 뒤 한 저장만 성공하고 다른 저장은 충돌하는지 검증.
+- 여행별 최신 50개 버전 유지와 동일 시각의 정렬, 다른 여행 보존, 신규 등록·구버전 업그레이드·SQL 재실행 시 일정·버전·편집자 연결 보존.
+- 사진 경로·여행별 INSERT 권한, 중복·덮어쓰기·삭제 제한, 버킷의 공개·용량·MIME 설정.
+
+`auth.users`, `auth.uid()`와 Storage 테이블은 최소한의 [격리 fixture](../tests/fixtures/trip-sql-bootstrap.sql)다. 실제 JWT 검증, Storage HTTP 업로드·공개 다운로드·파일 크기 및 MIME 강제, Realtime 전달까지 검증하지는 않는다. 사진 덮어쓰기·삭제 검사는 테스트 DB에만 임시 조회 정책을 더해, 조회 불가 때문에 변경 차단이 통과하는 경우도 배제한다. 이 검사는 브라우저 모의 API 검사 및 [DB 상태 점검 SQL 검사](#db-health)와 별도로 실행한다.
+
+### 브라우저와 CI 검사
+
 브라우저 검사는 로컬 가상 API와 격리된 브라우저를 사용하며 외부 운영 요청을 차단한다. 실제 휴대폰 키보드·iPhone 사진 업로드·삼성 인터넷 강제 다크모드는 별도 실기기 검증 대상이다.
 
 | 검사 | 명령·범위 |
@@ -165,7 +196,7 @@ npm run test:browser
 
 사진 통신 회귀 검사는 `tests/photos.test.mjs`와 `scripts/check-drafts-browser.mjs`에 있다. 단위 검사는 인증 지연·본문 지연·중복 객체 응답을 확인한다. 브라우저 검사는 PC·모바일 화면의 로컬 모의 서버에서 HEAD·업로드·다운로드와 응답 본문을 멈추고, 제한 시간·취소 시 실제 연결 중단, 공유 저장 방지, 초안 보존, 작업 상태 해제와 재시도를 확인한다. 인쇄·공유용 사본의 시간 초과 시 온라인 주소 유지와 취소 시 다운로드 방지도 검사한다. 테스트에서만 제한 시간을 단축하며 운영 서버에는 요청하지 않는다.
 
-GitHub Actions는 단위·정적 검사(Node.js 24)와 브라우저 검사(Node.js 22)를 별도 작업으로 실행한다. 브라우저 작업은 잠금 파일과 Chromium을 설치하고 실패 시 스크린샷·작업본을 진단 자료로 보관한다. CSS 블록 재통합이 필요할 때만 `npm run styles:consolidate`를 실행한다.
+GitHub Actions는 단위·정적 검사(Node.js 24), 저장·권한 SQL 검사(Node.js 24·PostgreSQL 17), 브라우저 검사(Node.js 22)를 별도 작업으로 실행한다. SQL 작업은 일회용 PostgreSQL 서비스와 잠금 파일의 의존성을 사용한다. 브라우저 작업은 잠금 파일과 Chromium을 설치하고 실패 시 스크린샷·작업본을 진단 자료로 보관한다. CSS 블록 재통합이 필요할 때만 `npm run styles:consolidate`를 실행한다.
 
 문서만 변경했을 때는 문서 경로·링크·배포 제외 설정과 관련 단위·정적 검사를 확인한다. UI·동작 변경에는 해당 브라우저 검사와 필요한 실기기 확인을 수행한다. 과거 검사 개수를 현재 통과 결과로 재사용하지 않는다.
 
