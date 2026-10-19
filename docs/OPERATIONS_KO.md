@@ -182,16 +182,19 @@ docker stop trip-sql-test
 
 | 검사 | 명령·범위 |
 |---|---|
-| 전체 브라우저 | `node scripts/check-browsers.mjs`: 아래 7개, 하나라도 실패하면 실패 코드 |
+| 전체 브라우저 | `node scripts/check-browsers.mjs`: 아래 8개, 하나라도 실패하면 실패 코드 |
 | 초안 | `node scripts/check-drafts-browser.mjs`: 탭·복제 탭·복구·보류·충돌·미리보기·로그아웃·저장 제한·가계부 입력 보존, PC·모바일에서 PREP 목록 저장 후 보류 초안 유지·새로고침 복구, 외부 로그아웃·중복 알림 후 재인증과 새 편집 진입 시 복구·삭제·보류, 앱 복귀·재연결 재조회와 Realtime 갱신 시 미추가 입력·초점·선택 범위 보존 및 삭제된 카테고리 대체·후속 추가 |
 | 입력 | `node scripts/check-inputs-browser.mjs`: PC·모바일, 한글 조합·취소 불가능 입력·실행 취소·불러오기·내보내기 |
 | 가져오기 | `node scripts/check-imports-browser.mjs`: PC·모바일 실제 파일 입력으로 잘못된 파일 거부·기존 초안 보존, 위험 HTML·주소·중복 ID·비정상 숫자 정제, 구버전 내용·체크·ID 보존, 비교 중 revision 변경 시 재확인·취소·명시적 저장 |
 | PREP | `node scripts/check-prep-browser.mjs`: 즉시 저장, 인증 취소·실패·재시도, 목록 편집과 다른 초안 보호 |
+| IndexedDB 장애 | `node scripts/check-storage-browser.mjs`: PC·모바일에서 DB 열기 실패·용량 초과·쓰기 중단·삭제 실패, 메모리 편집과 기존 초안 보존, 실패 안내·공유 저장·내보내기·재시도·새로고침 복구, 로그아웃·오프라인 저장 |
 | 사진 | `node scripts/check-photos-browser.mjs`: 실제 변환·PNG 반환 대체·초안 저장 |
 | 테마 | `node scripts/check-theme-browser.mjs`: 테마 선택·저장·내보내기 |
 | PWA | `node scripts/check-pwa-browser.mjs`: 설치·캐시·오프라인·시간 제한 |
 
 개별 브라우저 스크립트는 첫 인자로 Playwright 모듈의 절대 경로를 받을 수 있다. 설치된 Chrome을 사용하려면 PowerShell에서 `$env:PWA_BROWSER_CHANNEL='chrome'`을 설정한다. PWA 검사는 앱과 같은 npm SDK를 로컬 파일로 제공하고 테스트 페이지의 URL·SRI만 대체하므로 CDN 연결 없이 실행된다.
+
+IndexedDB 장애 검사는 앱의 저장 함수를 교체하지 않는다. 브라우저 API 경계에서 열기 오류·동기 예외·`QuotaExceededError`를 주입하고, 실제 쓰기·삭제 요청이 성공한 뒤 트랜잭션을 중단해 커밋 전 롤백을 확인한다. 별도 IndexedDB 조회로 이전 기록 보존을 확인하고, 새로고침 후에는 성공적으로 저장된 내용만 복구되는지 검사한다. 실제 디스크를 채우거나 실기기의 저장소 회수 정책을 재현하는 검사는 아니다.
 
 자동 로그아웃 회귀 검사는 `scripts/check-drafts-browser.mjs`에서 가상 시계로 29분 경고·30분 만료, 계속 사용·저장·명시적 폐기, 변경 없는 화면·보류 초안, 인증 확인·재접속 시 만료 처리를 확인한다. 로그아웃 상태의 새로고침에서 초안을 적용하지 않고 보관하며 재인증 후 복구하는지, PC·모바일에서 후속 편집의 복구·삭제·보류와 버전 미리보기 종료도 검사한다.
 

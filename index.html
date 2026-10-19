@@ -1354,13 +1354,25 @@ input:disabled,select:disabled{opacity:.7}
     if(draftDatabasePromise)return draftDatabasePromise;
     draftDatabasePromise=new Promise(resolve=>{
       if(!('indexedDB' in window)){resolve(null);return;}
-      const request=indexedDB.open(DRAFT_DB_NAME,1);
-      request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains('records'))request.result.createObjectStore('records');};
-      request.onsuccess=()=>resolve(request.result);
-      request.onerror=()=>{console.warn('IndexedDB 초안 저장소를 열지 못했습니다.',request.error);resolve(null);};
-      request.onblocked=()=>resolve(null);
+      try{
+        const request=indexedDB.open(DRAFT_DB_NAME,1);
+        request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains('records'))request.result.createObjectStore('records');};
+        let blocked=false;
+        request.onsuccess=()=>{if(blocked){request.result.close();return;}resolve(request.result);};
+        request.onerror=()=>{console.warn('IndexedDB 초안 저장소를 열지 못했습니다.',request.error);resolve(null);};
+        request.onblocked=()=>{blocked=true;resolve(null);};
+      }catch(error){console.warn('IndexedDB 초안 저장소를 열지 못했습니다.',error);resolve(null);}
+    }).then(database=>{
+      if(!database)draftDatabasePromise=null;
+      return database;
     });
     return draftDatabasePromise;
+  }
+  function showDraftStorageWarning(kind='') {
+    let warning=$('#draftStorageWarning');
+    if(!warning){warning=document.createElement('span');warning.id='draftStorageWarning';warning.className='chip';warning.setAttribute('role','alert');$('#status').after(warning);}
+    warning.hidden=!kind;
+    warning.textContent=kind==='delete'?'초안 삭제 실패 · 저장 공간을 확인한 뒤 다시 시도해 주세요.':kind==='read'?'브라우저 초안을 확인하지 못했습니다 · 저장 공간을 확인해 주세요.':kind?'초안 보관 실패 · 새로고침 전에 공유 저장하거나 내보내세요.':'';
   }
   // A live page owns its record until its Web Lock is released on unload.
   // Recovery only moves records whose owner is no longer open.
@@ -1378,74 +1390,94 @@ input:disabled,select:disabled{opacity:.7}
     draftStoragePromise=(async()=>{
       const releaseOwn=await acquireDraftLock(DRAFT_RECORD_KEY);
       const database=await openDraftDatabase();
-      let previousKey='';
-      try{previousKey=sessionStorage.getItem(DRAFT_SESSION_KEY)||'';sessionStorage.setItem(DRAFT_SESSION_KEY,DRAFT_RECORD_KEY);}catch(_){}
-      // Without Web Locks keep writes isolated; never claim a possibly live draft.
-      if(!database||!releaseOwn)return;
-      const candidates=await new Promise(resolve=>{
-        const entries=[],transaction=database.transaction('records','readonly'),request=transaction.objectStore('records').openCursor();
-        request.onsuccess=()=>{const cursor=request.result;if(!cursor){resolve(entries);return;}const key=String(cursor.key),record=cursor.value;
-          if((key===LEGACY_DRAFT_RECORD_KEY||key.startsWith(LEGACY_DRAFT_RECORD_KEY+':'))&&key!==DRAFT_RECORD_KEY&&record?.state?.html&&record.tripId===TRIP_ID)entries.push({key,savedAt:record.savedAt||''});
-          cursor.continue();};
-        request.onerror=()=>resolve([]);
-      });
-      candidates.sort((a,b)=>Number(b.key===previousKey)-Number(a.key===previousKey)||b.savedAt.localeCompare(a.savedAt));
-      for(const {key} of candidates){
-        const release=await acquireDraftLock(key);if(!release)continue;
-        let claimed=false;
-        try{
-          claimed=await new Promise(resolve=>{
-            const transaction=database.transaction('records','readwrite'),records=transaction.objectStore('records'),request=records.get(key);let found=false;
-            request.onsuccess=()=>{if(!request.result)return;found=true;records.put(request.result,DRAFT_RECORD_KEY);records.delete(key);};
-            transaction.oncomplete=()=>resolve(found);transaction.onerror=()=>resolve(false);transaction.onabort=()=>resolve(false);
-          });
-        }finally{release();}
-        if(claimed)break;
-      }
-    })();
+      if(!database){releaseOwn?.();return false;}
+      try{
+        let previousKey='';
+        try{previousKey=sessionStorage.getItem(DRAFT_SESSION_KEY)||'';}catch(_){}
+        // Without Web Locks keep writes isolated; never claim a possibly live draft.
+        if(!releaseOwn)return true;
+        const candidates=await new Promise((resolve,reject)=>{
+          const entries=[],transaction=database.transaction('records','readonly'),request=transaction.objectStore('records').openCursor();
+          request.onsuccess=()=>{const cursor=request.result;if(!cursor)return;const key=String(cursor.key),record=cursor.value;
+            if((key===LEGACY_DRAFT_RECORD_KEY||key.startsWith(LEGACY_DRAFT_RECORD_KEY+':'))&&key!==DRAFT_RECORD_KEY&&record?.state?.html&&record.tripId===TRIP_ID)entries.push({key,savedAt:record.savedAt||''});
+            cursor.continue();};
+          transaction.oncomplete=()=>resolve(entries);transaction.onerror=()=>reject(transaction.error);transaction.onabort=()=>reject(transaction.error);
+        });
+        candidates.sort((a,b)=>Number(b.key===previousKey)-Number(a.key===previousKey)||b.savedAt.localeCompare(a.savedAt));
+        for(const {key} of candidates){
+          const release=await acquireDraftLock(key);if(!release)continue;
+          let claimed=false;
+          try{
+            claimed=await new Promise((resolve,reject)=>{
+              const transaction=database.transaction('records','readwrite'),records=transaction.objectStore('records'),request=records.get(key);let found=false;
+              request.onsuccess=()=>{if(!request.result)return;found=true;try{records.put(request.result,DRAFT_RECORD_KEY);records.delete(key);}catch(error){transaction.abort();reject(error);}};
+              transaction.oncomplete=()=>resolve(found);transaction.onerror=()=>reject(transaction.error);transaction.onabort=()=>reject(transaction.error);
+            });
+          }finally{release();}
+          if(claimed)break;
+        }
+        try{sessionStorage.setItem(DRAFT_SESSION_KEY,DRAFT_RECORD_KEY);}catch(_){}
+        return true;
+      }catch(error){releaseOwn?.();console.warn('초안 저장소를 준비하지 못했습니다.',error);return false;}
+    })().then(ready=>{if(!ready)draftStoragePromise=null;return ready;});
     return draftStoragePromise;
   }
   async function writeDraftRecord(record) {
     if(deferredDraftRecovery)return false;
     const generation=draftWriteGeneration;
     memoryDraftRecord=clone(record);
-    await prepareDraftStorage();
-    const database=await openDraftDatabase();if(!database)return false;
-    if(generation!==draftWriteGeneration)return false;
-    return new Promise(resolve=>{
-      const transaction=database.transaction('records','readwrite');
-      transaction.objectStore('records').put(record,DRAFT_RECORD_KEY);
-      transaction.oncomplete=()=>resolve(generation===draftWriteGeneration);
-      transaction.onerror=()=>{console.warn('초안을 저장하지 못했습니다.',transaction.error);resolve(false);};
-      transaction.onabort=()=>resolve(false);
-    });
+    let saved=false;
+    try{
+      if(!await prepareDraftStorage())throw new Error('Draft storage unavailable');
+      const database=await openDraftDatabase();if(!database)throw new Error('Draft storage unavailable');
+      if(generation!==draftWriteGeneration)return false;
+      saved=await new Promise(resolve=>{
+        const transaction=database.transaction('records','readwrite');
+        transaction.oncomplete=()=>resolve(generation===draftWriteGeneration);
+        transaction.onerror=()=>{console.warn('초안을 저장하지 못했습니다.',transaction.error);resolve(false);};
+        transaction.onabort=()=>resolve(false);
+        transaction.objectStore('records').put(record,DRAFT_RECORD_KEY);
+      });
+    }catch(error){console.warn('초안을 저장하지 못했습니다.',error);}
+    if(generation===draftWriteGeneration)showDraftStorageWarning(saved?'':'write');
+    return saved;
   }
   async function readDraftRecord() {
-    await prepareDraftStorage();
-    const database=await openDraftDatabase();if(!database)return memoryDraftRecord?clone(memoryDraftRecord):null;
-    return new Promise(resolve=>{
-      const transaction=database.transaction('records','readonly');
-      const request=transaction.objectStore('records').get(DRAFT_RECORD_KEY);
-      request.onsuccess=()=>resolve(request.result||null);
-      request.onerror=()=>resolve(memoryDraftRecord?clone(memoryDraftRecord):null);
-    });
+    // A failed write leaves newer edits in memory than the durable record.
+    if(memoryDraftRecord)return clone(memoryDraftRecord);
+    try{
+      if(!await prepareDraftStorage())throw new Error('Draft storage unavailable');
+      const database=await openDraftDatabase();if(!database)throw new Error('Draft storage unavailable');
+      return await new Promise((resolve,reject)=>{
+        const transaction=database.transaction('records','readonly');
+        const request=transaction.objectStore('records').get(DRAFT_RECORD_KEY);
+        request.onsuccess=()=>resolve(request.result||null);
+        request.onerror=()=>reject(request.error);
+        transaction.onabort=()=>reject(transaction.error);
+      });
+    }catch(error){console.warn('초안을 읽지 못했습니다.',error);showDraftStorageWarning('read');return null;}
   }
   async function clearDraftRecord() {
-    deferredDraftRecovery=false;
-    draftWriteGeneration++;memoryDraftRecord=null;clearTimeout(draftWriteTimer);draftWriteTimer=null;
-    await prepareDraftStorage();
-    const database=await openDraftDatabase();if(!database)return true;
-    const deleted=await new Promise(resolve=>{
-      const transaction=database.transaction('records','readwrite');
-      transaction.objectStore('records').delete(DRAFT_RECORD_KEY);
-      transaction.oncomplete=()=>resolve(true);transaction.onerror=()=>resolve(false);transaction.onabort=()=>resolve(false);
-    });
-    if(!deleted)return false;
-    return new Promise(resolve=>{
-      const transaction=database.transaction('records','readonly');
-      const request=transaction.objectStore('records').get(DRAFT_RECORD_KEY);
-      request.onsuccess=()=>resolve(!request.result);request.onerror=()=>resolve(false);
-    });
+    draftWriteGeneration++;clearTimeout(draftWriteTimer);draftWriteTimer=null;
+    let cleared=false;
+    try{
+      if(!await prepareDraftStorage())throw new Error('Draft storage unavailable');
+      const database=await openDraftDatabase();if(!database)throw new Error('Draft storage unavailable');
+      const deleted=await new Promise(resolve=>{
+        const transaction=database.transaction('records','readwrite');
+        transaction.oncomplete=()=>resolve(true);transaction.onerror=()=>resolve(false);transaction.onabort=()=>resolve(false);
+        transaction.objectStore('records').delete(DRAFT_RECORD_KEY);
+      });
+      if(deleted)cleared=await new Promise(resolve=>{
+        const transaction=database.transaction('records','readonly');
+        const request=transaction.objectStore('records').get(DRAFT_RECORD_KEY);
+        request.onsuccess=()=>resolve(!request.result);request.onerror=()=>resolve(false);
+        transaction.onabort=()=>resolve(false);
+      });
+    }catch(error){console.warn('초안을 삭제하지 못했습니다.',error);}
+    if(cleared){deferredDraftRecovery=false;memoryDraftRecord=null;}
+    showDraftStorageWarning(cleared?'':'delete');
+    return cleared;
   }
   async function writePublicCache(state,metadata={}) {
     const record={
@@ -2032,16 +2064,16 @@ input:disabled,select:disabled{opacity:.7}
     if(previewReturnState)closePreview();
     if(lastSavedState)applyState(lastSavedState);
     initializeHistory();setEditingUI(false,{preserveDraft:true});closeEditorDialogs();closeNotice('signed-out');setEditorSession(null);
-    setStatus(hadDraft?message+' 초안은 이 브라우저에 보관했습니다.':message);
+    setStatus(hadDraft?message+($('#draftStorageWarning')&&!$('#draftStorageWarning').hidden?' 초안 보관에 실패했습니다. 새로고침 전에 로그인해 저장하거나 내보내세요.':' 초안은 이 브라우저에 보관했습니다.'):message);
   }
   async function logoutPreservingDraft(message){
     clearSessionTimers();
     await handleExternalSignOut(message);
     await signOutEditor();
   }
-  async function requestManualLogout(){if(!editorSession||OFFLINE_MODE)return;if(previewReturnState)closePreview();if(isDirty()){const choice=await showChoice({title:'로그아웃할까요?',message:'저장하지 않은 변경사항이 있습니다.',choices:[{label:'계속 사용',value:'continue'},{label:'폐기 후 로그아웃',value:'discard',className:'action-danger'},{label:'저장 후 로그아웃',value:'save',className:'action-primary'}]});if(choice!=='save'&&choice!=='discard')return;if(choice==='save'){if(!await saveAndFinish('로그아웃 전 저장'))return;}else{if(lastSavedState)applyState(lastSavedState);await clearDraftRecord();}}setEditingUI(false);closeEditorDialogs();await signOutEditor();setStatus('편집자 로그아웃 완료');}
-  function discardDraft(message='수정 내용을 폐기했습니다.'){if(previewReturnState)closePreview();if(lastSavedState)applyState(lastSavedState);initializeHistory();setEditingUI(false);closeEditorDialogs();void clearDraftRecord();resetInactivityTimer();setStatus(message);}
-  async function discardAndLogout(message='수정 내용을 폐기하고 로그아웃했습니다.'){if(previewReturnState)closePreview();if(lastSavedState)applyState(lastSavedState);initializeHistory();setEditingUI(false);closeEditorDialogs();closeNotice('timeout');await clearDraftRecord();await signOutEditor();setStatus(message);}
+  async function requestManualLogout(){if(!editorSession||OFFLINE_MODE)return;if(previewReturnState)closePreview();if(isDirty()){const choice=await showChoice({title:'로그아웃할까요?',message:'저장하지 않은 변경사항이 있습니다.',choices:[{label:'계속 사용',value:'continue'},{label:'폐기 후 로그아웃',value:'discard',className:'action-danger'},{label:'저장 후 로그아웃',value:'save',className:'action-primary'}]});if(choice!=='save'&&choice!=='discard')return;if(choice==='save'){if(!await saveAndFinish('로그아웃 전 저장'))return;}else{if(!await clearDraftRecord())return;if(lastSavedState)applyState(lastSavedState);}}setEditingUI(false);closeEditorDialogs();await signOutEditor();setStatus('편집자 로그아웃 완료');}
+  async function discardDraft(message='수정 내용을 폐기했습니다.'){if(!await clearDraftRecord())return false;if(previewReturnState)closePreview();if(lastSavedState)applyState(lastSavedState);initializeHistory();setEditingUI(false);closeEditorDialogs();resetInactivityTimer();setStatus(message);return true;}
+  async function discardAndLogout(message='수정 내용을 폐기하고 로그아웃했습니다.'){if(!await discardDraft(message)){resetInactivityTimer();return false;}closeNotice('timeout');await signOutEditor();setStatus(message);return true;}
   async function fetchPublishedState(){
     if(OFFLINE_MODE||!client)return null;
     const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);
@@ -2059,7 +2091,8 @@ input:disabled,select:disabled{opacity:.7}
     const groups=buildDiff(remoteState,localState);
     const choice=await showChoice({title:'다른 저장본이 먼저 반영되었습니다.',message:'자동 저장을 중단했습니다.\n\n'+compactDiffMessage(groups),choices:[{label:'계속 편집',value:'continue'},{label:'최신본으로 전환',value:'remote',className:'action-danger'},{label:'내 초안으로 덮어쓰기',value:'overwrite',className:'action-primary'}]});
     if(choice==='remote'){
-      applyState(remoteState);setPublishedBaseline(remoteRow,remoteState);initializeHistory();await clearDraftRecord();updateDirtyState();setStatus('최신 저장본으로 전환했습니다.');return false;
+      if(!await clearDraftRecord())return false;
+      applyState(remoteState);setPublishedBaseline(remoteRow,remoteState);initializeHistory();updateDirtyState();setStatus('최신 저장본으로 전환했습니다.');return false;
     }
     if(choice==='overwrite'){
       lastSavedState=clone(remoteState);draftBaselineUnknown=false;
@@ -2074,8 +2107,9 @@ input:disabled,select:disabled{opacity:.7}
     if(saveInFlight||operationBusy||checklistSaving||pendingChecks.size){setStatus('다른 작업이 끝난 뒤 저장해 주세요.');return false;}
     let normalized=normalizeState(state);
     if(OFFLINE_MODE){
+      const saved=await writeDraftRecord({tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:normalized,baseState:normalized,baseRevision:publishedRevision,baseUpdatedAt:publishedUpdatedAt,savedAt:new Date().toISOString(),dirty:false});
+      if(!saved){memoryDraftRecord=currentDraftRecord();return false;}
       lastSavedState=clone(normalized);pendingDraft=false;
-      await writeDraftRecord({tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:lastSavedState,baseState:lastSavedState,baseRevision:publishedRevision,baseUpdatedAt:publishedUpdatedAt,savedAt:new Date().toISOString(),dirty:false});
       return {offline:true};
     }
     if(!client){setStatus('저장할 수 없습니다.');return false;}
@@ -2340,7 +2374,7 @@ input:disabled,select:disabled{opacity:.7}
   function openMapDialog(row){activeScheduleRow=row;const map=row.querySelector('.schedule-map a');$('#mapName').value=mapPlaceName(map);$('#mapUrl').value=map?.href||'';$('#mapDialog').hidden=false;$('#mapName').focus();}
   function saveMap(){const name=$('#mapName').value.trim(),url=$('#mapUrl').value.trim();if(!name||!/^https:\/\//i.test(url)){setStatus('장소명과 https 지도 링크를 입력해 주세요.');return;}const card=activeScheduleRow?.querySelector('.card');if(!card)return;let map=card.querySelector('.schedule-map');if(!map){map=document.createElement('div');map.className='schedule-map';card.insertBefore(map,card.querySelector('.schedule-media-tools'));}map.innerHTML='<a href="'+escapeHtml(url)+'" rel="noopener noreferrer" target="_blank" data-place-name="'+escapeHtml(name)+'"></a><button class="schedule-map-delete" type="button">삭제</button>';decorateMapLink(map);$('#mapDialog').hidden=true;recordHistory();}
 
-  function stripTransient(root){root.querySelectorAll('.schedule-media-tools,.photo-actions,.row-actions,.photo-delete,.schedule-map-delete,.row-delete,.check-delete,.check-actions,.check-feedback,.warning-delete').forEach(el=>el.remove());root.querySelectorAll('[contenteditable]').forEach(el=>el.setAttribute('contenteditable','false'));}
+  function stripTransient(root){root.querySelectorAll('#draftStorageWarning,.schedule-media-tools,.photo-actions,.row-actions,.photo-delete,.schedule-map-delete,.row-delete,.check-delete,.check-actions,.check-feedback,.warning-delete').forEach(el=>el.remove());root.querySelectorAll('[contenteditable]').forEach(el=>el.setAttribute('contenteditable','false'));}
   async function fetchAsDataUrl(url){
     if(url.startsWith('data:image/'))return url;
     return withPhotoRequest(async signal=>{
