@@ -2510,7 +2510,7 @@ input:disabled,select:disabled{opacity:.7}
         if(revision!==publishedRevision){pendingRemoteState={row,state};setStatus('새 공유 저장본이 있습니다 · 저장 시 비교합니다.');}
         return true;
       }
-      if(revision!==publishedRevision||fingerprint(state)!==fingerprint(lastSavedState)){applyState(state);setPublishedBaseline(row,state);initializeHistory();setStatus(reason==='reconnect'?'연결 복구 · 최신 저장본 반영':'최신 저장본을 반영했습니다.');}
+      if(revision!==publishedRevision||fingerprint(state)!==fingerprint(lastSavedState)){applyStatePreservingInputs(state);setPublishedBaseline(row,state);initializeHistory();setStatus(reason==='reconnect'?'연결 복구 · 최신 저장본 반영':'최신 저장본을 반영했습니다.');}
       else if(reason==='reconnect')setStatus('공유 서버 연결 복구 · 최신 상태');
       return true;
     }catch(error){console.warn(error);setStatus('공유 서버 확인 실패 · 현재 화면 유지');return false;}
@@ -2548,7 +2548,7 @@ input:disabled,select:disabled{opacity:.7}
       if(!payload.new?.content?.html)return;
       const remoteState=normalizeState(migratePublishedState(payload.new.content));
       if(body.classList.contains('editing')||pendingDraft||body.classList.contains('previewing')||checklistSaving||pendingChecks.size||!$('#checklistDialog').hidden){pendingRemoteState={row:payload.new,state:remoteState};setStatus('새 공유 저장본이 있습니다 · 저장 시 비교합니다.');return;}
-      applyState(remoteState);setPublishedBaseline(payload.new,remoteState);initializeHistory();setStatus('새 저장본을 반영했습니다.');
+      applyStatePreservingInputs(remoteState);setPublishedBaseline(payload.new,remoteState);initializeHistory();setStatus('새 저장본을 반영했습니다.');
     }).subscribe(status=>{if(status==='SUBSCRIBED'&&loadedFromCache)void refreshPublishedState('reconnect');});
     await getEditorSession();
   }

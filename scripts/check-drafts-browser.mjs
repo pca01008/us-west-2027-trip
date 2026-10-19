@@ -19,7 +19,7 @@ window.supabase={createClient:()=>({
   auth:{getSession:async()=>({data:{session:window.__signedIn?{user:{email:window.TRIP_CONFIG.editorEmail}}:null}}),onAuthStateChange:()=>{},signOut:async options=>{window.__signOutOptions=options;window.__signedIn=false;return {};},signInWithPassword:async()=>{window.__signedIn=true;return {};}},
   from:()=>{let id;const q={select:()=>q,eq:(key,value)=>{if(key==='id')id=value;return q;},order:()=>q,limit:async()=>({data:await(await fetch('/mock/versions')).json()}),single:async()=>({data:(await(await fetch('/mock/versions')).json()).find(item=>item.id===id)}),abortSignal:()=>q,maybeSingle:async()=>({data:await(await fetch('/mock/doc')).json()})};return q;},
   rpc:(_name,args)=>({abortSignal:async signal=>{if(window.__throwNextRpc){window.__throwNextRpc=false;throw Error('Simulated transport exception');}return (await fetch('/mock/save',{method:'POST',body:JSON.stringify(args),signal})).json();}}),
-  channel:()=>({on:()=>({subscribe:()=>{}})})
+  channel:()=>({on:(_event,_filter,callback)=>{window.__emitRemote=callback;return {subscribe:()=>{}};}})
 })};</script>`;
 const server = createServer(async (req, res) => {
   try {
@@ -50,7 +50,7 @@ const server = createServer(async (req, res) => {
       .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, stub)
       .replace('data-offline="false"', url.searchParams.has('offline') ? 'data-offline="true"' : 'data-offline="false"')
       .replace('initializeTimetable();initializeDialogAccessibility();', `window.__draftTest={captureState,normalizeState,buildDiff,isDirty,recordHistory,flushDraftPersistence,queueDraftPersistence,readDraftRecord,writeDraftRecord,clearDraftRecord,moveHistory,discardDraft,discardAndLogout,persistState,saveAndFinish,handleExternalSignOut,closeNotice,
-        busy:()=>saveInFlight||operationBusy,
+        refreshPublishedState,busy:()=>saveInFlight||operationBusy,
         base:()=>lastSavedState,revision:()=>publishedRevision,pending:()=>pendingChecks.size,
         legacyDraft:async()=>{const record=await readDraftRecord();delete record.baseState;await writeDraftRecord(record);pendingDraft=false;clearTimeout(draftWriteTimer);},
         key:DRAFT_RECORD_KEY,legacyKey:LEGACY_DRAFT_RECORD_KEY,db:DRAFT_DB_NAME,sessionKey:DRAFT_SESSION_KEY};initializeTimetable();initializeDialogAccessibility();`);
@@ -242,6 +242,42 @@ try {
       assert.equal(await page.evaluate(()=>window.__draftTest.captureState().expenses[0].name),'After deferred recovery');
       assert.equal(saveCalls,0);
       await ctx.close();console.log(`Deferred draft (${mobile?'mobile':'desktop'}, ${source}, ${choice}): cancel preserves original; explicit choice protects new work across reload.`);
+    }
+    // Incoming shared updates must preserve an entry that has not been added.
+    for(const delivery of ['visible','reconnect','realtime']) {
+      reset();const ctx=await context(options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
+      await page.locator('.tabs label[for="money"]').click();
+      const category=row.content.categories.findLast(item=>!item.system).id;
+      const values={expenseName:'택시비 Airport',expenseAmount:'37',expenseDate:'2027-03-15',expenseCurrency:'USD',expenseCategory:category};
+      for(const [id,value] of Object.entries(values)) {
+        const field=page.locator('#'+id);
+        if(id==='expenseCurrency'||id==='expenseCategory')await field.selectOption(value);else await field.fill(value);
+      }
+      const remoteExpense={id:'remote-expense',name:'Shared meal',amount:12,currency:'USD',date:'2027-03-14',categoryId:'misc'};
+      for(const removed of [false,true]) {
+        await page.locator('#expenseName').focus();await page.locator('#expenseName').evaluate(el=>el.setSelectionRange(1,3));
+        row={...row,content:{...row.content,expenses:[remoteExpense],budgetKrw:removed?234567:123456,
+          categories:row.content.categories.filter(item=>!removed||item.id!==category)},revision:row.revision+1};
+        if(delivery==='realtime')await page.evaluate(row=>window.__emitRemote({new:row}),row);
+        else assert.equal(await page.evaluate(reason=>window.__draftTest.refreshPublishedState(reason),delivery),true);
+        for(const [id,value] of Object.entries(values)) {
+          if(removed&&id==='expenseCategory')continue;
+          assert.equal(await page.locator('#'+id).inputValue(),value,`${delivery} preserves ${id}`);
+        }
+        assert.deepEqual(await page.evaluate(()=>[document.activeElement.id,document.activeElement.selectionStart,document.activeElement.selectionEnd]),['expenseName',1,3]);
+        assert.deepEqual(await page.evaluate(()=>window.__draftTest.captureState().expenses),[remoteExpense]);
+        assert.equal(await page.evaluate(()=>window.__draftTest.revision()),row.revision);
+        assert.equal(await page.evaluate(()=>window.__draftTest.base().budgetKrw),row.content.budgetKrw);
+        assert.equal(await page.evaluate(()=>window.__draftTest.isDirty()),false);
+        assert.equal(await stored(page),null,'Unsubmitted input is not a persisted draft');
+        if(removed)assert.equal(await page.locator('#expenseCategory').evaluate(el=>Boolean(el.value)&&el.value!=='deleted'&&el.selectedOptions.length===1&&!el.selectedOptions[0].disabled),true,'Deleted category falls back to a valid choice');
+      }
+      const fallback=await page.locator('#expenseCategory').inputValue();assert.notEqual(fallback,category);
+      await page.locator('#addExpense').click();await page.evaluate(()=>window.__draftTest.flushDraftPersistence());
+      const added=(await stored(page)).state.expenses;
+      assert.equal(added.length,2);assert.deepEqual(added[1],{id:added[1].id,name:values.expenseName,amount:37,currency:'USD',date:values.expenseDate,categoryId:fallback});
+      assert.equal(saveCalls,0);assert.deepEqual(row.content.expenses,[remoteExpense]);
+      await ctx.close();console.log(`Shared inputs (${mobile?'mobile':'desktop'}, ${delivery}): fields, focus/caret, category removal and subsequent add passed.`);
     }
     // Hold the real save response while typing the next entry. Verify every
     // field, focus/caret and that the entry is not silently submitted.
