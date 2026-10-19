@@ -9,20 +9,43 @@ const { chromium } = await import(process.argv[2] ? pathToFileURL(process.argv[2
 const root = new URL('../', import.meta.url);
 const original = await readFile(new URL('index.html', root), 'utf8');
 let row,saveMode,saveCalls,readFailures,versions;
+let photoMode='normal',photoCalls=[],photoAborts=0;
+const photoObjects=new Set();
 const reset = () => { versions=[];saveMode='normal';saveCalls=0;readFailures=0;row = { content: {}, revision: 0, updated_at: new Date().toISOString() }; };
 reset();
 const stub = `<script>
 window.__signedIn=true;
 const nativeSetTimeout=window.setTimeout.bind(window);
-window.setTimeout=(callback,delay,...args)=>nativeSetTimeout(callback,window.__shortSaveTimeout&&delay===12000?80:delay,...args);
+window.setTimeout=(callback,delay,...args)=>nativeSetTimeout(callback,window.__shortPhotoTimeout&&[10000,60000].includes(delay)?150:window.__shortSaveTimeout&&delay===12000?80:delay,...args);
 window.supabase={createClient:()=>({
-  auth:{getSession:async()=>({data:{session:window.__signedIn?{user:{email:window.TRIP_CONFIG.editorEmail}}:null}}),onAuthStateChange:()=>{},signOut:async options=>{window.__signOutOptions=options;window.__signedIn=false;return {};},signInWithPassword:async()=>{window.__signedIn=true;return {};}},
+  auth:{getSession:async()=>({data:{session:window.__signedIn?{access_token:'fixture-token',user:{email:window.TRIP_CONFIG.editorEmail}}:null}}),onAuthStateChange:()=>{},signOut:async options=>{window.__signOutOptions=options;window.__signedIn=false;return {};},signInWithPassword:async()=>{window.__signedIn=true;return {};}},
+  storage:{from:bucket=>({getPublicUrl:path=>({data:{publicUrl:location.origin+'/storage/v1/object/public/'+bucket+'/'+path}})})},
   from:()=>{let id;const q={select:()=>q,eq:(key,value)=>{if(key==='id')id=value;return q;},order:()=>q,limit:async()=>({data:await(await fetch('/mock/versions')).json()}),single:async()=>({data:(await(await fetch('/mock/versions')).json()).find(item=>item.id===id)}),abortSignal:()=>q,maybeSingle:async()=>({data:await(await fetch('/mock/doc')).json()})};return q;},
   rpc:(_name,args)=>({abortSignal:async signal=>{if(window.__throwNextRpc){window.__throwNextRpc=false;throw Error('Simulated transport exception');}return (await fetch('/mock/save',{method:'POST',body:JSON.stringify(args),signal})).json();}}),
   channel:()=>({on:(_event,_filter,callback)=>{window.__emitRemote=callback;return {subscribe:()=>{}};}})
 })};</script>`;
 const server = createServer(async (req, res) => {
   try {
+    if(req.url.startsWith('/storage/v1/object/')){
+      const mode=photoMode,method=req.method,path=req.url.replace('/public/','/');
+      photoCalls.push(method);res.on('close',()=>{if(!res.writableEnded)photoAborts++;});
+      const hang=mode==='head'&&method==='HEAD'||mode.startsWith('upload')&&method==='POST'||mode.startsWith('download')&&method==='GET';
+      if(method==='POST'){
+        for await(const _part of req){};
+        assert.equal(req.headers.authorization,'Bearer fixture-token');
+        assert.equal(req.headers['x-upsert'],'false');
+        assert.ok(['image/webp','image/jpeg'].includes(req.headers['content-type']));
+        // An upload can commit even when its response is lost; retries must reuse it.
+        photoObjects.add(path);
+      }
+      if(hang){
+        if(mode.endsWith('-body')){res.writeHead(200,{'Content-Type':method==='POST'?'application/json':'image/jpeg'});res.write(method==='POST'?'{':'partial image');}
+        return;
+      }
+      if(method==='HEAD'){res.writeHead(photoObjects.has(path)?200:400).end();return;}
+      if(method==='POST'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({Key:path}));return;}
+      res.setHeader('Content-Type','image/jpeg');res.end('fixture image');return;
+    }
     if (req.url === '/mock/versions') {res.setHeader('Content-Type','application/json');res.end(JSON.stringify(versions));return;}
     if (req.url === '/mock/doc') { if(readFailures>0){readFailures--;res.writeHead(503).end('Unavailable');return;}res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(row)); return; }
     if (req.url === '/mock/save') {
@@ -50,10 +73,13 @@ const server = createServer(async (req, res) => {
       .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, stub)
       .replace('data-offline="false"', url.searchParams.has('offline') ? 'data-offline="true"' : 'data-offline="false"')
       .replace('initializeTimetable();initializeDialogAccessibility();', `window.__draftTest={captureState,normalizeState,buildDiff,isDirty,recordHistory,flushDraftPersistence,queueDraftPersistence,readDraftRecord,writeDraftRecord,clearDraftRecord,moveHistory,discardDraft,discardAndLogout,persistState,saveAndFinish,handleExternalSignOut,closeNotice,
-        refreshPublishedState,busy:()=>saveInFlight||operationBusy,
+        refreshPublishedState,exportOfflineHtml,exportStaticHtml,busy:()=>saveInFlight||operationBusy,
+        stagePhoto:async()=>{const canvas=document.createElement('canvas');canvas.width=8;canvas.height=8;const full=canvas.toDataURL('image/jpeg'),thumb=canvas.toDataURL('image/webp');let row=$('.day1 .timeline-row');activeScheduleRow=row;const card=row.querySelector('.card');let gallery=card.querySelector('.schedule-photos');if(!gallery){gallery=document.createElement('div');gallery.className='schedule-photos';card.appendChild(gallery);}gallery.appendChild(createPhotoFigure({fullUrl:full,thumbUrl:thumb,staged:true},'Network draft'));recordHistory();await flushDraftPersistence();},
+        remotePhotoState:()=>{const state=captureState(),template=document.createElement('template');template.innerHTML=state.html;const img=template.content.querySelector('.schedule-photo img');img.src=location.origin+'/storage/v1/object/public/trip-media/download.jpg';img.dataset.fullUrl=img.src;state.html=template.innerHTML;return state;},
         base:()=>lastSavedState,revision:()=>publishedRevision,pending:()=>pendingChecks.size,
         legacyDraft:async()=>{const record=await readDraftRecord();delete record.baseState;await writeDraftRecord(record);pendingDraft=false;clearTimeout(draftWriteTimer);},
         key:DRAFT_RECORD_KEY,legacyKey:LEGACY_DRAFT_RECORD_KEY,db:DRAFT_DB_NAME,sessionKey:DRAFT_SESSION_KEY};initializeTimetable();initializeDialogAccessibility();`);
+    if(file==='trip-config.js')body=body+`\nwindow.TRIP_CONFIG.supabase={url:'http://127.0.0.1:${server.address().port}',publishableKey:'fixture-key'};`;
     res.setHeader('Content-Type', file.endsWith('.html') ? 'text/html; charset=utf-8' : file.endsWith('.js') ? 'text/javascript; charset=utf-8' : 'image/webp');
     res.end(body);
   } catch (error) { res.writeHead(500).end(error.message); }
@@ -103,6 +129,68 @@ async function enterExpense(page,name='New expense') {
 
 try {
   browser = await chromium.launch({ headless: true, ...(process.env.PWA_BROWSER_CHANNEL ? { channel: process.env.PWA_BROWSER_CHANNEL } : {}) });
+  // Exercise actual fetch aborts, response-body stalls, draft retention and retry.
+  for(const mobile of [false,true])for(const mode of ['head','upload','upload-body','download','download-body'])for(const cancel of [false,true]){
+    reset();photoMode='normal';photoCalls=[];photoAborts=0;photoObjects.clear();
+    const ctx=await context(mobile?{viewport:{width:390,height:844},isMobile:true,hasTouch:true}:{}),page=await ctx.newPage();
+    await page.goto(origin);await ready(page);await edit(page,'Photo network draft');
+    await page.evaluate(()=>window.__draftTest.stagePhoto());
+    const draft=await stored(page),downloads=[];page.on('download',download=>downloads.push(download));
+    photoMode=mode;
+    await page.evaluate(({mode,cancel})=>{
+      window.__shortPhotoTimeout=!cancel;window.__photoResult=undefined;
+      const api=window.__draftTest;
+      const task=mode.startsWith('download')?api.exportOfflineHtml(api.remotePhotoState()):api.saveAndFinish();
+      task.then(result=>window.__photoResult=Boolean(result));
+    },{mode,cancel});
+    const method=mode==='head'?'HEAD':mode.startsWith('upload')?'POST':'GET';
+    for(let i=0;i<100&&!photoCalls.includes(method);i++)await new Promise(resolve=>setTimeout(resolve,20));
+    assert.ok(photoCalls.includes(method),'Expected a photo request');
+    if(cancel)await page.locator('#cancelOperationBtn').click();
+    if(mode.startsWith('download')&&!cancel){
+      await page.locator('#noticeDialog').waitFor({state:'visible'});
+      await page.getByRole('button',{name:'확인',exact:true}).click();
+    }
+    await page.waitForFunction(()=>window.__photoResult!==undefined&&!window.__draftTest.busy());
+    for(let i=0;i<100&&photoAborts===0;i++)await new Promise(resolve=>setTimeout(resolve,20));
+    assert.ok(photoAborts>0,'Request must be aborted at the local server');
+    assert.equal(saveCalls,0,'Failed photo preparation must not publish');
+    assert.equal(downloads.length,0,'Failed offline export must not download an incomplete file');
+    assert.equal((await stored(page)).state.html,draft.state.html,'Staged photo and text must survive');
+    assert.equal(await page.locator('#cancelOperationBtn').isVisible(),false);
+    if(!mode.startsWith('download'))assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('editing')),true);
+    photoMode='normal';await page.evaluate(()=>window.__shortPhotoTimeout=false);
+    if(mode.startsWith('download')){
+      const download=page.waitForEvent('download');
+      await page.evaluate(()=>window.__draftTest.exportOfflineHtml(window.__draftTest.remotePhotoState()));
+      await download;
+      assert.equal((await stored(page)).state.html,draft.state.html);
+    }else{
+      assert.equal(await page.evaluate(()=>window.__draftTest.saveAndFinish()),true);
+      assert.equal(saveCalls,1);assert.equal(await stored(page),null);
+      assert.ok(!row.content.html.includes('data-staged="true"'));
+    }
+    await ctx.close();console.log('Photo '+mode+' '+(cancel?'cancel':'timeout')+' ('+(mobile?'mobile':'desktop')+'): request aborted, draft retained, retry passed.');
+  }
+  for(const cancel of [false,true]){
+    reset();photoMode='normal';photoCalls=[];photoAborts=0;
+    const ctx=await context(),page=await ctx.newPage();await page.goto(origin);await ready(page);await edit(page,'Readonly export draft');
+    await page.evaluate(async()=>{
+      const api=window.__draftTest;await api.stagePhoto();
+      const img=document.querySelector('.schedule-photo img');img.src=location.origin+'/storage/v1/object/public/trip-media/download.jpg';img.dataset.fullUrl=img.src;
+      api.recordHistory();await api.flushDraftPersistence();
+    });
+    const draft=await stored(page),downloads=[];page.on('download',download=>downloads.push(download));photoMode='download-body';
+    await page.evaluate(cancel=>{window.__shortPhotoTimeout=!cancel;window.__photoResult=undefined;window.__draftTest.exportStaticHtml().then(()=>window.__photoResult=true);},cancel);
+    for(let i=0;i<100&&!photoCalls.includes('GET');i++)await new Promise(resolve=>setTimeout(resolve,20));
+    if(cancel)await page.locator('#cancelOperationBtn').click();
+    await page.waitForFunction(()=>window.__photoResult&&!window.__draftTest.busy());
+    assert.equal(downloads.length,cancel?0:1,'Readonly export falls back on timeout but never on cancellation');
+    if(!cancel)assert.match(await page.locator('#status').textContent(),/온라인 주소 사용/);
+    assert.equal((await stored(page)).state.html,draft.state.html);
+    await ctx.close();console.log('Readonly export '+(cancel?'cancel':'timeout')+': draft retained; '+(cancel?'no download':'online photo fallback')+'.');
+  }
+  photoMode='normal';
   for(const mobile of [false,true]) {
     const options=mobile?{viewport:{width:390,height:844},isMobile:true,hasTouch:true}:{};
     // Saving the PREP list must leave an unapplied, deferred schedule draft intact.

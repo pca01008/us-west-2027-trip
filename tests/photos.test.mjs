@@ -7,24 +7,30 @@ import { webcrypto } from 'node:crypto';
 const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 const source = html.slice(html.indexOf('  function photoExtension('), html.indexOf('  async function materializeStagedPhotos('));
 
-function app({ webp = true, jpeg = true, nullResult = false, exists = false, error = null } = {}) {
+function app({ webp = true, jpeg = true, nullResult = false, exists = false, error = null, fetchPhoto, session } = {}) {
   const encodes = [], fills = [], uploads = [], sizes = [];
   let closed = 0;
   const context2d = { drawImage() {}, fillRect(...args) { fills.push({ color: this.fillStyle, operation: this.globalCompositeOperation, args }); } };
-  const context = vm.createContext({ Blob, crypto: webcrypto, TRIP_ID: 'us-west-2027', MEDIA_BUCKET: 'trip-media',
+  const context = vm.createContext({ Blob, AbortController, setTimeout, clearTimeout, URL, crypto: webcrypto, TRIP_ID: 'us-west-2027', MEDIA_BUCKET: 'trip-media',
+    SUPABASE_URL:'https://example.test',SUPABASE_PUBLISHABLE_KEY:'public-test-key',operationController:new AbortController(),
+    location:{href:'https://example.test/'},blobToDataUrl:async blob=>'data:'+blob.type+';base64,'+Buffer.from(await blob.arrayBuffer()).toString('base64'),
     createImageBitmap: async () => ({ width: 2400, height: 1200, close() { closed++; } }),
     document: { createElement() { return { getContext: () => context2d, toBlob(callback, type, quality) {
       encodes.push({ type, quality }); sizes.push([this.width, this.height]);
       const actual = type === 'image/webp' && !webp || type === 'image/jpeg' && !jpeg ? 'image/png' : type;
       callback(nullResult ? null : new Blob(['encoded ' + actual], { type: actual }));
     } }; } },
-    fetch: async () => ({ ok: exists }),
-    client: { storage: { from() { return {
-      getPublicUrl: path => ({ data: { publicUrl: 'https://example.test/' + path } }),
-      upload: async (path, blob, options) => { uploads.push({ path, blob, options }); return { error }; }
+    fetch: fetchPhoto|| (async (url,options) => {
+      if(options.method==='HEAD')return {ok:exists,status:exists?200:404};
+      uploads.push({path:url.split('/object/trip-media/')[1],blob:options.body,options});
+      return {ok:!error,json:async()=>error||{Key:'uploaded'}};
+    }),
+    client: { auth:{getSession:session|| (async()=>({data:{session:{access_token:'test-session-token'}}}))},storage: { from() { return {
+      getPublicUrl: path => ({ data: { publicUrl: 'https://example.test/' + path } })
     }; } } }
   });
   vm.runInContext(source, context);
+  vm.runInContext(html.slice(html.indexOf('  async function fetchAsDataUrl('),html.indexOf('  async function embedPhotos(')),context);
   return { context, encodes, fills, uploads, sizes, get closed() { return closed; } };
 }
 
@@ -62,8 +68,12 @@ test('실제 Blob 형식으로 원본과 썸네일의 확장자 및 MIME을 각�
   assert.match(result.thumbPath, /^us-west-2027\/thumbs\/[a-f0-9]{64}\.webp$/);
   assert.equal(a.uploads.length, 2);
   for (const item of a.uploads) {
-    assert.equal(item.options.contentType, item.blob.type);
-    assert.equal(item.options.upsert, false);
+    assert.equal(item.options.headers['Content-Type'], item.blob.type);
+    assert.equal(item.options.headers['x-upsert'], 'false');
+    assert.equal(item.options.headers['Cache-Control'], 'max-age=31536000');
+    assert.equal(item.options.headers.Authorization, 'Bearer test-session-token');
+    assert.equal(item.options.headers.apikey, 'public-test-key');
+    assert.ok(item.options.signal instanceof AbortSignal);
   }
 });
 
@@ -82,6 +92,58 @@ test('이미 저장된 사진은 재업로드하지 않고 서버 오류는 전�
   assert.equal(cached.uploads.length, 0);
   const failing = app({ error: { message: 'mime type image/jpeg is not supported' } });
   await assert.rejects(failing.context.uploadPhotoBlobs(blob, blob), e => e.message.includes('not supported'));
+});
+
+test('존재 확인 실패·시간 초과·취소는 업로드로 넘어가지 않는다', async () => {
+  for(const mode of ['http','network','timeout','cancel']){
+    let calls=0,signal;
+    const a=app({fetchPhoto:async(_url,options)=>{
+      calls++;signal=options.signal;
+      if(mode==='http')return {ok:false,status:503};
+      if(mode==='network')throw Error('Offline');
+      return new Promise(()=>{});
+    }});
+    if(mode==='timeout')a.context.setTimeout=callback=>setTimeout(callback,5);
+    const pending=a.context.uploadImmutableBlob('photo.jpg',new Blob(['photo'],{type:'image/jpeg'}));
+    if(mode==='cancel')a.context.operationController.abort(Error('Cancelled'));
+    await assert.rejects(pending,/HTTP 503|Offline|시간이 초과|Cancelled/);
+    assert.equal(calls,1);
+    if(['timeout','cancel'].includes(mode))assert.equal(signal.aborted,true);
+  }
+});
+
+test('업로드·다운로드는 응답 본문이 멈춰도 제한 시간이 지나면 중단한다', async () => {
+  for(const mode of ['upload','download']){
+    let signal,delay;
+    const a=app({fetchPhoto:async(_url,options)=>{
+      signal=options.signal;
+      if(options.method==='HEAD')return {ok:false,status:404};
+      return {ok:true,json:()=>new Promise(()=>{}),blob:()=>new Promise(()=>{})};
+    }});
+    a.context.setTimeout=(callback,ms)=>{delay=ms;return setTimeout(callback,5);};
+    const pending=mode==='upload'?a.context.uploadImmutableBlob('photo.jpg',new Blob(['photo'],{type:'image/jpeg'})):a.context.fetchAsDataUrl('/photo.jpg');
+    await assert.rejects(pending,/시간이 초과/);
+    assert.equal(delay,60000);assert.equal(signal.aborted,true);
+  }
+});
+
+test('취소 후 인증 응답이 늦게 와도 사진 업로드를 시작하지 않는다', async () => {
+  let release,called;
+  const started=new Promise(resolve=>called=resolve);
+  const a=app({session:()=>{called();return new Promise(resolve=>release=resolve);}});
+  const pending=a.context.uploadImmutableBlob('photo.jpg',new Blob(['photo'],{type:'image/jpeg'}));
+  await started;a.context.operationController.abort(Error('Cancelled'));
+  await assert.rejects(pending,/Cancelled/);
+  release({data:{session:{access_token:'test-session-token'}}});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(a.uploads.length,0);
+});
+
+test('중복 객체 응답은 재시도 성공으로 처리하고 정상 다운로드를 내장한다', async () => {
+  const a=app({error:{message:'The resource already exists'}});
+  await a.context.uploadPhotoBlobs(new Blob(['full'],{type:'image/jpeg'}),new Blob(['thumb'],{type:'image/jpeg'}));
+  const b=app({fetchPhoto:async()=>({ok:true,blob:async()=>new Blob(['photo'],{type:'image/jpeg'})})});
+  assert.equal(await b.context.fetchAsDataUrl('/photo.jpg'),'data:image/jpeg;base64,cGhvdG8=');
 });
 
 test('신규 서버와 기존 서버 마이그레이션은 같은 제한된 업로드 경로를 허용한다', async () => {

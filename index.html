@@ -1075,6 +1075,7 @@ input:disabled,select:disabled{opacity:.7}
   let activePhotoFigure = null;
   let operationBusy = false;
   let operationCancelled = false;
+  let operationController = null;
   let selectedVersion = null;
   let timetableActive = false;
   let timetableStart = 0;
@@ -1329,13 +1330,15 @@ input:disabled,select:disabled{opacity:.7}
     });
   }
   function setOperationBusy(on,{cancelable=false,status=''}={}) {
+    if(on&&!operationBusy)operationController=new AbortController();
+    if(!on){operationController?.abort();operationController=null;}
     operationBusy=on;operationCancelled=false;body.classList.toggle('operation-busy',on);
     const cancel=$('#cancelOperationBtn');if(cancel){cancel.classList.toggle('hidden',!on||!cancelable);cancel.disabled=!on||!cancelable;}
     $('.editor-bar')?.setAttribute('aria-busy',String(on));
     if(status)setStatus(status);
     if(!on){updateHistoryControls();updateDirtyState();}
   }
-  function cancelCurrentOperation(){if(!operationBusy)return;operationCancelled=true;const button=$('#cancelOperationBtn');if(button)button.disabled=true;setStatus('현재 단계가 끝나면 작업을 취소합니다.');}
+  function cancelCurrentOperation(){const button=$('#cancelOperationBtn');if(!operationBusy||!button||button.disabled)return;operationCancelled=true;operationController?.abort(new Error('작업을 취소했습니다. 초안은 유지됩니다.'));button.disabled=true;setStatus('작업을 취소하는 중입니다.');}
   function focusAndSelect(element){element?.focus();const selection=window.getSelection();if(!selection||!element)return;const range=document.createRange();range.selectNodeContents(element);selection.removeAllRanges();selection.addRange(range);}
   function insertPlainText(target,text){
     try{if(typeof document.execCommand==='function'&&document.execCommand('insertText',false,text))return;}catch(error){console.debug('기본 텍스트 삽입을 사용할 수 없습니다.',error);}
@@ -2237,8 +2240,46 @@ input:disabled,select:disabled{opacity:.7}
   async function hashBlob(blob){const digest=await crypto.subtle.digest('SHA-256',await blob.arrayBuffer());return Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,'0')).join('');}
   function publicMediaUrl(path){return client.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl;}
   function isDuplicateUpload(error){return /already exists|duplicate/i.test(String(error?.message||error?.error||''));}
-  async function immutableBlobExists(path){try{return (await fetch(publicMediaUrl(path),{method:'HEAD',cache:'force-cache'})).ok;}catch(_){return false;}}
-  async function uploadImmutableBlob(path,blob){photoExtension(blob);if(await immutableBlobExists(path))return;const {error}=await client.storage.from(MEDIA_BUCKET).upload(path,blob,{cacheControl:'31536000',contentType:blob.type,upsert:false});if(error&&!isDuplicateUpload(error))throw error;}
+  async function withPhotoRequest(task,timeoutMs,label,parentSignal=operationController?.signal){
+    const controller=new AbortController();
+    const abort=()=>controller.abort(parentSignal.reason);
+    if(parentSignal?.aborted)abort();else parentSignal?.addEventListener('abort',abort,{once:true});
+    const timeout=setTimeout(()=>controller.abort(new Error(label+' 시간이 초과되었습니다. 연결을 확인한 뒤 다시 시도해 주세요.')),timeoutMs);
+    let rejectAbort;
+    const aborted=new Promise((_,reject)=>{rejectAbort=()=>reject(controller.signal.reason);controller.signal.addEventListener('abort',rejectAbort,{once:true});});
+    try{
+      controller.signal.throwIfAborted();
+      return await Promise.race([task(controller.signal),aborted]);
+    }finally{
+      clearTimeout(timeout);parentSignal?.removeEventListener('abort',abort);controller.signal.removeEventListener('abort',rejectAbort);
+    }
+  }
+  async function immutableBlobExists(path,signal=operationController?.signal){
+    return withPhotoRequest(async requestSignal=>{
+      const response=await fetch(publicMediaUrl(path),{method:'HEAD',cache:'force-cache',signal:requestSignal});
+      // Storage can return 400 for a missing object (supabase/storage#323).
+      // HEAD has no error body; the insert-only POST will validate permissions.
+      if(response.status===400||response.status===404)return false;
+      if(!response.ok)throw new Error('사진 확인 실패 · HTTP '+response.status);
+      return true;
+    },10000,'사진 확인',signal);
+  }
+  async function uploadImmutableBlob(path,blob,signal=operationController?.signal){
+    photoExtension(blob);if(await immutableBlobExists(path,signal))return;
+    // This SDK version's Storage upload ignores AbortSignal. Use the same
+    // authenticated, insert-only endpoint directly so cancellation reaches fetch.
+    return withPhotoRequest(async requestSignal=>{
+      const {data,error}=await client.auth.getSession();requestSignal.throwIfAborted();
+      if(error)throw error;
+      if(!data.session?.access_token)throw new Error('다시 로그인한 뒤 사진을 저장해 주세요.');
+      const response=await fetch(SUPABASE_URL+'/storage/v1/object/'+MEDIA_BUCKET+'/'+path,{
+        method:'POST',signal:requestSignal,
+        headers:{apikey:SUPABASE_PUBLISHABLE_KEY,Authorization:'Bearer '+data.session.access_token,'Content-Type':blob.type,'Cache-Control':'max-age=31536000','x-upsert':'false'},body:blob
+      });
+      const result=await response.json();requestSignal.throwIfAborted();
+      if(!response.ok&&!isDuplicateUpload(result))throw new Error(result.message||result.error||'사진 업로드 실패 · HTTP '+response.status);
+    },60000,'사진 업로드',signal);
+  }
   async function uploadPhotoBlobs(full,thumb){const fullExtension=photoExtension(full),thumbExtension=photoExtension(thumb),[fullHash,thumbHash]=await Promise.all([hashBlob(full),hashBlob(thumb)]),fullPath=TRIP_ID+'/photos/'+fullHash+'.'+fullExtension,thumbPath=TRIP_ID+'/thumbs/'+thumbHash+'.'+thumbExtension;await Promise.all([uploadImmutableBlob(fullPath,full),uploadImmutableBlob(thumbPath,thumb)]);return {fullPath,thumbPath,fullUrl:publicMediaUrl(fullPath),thumbUrl:publicMediaUrl(thumbPath)};}
   async function materializeStagedPhotos(state){
     const normalized=normalizeState(state);if(OFFLINE_MODE)return normalized;
@@ -2280,7 +2321,14 @@ input:disabled,select:disabled{opacity:.7}
   function saveMap(){const name=$('#mapName').value.trim(),url=$('#mapUrl').value.trim();if(!name||!/^https:\/\//i.test(url)){setStatus('장소명과 https 지도 링크를 입력해 주세요.');return;}const card=activeScheduleRow?.querySelector('.card');if(!card)return;let map=card.querySelector('.schedule-map');if(!map){map=document.createElement('div');map.className='schedule-map';card.insertBefore(map,card.querySelector('.schedule-media-tools'));}map.innerHTML='<a href="'+escapeHtml(url)+'" rel="noopener noreferrer" target="_blank" data-place-name="'+escapeHtml(name)+'"></a><button class="schedule-map-delete" type="button">삭제</button>';decorateMapLink(map);$('#mapDialog').hidden=true;recordHistory();}
 
   function stripTransient(root){root.querySelectorAll('.schedule-media-tools,.photo-actions,.row-actions,.photo-delete,.schedule-map-delete,.row-delete,.check-delete,.check-actions,.check-feedback,.warning-delete').forEach(el=>el.remove());root.querySelectorAll('[contenteditable]').forEach(el=>el.setAttribute('contenteditable','false'));}
-  async function fetchAsDataUrl(url){if(url.startsWith('data:image/'))return url;const absolute=new URL(url,location.href).href,response=await fetch(absolute,{cache:'force-cache'});if(!response.ok)throw new Error('사진 다운로드 실패 · HTTP '+response.status);return blobToDataUrl(await response.blob());}
+  async function fetchAsDataUrl(url){
+    if(url.startsWith('data:image/'))return url;
+    return withPhotoRequest(async signal=>{
+      const absolute=new URL(url,location.href).href,response=await fetch(absolute,{cache:'force-cache',signal});
+      if(!response.ok)throw new Error('사진 다운로드 실패 · HTTP '+response.status);
+      return blobToDataUrl(await response.blob());
+    },60000,'사진 다운로드');
+  }
   async function embedPhotos(state,{strict=true}={}){
     const normalized=normalizeState(state),template=document.createElement('template');template.innerHTML=normalized.html;const failures=[],photos=Array.from(template.content.querySelectorAll('.schedule-photo'));
     for(let i=0;i<photos.length;i++){
@@ -2325,8 +2373,8 @@ input:disabled,select:disabled{opacity:.7}
       const source='<!doctype html>\n'+cloneDoc.outerHTML,size=new Blob([source]).size;
       if(size>100*1024*1024){const choice=await showChoice({title:'오프라인 파일이 큽니다.',message:'사진을 포함한 파일 크기가 약 '+Math.ceil(size/1024/1024)+'MB입니다. 기기에 따라 열고 저장하는 데 시간이 걸릴 수 있습니다.',choices:[{label:'취소',value:'cancel'},{label:'계속 다운로드',value:'continue',className:'action-primary'}]});if(choice!=='continue'){setStatus('오프라인 작업본 생성을 취소했습니다.');return;}}
       downloadHtml(source,EXPORT_BASE_NAME+'_EDITABLE_'+todayLocal()+'.html');setStatus('오프라인 작업본을 만들었습니다.');
-    } catch(error) {console.error(error);if(operationCancelled){setStatus('오프라인 작업본 생성을 취소했습니다.');return;}await showChoice({title:'오프라인 작업본 생성 실패',message:'사진을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.',choices:[{label:'확인',value:'ok',className:'action-primary'}]});}
-    finally{setOperationBusy(false);}
+    } catch(error) {console.error(error);if(operationCancelled){setStatus('오프라인 작업본 생성을 취소했습니다.');return;}setStatus('오프라인 작업본 생성 실패');await showChoice({title:'오프라인 작업본 생성 실패',message:error.message||'사진을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.',choices:[{label:'확인',value:'ok',className:'action-primary'}]});}
+    finally{const status=$('#status').textContent;setOperationBusy(false);setStatus(status);}
   }
   function appendReadonlyRuntime(root){
     const script=document.createElement('script');script.id='readonlyRuntime';script.textContent=`(()=>{
@@ -2369,7 +2417,7 @@ input:disabled,select:disabled{opacity:.7}
       setArtifactBanner(cloneDoc,'readonly');appendReadonlyRuntime(cloneDoc);downloadHtml('<!doctype html>\n'+cloneDoc.outerHTML,EXPORT_BASE_NAME+'_VIEW_ONLY_'+todayLocal()+'.html');
       setStatus(embedded.failures.length?'공유용 사본 생성 · '+embedded.failures.length+'개 사진은 온라인 주소 사용':'사진 포함 공유용 사본 생성 완료');
     }catch(error){console.error(error);if(operationCancelled){setStatus('인쇄·공유용 사본 생성을 취소했습니다.');return;}setStatus('인쇄·공유용 사본 생성 실패');await showChoice({title:'사본을 만들지 못했습니다.',message:error.message,choices:[{label:'확인',value:'ok',className:'action-primary'}]});}
-    finally{setOperationBusy(false);}
+    finally{const status=$('#status').textContent;setOperationBusy(false);setStatus(status);}
   }
 
   function stateSummary(state){const template=document.createElement('template');template.innerHTML=state.html;const schedules=[];template.content.querySelectorAll('.day:not(.prepday):not(.moneyday)').forEach((day,dayIndex)=>day.querySelectorAll('.timeline-row').forEach((row,index)=>{const mapLink=row.querySelector('.schedule-map a');schedules.push({id:row.dataset.rowId||'position-'+dayIndex+'-'+index,key:'DAY '+(dayIndex+1)+' 일정 '+(index+1),dayIndex,index,kind:TIMETABLE_KINDS[scheduleKindMode(row.dataset.scheduleKind)]||'자동',time:row.querySelector('.time')?.textContent.trim()||'',title:row.querySelector('h3')?.textContent.trim()||'',detail:row.querySelector('.remark')?.textContent.trim()||'',warning:Array.from(row.querySelectorAll('.schedule-warning')).map(item=>(item.querySelector('.schedule-warning-text')||item).textContent.trim()).filter(Boolean).join(' | '),mapName:mapPlaceName(mapLink),map:mapLink?.href||'',photos:Array.from(row.querySelectorAll('.schedule-photo')).map(photo=>{const img=photo.querySelector('img');return {id:photo.dataset.photoId||photo.dataset.fullPath||'photo',caption:photo.querySelector('figcaption')?.textContent.trim()||'',alt:img?.alt||''};})});}));const checks=Array.from(template.content.querySelectorAll('.checklist label span')).map((span,index)=>({id:span.closest('label')?.dataset.checkId||'position-'+index,text:span.textContent.trim(),checked:Boolean(state.checks?.[index])}));const days=Array.from(template.content.querySelectorAll('.day:not(.prepday):not(.moneyday)')).map(day=>day.querySelector('.day-head p')?.textContent.trim()||'');return {days,schedules,checks,expenses:state.expenses,categories:state.categories,exchangeRate:state.exchangeRate,budgetKrw:state.budgetKrw};}

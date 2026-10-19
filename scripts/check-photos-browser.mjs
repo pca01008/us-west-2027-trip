@@ -18,7 +18,8 @@ try {
   const page = await context.newPage();
   await page.goto(origin);
   await page.addScriptTag({ content: `
-    const TRIP_ID='us-west-2027',MEDIA_BUCKET='trip-media',OFFLINE_MODE=false;
+    const TRIP_ID='us-west-2027',MEDIA_BUCKET='trip-media',OFFLINE_MODE=false,SUPABASE_URL='https://storage.invalid',SUPABASE_PUBLISHABLE_KEY='test-key';
+    let operationController=null;
     let operationCancelled=false,operationBusy=false,activeScheduleRow;
     const normalizeState=state=>structuredClone(state),setStatus=()=>{},finishMutation=()=>{},
       updatePhotoMoveButtons=()=>{},decoratePhotoFigure=()=>{},uid=()=>crypto.randomUUID(),
@@ -26,11 +27,12 @@ try {
     const setOperationBusy=value=>{operationBusy=value;};
     const showChoice=async info=>{throw Error(JSON.stringify(info));};
     const uploads=[];
-    const client={storage:{from:()=>({getPublicUrl:path=>({data:{publicUrl:'https://storage.invalid/'+path}}),
-      upload:async(path,blob,options)=>{
+    const client={auth:{getSession:async()=>({data:{session:{access_token:'test-token'}}})},storage:{from:()=>({getPublicUrl:path=>({data:{publicUrl:'https://storage.invalid/'+path}})})}};
+    const fetch=async(url,options)=>{
+        const path=url.split('/object/trip-media/')[1],blob=options.body;
         if(!['image/webp','image/jpeg'].includes(blob.type))throw Error('Unsupported MIME: '+blob.type);
-        uploads.push({path,blob,options});return {error:null};
-      }})}};
+        uploads.push({path,blob,options:{contentType:options.headers['Content-Type']}});return {ok:true,json:async()=>({Key:path})};
+    };
     ${source}
     immutableBlobExists=async()=>false;
     window.photoTest={compressImage,blobToDataUrl,materializeStagedPhotos,attachPhotos,uploads,
