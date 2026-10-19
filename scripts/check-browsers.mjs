@@ -2,7 +2,7 @@
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const suites = ['drafts', 'storage', 'inputs', 'imports', 'ledger', 'prep', 'photos', 'theme', 'pwa'];
+const suites = ['drafts', 'storage', 'inputs', 'imports', 'ledger', 'prep', 'auth', 'photos', 'theme', 'pwa'];
 const failed = [];
 for (const suite of suites) {
   console.log(`\nBrowser suite: ${suite}`);

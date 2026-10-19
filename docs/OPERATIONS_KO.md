@@ -182,18 +182,21 @@ docker stop trip-sql-test
 
 | 검사 | 명령·범위 |
 |---|---|
-| 전체 브라우저 | `node scripts/check-browsers.mjs`: 아래 9개, 하나라도 실패하면 실패 코드 |
+| 전체 브라우저 | `node scripts/check-browsers.mjs`: 아래 10개, 하나라도 실패하면 실패 코드 |
 | 초안 | `node scripts/check-drafts-browser.mjs`: 탭·복제 탭·복구·보류·충돌·미리보기·로그아웃·저장 제한·가계부 입력 보존, PC·모바일에서 PREP 목록 저장 후 보류 초안 유지·새로고침 복구, 외부 로그아웃·중복 알림 후 재인증과 새 편집 진입 시 복구·삭제·보류, 앱 복귀·재연결 재조회와 Realtime 갱신 시 미추가 입력·초점·선택 범위 보존 및 삭제된 카테고리 대체·후속 추가 |
 | 입력 | `node scripts/check-inputs-browser.mjs`: PC·모바일, 한글 조합·취소 불가능 입력·실행 취소·불러오기·내보내기 |
 | 가계부 | `node scripts/check-ledger-browser.mjs`: PC·모바일에서 원화·달러 합계와 카테고리별 합계, 환율 변경, 반올림, 예산 미설정·잔액·초과, 빈 목록, 카테고리 삭제, 날짜·카테고리·검색 필터와 실제 CSV 다운로드 결과 |
 | 가져오기 | `node scripts/check-imports-browser.mjs`: PC·모바일 실제 파일 입력으로 잘못된 파일 거부·기존 초안 보존, 위험 HTML·주소·중복 ID·비정상 숫자 정제, 구버전 내용·체크·ID 보존, 비교 중 revision 변경 시 재확인·취소·명시적 저장 |
 | PREP | `node scripts/check-prep-browser.mjs`: 즉시 저장, 인증 취소·실패·재시도, 목록 편집과 다른 초안 보호 |
+| 인증 SDK | `node scripts/check-auth-browser.mjs`: 실제 SDK의 로그인 실패·서버 503·비편집자 세션, 자동 토큰 갱신·갱신 토큰 만료, 다른 탭 로그아웃, 초안 보존·새로고침·재인증·복구 후 저장 |
 | IndexedDB 장애 | `node scripts/check-storage-browser.mjs`: PC·모바일에서 DB 열기 실패·용량 초과·쓰기 중단·삭제 실패, 메모리 편집과 기존 초안 보존, 실패 안내·공유 저장·내보내기·재시도·새로고침 복구, 로그아웃·오프라인 저장 |
 | 사진 | `node scripts/check-photos-browser.mjs`: 실제 변환·PNG 반환 대체·초안 저장 |
 | 테마 | `node scripts/check-theme-browser.mjs`: 테마 선택·저장·내보내기 |
 | PWA | `node scripts/check-pwa-browser.mjs`: 설치·캐시·오프라인·시간 제한 |
 
-개별 브라우저 스크립트는 첫 인자로 Playwright 모듈의 절대 경로를 받을 수 있다. 설치된 Chrome을 사용하려면 PowerShell에서 `$env:PWA_BROWSER_CHANNEL='chrome'`을 설정한다. PWA 검사는 앱과 같은 npm SDK를 로컬 파일로 제공하고 테스트 페이지의 URL·SRI만 대체하므로 CDN 연결 없이 실행된다.
+개별 브라우저 스크립트는 첫 인자로 Playwright 모듈의 절대 경로를 받을 수 있다. 설치된 Chrome을 사용하려면 PowerShell에서 `$env:PWA_BROWSER_CHANNEL='chrome'`을 설정한다. PWA·인증 SDK 검사는 앱과 같은 npm SDK를 로컬 파일로 제공하고 테스트 페이지의 URL·SRI만 대체하므로 CDN 연결 없이 실행된다.
+
+인증 SDK 검사는 인증 함수를 대체하지 않고 로컬 HTTP API의 응답을 바꾼다. 가상 시계로 SDK의 자동 갱신과 액세스 토큰 만료 후 갱신 거부를 실행하고 `TOKEN_REFRESHED`·`SIGNED_OUT` 이벤트가 앱 세션과 편집 화면에 반영되는지 확인한다. 갱신된 토큰이 실제 저장 요청에 사용되는지도 검사한다. 외부 로그아웃은 앱 코드가 없는 별도 탭에서 SDK로 실행해 SDK 자체의 탭 간 이벤트 전달을 검증한다. 기존 초안 검사와 달리 인증 이벤트를 직접 호출하지 않는다. 운영 계정·실제 인증 서버·JWT 서명 검증·DB 권한·Realtime 전달 검사는 포함하지 않으며 HTTP 외부 요청과 WebSocket 연결을 차단한다.
 
 가계부 검사는 오프라인 앱에 고정 데이터를 적용한 뒤 실제 화면과 다운로드 파일을 고정된 기대값과 비교한다. 합계는 합산 후 반올림하고 CSV 원화 환산액은 행마다 반올림하는 차이도 검사한다. CSV의 UTF-8 BOM, 쉼표·따옴표·줄바꿈·한글 보존과 `=`, `+`, `-`, `@`로 시작하는 셀의 작은따옴표 처리를 확인한다. 다운로드 파일과 실패 화면은 `westbound-ledger-*` 임시 폴더에 남기며, Excel 등 스프레드시트 앱에서 파일을 여는 검사는 포함하지 않는다.
 
