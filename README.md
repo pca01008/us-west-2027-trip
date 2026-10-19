@@ -10,8 +10,10 @@
 | 일정·시간표·PREP·가계부 사용, 초안 복구, 설치·내보내기 | [사용자 안내서](docs/USER_GUIDE_KO.md) |
 | 앱 구조, 데이터·저장·권한·SQL 원리 이해 | [기술 설명서](docs/PROJECT_GUIDE_KO.md) |
 | 초기 구축, 다른 여행 추가, 테스트·배포, DB 점검·장애 대응 | [운영 안내서](docs/OPERATIONS_KO.md) |
+| 여행 조사 자료와 웹사이트 폴더 구분 | [디렉터리 구성 안내](docs/DIRECTORY_PLAN_KO.md) |
 | 과거 DB 점검 배포·알림 검증 근거 확인 | [2026-10-05 검증 기록](docs/archive/2026-10-05-db-health-verification.md) |
 | 초안·복원 버그의 발견·수정·검증 경위 확인 | [2026-10-16 검토 기록](docs/archive/2026-10-16-review.md) |
+| 초안·가계부 버그와 사진·문서·정책 제안의 후속 작업 | [2026-10-18 검토 및 인계](docs/archive/2026-10-18-review-handoff.md) |
 | 에이전트 작업 규칙 확인 | [AGENTS.md](AGENTS.md) |
 
 사용법은 사용자 안내서, 구현 원리는 기술 설명서, 실행 절차는 운영 안내서에서 관리합니다.
@@ -71,4 +73,5 @@ npm run test:browser
 GitHub Pages는 `main` 브랜치 루트를 사용하며 `docs/`는 Pages 빌드에서 제외합니다.
 
 현재 여행 내용의 변경은 앱에서 저장합니다. 설정 파일의 기본 일정만 바꾸면 이미 저장된 공유 일정은 바뀌지 않습니다.
+확정 일정·준비물·실제 지출은 앱에서, 조사·후보·예약 근거는 `planning`에서 관리합니다. 자세한 기준은 [자료 관리 원칙](docs/USER_GUIDE_KO.md#planning-policy)을 참고하세요.
 공개 키는 브라우저 설정에 사용하지만 비밀번호·service role 키·호출 토큰은 저장소에 넣지 않습니다.
