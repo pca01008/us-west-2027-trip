@@ -7,6 +7,10 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import { createBrowserDiagnostics } from './browser-diagnostics.mjs';
+import { readBrowserFixture } from './browser-fixtures.mjs';
+
+const diagnostics = await createBrowserDiagnostics('ledger');
 const { chromium } = await import(process.argv[2] ? pathToFileURL(process.argv[2]).href : 'playwright');
 const root = new URL('../', import.meta.url);
 const output = await mkdtemp(path.join(tmpdir(), 'westbound-ledger-'));
@@ -15,7 +19,7 @@ const server = createServer(async (req, res) => {
   const file = new URL(req.url, 'http://localhost').pathname.slice(1) || 'index.html';
   if (!/^(index\.html|trip-config\.js|(?:icons|assets)\/[\w.-]+)$/.test(file)) { res.writeHead(404).end(); return; }
   try {
-    let content = await readFile(new URL(file, root));
+    let content = await readBrowserFixture(new URL(file, root));
     if (file === 'index.html') content = source.replace('data-offline="false"', 'data-offline="true"')
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
       .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/, '')
@@ -49,12 +53,13 @@ try {
   browser = await chromium.launch({ headless: true, ...(process.env.PWA_BROWSER_CHANNEL ? { channel: process.env.PWA_BROWSER_CHANNEL } : {}) });
   for (const mobile of [false, true]) {
     const mode = mobile ? 'mobile' : 'desktop';
-    const context = await browser.newContext({ viewport: { width: mobile ? 390 : 1440, height: 900 }, isMobile: mobile, hasTouch: mobile, locale: 'ko-KR', reducedMotion: 'reduce', acceptDownloads: true, serviceWorkers: 'block' });
+    diagnostics.scenario(`ledger startup / ${mode}`);
+    const context = await diagnostics.context(browser, { viewport: { width: mobile ? 390 : 1440, height: 900 }, isMobile: mobile, hasTouch: mobile, locale: 'ko-KR', reducedMotion: 'reduce', acceptDownloads: true, serviceWorkers: 'block' });
     await context.route('**/*', route => new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
     const page = await context.newPage();
     page.setDefaultTimeout(10000);
     page.on('pageerror', error => errors.push(`${mode}: ${error.message}`));
-    let scenario = 'startup';
+    let scenario = 'startup'; diagnostics.scenario(`${mode} / ${scenario}`);
     let downloadIndex = 0;
     const text = selector => page.locator(selector).textContent();
     const activate = locator => mobile ? locator.tap() : locator.click();
@@ -96,7 +101,7 @@ try {
       await page.goto(origin);
       await page.waitForFunction(() => window.__ledgerTest && !document.body.classList.contains('hydrating'));
       await activate(page.locator('.tabs label[for="money"]'));
-      scenario = 'mixed currency and unset budget';
+      scenario = 'mixed currency and unset budget'; diagnostics.scenario(`${mode} / ${scenario}`);
       await fixture(mixed);
       await totals(['₩12,000', '$12.35', '₩28,370']);
       await budget('예산 미설정', '', '0', false);
@@ -104,7 +109,7 @@ try {
       assert.deepEqual(await page.locator('#categorySummary small').allTextContents(), ['(원화 환산 ₩26,357)', '(원화 환산 ₩2,014)']);
       await csv(mixedCsv);
 
-      scenario = 'rate and budget changes through settings';
+      scenario = 'rate and budget changes through settings'; diagnostics.scenario(`${mode} / ${scenario}`);
       await settings(1400, 30000);
       await totals(['₩12,000', '$12.35', '₩29,290']);
       await budget('₩29,290 / ₩30,000', '남은 금액 ₩710', '98', false);
@@ -117,7 +122,7 @@ try {
       await budget('예산 미설정', '', '0', false);
       assert.equal(await page.locator('#budgetFill').evaluate(el => el.style.width), '0%');
 
-      scenario = 'rounding at half won and aggregate before rounding';
+      scenario = 'rounding at half won and aggregate before rounding'; diagnostics.scenario(`${mode} / ${scenario}`);
       await fixture([
         expense('below-half', '소수 원화', 1.49, 'KRW', '2027-03-02'),
         expense('half', '반 원화', 1.5, 'KRW', '2027-03-02'),
@@ -139,7 +144,7 @@ try {
         ['no matches', '없는 항목', 'food', '2027-03-03', '2027-03-04', []],
         ['reversed dates', '', 'all', '2027-03-04', '2027-03-02', []]
       ]) {
-        scenario = label;
+        scenario = label; diagnostics.scenario(`${mode} / ${scenario}`);
         await activate(page.locator('#expenseFilterClear'));
         await page.locator('#expenseFilterQuery').fill(query);
         await page.locator('#expenseFilterCategory').selectOption(category);
@@ -151,13 +156,13 @@ try {
         await totals(['₩12,000', '$12.35', '₩28,370']);
         if (!indices.length) assert.equal(await text('#expenses .remark'), '필터 조건에 맞는 경비가 없습니다.');
       }
-      scenario = 'filter reset';
+      scenario = 'filter reset'; diagnostics.scenario(`${mode} / ${scenario}`);
       await activate(page.locator('#expenseFilterClear'));
       assert.equal(await text('#expenseFilterSummary'), '전체 4개 · 등록순');
       assert.deepEqual(await page.locator('#expenses .expense').evaluateAll(rows => rows.map(row => row.dataset.expenseId)), mixed.map(item => item.id));
       await csv(mixedCsv);
 
-      scenario = 'delete category preserves amounts and exports';
+      scenario = 'delete category preserves amounts and exports'; diagnostics.scenario(`${mode} / ${scenario}`);
       await page.locator('#expenseFilterCategory').selectOption('food');
       await activate(page.locator('#editBtn'));
       await activate(page.locator('#settingsCategoryList [data-category-delete="food"]'));
@@ -171,7 +176,7 @@ try {
       await totals(['₩12,000', '$12.35', '₩28,370']);
       await csv(['"2027-03-02","점심 Cafe","삭제된 카테고리","KRW","10000","10000"', '"2027-03-03","저녁 CAFE","삭제된 카테고리","USD","12.34","16357"']);
 
-      scenario = 'CSV punctuation, multiline Korean and formula prefixes';
+      scenario = 'CSV punctuation, multiline Korean and formula prefixes'; diagnostics.scenario(`${mode} / ${scenario}`);
       await fixture([
         expense('comma', '서울, 점심', 10, 'KRW', '2027-03-02'),
         expense('quote', '메모 "둘"', 20, 'KRW', '2027-03-02'),
@@ -191,7 +196,7 @@ try {
         `"2027-03-02","'@SUM(1,2)","여행, ""식비""","KRW","70","70"`
       ]);
 
-      scenario = 'empty ledger';
+      scenario = 'empty ledger'; diagnostics.scenario(`${mode} / ${scenario}`);
       await fixture([]);
       await totals(['₩0', '$0.00', '₩0']);
       await budget('예산 미설정', '', '0', false);
@@ -202,13 +207,16 @@ try {
       await budget('₩0 / ₩30,000', '남은 금액 ₩30,000', '0', false);
       console.log(`${mode}: mixed totals, rate changes, rounding, budgets, filters, deleted categories and ${downloadIndex} CSV downloads passed.`);
     } catch (error) {
-      await page.screenshot({ path: path.join(output, `${mode}-failure.png`), fullPage: true }).catch(() => {});
+      await diagnostics.fail(new Error(`${mode} ledger scenario: ${scenario}`, { cause: error }));
       throw new Error(`${mode} ledger scenario: ${scenario}`, { cause: error });
-    } finally { await context.close(); }
+    } finally { await diagnostics.close(context); }
   }
   assert.deepEqual(errors, []);
+} catch (error) {
+  await diagnostics.fail(error);
+  throw error;
 } finally {
-  console.log('Ledger downloads and failure screenshots:', output);
+  console.log('Ledger downloads:', output);
   await browser?.close();
   await new Promise(resolve => server.close(resolve));
 }

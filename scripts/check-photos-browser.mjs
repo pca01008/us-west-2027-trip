@@ -4,6 +4,9 @@ import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { pathToFileURL } from 'node:url';
 
+import { createBrowserDiagnostics } from './browser-diagnostics.mjs';
+
+const diagnostics = await createBrowserDiagnostics('photos');
 const { chromium } = await import(process.argv[2] ? pathToFileURL(process.argv[2]).href : 'playwright');
 const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 const source = html.slice(html.indexOf('  function blobToDataUrl('), html.indexOf('  function movePhoto('));
@@ -13,7 +16,8 @@ const origin = `http://127.0.0.1:${server.address().port}`;
 let browser;
 try {
   browser = await chromium.launch({ headless: true, ...(process.env.PWA_BROWSER_CHANNEL ? {channel:process.env.PWA_BROWSER_CHANNEL} : {}) });
-  const context = await browser.newContext();
+  diagnostics.scenario('canvas encoding, upload and legacy conversion');
+  const context = await diagnostics.context(browser);
   await context.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
   const page = await context.newPage();
   await page.goto(origin);
@@ -104,7 +108,11 @@ try {
     return summary;
   });
   assert.equal(results.length, 2);
+  await diagnostics.close(context);
   console.log(JSON.stringify(results, null, 2));
+} catch (error) {
+  await diagnostics.fail(error);
+  throw error;
 } finally {
   await browser?.close();
   await new Promise(resolve=>server.close(resolve));

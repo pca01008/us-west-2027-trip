@@ -6,6 +6,10 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import { createBrowserDiagnostics } from './browser-diagnostics.mjs';
+import { readBrowserFixture } from './browser-fixtures.mjs';
+
+const diagnostics = await createBrowserDiagnostics('theme');
 const { chromium } = await import(process.argv[2] ? pathToFileURL(process.argv[2]).href : 'playwright');
 const root = new URL('../', import.meta.url);
 const output = await mkdtemp(path.join(tmpdir(), 'westbound-theme-'));
@@ -15,7 +19,7 @@ const server = createServer(async (req, res) => {
   const relative = url.pathname.replace(/^\/(trip|offline)\//, '') || 'index.html';
   if (!/^(index\.html|trip-config\.js|(?:icons|assets)\/[\w.-]+)$/.test(relative)) { res.writeHead(404).end(); return; }
   try {
-    let body = await readFile(new URL(relative, root));
+    let body = await readBrowserFixture(new URL(relative, root));
     if (relative === 'index.html') {
       body = source.replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
         .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, '')
@@ -44,7 +48,8 @@ let browser;
 const errors = [];
 try {
   browser = await chromium.launch({ headless: true, ...(process.env.PWA_BROWSER_CHANNEL ? {channel:process.env.PWA_BROWSER_CHANNEL} : {}) });
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, colorScheme: 'dark', reducedMotion: 'reduce', acceptDownloads: true });
+  diagnostics.scenario('theme preferences, tabs and dialogs');
+  const context = await diagnostics.context(browser, { viewport: { width: 390, height: 844 }, isMobile: true, colorScheme: 'dark', reducedMotion: 'reduce', acceptDownloads: true });
   await context.route('**/*', route => route.request().url().startsWith(origin) || route.request().url().startsWith('file:') ? route.continue() : route.abort());
   context.on('page', page => { page.setDefaultTimeout(10000); page.on('pageerror', error => { errors.push(error.message); console.error('Browser error:', error.message); }); });
   const page = await context.newPage();
@@ -132,12 +137,13 @@ try {
   assert.match(editable, /id="tripThemeBootstrap"/); assert.match(editable, /id="themeSelect"/);
   assert.doesNotMatch(editable.match(/<html[^>]*>/)[0], /data-theme=|data-theme-preference=/);
   assert.doesNotMatch(editable, /src="(?:\.\/)?pwa\.js"/);
-  const artifactContext = await browser.newContext({ colorScheme: 'dark' });
+  diagnostics.scenario('editable export theme');
+  const artifactContext = await diagnostics.context(browser, { colorScheme: 'dark' });
   const artifact = await artifactContext.newPage(); artifact.on('pageerror', e => errors.push(e.message));
   await artifact.goto(pathToFileURL(editablePath).href); await ready(artifact);
   assert.equal(await theme(artifact), 'light'); await choose(artifact, 'dark');
   await artifact.reload(); await ready(artifact); assert.equal(await theme(artifact), 'dark');
-  await artifactContext.close();
+  await diagnostics.close(artifactContext);
 
   await offline.locator('#exportMenuBtn').click();
   const readonlyDownload = offline.waitForEvent('download'); await offline.locator('#exportBtn').click();
@@ -145,12 +151,14 @@ try {
   const readonly = await readFile(readonlyPath, 'utf8');
   assert.doesNotMatch(readonly, /<script id="tripThemeBootstrap"|id="themeSelect"/);
   assert.doesNotMatch(readonly.match(/<html[^>]*>/)[0], /data-theme=|data-theme-preference=/);
-  const readonlyContext = await browser.newContext({ colorScheme: 'dark' });
+  diagnostics.scenario('readonly export theme');
+  const readonlyContext = await diagnostics.context(browser, { colorScheme: 'dark' });
   const readOnlyPage = await readonlyContext.newPage(); readOnlyPage.on('pageerror', e => errors.push(e.message));
   await readOnlyPage.goto(pathToFileURL(readonlyPath).href);
   assert.equal(await color(readOnlyPage, '.panel'), 'rgb(255, 255, 255)');
-  await tab(readOnlyPage, 'money'); await readonlyContext.close();
+  await tab(readOnlyPage, 'money'); await diagnostics.close(readonlyContext);
 
+  diagnostics.scenario('print and responsive theme');
   await offline.emulateMedia({ media: 'print' });
   assert.equal(await color(offline, '.panel'), 'rgb(255, 255, 255)');
   assert.equal(await offline.locator('.theme-toolbar').isVisible(), false);
@@ -161,10 +169,13 @@ try {
   }
   await offline.evaluate(() => window.scrollTo(0, 0));
   await offline.screenshot({ path: path.join(output, 'desktop-dark.png'), fullPage: true });
-  await context.close();
+  await diagnostics.close(context);
   assert.deepEqual(errors, []);
   console.log('Theme checks passed: preferences, sync, editing, dialogs, exports, print and responsive layout.');
   console.log('Screenshots and exported fixtures:', output);
+} catch (error) {
+  await diagnostics.fail(error);
+  throw error;
 } finally {
   await browser?.close(); await new Promise(resolve => server.close(resolve));
 }

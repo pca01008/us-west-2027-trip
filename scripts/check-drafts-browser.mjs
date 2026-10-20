@@ -5,6 +5,10 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 
+import { createBrowserDiagnostics } from './browser-diagnostics.mjs';
+import { readBrowserFixture } from './browser-fixtures.mjs';
+
+const diagnostics = await createBrowserDiagnostics('drafts');
 const { chromium } = await import(process.argv[2] ? pathToFileURL(process.argv[2]).href : 'playwright');
 const root = new URL('../', import.meta.url);
 const original = await readFile(new URL('index.html', root), 'utf8');
@@ -67,7 +71,7 @@ const server = createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');
     const file = url.pathname.slice(1) || 'index.html';
     if (!/^(index\.html|trip-config\.js|assets\/[\w.-]+)$/.test(file)) { res.writeHead(404).end(); return; }
-    let body = await readFile(new URL(file, root));
+    let body = await readBrowserFixture(new URL(file, root));
     if (file === 'index.html') body = original
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
       .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, stub)
@@ -104,8 +108,9 @@ async function recover(page) {
   await page.getByRole('button', { name: '초안 복구', exact: true }).click();
   await ready(page);
 }
-async function context(options = {}) {
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce', ...options });
+async function context(scenario, options = {}) {
+  diagnostics.scenario(scenario);
+  const ctx = await diagnostics.context(browser, { viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce', ...options });
   await ctx.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
   ctx.on('page', page => { page.setDefaultTimeout(10000); page.on('pageerror', error => errors.push(error.message)); });
   return ctx;
@@ -132,7 +137,7 @@ try {
   // Exercise actual fetch aborts, response-body stalls, draft retention and retry.
   for(const mobile of [false,true])for(const mode of ['head','upload','upload-body','download','download-body'])for(const cancel of [false,true]){
     reset();photoMode='normal';photoCalls=[];photoAborts=0;photoObjects.clear();
-    const ctx=await context(mobile?{viewport:{width:390,height:844},isMobile:true,hasTouch:true}:{}),page=await ctx.newPage();
+    const ctx=await context(`photo ${mode} / ${cancel ? "cancel" : "timeout"} / ${mobile ? "mobile" : "desktop"}`, mobile?{viewport:{width:390,height:844},isMobile:true,hasTouch:true}:{}),page=await ctx.newPage();
     await page.goto(origin);await ready(page);await edit(page,'Photo network draft');
     await page.evaluate(()=>window.__draftTest.stagePhoto());
     const draft=await stored(page),downloads=[];page.on('download',download=>downloads.push(download));
@@ -170,11 +175,11 @@ try {
       assert.equal(saveCalls,1);assert.equal(await stored(page),null);
       assert.ok(!row.content.html.includes('data-staged="true"'));
     }
-    await ctx.close();console.log('Photo '+mode+' '+(cancel?'cancel':'timeout')+' ('+(mobile?'mobile':'desktop')+'): request aborted, draft retained, retry passed.');
+    await diagnostics.close(ctx);console.log('Photo '+mode+' '+(cancel?'cancel':'timeout')+' ('+(mobile?'mobile':'desktop')+'): request aborted, draft retained, retry passed.');
   }
   for(const cancel of [false,true]){
     reset();photoMode='normal';photoCalls=[];photoAborts=0;
-    const ctx=await context(),page=await ctx.newPage();await page.goto(origin);await ready(page);await edit(page,'Readonly export draft');
+    const ctx=await context(`readonly export / ${cancel ? "cancel" : "timeout"}`),page=await ctx.newPage();await page.goto(origin);await ready(page);await edit(page,'Readonly export draft');
     await page.evaluate(async()=>{
       const api=window.__draftTest;await api.stagePhoto();
       const img=document.querySelector('.schedule-photo img');img.src=location.origin+'/storage/v1/object/public/trip-media/download.jpg';img.dataset.fullUrl=img.src;
@@ -188,14 +193,14 @@ try {
     assert.equal(downloads.length,cancel?0:1,'Readonly export falls back on timeout but never on cancellation');
     if(!cancel)assert.match(await page.locator('#status').textContent(),/온라인 주소 사용/);
     assert.equal((await stored(page)).state.html,draft.state.html);
-    await ctx.close();console.log('Readonly export '+(cancel?'cancel':'timeout')+': draft retained; '+(cancel?'no download':'online photo fallback')+'.');
+    await diagnostics.close(ctx);console.log('Readonly export '+(cancel?'cancel':'timeout')+': draft retained; '+(cancel?'no download':'online photo fallback')+'.');
   }
   photoMode='normal';
   for(const mobile of [false,true]) {
     const options=mobile?{viewport:{width:390,height:844},isMobile:true,hasTouch:true}:{};
     // Saving the PREP list must leave an unapplied, deferred schedule draft intact.
     {
-      reset();const ctx=await context(options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
+      reset();const ctx=await context(`deferred draft PREP save / ${mobile ? "mobile" : "desktop"}`, options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
       const sharedTitle=await title(page).textContent();await edit(page,'Deferred schedule before PREP save');
       const sharedRevision=row.revision;
       await page.reload();await page.locator('#noticeDialog').waitFor({state:'visible'});await page.keyboard.press('Escape');await ready(page);
@@ -218,12 +223,12 @@ try {
       assert.equal(await title(page).textContent(),'Deferred schedule before PREP save');
       assert.equal(await page.evaluate(()=>window.__draftTest.isDirty()),true);
       assert.equal(saveCalls,1,'Recovery does not automatically publish the draft');
-      await ctx.close();console.log(`Deferred draft (${mobile?'mobile':'desktop'}): PREP list saves independently; original draft survives and restores after reload.`);
+      await diagnostics.close(ctx);console.log(`Deferred draft (${mobile?'mobile':'desktop'}): PREP list saves independently; original draft survives and restores after reload.`);
     }
     // The actual version buttons must preserve a draft through timers, pagehide,
     // nested previews, and reload, while every ordinary save remains blocked.
     {
-      reset();const ctx=await context(options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
+      reset();const ctx=await context(`preview draft protection / ${mobile ? "mobile" : "desktop"}`, options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
       await enterExpense(page,'Original unsaved expense');
       await page.evaluate(()=>window.__draftTest.flushDraftPersistence());
       const originalDraft=await stored(page);
@@ -245,12 +250,12 @@ try {
       await enterExpense(page,'After preview');
       assert.equal(await page.evaluate(()=>window.__draftTest.saveAndFinish().then(Boolean)),true);
       assert.equal(row.content.budgetKrw,987654);assert.equal(row.content.expenses.length,2);
-      await ctx.close();console.log(`Preview (${mobile?'mobile':'desktop'}): draft survives timers/pagehide/reload; edits and saves blocked; normal save after close passed.`);
+      await diagnostics.close(ctx);console.log(`Preview (${mobile?'mobile':'desktop'}): draft survives timers/pagehide/reload; edits and saves blocked; normal save after close passed.`);
     }
     // A clean preview creates no dirty draft; only explicit version restore may
     // publish the historical document, after its dedicated confirmation.
     {
-      reset();const ctx=await context(options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
+      reset();const ctx=await context(`preview explicit restore / ${mobile ? "mobile" : "desktop"}`, options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
       await preview(page);
       assert.equal(await page.evaluate(()=>window.__draftTest.isDirty()),false);
       await page.evaluate(()=>window.__draftTest.flushDraftPersistence());assert.equal(await stored(page),null);
@@ -264,10 +269,10 @@ try {
       await page.waitForFunction(()=>!document.body.classList.contains('previewing')&&!window.__draftTest.busy());
       assert.equal(row.content.budgetKrw,0);assert.equal(row.revision,3);assert.equal(saveCalls,1);
       assert.equal(await stored(page),null);
-      await ctx.close();console.log(`Preview (${mobile?'mobile':'desktop'}): clean view and explicit restore confirmation passed.`);
+      await diagnostics.close(ctx);console.log(`Preview (${mobile?'mobile':'desktop'}): clean view and explicit restore confirmation passed.`);
     }
     for(const exit of ['save','discard','external','timeout','reset']) {
-      reset();const ctx=await context(options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
+      reset();const ctx=await context(`preview exit ${exit} / ${mobile ? "mobile" : "desktop"}`, options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
       await enterExpense(page,'Original before preview exit');await preview(page);
       if(exit==='external')await page.evaluate(()=>window.__draftTest.handleExternalSignOut());
       else if(exit==='timeout')await page.evaluate(()=>window.__draftTest.logoutPreservingDraft('자동 로그아웃되었습니다.'));
@@ -283,11 +288,11 @@ try {
       assert.equal(row.content.expenses.length,exit==='save'?1:0);
       if(exit==='external'||exit==='timeout')assert.equal((await stored(page)).state.expenses[0].name,'Original before preview exit');
       else await page.waitForFunction(async()=>await window.__draftTest.readDraftRecord()===null);
-      await ctx.close();
+      await diagnostics.close(ctx);
     }
     console.log(`Preview (${mobile?'mobile':'desktop'}): logout save/discard, external sign-out, timeout and reset all leave preview safely.`);
     for(const source of ['reload','external','timeout']) for(const choice of ['초안 복구','초안 삭제']) {
-      reset();const ctx=await context(options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
+      reset();const ctx=await context(`deferred recovery ${source} / ${choice} / ${mobile ? "mobile" : "desktop"}`, options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
       const sharedTitle=await title(page).textContent();await edit(page,'Original unrecovered title');
       if(source==='reload'){
         await page.reload();await page.locator('#noticeDialog').waitFor({state:'visible'});await page.keyboard.press('Escape');await ready(page);
@@ -330,11 +335,11 @@ try {
       assert.equal(await title(page).textContent(),choice==='초안 복구'?'Original unrecovered title':sharedTitle);
       assert.equal(await page.evaluate(()=>window.__draftTest.captureState().expenses[0].name),'After deferred recovery');
       assert.equal(saveCalls,0);
-      await ctx.close();console.log(`Deferred draft (${mobile?'mobile':'desktop'}, ${source}, ${choice}): cancel preserves original; explicit choice protects new work across reload.`);
+      await diagnostics.close(ctx);console.log(`Deferred draft (${mobile?'mobile':'desktop'}, ${source}, ${choice}): cancel preserves original; explicit choice protects new work across reload.`);
     }
     // Incoming shared updates must preserve an entry that has not been added.
     for(const delivery of ['visible','reconnect','realtime']) {
-      reset();const ctx=await context(options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
+      reset();const ctx=await context(`shared inputs ${delivery} / ${mobile ? "mobile" : "desktop"}`, options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
       await page.locator('.tabs label[for="money"]').click();
       const category=row.content.categories.findLast(item=>!item.system).id;
       const values={expenseName:'택시비 Airport',expenseAmount:'37',expenseDate:'2027-03-15',expenseCurrency:'USD',expenseCategory:category};
@@ -366,12 +371,12 @@ try {
       const added=(await stored(page)).state.expenses;
       assert.equal(added.length,2);assert.deepEqual(added[1],{id:added[1].id,name:values.expenseName,amount:37,currency:'USD',date:values.expenseDate,categoryId:fallback});
       assert.equal(saveCalls,0);assert.deepEqual(row.content.expenses,[remoteExpense]);
-      await ctx.close();console.log(`Shared inputs (${mobile?'mobile':'desktop'}, ${delivery}): fields, focus/caret, category removal and subsequent add passed.`);
+      await diagnostics.close(ctx);console.log(`Shared inputs (${mobile?'mobile':'desktop'}, ${delivery}): fields, focus/caret, category removal and subsequent add passed.`);
     }
     // Hold the real save response while typing the next entry. Verify every
     // field, focus/caret and that the entry is not silently submitted.
     {
-      reset();const ctx=await context(options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
+      reset();const ctx=await context(`inputs during save / ${mobile ? "mobile" : "desktop"}`, options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
       await enterExpense(page,'First saved expense');saveMode='delayed';
       await page.evaluate(()=>{window.__saveResult=undefined;window.__draftTest.saveAndFinish().then(result=>window.__saveResult=Boolean(result));});
       await page.waitForFunction(()=>window.__draftTest.busy());
@@ -386,12 +391,12 @@ try {
       await page.locator('#addExpense').click();await page.evaluate(()=>window.__draftTest.flushDraftPersistence());
       assert.equal((await stored(page)).state.expenses.length,2);
       assert.equal(row.content.expenses.length,1);
-      await ctx.close();console.log(`Save inputs (${mobile?'mobile':'desktop'}): all next-entry fields and focus survive delayed save, then submit normally.`);
+      await diagnostics.close(ctx);console.log(`Save inputs (${mobile?'mobile':'desktop'}): all next-entry fields and focus survive delayed save, then submit normally.`);
     }
   }
   // Exercise the actual inactivity timers and warning actions with a virtual clock.
   for(const choice of ['timeout','continue','save','discard','clean','deferred']) {
-    reset();const ctx=await context(),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
+    reset();const ctx=await context(`inactivity ${choice}`),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
     const sharedTitle=await title(page).textContent();
     if(choice!=='clean')await edit(page,'Inactivity draft');
     if(choice==='deferred'){
@@ -433,11 +438,11 @@ try {
       }else assert.equal(await stored(page),null);
     }
     assert.equal(saveCalls,choice==='save'?1:0);
-    await ctx.close();console.log('Inactivity '+choice+': warning, session and draft policy passed.');
+    await diagnostics.close(ctx);console.log('Inactivity '+choice+': warning, session and draft policy passed.');
   }
   // Expiry discovered by an auth check and during startup must also retain drafts.
   for(const reload of [false,true]){
-    reset();const ctx=await context(),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
+    reset();const ctx=await context(`expired session / ${reload ? "startup" : "auth check"}`),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
     const sharedTitle=await title(page).textContent();await edit(page,'Expired session draft');const draft=await stored(page);
     await page.evaluate(()=>localStorage.setItem(window.__draftTest.activityKey,String(Date.now()-31*60*1000)));
     if(reload){await page.reload();await ready(page);}
@@ -446,11 +451,11 @@ try {
     const retained=await stored(page);assert.ok(retained.savedAt>=draft.savedAt);
     assert.deepEqual({...retained,savedAt:draft.savedAt},draft);assert.equal(await title(page).textContent(),sharedTitle);
     assert.equal(await page.locator('#noticeDialog').isVisible(),false);
-    assert.equal(saveCalls,0);await ctx.close();console.log('Expired session '+(reload?'startup':'auth check')+': retained draft and signed out.');
+    assert.equal(saveCalls,0);await diagnostics.close(ctx);console.log('Expired session '+(reload?'startup':'auth check')+': retained draft and signed out.');
   }
   // Escape, replacement by another dialog, and explicit discard are distinct.
   {
-    const ctx = await context(), page = await ctx.newPage(); await page.goto(origin); await ready(page);
+    const ctx = await context('logout draft choices'), page = await ctx.newPage(); await page.goto(origin); await ready(page);
     await edit(page, 'Keep after Escape');
     await page.locator('#logoutBtn').click(); await page.locator('#noticeDialog').waitFor({ state: 'visible' });
     await page.keyboard.press('Escape');
@@ -464,11 +469,11 @@ try {
     await page.waitForFunction(() => !window.__signedIn);
     assert.equal(await stored(page), null);
     assert.deepEqual(await page.evaluate(()=>window.__signOutOptions),{scope:'local'});
-    await ctx.close(); console.log('Logout: Escape/replaced preserve drafts; explicit discard removes them.');
+    await diagnostics.close(ctx); console.log('Logout: Escape/replaced preserve drafts; explicit discard removes them.');
   }
   // Recovery dismissal must retain the record through hydration and reload.
   {
-    reset(); const ctx=await context(),page=await ctx.newPage();await page.goto(origin);await ready(page);
+    reset(); const ctx=await context('recovery dismissal and deletion'),page=await ctx.newPage();await page.goto(origin);await ready(page);
     const originalTitle=await title(page).textContent();await edit(page,'Recovery dismissal draft');
     for(const response of ['Escape','replaced']) {
       await page.reload();await page.locator('#noticeDialog').waitFor({state:'visible'});
@@ -484,11 +489,11 @@ try {
     await page.reload();await page.getByRole('button',{name:'초안 삭제',exact:true}).click();await ready(page);
     assert.equal(await stored(page),null);await page.reload();await ready(page);
     assert.equal(await page.locator('#noticeDialog').isVisible(),false);
-    await ctx.close();console.log('Recovery: Escape/replaced retain the draft; explicit deletion removes it across reload.');
+    await diagnostics.close(ctx);console.log('Recovery: Escape/replaced retain the draft; explicit deletion removes it across reload.');
   }
   // Checklist auto-save cannot bless a recovered stale document with its revision.
   for(const legacy of [false,true])for(const mobile of [false,true]) {
-    reset();const ctx=await context(mobile?{viewport:{width:390,height:844},isMobile:true,hasTouch:true}:{});
+    reset();const ctx=await context(`recovered ${legacy ? "legacy" : "current"} draft / ${mobile ? "mobile" : "desktop"}`, mobile?{viewport:{width:390,height:844},isMobile:true,hasTouch:true}:{});
     const page=await ctx.newPage();await page.goto(origin);await ready(page);
     row.content=await page.evaluate(()=>window.__draftTest.captureState());row.revision=1;
     await page.reload();await ready(page);const originalBudget=row.content.budgetKrw;
@@ -520,11 +525,11 @@ try {
     assert.equal(await stored(page),null);
     assert.equal(row.content.budgetKrw,mobile?987654:originalBudget,'Overwrite requires explicit confirmation; latest-view choice preserves remote content');
     assert.equal(await page.evaluate(()=>window.__draftTest.revision()),row.revision);
-    await ctx.close();console.log('Recovered '+(legacy?'legacy':'current')+' draft ('+(mobile?'mobile':'desktop')+'): checklist patch, reload and full-save conflict preserve remote budget.');
+    await diagnostics.close(ctx);console.log('Recovered '+(legacy?'legacy':'current')+' draft ('+(mobile?'mobile':'desktop')+'): checklist patch, reload and full-save conflict preserve remote budget.');
   }
   // Abort only the stalled response, then reconcile without an automatic retry.
   for(const mode of ['timeout-before','timeout-committed','timeout-newer','timeout-unverified','throw']) {
-    reset();const ctx=await context(),page=await ctx.newPage();await page.goto(origin);await ready(page);
+    reset();const ctx=await context(`full save ${mode}`),page=await ctx.newPage();await page.goto(origin);await ready(page);
     row.content=await page.evaluate(()=>window.__draftTest.captureState());row.revision=1;await page.reload();await ready(page);
     await edit(page,'Save failure draft '+mode);
     await page.evaluate(mode=>{window.__shortSaveTimeout=true;window.__throwNextRpc=mode==='throw';},mode);
@@ -546,11 +551,11 @@ try {
         assert.equal(row.revision,2);
       }
     }
-    await ctx.close();console.log('Full save '+mode+': reconciliation, draft retention, flag cleanup and explicit retry passed.');
+    await diagnostics.close(ctx);console.log('Full save '+mode+': reconciliation, draft retention, flag cleanup and explicit retry passed.');
   }
   // Undo removes persisted drafts and cancels pending debounce writes.
   {
-    reset(); const ctx = await context(), page = await ctx.newPage(); await page.goto(origin); await ready(page);
+    reset(); const ctx = await context('undo and redo persistence'), page = await ctx.newPage(); await page.goto(origin); await ready(page);
     const originalTitle = await title(page).textContent();
     await edit(page, 'Undo persisted edit'); await page.locator('#undoBtn').click();
     await page.waitForFunction(async () => (await window.__draftTest.readDraftRecord()) === null);
@@ -566,11 +571,11 @@ try {
     await page.evaluate(() => window.__draftTest.flushDraftPersistence());
     assert.ok((await stored(page)).state.html.includes('Redo survives'));
     await page.reload(); await recover(page); assert.equal(await title(page).textContent(), 'Redo survives');
-    await ctx.close(); console.log('Undo/redo: clean reload, queued write cancellation, and dirty recovery passed.');
+    await diagnostics.close(ctx); console.log('Undo/redo: clean reload, queued write cancellation, and dirty recovery passed.');
   }
   // Separate tabs, duplicated sessionStorage, saves/deletes, and closed-tab recovery.
   {
-    reset(); const ctx = await context(), a = await ctx.newPage(); await a.goto(origin); await ready(a);
+    reset(); const ctx = await context('independent and duplicated tabs'), a = await ctx.newPage(); await a.goto(origin); await ready(a);
     await edit(a, 'Tab A draft');
     const popup = a.waitForEvent('popup'); await a.evaluate(url => window.open(url, '_blank'), origin);
     const b = await popup; await ready(b); await edit(b, 'Tab B draft');
@@ -586,11 +591,11 @@ try {
     const c = await ctx.newPage(); await c.goto(origin); await recover(c); assert.equal(await title(c).textContent(), 'Tab A draft');
     await c.evaluate(() => window.__draftTest.handleExternalSignOut());
     assert.ok((await stored(c)).state.html.includes('Tab A draft'), 'External logout retains this tab’s draft');
-    await ctx.close(); console.log('Tabs: independent drafts, duplicated tabs, save/discard isolation, reload/closed-tab recovery and external logout passed.');
+    await diagnostics.close(ctx); console.log('Tabs: independent drafts, duplicated tabs, save/discard isolation, reload/closed-tab recovery and external logout passed.');
   }
   // Legacy shared-key drafts survive the upgrade and are claimed by one page.
   {
-    reset(); const ctx = await context(), page = await ctx.newPage(); await page.goto(origin); await ready(page);
+    reset(); const ctx = await context('legacy shared-key migration'), page = await ctx.newPage(); await page.goto(origin); await ready(page);
     const originalTitle = await title(page).textContent();
     await edit(page, 'Legacy draft');
     await page.evaluate(async originalTitle => {
@@ -604,11 +609,11 @@ try {
       api.recordHistory();
     }, originalTitle);
     await page.reload(); await recover(page); assert.equal(await title(page).textContent(), 'Legacy draft');
-    await ctx.close(); console.log('Legacy draft migration passed.');
+    await diagnostics.close(ctx); console.log('Legacy draft migration passed.');
   }
   // Offline clean baselines must not regress to the old file after undo/reload.
   {
-    reset(); const ctx = await context(), page = await ctx.newPage(); await page.goto(origin + '/?offline'); await ready(page);
+    reset(); const ctx = await context('offline baseline after undo'), page = await ctx.newPage(); await page.goto(origin + '/?offline'); await ready(page);
     await edit(page, 'Offline saved baseline');
     await page.evaluate(() => window.__draftTest.persistState(window.__draftTest.captureState()));
     await page.reload(); await ready(page); assert.equal(await title(page).textContent(), 'Offline saved baseline');
@@ -617,11 +622,11 @@ try {
     await page.reload(); await ready(page);
     assert.equal(await title(page).textContent(), 'Offline saved baseline');
     assert.equal(await page.evaluate(() => window.__draftTest.isDirty()), false);
-    await ctx.close(); console.log('Offline undo preserves the saved baseline across reload.');
+    await diagnostics.close(ctx); console.log('Offline undo preserves the saved baseline across reload.');
   }
   // Only the day subtitle differs: use the real file input and apply button.
   {
-    reset(); const ctx = await context({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    reset(); const ctx = await context('subtitle-only import / mobile', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
     const page = await ctx.newPage(); await page.goto(origin); await ready(page);
     row.content = await page.evaluate(() => window.__draftTest.captureState());
     const fixture = await page.evaluate(() => {
@@ -639,9 +644,12 @@ try {
     assert.equal(await page.locator('.day1 .day-head p').textContent(), '새 날짜별 설명');
     assert.equal(await page.evaluate(() => window.__draftTest.isDirty()), true);
     assert.ok(!row.content.html.includes('새 날짜별 설명'), 'Import remains an unpublished draft');
-    await ctx.close(); console.log('Subtitle-only import and version comparison passed on a mobile viewport.');
+    await diagnostics.close(ctx); console.log('Subtitle-only import and version comparison passed on a mobile viewport.');
   }
   assert.deepEqual(errors, []);
+} catch (error) {
+  await diagnostics.fail(error);
+  throw error;
 } finally {
   await browser?.close();
   await new Promise(resolve => server.close(resolve));

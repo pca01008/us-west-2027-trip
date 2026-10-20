@@ -6,6 +6,10 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import { createBrowserDiagnostics } from './browser-diagnostics.mjs';
+import { readBrowserFixture } from './browser-fixtures.mjs';
+
+const diagnostics = await createBrowserDiagnostics('inputs');
 const { chromium } = await import(process.argv[2] ? pathToFileURL(process.argv[2]).href : 'playwright');
 const root = new URL('../', import.meta.url);
 const output = await mkdtemp(path.join(tmpdir(), 'westbound-inputs-'));
@@ -14,7 +18,7 @@ const server = createServer(async (req, res) => {
   const relative = new URL(req.url, 'http://localhost').pathname.slice(1) || 'index.html';
   if (!/^(index\.html|trip-config\.js|(?:icons|assets)\/[\w.-]+)$/.test(relative)) { res.writeHead(404).end(); return; }
   try {
-    let content = await readFile(new URL(relative, root));
+    let content = await readBrowserFixture(new URL(relative, root));
     if (relative === 'index.html') content = source.replace('data-offline="false"', 'data-offline="true"')
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
       .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, '')
@@ -42,7 +46,8 @@ try {
   // Use real pointer and keyboard activation: label forwarding used to focus
   // an off-screen radio before change, losing the sticky tab position.
   for(const mobile of [false,true])for(const reducedMotion of ['reduce','no-preference']) {
-    const context=await browser.newContext({viewport:{width:mobile?390:1440,height:mobile?844:900},isMobile:mobile,hasTouch:mobile,reducedMotion});
+    diagnostics.scenario(`tab navigation / ${mobile ? "mobile" : "desktop"} / ${reducedMotion}`);
+    const context=await diagnostics.context(browser, {viewport:{width:mobile?390:1440,height:mobile?844:900},isMobile:mobile,hasTouch:mobile,reducedMotion});
     await context.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
     const page=await context.newPage();page.setDefaultTimeout(5000);page.on('pageerror',error=>errors.push(error.message));
     await page.goto(origin);await page.waitForFunction(()=>!document.body.classList.contains('hydrating'));
@@ -85,10 +90,11 @@ try {
     await page.waitForFunction(()=>!document.querySelector('main').style.minHeight);
     assert.deepEqual(await page.evaluate(()=>{const api=window.__inputsTest;return api.normalizeState(api.captureState());}),snapshot,'Tab navigation does not change trip data');
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
-    await context.close();console.log((mobile?'Mobile':'Desktop')+' tabs ('+reducedMotion+'): header position, long-to-short switches, nested labels, reselect, keyboard, rapid switches, timetable and data preservation passed.');
+    await diagnostics.close(context);console.log((mobile?'Mobile':'Desktop')+' tabs ('+reducedMotion+'): header position, long-to-short switches, nested labels, reselect, keyboard, rapid switches, timetable and data preservation passed.');
   }
   for (const mobile of [false, true]) {
-    const context = await browser.newContext({ viewport: { width: mobile ? 390 : 1440, height: 900 }, isMobile: mobile, hasTouch: mobile, reducedMotion: 'reduce', acceptDownloads: true });
+    diagnostics.scenario(`input, import and export / ${mobile ? "mobile" : "desktop"}`);
+    const context = await diagnostics.context(browser, { viewport: { width: mobile ? 390 : 1440, height: 900 }, isMobile: mobile, hasTouch: mobile, reducedMotion: 'reduce', acceptDownloads: true });
     await context.route('**/*', route => /^(file:|data:)/.test(route.request().url()) || route.request().url().startsWith(origin) ? route.continue() : route.abort());
     context.on('page', p => { p.setDefaultTimeout(10000); p.on('pageerror', e => errors.push(e.message)); });
     const page = await context.newPage();
@@ -205,9 +211,12 @@ try {
       await artifact.close();
     }
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'No horizontal overflow');
-    await context.close();
+    await diagnostics.close(context);
     console.log(`${mobile ? 'Mobile viewport/touch' : 'Desktop'}: input, composition events, undo/redo, import, exports and reload passed.`);
   }
   assert.deepEqual(errors, []);
   console.log('Screenshots and exported fixtures:', output);
+} catch (error) {
+  await diagnostics.fail(error);
+  throw error;
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

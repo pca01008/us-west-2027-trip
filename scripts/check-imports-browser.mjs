@@ -4,6 +4,10 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 
+import { createBrowserDiagnostics } from './browser-diagnostics.mjs';
+import { readBrowserFixture } from './browser-fixtures.mjs';
+
+const diagnostics = await createBrowserDiagnostics('imports');
 const { chromium } = await import(process.argv[2] ? pathToFileURL(process.argv[2]).href : 'playwright');
 const root = new URL('../', import.meta.url);
 const source = await readFile(new URL('index.html', root), 'utf8');
@@ -29,7 +33,7 @@ const server = createServer(async (req, res) => {
     }
     const file=new URL(req.url,'http://localhost').pathname.slice(1)||'index.html';
     if (!/^(index\.html|trip-config\.js|(?:assets|icons)\/[\w.-]+)$/.test(file)) { res.writeHead(404).end();return; }
-    let body=await readFile(new URL(file,root));
+    let body=await readBrowserFixture(new URL(file,root));
     if(file==='index.html') body=source
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/,'')
       .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/,stub)
@@ -60,7 +64,8 @@ try {
   browser=await chromium.launch({headless:true,...(process.env.PWA_BROWSER_CHANNEL?{channel:process.env.PWA_BROWSER_CHANNEL}:{})});
   for(const mobile of [false,true]) {
     row={content:{},revision:0,updated_at:'2026-10-19T00:00:00Z'};saves=0;reads=0;
-    const context=await browser.newContext({viewport:{width:mobile?390:1280,height:900},isMobile:mobile,hasTouch:mobile,reducedMotion:'reduce'});
+    diagnostics.scenario(`import rejection, sanitization, migration and conflict / ${mobile ? "mobile" : "desktop"}`);
+    const context=await diagnostics.context(browser, {viewport:{width:mobile?390:1280,height:900},isMobile:mobile,hasTouch:mobile,reducedMotion:'reduce'});
     const attempted=[];
     await context.route('**/*',route=>{
       const url=route.request().url();if(url.includes('import-probe'))attempted.push(url);
@@ -91,6 +96,7 @@ try {
       ['future embedded version',{}, {...before,schemaVersion:999},/더 새로운 버전/]
     ];
     for(const [name,options,incoming,message] of rejected) {
+      diagnostics.scenario(`reject ${name} / ${mobile ? 'mobile' : 'desktop'}`);
       const previousReads=reads;
       await upload(page,incoming,options);await page.locator('#noticeDialog').waitFor({state:'visible'});
       assert.equal(await page.locator('#noticeTitle').textContent(),'작업본을 불러올 수 없습니다.',name);
@@ -104,6 +110,7 @@ try {
     }
     console.log(`Imports (${mobile?'mobile':'desktop'}): ${rejected.length} invalid files rejected; draft retained.`);
 
+    diagnostics.scenario(`sanitize unsafe import / ${mobile ? 'mobile' : 'desktop'}`);
     const hostile=await page.evaluate(()=>{
       const raw=window.__importTest.captureState(),t=document.createElement('template');t.innerHTML=raw.html;
       const rows=t.content.querySelectorAll('.timeline-row'),checks=t.content.querySelectorAll('.checklist label');
@@ -160,6 +167,7 @@ try {
     console.log(`Imports (${mobile?'mobile':'desktop'}): malicious markup, duplicate IDs and invalid numbers sanitized; valid content retained.`);
 
     // Frozen v4 fixture: same IDs/content after repeated migration and file import.
+    diagnostics.scenario(`legacy v4 migration / ${mobile ? 'mobile' : 'desktop'}`);
     const migration=await page.evaluate(raw=>{
       const api=window.__importTest,a=api.migratePublishedState(raw),b=api.migratePublishedState(raw);
       return {a,b,again:api.migratePublishedState(a)};
@@ -179,6 +187,7 @@ try {
     assert.deepEqual(await state(page),old,'Repeated import keeps IDs and content stable');
     console.log(`Imports (${mobile?'mobile':'desktop'}): v4 fixture retains content, checks and stable identities.`);
 
+    diagnostics.scenario(`revision changed during import / ${mobile ? 'mobile' : 'desktop'}`);
     const incoming={...old,html:old.html.replace('직접 추가한 아침 일정','사용자가 확인한 새 일정')};
     const priorDraft=await stored(page);
     await upload(page,incoming);await page.locator('#importDialog').waitFor({state:'visible'});
@@ -201,7 +210,10 @@ try {
     assert.equal(saves,1);assert.equal(row.revision,6);assert.match(row.content.html,/사용자가 확인한 새 일정/);
     assert.equal(await stored(page),null);
     console.log(`Imports (${mobile?'mobile':'desktop'}): revision change requires another confirmation; only explicit save publishes.`);
-    await context.close();
+    await diagnostics.close(context);
   }
   assert.deepEqual(errors,[]);console.log('Import browser checks passed.');
+} catch (error) {
+  await diagnostics.fail(error);
+  throw error;
 } finally { await browser?.close();await new Promise(resolve=>server.close(resolve)); }

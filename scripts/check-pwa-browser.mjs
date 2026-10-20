@@ -6,6 +6,10 @@ import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 
+import { createBrowserDiagnostics } from './browser-diagnostics.mjs';
+import { readBrowserFixture } from './browser-fixtures.mjs';
+
+const diagnostics = await createBrowserDiagnostics('pwa');
 const { chromium } = await import(process.argv[2] ? pathToFileURL(process.argv[2]).href : 'playwright');
 const root = new URL('../', import.meta.url);
 // npm ci supplies the same SDK version locally. jsDelivr may reformat its UMD
@@ -36,7 +40,7 @@ const server = createServer(async (req, res) => {
     res.writeHead(404); res.end(); return;
   }
   try {
-    let body = await readFile(new URL(relative, root));
+    let body = await readBrowserFixture(new URL(relative, root));
     if (relative === 'index.html' || relative === 'sw.js') body = Buffer.from(body.toString()
       .replaceAll(sdkURL, `http://127.0.0.1:${server.address().port}/fixture-supabase.js`)
       .replaceAll(sdkIntegrity, localIntegrity));
@@ -51,7 +55,8 @@ try {
   browser = await chromium.launch({ headless: true, ...(process.env.PWA_BROWSER_CHANNEL ? { channel: process.env.PWA_BROWSER_CHANNEL } : {}) });
   for (const basePath of ['/trip/', '/']) {
     published = null;
-    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, deviceScaleFactor: 2 });
+    diagnostics.scenario(`install, offline reload and refresh / ${basePath}`);
+    const context = await diagnostics.context(browser, { viewport: { width: 390, height: 844 }, isMobile: true, deviceScaleFactor: 2 });
     await context.route('**/*', route => route.request().url().startsWith(`http://127.0.0.1:${server.address().port}/`) ? route.continue() : route.abort());
     const page = await context.newPage(), errors = [];
     page.setDefaultTimeout(10000);
@@ -132,8 +137,11 @@ try {
     assert.match(await page.locator('main').textContent(), /PWA 최신본 검증/);
     assert.deepEqual(errors, []);
     console.log(`${basePath}: installability, mobile tabs, offline reload, theme persistence, missing SDK, online refresh passed`);
-    await context.close();
+    await diagnostics.close(context);
   }
+} catch (error) {
+  await diagnostics.fail(error);
+  throw error;
 } finally {
   await browser?.close();
   await new Promise(resolve => server.close(resolve));

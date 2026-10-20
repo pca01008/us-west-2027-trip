@@ -66,4 +66,5 @@ jobs:
         with:
           name: browser-diagnostics
           path: ${{ runner.temp }}/westbound-*/
-          if-no-files-found: ignore
+          if-no-files-found: warn
+          retention-days: 7

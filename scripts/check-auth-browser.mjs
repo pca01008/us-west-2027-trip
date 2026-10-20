@@ -6,6 +6,10 @@ import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 
+import { createBrowserDiagnostics } from './browser-diagnostics.mjs';
+import { readBrowserFixture } from './browser-fixtures.mjs';
+
+const diagnostics = await createBrowserDiagnostics('auth');
 const { chromium } = await import(process.argv[2] ? pathToFileURL(process.argv[2]).href : 'playwright');
 const root = new URL('../', import.meta.url);
 const source = await readFile(new URL('index.html', root), 'utf8');
@@ -66,7 +70,7 @@ const server = createServer(async (req, res) => {
     }
     const file = url.pathname.slice(1) || 'index.html';
     if (!/^(index\.html|trip-config\.js|(?:icons|assets)\/[\w.-]+)$/.test(file)) { res.writeHead(404).end(); return; }
-    let content = await readFile(new URL(file, root));
+    let content = await readBrowserFixture(new URL(file, root));
     if (file === 'trip-config.js') content += `\nObject.assign(window.TRIP_CONFIG,{editorEmail:'${email}',cacheNamespace:'auth_fixture',supabase:{url:location.origin,publishableKey:'sb_publishable_test'}});`;
     if (file === 'index.html') content = source
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
@@ -84,9 +88,10 @@ const ready = page => page.waitForFunction(() => window.__authTest && !document.
 const title = page => page.locator('.day1 .timeline-row h3').first();
 const saves = () => requests.filter(request => request.path.includes('/rpc/'));
 const refreshes = () => requests.filter(request => request.grant === 'refresh_token');
-async function setup() {
+async function setup(scenario) {
+  diagnostics.scenario(scenario);
   reset();
-  const context = await browser.newContext({ reducedMotion: 'reduce', serviceWorkers: 'block' });
+  const context = await diagnostics.context(browser, { reducedMotion: 'reduce', serviceWorkers: 'block' });
   await context.route('**/*', route => {
     if (new URL(route.request().url()).origin === origin) return route.continue();
     unexpectedHTTP.push(route.request().url()); return route.abort();
@@ -137,7 +142,7 @@ async function recoverAndSave(page, expectedText) {
 try {
   browser = await chromium.launch({ headless: true, ...(process.env.PWA_BROWSER_CHANNEL ? { channel: process.env.PWA_BROWSER_CHANNEL } : {}) });
   {
-    const { context, page } = await setup();
+    const { context, page } = await setup("cross-tab sign-out, login failures and retry");
     await login(page);
     const savedDraft = await draft(page, 'SDK 인증 실패에도 보존할 초안');
     const peer = await context.newPage(); await peer.goto(origin + '/sdk-tab');
@@ -161,11 +166,11 @@ try {
     passwordMode = 'success'; await submit(page);
     await recoverAndSave(page, 'SDK 인증 실패에도 보존할 초안');
     assert.ok(requests.some(request => request.path === '/auth/v1/logout'));
-    await context.close();
+    await diagnostics.close(context);
     console.log('Auth: SDK cross-tab sign-out, reload, invalid password, HTTP 503, non-editor session, retry, draft recovery and save passed.');
   }
   for (const expired of [false, true]) {
-    const { context, page } = await setup();
+    const { context, page } = await setup(`token refresh / ${expired ? "expired" : "success"}`);
     await page.clock.install(); ttl = 150;
     await login(page);
     const savedDraft = await draft(page, expired ? '만료 후 복구할 초안' : '토큰 갱신 중인 초안');
@@ -193,10 +198,13 @@ try {
       assert.equal(saves().length, 1);
       assert.equal(saves()[0].accessToken, refreshedToken, 'Save uses the refreshed bearer token');
     }
-    await context.close();
+    await diagnostics.close(context);
     console.log(`Auth: automatic ${expired ? 'refresh rejection, sign-out, reload and reauthentication' : 'token refresh with continuous editing'} passed.`);
   }
   assert.deepEqual(fixtureErrors, []); assert.deepEqual(pageErrors, []); assert.deepEqual(unexpectedHTTP, []);
+} catch (error) {
+  await diagnostics.fail(error);
+  throw error;
 } finally {
   await browser?.close(); await new Promise(resolve => server.close(resolve));
 }

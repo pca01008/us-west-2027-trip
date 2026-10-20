@@ -2,12 +2,12 @@
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const suites = ['drafts', 'storage', 'inputs', 'imports', 'ledger', 'prep', 'auth', 'photos', 'theme', 'pwa'];
+const suites = ['diagnostics', 'drafts', 'storage', 'inputs', 'imports', 'ledger', 'prep', 'auth', 'photos', 'theme', 'pwa'];
 const failed = [];
 for (const suite of suites) {
   console.log(`\nBrowser suite: ${suite}`);
   const result = spawnSync(process.execPath, [fileURLToPath(new URL(`./check-${suite}-browser.mjs`, import.meta.url)), ...process.argv.slice(2)], {
-    stdio: 'inherit', timeout: 120_000, env: process.env
+    stdio: 'inherit', timeout: 180_000, env: process.env
   });
   if (result.status !== 0) {
     failed.push(suite);

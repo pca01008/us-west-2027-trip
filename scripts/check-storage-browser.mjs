@@ -5,6 +5,10 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 
+import { createBrowserDiagnostics } from './browser-diagnostics.mjs';
+import { readBrowserFixture } from './browser-fixtures.mjs';
+
+const diagnostics = await createBrowserDiagnostics('storage');
 const { chromium } = await import(process.argv[2] ? pathToFileURL(process.argv[2]).href : 'playwright');
 const root = new URL('../', import.meta.url);
 const source = await readFile(new URL('index.html', root), 'utf8');
@@ -27,7 +31,7 @@ const server = createServer(async (req,res) => {
     }
     const url=new URL(req.url,'http://localhost'),file=url.pathname.slice(1)||'index.html';
     if(!/^(index\.html|trip-config\.js|(?:assets|icons)\/[\w.-]+)$/.test(file)){res.writeHead(404).end();return;}
-    let body=await readFile(new URL(file,root));
+    let body=await readBrowserFixture(new URL(file,root));
     if(file==='index.html')body=source
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/,'')
       .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/,stub)
@@ -41,7 +45,9 @@ const origin=`http://127.0.0.1:${server.address().port}`;
 let browser;
 const errors=[];
 
-function installFaults() {
+function installFaults(fixtureOrigin) {
+  // addInitScript also runs on the initial opaque about:blank document.
+  if (location.origin !== fixtureOrigin) return;
   const nativeOpen=IDBFactory.prototype.open,nativePut=IDBObjectStore.prototype.put,nativeDelete=IDBObjectStore.prototype.delete;
   const fault=window.__idbFault={mode:sessionStorage.getItem('storage-test-fault')||'',hits:0,requestSuccesses:0};
   IDBFactory.prototype.open=function(...args){
@@ -104,11 +110,12 @@ async function exportedState(page){
   assert.doesNotMatch(html,/<span[^>]+id="draftStorageWarning"/,'Export does not carry a transient storage warning');
   return JSON.parse(html.match(/<script id="offlineEmbeddedState"[^>]*>([\s\S]*?)<\/script>/)[1]);
 }
-async function setup(mobile,offline=false){
+async function setup(scenario,mobile,offline=false){
+  diagnostics.scenario(`${scenario} / ${mobile ? "mobile" : "desktop"}`);
   row={content:{},revision:0,updated_at:'2026-10-19T00:00:00Z'};saves=0;
-  const context=await browser.newContext({viewport:{width:mobile?390:1280,height:900},isMobile:mobile,hasTouch:mobile,reducedMotion:'reduce'});
+  const context=await diagnostics.context(browser, {viewport:{width:mobile?390:1280,height:900},isMobile:mobile,hasTouch:mobile,reducedMotion:'reduce'});
   await context.route('**/*',route=>route.request().url().startsWith(origin+'/')?route.continue():route.abort());
-  await context.addInitScript(installFaults);
+  await context.addInitScript(installFaults, origin);
   const page=await context.newPage();page.setDefaultTimeout(10000);page.on('pageerror',error=>errors.push(error.message));
   await page.goto(origin+(offline?'/?offline':''));await ready(page);
   row.content=await page.evaluate(()=>window.__storageTest.captureState());
@@ -118,7 +125,7 @@ try {
   browser=await chromium.launch({headless:true,...(process.env.PWA_BROWSER_CHANNEL?{channel:process.env.PWA_BROWSER_CHANNEL}:{})});
   for(const mobile of [false,true]){
     for(const mode of ['open-error','open-throw','quota','write-abort']){
-      const {context,page}=await setup(mobile);
+      const {context,page}=await setup(`write ${mode}`, mobile);
       assert.equal(await edit(page,'Durable draft'),true);
       let previous=await durable(page);
       if(mode.startsWith('open')){
@@ -151,11 +158,11 @@ try {
       assert.equal(await page.evaluate(()=>window.__storageTest.saveAndFinish()),true);
       assert.equal(saves,1);assert.match(row.content.html,/Shared save despite local failure/);
       assert.deepEqual(await durable(page),[]);
-      await context.close();console.log(`Storage ${mode} (${mobile?'mobile':'desktop'}): warning, memory/export, durable reload, retry and shared save passed.`);
+      await diagnostics.close(context);console.log(`Storage ${mode} (${mobile?'mobile':'desktop'}): warning, memory/export, durable reload, retry and shared save passed.`);
     }
     // A failed open is retried within the same page, including storage setup/locks.
     for(const mode of ['open-error','open-throw']){
-      const {context,page}=await setup(mobile);
+      const {context,page}=await setup(`retry open ${mode}`, mobile);
       await page.evaluate(mode=>sessionStorage.setItem('storage-test-fault',mode),mode);
       await page.reload();await ready(page);
       assert.equal(await edit(page,'Retry without reload'),false);
@@ -174,11 +181,11 @@ try {
       assert.match((await durable(page))[0].state.html,/Retry without reload/);
       await setFault(page,'');assert.equal(await page.evaluate(()=>window.__storageTest.clearDraftRecord()),true);
       assert.deepEqual(await durable(page),[]);
-      await context.close();
+      await diagnostics.close(context);
     }
     // Full storage can also abort the atomic claim of a draft during startup.
     for(const mode of ['quota','write-abort','delete-abort']){
-      const {context,page}=await setup(mobile);await edit(page,'Draft before failed claim');
+      const {context,page}=await setup(`claim ${mode}`, mobile);await edit(page,'Draft before failed claim');
       await page.evaluate(mode=>sessionStorage.setItem('storage-test-fault',mode),mode);
       await page.reload();await ready(page);
       assert.match(await page.locator('#draftStorageWarning').innerText(),/초안을 확인하지 못했습니다/);
@@ -188,10 +195,10 @@ try {
       assert.equal(await title(page).textContent(),'Draft before failed claim');
       assert.equal(await page.evaluate(()=>window.__storageTest.flushDraftPersistence()),true);
       assert.equal((await durable(page)).length,1,'Claim retry moves, rather than duplicates, the prior record');
-      await context.close();
+      await diagnostics.close(context);
     }
     for(const action of ['discardDraft','discardAndLogout']){
-      const {context,page}=await setup(mobile);await edit(page,'Do not discard on failure');
+      const {context,page}=await setup(`delete ${action}`, mobile);await edit(page,'Do not discard on failure');
       const previous=await durable(page);await setFault(page,'delete-abort');
       assert.equal(await page.evaluate(action=>window.__storageTest[action](),action),false);
       assert.equal(await title(page).textContent(),'Do not discard on failure');
@@ -200,11 +207,11 @@ try {
       assert.deepEqual(await durable(page),previous);
       await setFault(page,'');assert.equal(await page.evaluate(action=>window.__storageTest[action](),action),true);
       assert.deepEqual(await durable(page),[]);assert.equal(await page.locator('#draftStorageWarning').isVisible(),false);
-      await context.close();
+      await diagnostics.close(context);
     }
     // Publishing can complete while deletion of the old local draft rolls back.
     {
-      const {context,page}=await setup(mobile);await edit(page,'Saved with cleanup failure');
+      const {context,page}=await setup('publish with failed cleanup', mobile);await edit(page,'Saved with cleanup failure');
       const previous=await durable(page);await setFault(page,'delete-abort');
       assert.equal(await page.evaluate(()=>window.__storageTest.saveAndFinish()),true);
       assert.equal(saves,1);assert.match(row.content.html,/Saved with cleanup failure/);
@@ -213,11 +220,11 @@ try {
       await setFault(page,'');assert.equal(await page.evaluate(()=>window.__storageTest.clearDraftRecord()),true);
       assert.deepEqual(await durable(page),[]);await page.reload();await ready(page);
       assert.equal(await page.locator('#noticeDialog').isVisible(),false);
-      await context.close();
+      await diagnostics.close(context);
     }
     // Recovery deletion must preserve the durable record and offer retry.
     {
-      const {context,page}=await setup(mobile);await edit(page,'Recovery deletion draft');
+      const {context,page}=await setup('recovery deletion', mobile);await edit(page,'Recovery deletion draft');
       await page.reload();await page.getByRole('button',{name:'초안 삭제',exact:true}).waitFor();
       const previous=await durable(page);await setFault(page,'delete-abort');
       await page.getByRole('button',{name:'초안 삭제',exact:true}).click();
@@ -226,11 +233,11 @@ try {
       await page.getByRole('button',{name:'확인',exact:true}).click();await ready(page);
       await page.reload();await recover(page);assert.equal(await title(page).textContent(),'Recovery deletion draft');
       assert.equal(await page.evaluate(()=>window.__storageTest.discardDraft()),true);assert.deepEqual(await durable(page),[]);
-      await context.close();
+      await diagnostics.close(context);
     }
     // Logout must retain the newest memory snapshot, without claiming durability.
     {
-      const {context,page}=await setup(mobile);await edit(page,'Old durable logout draft');
+      const {context,page}=await setup('logout memory recovery', mobile);await edit(page,'Old durable logout draft');
       await setFault(page,'quota');await edit(page,'Newest logout draft');
       await page.evaluate(()=>window.__storageTest.handleExternalSignOut());
       assert.match(await page.locator('#status').innerText(),/보관에 실패/);
@@ -238,10 +245,10 @@ try {
       await page.evaluate(()=>{void window.__storageTest.recoverOnlineDraft();});await recover(page);
       assert.equal(await title(page).textContent(),'Newest logout draft');
       await setFault(page,'');assert.equal(await page.evaluate(()=>window.__storageTest.flushDraftPersistence()),true);
-      await context.close();
+      await diagnostics.close(context);
     }
     {
-      const {context,page}=await setup(mobile,true);await edit(page,'Offline durable draft');
+      const {context,page}=await setup('offline save failure', mobile,true);await edit(page,'Offline durable draft');
       const previous=await durable(page);await setFault(page,'quota');await edit(page,'Offline memory draft');
       assert.equal(await page.evaluate(()=>window.__storageTest.saveAndFinish()),false);
       assert.equal(await page.evaluate(()=>window.__storageTest.isDirty()),true);
@@ -249,9 +256,12 @@ try {
       await setFault(page,'');const download=page.waitForEvent('download');
       assert.equal(await page.evaluate(()=>window.__storageTest.saveAndFinish()),true);await download;
       assert.equal((await durable(page))[0].dirty,false);assert.equal(saves,0);
-      await context.close();
+      await diagnostics.close(context);
     }
     console.log(`Storage recovery/deletion/logout/offline (${mobile?'mobile':'desktop'}): passed.`);
   }
   assert.deepEqual(errors,[]);console.log('IndexedDB storage browser checks passed.');
+} catch (error) {
+  await diagnostics.fail(error);
+  throw error;
 } finally {await browser?.close();await new Promise(resolve=>server.close(resolve));}

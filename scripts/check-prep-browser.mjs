@@ -5,6 +5,10 @@ import { readFile, mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { createBrowserDiagnostics } from './browser-diagnostics.mjs';
+import { readBrowserFixture } from './browser-fixtures.mjs';
+
+const diagnostics = await createBrowserDiagnostics('prep');
 const { chromium } = await import(process.argv[2] ? pathToFileURL(process.argv[2]).href : 'playwright');
 const root = new URL('../', import.meta.url);
 const output = await mkdtemp(path.join(tmpdir(), 'westbound-prep-'));
@@ -37,7 +41,7 @@ const server = createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');
     const relative = url.pathname.slice(1) || 'index.html';
     if (!/^(index\.html|trip-config\.js|(?:icons|assets)\/[\w.-]+)$/.test(relative)) { res.writeHead(404).end(); return; }
-    let content = await readFile(new URL(relative, root));
+    let content = await readBrowserFixture(new URL(relative, root));
     if (relative === 'index.html') content = original
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
       .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, stub)
@@ -57,7 +61,8 @@ try {
   browser = await chromium.launch({headless:true,...(process.env.PWA_BROWSER_CHANNEL ? {channel:process.env.PWA_BROWSER_CHANNEL} : {})});
   for (const mobile of [false,true]) {
     reset();
-    const context = await browser.newContext({viewport:{width:mobile?390:1440,height:900},isMobile:mobile,hasTouch:mobile,reducedMotion:'reduce'});
+    diagnostics.scenario(`checklist editing and save / ${mobile ? "mobile" : "desktop"}`);
+    const context = await diagnostics.context(browser, {viewport:{width:mobile?390:1440,height:900},isMobile:mobile,hasTouch:mobile,reducedMotion:'reduce'});
     await context.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
     const page = await context.newPage();page.setDefaultTimeout(10000);page.on('pageerror',error=>{errors.push(error.message);console.error(error.message);});
     const ready = () => page.waitForFunction(()=>!document.body.classList.contains('hydrating'));
@@ -150,12 +155,13 @@ try {
     assert.equal(await check(0).isDisabled(),true);assert.equal(await page.locator('.prepday label>span').first().getAttribute('contenteditable'),'false');
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No horizontal overflow');
     console.log(`${mobile?'Mobile':'Desktop'}: authentication, auto-save/reload, queue, rollback/retry, revision conflict, editor, cancel, blank input and draft isolation passed.`);
-    await context.close();
+    await diagnostics.close(context);
   }
   // New rows always start incomplete, even among completed rows and after a save retry.
   for(const mobile of [false,true]) {
     reset();
-    const context=await browser.newContext({viewport:{width:mobile?390:1440,height:900},isMobile:mobile,hasTouch:mobile});
+    diagnostics.scenario(`checklist completion and reorder / ${mobile ? "mobile" : "desktop"}`);
+    const context=await diagnostics.context(browser, {viewport:{width:mobile?390:1440,height:900},isMobile:mobile,hasTouch:mobile});
     await context.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
     const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));
     const ready=()=>page.waitForFunction(()=>!document.body.classList.contains('hydrating'));
@@ -210,16 +216,20 @@ try {
     await page.locator('.checklist-text').last().fill('이전 추가 버튼의 새 항목');
     await page.locator('#checklistSave').click();await page.locator('#checklistDialog').waitFor({state:'hidden'});
     assert.equal(row.content.checks.at(-1),false);
-    await context.close();console.log(`${mobile?'Mobile':'Desktop'}: new items remain unchecked after reorder, save conflict and reload; existing completion is preserved.`);
+    await diagnostics.close(context);console.log(`${mobile?'Mobile':'Desktop'}: new items remain unchecked after reorder, save conflict and reload; existing completion is preserved.`);
   }
   reset();
-  const context=await browser.newContext();await context.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
+  diagnostics.scenario('offline checklist persistence');
+  const context=await diagnostics.context(browser);await context.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
   const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));await page.goto(origin+'/?offline');await page.waitForFunction(()=>!document.body.classList.contains('hydrating'));
   await page.locator('.prepday input').first().click();await page.waitForFunction(()=>window.__prepTest.pending()===0);assert.equal(writes.length,0);
   await page.reload();await page.waitForFunction(()=>!document.body.classList.contains('hydrating'));assert.equal(await page.locator('.prepday input').first().isChecked(),true);
   await page.locator('#editBtn').click();await page.locator('.checklist-text').first().fill('오프라인 문구 수정');await page.locator('#checklistSave').click();await page.locator('#checklistDialog').waitFor({state:'hidden'});
   await page.reload();await page.waitForFunction(()=>!document.body.classList.contains('hydrating'));assert.equal(await page.locator('.prepday label>span').first().textContent(),'오프라인 문구 수정');assert.equal(await page.locator('.prepday input').first().isChecked(),true);
   await page.evaluate(()=>window.__prepTest.storageFailure());await page.locator('.prepday input').nth(1).click();await page.waitForFunction(()=>window.__prepTest.pending()===0);assert.equal(await page.locator('.prepday input').nth(1).isChecked(),false);
-  console.log('Offline: local persistence/reload and storage failure rollback passed.');await context.close();
+  console.log('Offline: local persistence/reload and storage failure rollback passed.');await diagnostics.close(context);
   assert.deepEqual(errors,[]);console.log('Screenshots:',output);
+} catch (error) {
+  await diagnostics.fail(error);
+  throw error;
 } finally {await browser?.close();await new Promise(resolve=>server.close(resolve));}
