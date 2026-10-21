@@ -1,7 +1,7 @@
 const variant = document.body.dataset.concept;
 const trip = window.DEMO_TRIP;
 const names = {a:'Daylight',b:'Postcard',c:'Trip Desk'};
-const state = {tab:'schedule', day:4, checked:new Set([0,1,3,4]), expenseFilter:'all'};
+const state = {tab:'schedule', day:4, checked:new Set([0,1,3,4]), expenseFilter:'all', view:'list', range:matchMedia('(max-width:640px)').matches?'1':'all'};
 const esc = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const icon = name => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${window.UI_ICONS[name] || window.UI_ICONS.map}</svg>`;
 const dayLabel = day => new Intl.DateTimeFormat('ko-KR',{month:'long',day:'numeric',weekday:'long',timeZone:'UTC'}).format(new Date(day.date+'T12:00:00Z'));
@@ -15,6 +15,7 @@ function dates() {
 }
 function notice() { return `<div class="demo-banner"><a href="index.html" target="_top">${variant.toUpperCase()} · ${names[variant]} <span> / 초안 비교</span></a><span>디자인 초안 · 예시 상태</span></div>`; }
 function more() {
+  if(variant==='a') return daylightTools();
   return `<details class="more"><summary aria-label="여행 도구">${icon('settings')}<span>도구</span></summary><div class="more-menu"><p>선택 후 연결할 기능</p><span>편집 · 저장 · 버전 관리</span><span>내보내기 · 테마</span><p>이번 초안은 화면 비교용입니다.</p></div></details>`;
 }
 function heading(title,subtitle,action='') {return `<div class="section-heading"><div><h1>${title}</h1><p>${subtitle}</p></div>${action}</div>`;}
@@ -22,18 +23,18 @@ function lodgings() {
   return `<section class="stay"><img src="../../assets/airbnb.webp" alt="West Hollywood 숙소 외관"><div class="stay-copy"><span class="small-label">LA에서 머무는 곳</span><h3>West Hollywood</h3><p>Airbnb · 1월 25일–29일</p><a class="text-link" href="https://www.google.com/maps/search/?api=1&query=6259%20Del%20Valle%20Drive%20West%20Hollywood%20CA%2090048" target="_blank" rel="noopener noreferrer">${icon('map')} 지도 열기</a></div></section>`;
 }
 function prepMini() {
-  return `<section class="prep-mini"><div class="small-heading"><h3>출발 전 준비</h3><span>${state.checked.size} / ${trip.prep.length}</span></div><progress value="${state.checked.size}" max="${trip.prep.length}" aria-label="예시 준비 완료율"></progress><p>여권, 예약, 이동 준비를 함께 확인해요.</p><button class="text-link" data-tab="prep">준비 목록 보기 ${icon('down')}</button></section>`;
+  return `<section class="prep-mini"><div class="small-heading"><h3>출발 전 준비</h3><span>${state.checked.size} / ${trip.prep.length}</span></div><progress value="${state.checked.size}" max="${trip.prep.length}" aria-label="예시 준비 완료율"></progress><p>여권, 예약, 이동 준비를 함께 확인해요.</p><button class="text-link ${variant==='a'?'prep-jump':''}" data-tab="prep">${variant==='a'?`준비 탭으로 이동 ${daylightArrow()}`:`준비 목록 보기 ${icon('down')}`}</button></section>`;
 }
 function clocks() { return `<div class="clocks"><div><span>미국 서부</span><strong>13:40</strong><small>1월 25일 월</small></div><div><span>서울</span><strong>06:40</strong><small>1월 26일 화</small></div></div>`; }
 function scheduleList() {
   const day = trip.days[state.day];
-  return `<div class="event-list">${day.events.map((event,i)=>`<article class="event ${state.day===4 && i===1?'featured':''}"><div class="event-time"><time>${esc(event.time)}</time><small>${esc(event.zone)}</small></div><div class="event-body"><div class="event-title"><h3>${esc(event.title)}</h3>${state.day===4 && i===1?'<span class="tag">다음 일정 · 예시</span>':''}</div><p>${esc(event.detail)}</p>${event.warnings.length?`<details class="event-details"><summary>${icon('alert')} 확인할 사항 ${event.warnings.length}개 ${icon('down')}</summary><ul>${event.warnings.map(w=>`<li>${esc(w)}</li>`).join('')}</ul></details>`:''}${event.map?`<a class="text-link" href="${esc(event.map.url)}" target="_blank" rel="noopener noreferrer">${icon('map')} 지도 열기</a>`:''}</div></article>`).join('')}</div>`;
+  return `<div class="event-list">${day.events.map((event,i)=>`<article class="event ${state.day===4 && i===1?'featured':''}"><div class="event-time"><time>${esc(event.time)}</time><small>${esc(event.zone)}</small></div><div class="event-body"><div class="event-title"><h3>${esc(event.title)}</h3>${state.day===4 && i===1?'<span class="tag">다음 일정 · 예시</span>':''}</div><p>${esc(event.detail)}</p>${variant==='a'?daylightWarnings(event):event.warnings.length?`<details class="event-details"><summary>${icon('alert')} 확인할 사항 ${event.warnings.length}개 ${icon('down')}</summary><ul>${event.warnings.map(w=>`<li>${esc(w)}</li>`).join('')}</ul></details>`:''}${event.map?`<a class="text-link" href="${esc(event.map.url)}" target="_blank" rel="noopener noreferrer">${icon('map')} 지도 열기</a>`:''}</div></article>`).join('')}</div>`;
 }
 function dayTitle() {
   return `<div class="day-title"><div><span class="small-label">DAY ${state.day+1} · ${dayLabel(trip.days[state.day])}</span><h2>${city(state.day)}</h2></div><span class="quiet">${trip.days[state.day].events.length}개 일정</span></div>`;
 }
 function scheduleA() {
-  return `${heading(state.day===4?'오늘의 여행':'하루 일정', '1월 25일 여행 중 화면 · 예시', '<span class="status-dot">예시 일정</span>')}${dates()}<div class="content-grid"><section class="daily">${dayTitle()}${scheduleList()}</section><aside class="context-panel">${lodgings()}${prepMini()}<div class="zone-note">${icon('history')} 일정은 여행지 현지 시간 기준</div></aside></div>`;
+  return `${heading(state.view==='timetable'?'여행 시간표':state.day===4?'오늘의 여행':'하루 일정', '1월 25일 여행 중 화면 · 예시', '<span class="status-dot">예시 일정</span>')}${daylightViewSwitch()}${state.view==='timetable'?daylightTimetable():`${dates()}<div class="content-grid"><section class="daily">${dayTitle()}${scheduleList()}</section><aside class="context-panel">${lodgings()}${prepMini()}<div class="zone-note">${icon('history')} 일정은 여행지 현지 시간 기준</div></aside></div>`}`;
 }
 function scheduleB() {
   return `<section class="postcard"><div class="postcard-copy"><h1>다음 장면은,<br>로스앤젤레스.</h1><p>Las Vegas to Los Angeles</p><div class="journey-meta"><span>2027. 01. 21 — 01. 31</span><span>둘이 함께하는 11일</span></div><button data-scroll="itinerary" class="light-button">일정 살펴보기 ${icon('down')}</button></div><figure><img src="../../assets/airbnb.webp" alt="파란 하늘과 야자수가 있는 West Hollywood 숙소"><figcaption>이번 여행의 LA 베이스 · West Hollywood</figcaption></figure></section><div class="postcard-content" id="itinerary"><div class="section-heading"><h2>하루씩, 천천히.</h2><span class="quiet">현지 시간 · 예시</span></div>${dates()}<div class="content-grid"><section class="daily">${dayTitle()}${scheduleList()}</section><aside class="context-panel">${prepMini()}<section class="route-note"><h3>이번 여행의 경로</h3><ol><li>라스베이거스<span>1.21 — 1.25</span></li><li class="active">로스앤젤레스<span>1.25 — 1.29</span></li><li>인천<span>1.31 도착</span></li></ol></section></aside></div></div>`;
@@ -68,5 +69,6 @@ function render() {
   const strip=document.querySelector('.date-strip');
   const selected=strip?.querySelector('[aria-pressed="true"]');
   if(strip&&selected)strip.scrollLeft=Math.max(0,selected.offsetLeft-strip.offsetLeft-strip.clientWidth/2+selected.clientWidth/2);
+  if(variant==='a') bindDaylight();
 }
 render();

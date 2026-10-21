@@ -1,5 +1,6 @@
 // Local configuration snapshot for UI exploration, not the live shared itinerary.
 window.DEMO_TRIP = {
+  "timeZone": "America/Los_Angeles",
   "days": [
     {
       "date": "2027-01-21",

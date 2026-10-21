@@ -4,7 +4,7 @@ import { mkdir, readFile, writeFile, copyFile } from 'node:fs/promises';
 const source = new URL('../docs/ui-concepts/', import.meta.url);
 const target = new URL('../ui-preview/', import.meta.url);
 await mkdir(new URL('previews/', target), { recursive: true });
-const textFiles = ['index.html', 'a.html', 'b.html', 'c.html', 'concepts.css', 'review.css', 'concepts.js', 'data.js'];
+const textFiles = ['index.html', 'a.html', 'b.html', 'c.html', 'concepts.css', 'review.css', 'concepts.js', 'data.js', 'daylight.css', 'daylight.js', 'timetable-core.js'];
 for (const file of textFiles) {
   let contents = await readFile(new URL(file, source), 'utf8');
   contents = contents.replaceAll('../../assets/', '../assets/');
@@ -17,4 +17,4 @@ for (const variant of ['a', 'b', 'c']) {
     await copyFile(new URL(file, source), new URL(file, target));
   }
 }
-console.log('Prepared ui-preview/: 8 browser source files and 6 comparison images.');
+console.log(`Prepared ui-preview/: ${textFiles.length} browser source files and 6 comparison images.`);

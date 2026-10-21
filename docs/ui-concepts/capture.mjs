@@ -20,6 +20,59 @@ try {
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`${variant} ${label} overflow`);
       await page.screenshot({path:fileURLToPath(new URL(`previews/${variant}-${label}.png`,here))});
       await page.screenshot({path:fileURLToPath(new URL(`previews/${variant}-${label}-full.png`,here)),fullPage:true});
+      if(variant==='a') {
+        const snapshot=await page.evaluate(()=>JSON.stringify(window.DEMO_TRIP));
+        assert.equal(await page.locator('.event-details').count(),0,'A warnings are never collapsed');
+        assert.ok(await page.locator('.event-warnings li').count()>0);
+        await page.locator('.prep-jump').click();
+        await page.getByRole('heading',{name:'출발 전 준비',exact:true}).waitFor();
+        await page.locator(width<641?'.mobile-nav [data-tab=schedule]':'.side-rail [data-tab=schedule]').click();
+        await page.getByLabel('설정',{exact:true}).click();
+        assert.equal(await page.getByRole('button',{name:'편집 시작',exact:true}).isDisabled(),true);
+        await page.screenshot({path:fileURLToPath(new URL(`previews/a-${label}-settings.png`,here))});
+        await page.keyboard.press('Escape');
+        assert.equal(await page.locator('.daylight-tools').getAttribute('open'),null);
+        await page.getByRole('button',{name:'시간표',exact:true}).click();
+        assert.equal(await page.locator('[data-range][aria-pressed=true]').getAttribute('data-range'),width<641?'1':'all');
+        await page.locator('[data-range=all]').click();
+        assert.equal(await page.locator('.dt-day').count(),11);
+        await page.screenshot({path:fileURLToPath(new URL(`previews/a-${label}-timetable.png`,here))});
+        // Other time zones stay in the separate row, never on the destination axis.
+        await page.locator('.dt-day[data-open-day="0"]').click();
+        assert.match(await page.locator('.dt-loose').innerText(),/KST/);
+        assert.doesNotMatch(await page.locator('.dt-column').innerText(),/KST/);
+        await page.locator('[data-day="4"]').click();
+        await page.locator('[data-event="4:1"]').click();
+        assert.equal(await page.locator('#daylight-detail').isVisible(),true);
+        assert.match(await page.locator('#daylight-detail-body').innerText(),/터미널|게이트/);
+        await page.keyboard.press('Escape');
+        assert.equal(await page.locator('#daylight-detail').isVisible(),false);
+        assert.equal(await page.locator('[data-event="4:1"]').evaluate(el=>el===document.activeElement),true);
+        await page.locator('[data-range=all]').click();
+        await page.locator('[data-range="1"]').click();
+        assert.equal(await page.locator('[data-day="4"]').getAttribute('aria-pressed'),'true');
+        await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));
+        await page.screenshot({path:fileURLToPath(new URL(`previews/a-${label}-timetable-day.png`,here))});
+        await page.locator('[data-view=list]').click();
+        assert.equal(await page.locator('[data-day="4"]').getAttribute('aria-pressed'),'true');
+        assert.equal(await page.evaluate(()=>JSON.stringify(window.DEMO_TRIP)),snapshot,'Preview navigation never changes trip data');
+        if(label==='desktop') {
+          const segments=await page.evaluate(()=>{
+            const events=trip.days[0].events;
+            events.push({time:'23:00~01:30',zone:'PST',title:'자정 연결 검증',warnings:[],photos:[],detail:''});
+            try {
+              return daylightDays().slice(0,2).map(d=>d.timed.filter(e=>e.title==='자정 연결 검증').map(e=>({start:e.start,end:e.end,continuation:!!e.continuation,key:e.key})));
+            } finally { events.pop(); }
+          });
+          assert.equal(segments[0][0].start,1380);
+          assert.equal(segments[0][0].end,1440);
+          assert.equal(segments[1][0].start,0);
+          assert.equal(segments[1][0].end,90);
+          assert.equal(segments[1][0].continuation,true);
+          assert.equal(segments[0][0].key,segments[1][0].key,'Continuation opens the original event');
+          assert.equal(await page.evaluate(()=>JSON.stringify(window.DEMO_TRIP)),snapshot);
+        }
+      }
       const nav=width<641?page.locator('.mobile-nav'):page.locator('.main-nav');
       await nav.locator('[data-tab=prep]').click();
       const checkbox=page.locator('[data-check="2"]');
@@ -41,6 +94,13 @@ try {
       await page.setViewportSize({width,height:900});
       await page.goto(new URL(`${variant}.html`,here).href);
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`${variant} ${width} overflow`);
+      if(variant==='a') {
+        await page.locator('[data-view=timetable]').click();
+        await page.locator('[data-range=all]').click();
+        assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`A timetable ${width} overflow`);
+        await page.getByLabel('설정',{exact:true}).click();
+        assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`A settings ${width} overflow`);
+      }
     }
     await page.close();
   }
