@@ -7,9 +7,8 @@ create function auth.uid() returns uuid language sql stable as $$
 $$;
 grant usage on schema public, auth to anon, authenticated;
 grant execute on function auth.uid() to anon, authenticated;
--- Start with broad Supabase-style grants so RLS and explicit revokes matter.
-alter default privileges in schema public grant all on tables to anon, authenticated;
-alter default privileges in schema public grant all on sequences to anon, authenticated;
+-- Public table/sequence defaults are selected by the SQL test runner.
+-- Storage grants below are independent of the public-schema default change.
 
 create schema storage;
 create table storage.buckets (

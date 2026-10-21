@@ -58,7 +58,7 @@ for (const role of ['anon', 'authenticated']) {
   }
 }
 
-async function isolated(run) {
+async function isolated(autoGrants, run) {
   const name = `trip_sql_test_${randomUUID().replaceAll('-', '')}`;
   const url = new URL(baseURL);
   url.pathname = `/${name}`;
@@ -68,6 +68,24 @@ async function isolated(run) {
     const open = async () => { const c = await connect(url); clients.push(c); return c; };
     const db = await open();
     await db.query(bootstrap);
+    if (autoGrants) {
+      await db.query(`
+        alter default privileges in schema public grant all on tables to anon, authenticated;
+        alter default privileges in schema public grant all on sequences to anon, authenticated;
+      `);
+    }
+    // A real table and identity sequence prove the selected defaults before the
+    // production SQL runs. No RLS can mask missing grants in this control.
+    await db.query('create table public.sql_grant_probe (id bigint generated always as identity)');
+    await db.query('insert into public.sql_grant_probe default values');
+    for (const uid of [null, A]) {
+      const role = uid === null ? 'anon' : 'authenticated';
+      assert.equal((await db.query("select has_sequence_privilege($1, 'public.sql_grant_probe_id_seq', 'USAGE') as allowed", [role])).rows[0].allowed, autoGrants);
+      const readProbe = () => asUser(db, uid, () => db.query('select id from public.sql_grant_probe'));
+      if (autoGrants) assert.equal((await readProbe()).rows.length, 1);
+      else await rejected(readProbe, '42501');
+    }
+    await db.query('drop table public.sql_grant_probe');
     await run(db, open);
   } finally {
     try { await Promise.all(clients.map(c => c.end())); }
@@ -95,8 +113,8 @@ async function snapshot(db) {
 }
 const rejected = (action, code) => assert.rejects(action, error => error.code === code);
 
-test('fresh install: real PostgreSQL save, permissions and Storage policies', { timeout: 90000 }, async t => {
-  await isolated(async (db, open) => {
+async function checkFreshInstall(autoGrants, t) {
+  await isolated(autoGrants, async (db, open) => {
     await db.query(setup);
     await db.query(register());
     await db.query(register(OTHER, 'editor-b@example.invalid'));
@@ -288,10 +306,10 @@ test('fresh install: real PostgreSQL save, permissions and Storage policies', { 
       assert.deepEqual(version.content, content);
     });
   });
-});
+}
 
-test('legacy upgrade preserves schedules, versions and editor links through repeated SQL', { timeout: 30000 }, async () => {
-  await isolated(async db => {
+async function checkLegacyUpgrade(autoGrants) {
+  await isolated(autoGrants, async db => {
     await db.query(legacy);
     const oldDocuments = (await db.query('select * from public.trip_documents order by trip_id')).rows;
     const oldVersions = (await db.query('select * from public.trip_document_versions order by id')).rows;
@@ -315,4 +333,12 @@ test('legacy upgrade preserves schedules, versions and editor links through repe
     assert.deepEqual(await snapshot(db), saved);
     assert.deepEqual(saved.trip_documents.find(d => d.trip_id === OTHER), upgraded.trip_documents.find(d => d.trip_id === OTHER));
   });
-});
+}
+
+for (const autoGrants of [true, false]) {
+  const mode = autoGrants ? 'automatic grants' : 'explicit grants only';
+  test(`fresh install (${mode}): real PostgreSQL save, permissions and Storage policies`,
+    { timeout: 90000 }, t => checkFreshInstall(autoGrants, t));
+  test(`legacy upgrade (${mode}) preserves schedules, versions and editor links through repeated SQL`,
+    { timeout: 30000 }, () => checkLegacyUpgrade(autoGrants));
+}
