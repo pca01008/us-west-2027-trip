@@ -77,4 +77,3 @@ function parseTimetableTime(value) {
     const first=Math.min(Math.max(0,start),Math.max(0,total-count));
     return {start:first,count,end:first+count};
   }
-  
