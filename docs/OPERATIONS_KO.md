@@ -406,6 +406,34 @@ cron-job.org는 연속 실패가 누적되면 작업을 비활성화할 수 있�
 | DB 점검 실패 | 위 실패 알림 대응 절차 사용 |
 | Windows/WSL에서 전체 파일 변경 | `.gitattributes`와 줄바꿈 확인. 실제 수정과 줄바꿈 차이를 구분하고 사용자 변경을 덮어쓰지 않는다. |
 
+<a id="ui-concepts"></a>
+
+## UI 초안 비교
+
+다른 기기나 원격 환경에서는 [온라인 비교 화면](https://pca01008.github.io/us-west-2027-trip/ui-preview/)을 사용한다. `127.0.0.1`은 접속한 기기 자신의 주소이므로 원격 기기에서 개발 PC의 서버를 열 수 없다.
+
+`docs/ui-concepts/index.html`을 브라우저에서 직접 열면 세 안의 데스크톱·모바일 미리보기와 클릭 가능한 초안을 비교할 수 있다. 로컬 서버를 사용할 때는 저장소 루트에서 실행한다.
+
+```sh
+node docs/ui-concepts/serve.mjs
+```
+
+브라우저에서 `http://127.0.0.1:4173/docs/ui-concepts/index.html`을 연다. 서버는 로컬 컴퓨터에만 바인딩하며 종료는 실행 터미널의 Ctrl+C로 한다.
+
+포트 변경은 `UI_PREVIEW_PORT` 환경 변수로 지정한다. 이번 앱 내 비교 화면은 `4174` 포트를 사용한다.
+
+- 선택용 초안이며 운영 앱과 저장 데이터를 변경하지 않는다. 시각·체크 상태·지출은 예시다.
+- `prepare-data.mjs`는 기본 설정에서 표시용 일정과 기존 아이콘만 추출한다. 계정·API 설정은 초안 데이터에 포함하지 않는다. 실제 서버 공유본을 조회하지 않는다.
+- `capture.mjs`는 Playwright Chromium으로 초안의 화면을 캡처하고 탐색·필터·체크 동작을 확인한다. 실행은 `node docs/ui-concepts/capture.mjs`이며, 기존 [브라우저 검증](#validation)과 동일하게 Playwright 브라우저 설치가 필요하다. 별도 브라우저 캐시가 있으면 `PLAYWRIGHT_BROWSERS_PATH`를 해당 경로로 설정한다.
+- 초안 원본과 검토 캡처는 `docs/` 아래에 두고 Pages 배포에서 제외한다. 온라인 비교 화면은 아래 명령으로 `ui-preview/`에 생성한다. 수정 후 필요한 화면을 다시 캡처하고 생성본을 갱신해 원본과 함께 커밋·push한다. `ui-preview/`에는 브라우저 파일 8개와 비교 이미지 6개만 복사하고, 기존 공용 숙소 이미지는 상대 경로로 참조한다. 서버 API 설정과 도우미 스크립트는 복사하지 않는다. `PRODUCT.md`도 개발용 제품 문서로 배포에서 제외한다.
+- 판단 근거와 당시 확인 범위는 [2026-10-21 검토 기록](archive/2026-10-21-ui-concepts.md)에 있다. 선택 전에는 영구 디자인 시스템으로 취급하지 않는다.
+
+```sh
+node scripts/build-ui-preview.mjs
+```
+
+`main`의 Pages 배포가 완료되면 온라인 비교 화면에 반영된다. 운영 앱의 `index.html`과 서비스 워커는 초안 배포로 수정하지 않는다.
+
 <a id="maintenance"></a>
 
 ## 백업과 자료 관리

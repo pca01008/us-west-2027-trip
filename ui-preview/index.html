@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ko">
+<head><meta name="robots" content="noindex,nofollow"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>WESTBOUND · UI 방향 3가지</title><link rel="stylesheet" href="review.css"></head>
+<body>
+  <header class="review-header"><a class="wordmark" href="index.html">westbound <span>DESIGN STUDY</span></a><span>2026.10.21 · 선택 전 초안</span></header>
+  <main>
+    <section class="intro"><div><h1>같은 여행, 세 가지 경험.</h1><p>PC에서 함께 계획하고, 여행지에서는 바로 확인하는 화면.<br>색상뿐 아니라 탐색 방식과 정보의 우선순위가 다른 세 안입니다.</p></div><div class="viewport-switch" role="group" aria-label="미리보기 화면 크기"><button aria-pressed="true" data-view="desktop">데스크톱</button><button aria-pressed="false" data-view="mobile">모바일</button></div></section>
+    <section class="concept-grid" aria-label="디자인 초안 비교">
+      <article class="concept-card a"><div class="card-heading"><div><span class="letter">A</span><h2>Daylight</h2></div><span>일상적인 여행 도구</span></div><a class="preview" href="a.html" aria-label="A Daylight 초안 열기"><img src="previews/a-desktop.png" alt="Daylight: 녹색 사이드바, 간결한 일별 일정, 숙소 정보" width="1440" height="1000"></a><div class="card-body"><h3>필요한 순간에, 필요한 정보만.</h3><p>옅은 세이지와 흰 바탕. 일정이 중심에 놓이고 숙소와 준비는 옆에서 보조합니다.</p><dl><div><dt>강점</dt><dd>가독성과 일상 사용의 균형</dd></div><div><dt>고려할 점</dt><dd>세 안 중 브랜드 개성은 절제됨</dd></div></dl><a class="open-link" href="a.html">A안 직접 살펴보기 <span>→</span></a></div></article>
+      <article class="concept-card b"><div class="card-heading"><div><span class="letter">B</span><h2>Postcard</h2></div><span>여행의 기대감</span></div><a class="preview" href="b.html" aria-label="B Postcard 초안 열기"><img src="previews/b-desktop.png" alt="Postcard: 코발트 블루와 실제 숙소 사진, 아래에 이어지는 하루 일정" width="1440" height="1000"></a><div class="card-body"><h3>계획을 열 때마다 여행의 기분.</h3><p>선명한 블루와 실제 사진. 상단의 여행 장면 아래로 날짜와 일정이 이어집니다.</p><dl><div><dt>강점</dt><dd>기억에 남는 인상과 여행 감성</dd></div><div><dt>고려할 점</dt><dd>첫 일정까지의 거리가 조금 더 김</dd></div></dl><a class="open-link" href="b.html">B안 직접 살펴보기 <span>→</span></a></div></article>
+      <article class="concept-card c"><div class="card-heading"><div><span class="letter">C</span><h2>Trip Desk</h2></div><span>계획을 위한 작업 공간</span></div><a class="preview" href="c.html" aria-label="C Trip Desk 초안 열기"><img src="previews/c-desktop.png" alt="Trip Desk: 짙은 상단 메뉴, 인접한 3일을 나란히 보여주는 일정 보드" width="1440" height="1000"></a><div class="card-body"><h3>앞뒤 일정을 함께 보는 여유.</h3><p>단정한 차콜과 앰버. PC에서는 3일을 비교하고 모바일에서는 선택한 하루에 집중합니다.</p><dl><div><dt>강점</dt><dd>여행 전 일정 비교와 계획 검토</dd></div><div><dt>고려할 점</dt><dd>여행 감성보다 실무적인 인상</dd></div></dl><a class="open-link" href="c.html">C안 직접 살펴보기 <span>→</span></a></div></article>
+    </section>
+    <section class="review-notes"><div><h2>이번 검토에서 바꾸려는 것</h2><p>현재 모바일 화면은 헤더와 도구가 먼저 공간을 차지해 실제 목록이 늦게 나타납니다. 세 안 모두 여행 정보는 압축하고, 기능 메뉴와 날짜 탐색을 분리했습니다.</p></div><ul><li><strong>일정 · 준비 · 가계부</strong><span>일관된 탐색 위치</span></li><li><strong>본문을 먼저</strong><span>시계와 관리 도구의 시각적 비중 축소</span></li><li><strong>핵심 정보와 상세 분리</strong><span>시간·장소는 바로, 주의 사항은 펼쳐보기</span></li></ul></section>
+    <section class="scope"><p><strong>눌러볼 수 있는 것</strong> 날짜 이동, 일정·준비·가계부 전환, 준비 체크, 주의 사항 펼치기, 지출 필터, 지도 링크.</p><p><strong>초안 범위</strong> 기본 설정의 일정과 기존 숙소 사진을 사용했습니다. 시각·체크 상태·지출은 예시이며, 편집·서버 저장·인증·오프라인 기능은 연결하지 않았습니다.</p><p><strong>선택 가이드</strong> 두 사용 장면의 균형은 A, 여행의 분위기는 B, PC에서의 계획 검토는 C. 한 안을 기반으로 다른 안의 장점을 조합해도 좋습니다.</p></section>
+  </main>
+  <footer>운영 화면을 바꾸기 전, 방향을 선택하기 위한 프로토타입입니다.</footer>
+  <script>
+    document.querySelectorAll('[data-view]').forEach(button=>button.addEventListener('click',()=>{
+      const mode=button.dataset.view;
+      document.body.dataset.view=mode;
+      document.querySelectorAll('[data-view]').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));
+      document.querySelectorAll('.concept-card').forEach(card=>{
+        const key=['a','b','c'].find(value=>card.classList.contains(value));
+        const img=card.querySelector('img');
+        img.src=`previews/${key}-${mode}.png`;img.width=mode==='mobile'?390:1440;img.height=mode==='mobile'?844:1000;
+      });
+    }));
+  </script>
+</body></html>

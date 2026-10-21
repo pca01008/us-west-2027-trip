@@ -16,6 +16,7 @@
 | 2026-10-18 검토 당시 발견 사항과 인계 기록 | [2026-10-18 검토 및 인계](docs/archive/2026-10-18-review-handoff.md) |
 | 2026-10-19 테스트 실행 결과와 보강 제안 | [2026-10-19 테스트 검토](docs/archive/2026-10-19-test-review.md) |
 | 에이전트 작업 규칙 확인 | [AGENTS.md](AGENTS.md) |
+| UI 개편 후보 3안 비교 | [온라인 비교 화면](https://pca01008.github.io/us-west-2027-trip/ui-preview/) · [로컬 원본](docs/ui-concepts/index.html) · [검토 기록](docs/archive/2026-10-21-ui-concepts.md) · [실행·배포 방법](docs/OPERATIONS_KO.md#ui-concepts) |
 
 사용법은 사용자 안내서, 구현 원리는 기술 설명서, 실행 절차는 운영 안내서에서 관리합니다.
 이력 문서는 해당 날짜의 관측 기록이며 현재 운영 상태를 보증하지 않습니다.
