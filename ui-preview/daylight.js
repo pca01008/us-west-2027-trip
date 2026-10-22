@@ -9,7 +9,15 @@ function daylightTools() {
   return `<details class="more daylight-tools"><summary aria-label="설정">${icon('settings')}<span>설정</span></summary><div class="more-menu"><h2>여행 설정</h2><p id="tools-preview-note">배치 미리보기 · 아래 기능은 연결 전입니다.</p><div class="tool-group" role="group" aria-label="편집과 저장" aria-describedby="tools-preview-note"><h3>편집과 저장</h3>${button('edit',state.tab==='prep'?'목록 편집':state.tab==='ledger'?'가계부 설정':'편집 시작',true)}${button('save','변경사항 저장')}${button('history','버전 관리')}</div><div class="tool-group" role="group" aria-label="파일"><h3>파일</h3>${button('upload','편집본 불러오기')}${button('export','내보내기')}</div><div class="tool-group" role="group" aria-label="화면"><h3>화면</h3>${button('settings','화면 테마')}</div><button class="tools-close" type="button" data-close-tools>닫기</button></div></details>`;
 }
 function daylightViewSwitch() {
-  return `<div class="schedule-toolbar"><div class="view-switch" role="group" aria-label="일정 보기 방식">${[['list','일별 일정'],['timetable','시간표']].map(([key,label])=>`<button data-view="${key}" aria-pressed="${state.view===key}">${label}</button>`).join('')}</div></div>`;
+  return `<div class="schedule-toolbar"><div class="schedule-modes" role="group" aria-label="일정 보기 방식">${[['list','일별 일정'],['timetable','시간표']].map(([key,label])=>`<button data-view="${key}" aria-pressed="${state.view===key}">${daylightViewIcon(key)}<span>${label}</span></button>`).join('')}</div></div>`;
+}
+function daylightViewIcon(name) {
+  const paths=name==='list'?'<path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/>':'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11M15 9v11"/>';
+  return `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+}
+function daylightExpenseRow(expense) {
+  const kind=({'교통':'transit','식비':'food','숙박':'stay'})[expense.category]||'other';
+  return `<div class="expense-row daylight-expense"><span class="expense-date">${esc(expense.date)}</span><strong class="expense-title">${esc(expense.title)}</strong><span class="expense-category"><span class="category-label kind-${kind}">${esc(expense.category)}</span></span><strong class="expense-amount">$${expense.amount.toFixed(2)}</strong></div>`;
 }
 function daylightDays() {
   const days=trip.days.map((day,index)=>{

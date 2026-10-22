@@ -24,15 +24,19 @@ try {
         const snapshot=await page.evaluate(()=>JSON.stringify(window.DEMO_TRIP));
         assert.equal(await page.locator('.event-details').count(),0,'A warnings are never collapsed');
         assert.ok(await page.locator('.event-warnings li').count()>0);
+        await page.locator('.prep-jump').scrollIntoViewIfNeeded();
         await page.locator('.prep-jump').click();
         await page.getByRole('heading',{name:'출발 전 준비',exact:true}).waitFor();
+        assert.equal(await page.evaluate(()=>window.scrollY),0,'Prep jump starts at the page top');
+        assert.equal(await page.locator('h1').evaluate(el=>el===document.activeElement),true,'Prep heading receives focus');
         await page.locator(width<641?'.mobile-nav [data-tab=schedule]':'.side-rail [data-tab=schedule]').click();
         await page.getByLabel('설정',{exact:true}).click();
         assert.equal(await page.getByRole('button',{name:'편집 시작',exact:true}).isDisabled(),true);
         await page.screenshot({path:fileURLToPath(new URL(`previews/a-${label}-settings.png`,here))});
         await page.keyboard.press('Escape');
         assert.equal(await page.locator('.daylight-tools').getAttribute('open'),null);
-        await page.getByRole('button',{name:'시간표',exact:true}).click();
+        await page.getByRole('button',{name:'시간표',exact:true}).focus();
+        await page.keyboard.press('Enter');
         assert.equal(await page.locator('[data-range][aria-pressed=true]').getAttribute('data-range'),width<641?'1':'all');
         await page.locator('[data-range=all]').click();
         assert.equal(await page.locator('.dt-day').count(),11);
@@ -78,11 +82,25 @@ try {
       const checkbox=page.locator('[data-check="2"]');
       await checkbox.check();
       assert.equal(await page.locator('#prep-count').innerText(),'5 / 12');
+      if(variant==='a'&&width<641){
+        await page.evaluate(()=>window.scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'}));
+        assert.ok(await page.evaluate(()=>window.scrollY)>100);
+        await nav.locator('[data-tab=prep]').click();
+        assert.equal(await page.evaluate(()=>window.scrollY),0,'Mobile prep navigation also resets scrolling');
+        assert.equal(await checkbox.isChecked(),true,'Scroll reset preserves checklist state');
+      }
       await nav.locator('[data-tab=ledger]').click();
       await page.locator('#expense-filter').selectOption({label:'숙박'});
       await page.getByRole('heading',{name:'숙박 지출이 없어요'}).waitFor();
       await page.getByRole('button',{name:'전체 내역 보기'}).click();
       assert.equal(await page.locator('.expense-row:not(.table-head)').count(),3);
+      if(variant==='a'){
+        assert.deepEqual(await page.locator('.category-label').allTextContents(),['교통','식비','식비']);
+        for(const category of await page.locator('.category-label').all())assert.equal(await category.isVisible(),true);
+        await page.locator('#expense-filter').selectOption({label:'교통'});
+        assert.deepEqual(await page.locator('.category-label').allTextContents(),['교통']);
+        await page.locator('#expense-filter').selectOption('all');
+      }
       await page.screenshot({path:fileURLToPath(new URL(`previews/${variant}-${label}-ledger.png`,here)),fullPage:true});
       await nav.locator('[data-tab=schedule]').click();
       await page.locator('[data-day="5"]').click();
@@ -100,6 +118,10 @@ try {
         assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`A timetable ${width} overflow`);
         await page.getByLabel('설정',{exact:true}).click();
         assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`A settings ${width} overflow`);
+        await page.getByRole('button',{name:'닫기',exact:true}).click();
+        await page.locator(width<641?'.mobile-nav [data-tab=ledger]':'.side-rail [data-tab=ledger]').click();
+        assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`A ledger ${width} overflow`);
+        for(const category of await page.locator('.category-label').all())assert.equal(await category.isVisible(),true);
       }
     }
     await page.close();
