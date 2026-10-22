@@ -1,3 +1,4 @@
+import {openAppTools,selectAppTab} from './browser-fixtures.mjs';
 // Real, version-matched Supabase SDK against local HTTP fixtures only.
 // No auth methods or app auth handlers are replaced or invoked by the tests.
 import assert from 'node:assert/strict';
@@ -103,7 +104,7 @@ async function setup(scenario) {
   if (process.env.AUTH_DEBUG) page.on('console', message => console.log('Browser:', message.text()));
   await page.goto(origin); await ready(page);
   row.content = await page.evaluate(() => window.__authTest.captureState());
-  await page.locator('.tabs label[for="d1"]').click();
+  await selectAppTab(page,'d1');
   return { context, page };
 }
 async function submit(page, password = 'fixture-password') {
@@ -152,7 +153,7 @@ try {
     await assertProtected(page, savedDraft);
     await peer.close(); await page.reload(); await ready(page);
     await assertProtected(page, savedDraft);
-    await page.locator('.tabs label[for="d1"]').click(); await page.locator('#editBtn').click();
+    await selectAppTab(page,'d1'); await page.locator('#editBtn').click();
     await submit(page, 'wrong');
     assert.match(await page.locator('#authError').textContent(), /비밀번호/);
     await assertProtected(page, savedDraft);
@@ -185,7 +186,7 @@ try {
       await page.waitForFunction(() => document.querySelector('#status').textContent.includes('초안은 이 브라우저에 보관'));
       await assertProtected(page, savedDraft);
       await page.reload(); await ready(page); await assertProtected(page, savedDraft);
-      await page.locator('.tabs label[for="d1"]').click(); await page.locator('#editBtn').click(); await submit(page);
+      await selectAppTab(page,'d1'); await page.locator('#editBtn').click(); await submit(page);
       await recoverAndSave(page, '만료 후 복구할 초안');
     } else {
       const refreshedToken = await page.evaluate(() => window.__authTest.session().access_token);

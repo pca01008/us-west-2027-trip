@@ -22,6 +22,10 @@ try {
       await page.screenshot({path:fileURLToPath(new URL(`previews/${variant}-${label}-full.png`,here)),fullPage:true});
       if(variant==='a') {
         const snapshot=await page.evaluate(()=>JSON.stringify(window.DEMO_TRIP));
+        assert.equal(await page.locator('.stay').count(),1,'Selected check-in day has a lodging example');
+        await page.locator('[data-day="3"]').click();assert.equal(await page.locator('.stay').count(),0,'No unrelated fixed lodging');
+        await page.locator('[data-day="8"]').click();assert.equal(await page.locator('.stay').count(),0,'Checkout day excludes lodging');
+        await page.locator('[data-day="4"]').click();
         assert.equal(await page.locator('.event-details').count(),0,'A warnings are never collapsed');
         assert.ok(await page.locator('.event-warnings li').count()>0);
         await page.locator('.prep-jump').scrollIntoViewIfNeeded();
@@ -29,6 +33,12 @@ try {
         await page.getByRole('heading',{name:'출발 전 준비',exact:true}).waitFor();
         assert.equal(await page.evaluate(()=>window.scrollY),0,'Prep jump starts at the page top');
         assert.equal(await page.locator('h1').evaluate(el=>el===document.activeElement),true,'Prep heading receives focus');
+        assert.equal(await page.locator('.stay').count(),0,'Prep contains no fixed lodging');
+        assert.equal(await page.locator('[data-priority-jump]').count(),2);
+        await page.locator('[data-check="2"]').check();assert.equal(await page.locator('[data-priority-jump]').count(),1);
+        await page.locator('[data-important="5"]').click();assert.equal(await page.locator('[data-priority-jump]').count(),0,'Hide empty priority region');
+        await page.locator('[data-check="2"]').uncheck();await page.locator('[data-important="5"]').click();
+        await page.screenshot({path:fileURLToPath(new URL(`previews/a-${label}-prep.png`,here)),fullPage:true});
         await page.locator(width<641?'.mobile-nav [data-tab=schedule]':'.side-rail [data-tab=schedule]').click();
         await page.getByLabel('설정',{exact:true}).click();
         assert.equal(await page.getByRole('button',{name:'편집 시작',exact:true}).isDisabled(),true);

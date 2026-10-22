@@ -194,13 +194,14 @@ test('탭·모달은 키보드 접근성을 제공하고 CSS는 단일 cascade�
   assert.ok((html.match(/!important/g) || []).length <= 6, 'important 선언이 다시 과도하게 늘었습니다.');
 });
 
-test('주요 코랄 버튼은 흰색 텍스트 대비 4.5:1 이상이다', () => {
+test('Daylight의 밝은·어두운 강조 버튼은 텍스트 대비 4.5:1 이상이다', () => {
   const luminance = hex => {
     const channels = hex.match(/[a-f\d]{2}/gi).map(value => Number.parseInt(value, 16) / 255).map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
     return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
   };
   const contrast = (first, second) => (Math.max(luminance(first), luminance(second)) + 0.05) / (Math.min(luminance(first), luminance(second)) + 0.05);
-  assert.ok(contrast('a93f35', 'ffffff') >= 4.5);
+  assert.ok(contrast('147161', 'ffffff') >= 4.5);
+  assert.ok(contrast('91d4b3', '10291e') >= 4.5);
 });
 
 test('외부 SDK는 고정 버전과 SRI를 사용하고 설정 뒤에 로드된다', async () => {

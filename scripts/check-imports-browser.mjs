@@ -1,3 +1,4 @@
+import {openAppTools,selectAppTab} from './browser-fixtures.mjs';
 // Actual file input + application code, with a local revision-checked API only.
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -74,7 +75,7 @@ try {
     const page=await context.newPage();page.setDefaultTimeout(10000);page.on('pageerror',e=>errors.push(e.message));
     await page.goto(origin);await ready(page);
     row={...row,content:await state(page),revision:3};await page.reload();await ready(page);
-    await page.locator('.tabs label[for="d1"]').click();await page.locator('#editBtn').click();
+    await selectAppTab(page,'d1');await page.locator('#editBtn').click();
     await page.waitForFunction(()=>document.querySelector('.day1 .timeline-row h3').isContentEditable);
     await page.locator('.day1 .timeline-row h3').first().fill('보존해야 할 기존 초안');
     await page.evaluate(async()=>{window.__importTest.recordHistory();await window.__importTest.flushDraftPersistence();});

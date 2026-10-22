@@ -7,6 +7,7 @@ window.DEMO_TRIP = {
       "subtitle": "서울 → Las Vegas · Alexis Park",
       "events": [
         {
+          "stayCheckout": "",
           "time": "21:00",
           "zone": "KST",
           "title": "라스베이거스행 출국",
@@ -18,6 +19,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "15:10",
           "zone": "PST",
           "title": "라스베이거스 공항 도착",
@@ -27,6 +29,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "17:00",
           "zone": "PST",
           "title": "Alexis Park All Suite Resort 체크인",
@@ -41,6 +44,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "19:00",
           "zone": "PST",
           "title": "저녁 식사",
@@ -56,6 +60,7 @@ window.DEMO_TRIP = {
       "subtitle": "Grand Canyon tour · Day 1",
       "events": [
         {
+          "stayCheckout": "",
           "time": "05:30",
           "zone": "PST",
           "title": "Alexis Park All Suite Resort 체크아웃",
@@ -67,6 +72,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "06:00",
           "zone": "PST",
           "title": "그랜드캐니언 1박 2일 투어 픽업",
@@ -76,6 +82,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "오전",
           "zone": "PST",
           "title": "자이언 캐니언",
@@ -85,6 +92,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "점심",
           "zone": "PST",
           "title": "자유 점심 식사",
@@ -94,6 +102,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "오후",
           "zone": "PST",
           "title": "브라이스 캐니언",
@@ -103,6 +112,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "일몰",
           "zone": "PST",
           "title": "홀스슈 벤드",
@@ -112,6 +122,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "저녁",
           "zone": "PST",
           "title": "별장 바비큐 파티",
@@ -121,6 +132,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "밤",
           "zone": "PST",
           "title": "별 보기·불멍 후 별장 숙박",
@@ -136,6 +148,7 @@ window.DEMO_TRIP = {
       "subtitle": "Grand Canyon tour · Day 2",
       "events": [
         {
+          "stayCheckout": "",
           "time": "07:00",
           "zone": "PST",
           "title": "아침 식사",
@@ -145,6 +158,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "오전",
           "zone": "PST",
           "title": "레이크 파월",
@@ -154,6 +168,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "오전",
           "zone": "PST",
           "title": "로워 앤텔로프 캐니언",
@@ -163,6 +178,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "정오",
           "zone": "PST",
           "title": "윈도우 아치스",
@@ -172,6 +188,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "점심",
           "zone": "PST",
           "title": "자유 점심 식사",
@@ -181,6 +198,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "오후",
           "zone": "PST",
           "title": "그랜드캐니언 사우스림",
@@ -190,6 +208,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "오후",
           "zone": "PST",
           "title": "그랜드캐니언 이스트림",
@@ -199,6 +218,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "귀로",
           "zone": "PST",
           "title": "루트 66 · 셀리그먼",
@@ -208,6 +228,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "19:30",
           "zone": "PST",
           "title": "라스베이거스 도착 예정",
@@ -217,6 +238,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "20:00",
           "zone": "PST",
           "title": "월도프 아스토리아 라스베이거스 체크인",
@@ -237,6 +259,7 @@ window.DEMO_TRIP = {
       "subtitle": "Las Vegas · open day",
       "events": [
         {
+          "stayCheckout": "",
           "time": "미정",
           "zone": "PST",
           "title": "라스베이거스 자유 일정",
@@ -252,6 +275,7 @@ window.DEMO_TRIP = {
       "subtitle": "Las Vegas → Los Angeles · West Hollywood",
       "events": [
         {
+          "stayCheckout": "",
           "time": "11:00",
           "zone": "PST",
           "title": "월도프 아스토리아 체크아웃",
@@ -261,6 +285,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "14:22",
           "zone": "PST",
           "title": "AA421 로스앤젤레스행 출발",
@@ -272,6 +297,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "15:40",
           "zone": "PST",
           "title": "LA 공항 도착",
@@ -283,6 +309,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "16:30",
           "zone": "PST",
           "title": "렌터카 픽업",
@@ -292,6 +319,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "17:30",
           "zone": "PST",
           "title": "West Hollywood Airbnb 체크인",
@@ -315,6 +343,7 @@ window.DEMO_TRIP = {
       "subtitle": "Los Angeles · open day",
       "events": [
         {
+          "stayCheckout": "",
           "time": "미정",
           "zone": "PST",
           "title": "LA 자유 일정",
@@ -330,6 +359,7 @@ window.DEMO_TRIP = {
       "subtitle": "Los Angeles · open day",
       "events": [
         {
+          "stayCheckout": "",
           "time": "미정",
           "zone": "PST",
           "title": "LA 자유 일정",
@@ -345,6 +375,7 @@ window.DEMO_TRIP = {
       "subtitle": "Los Angeles · open day",
       "events": [
         {
+          "stayCheckout": "",
           "time": "미정",
           "zone": "PST",
           "title": "LA 자유 일정",
@@ -360,6 +391,7 @@ window.DEMO_TRIP = {
       "subtitle": "West Hollywood → LAX · departure",
       "events": [
         {
+          "stayCheckout": "",
           "time": "11:00",
           "zone": "PST",
           "title": "Airbnb 체크아웃",
@@ -371,6 +403,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "20:00",
           "zone": "PST",
           "title": "렌터카 반납",
@@ -380,6 +413,7 @@ window.DEMO_TRIP = {
           "photos": []
         },
         {
+          "stayCheckout": "",
           "time": "22:50",
           "zone": "PST",
           "title": "인천행 출국",
@@ -395,6 +429,7 @@ window.DEMO_TRIP = {
       "subtitle": "In transit",
       "events": [
         {
+          "stayCheckout": "",
           "time": "종일",
           "zone": "PST",
           "title": "귀국 비행 중",
@@ -410,6 +445,7 @@ window.DEMO_TRIP = {
       "subtitle": "Welcome home",
       "events": [
         {
+          "stayCheckout": "",
           "time": "05:10",
           "zone": "KST",
           "title": "인천공항 도착",
@@ -434,6 +470,56 @@ window.DEMO_TRIP = {
     "월도프 아스토리아에 투어 지연 가능성과 늦은 체크인 사전 통보",
     "AA421 출발·도착 터미널과 게이트 출발 전 재확인",
     "에어비앤비 체크아웃 후 차량 안에 짐이 보이지 않게 보관"
+  ],
+  "prepMeta": [
+    {
+      "id": "check-passport",
+      "important": false
+    },
+    {
+      "id": "check-reservations",
+      "important": false
+    },
+    {
+      "id": "check-winter-gear",
+      "important": false
+    },
+    {
+      "id": "check-money",
+      "important": false
+    },
+    {
+      "id": "check-offline-info",
+      "important": false
+    },
+    {
+      "id": "check-baggage",
+      "important": false
+    },
+    {
+      "id": "check-tour-luggage",
+      "important": false
+    },
+    {
+      "id": "check-alexis-storage",
+      "important": false
+    },
+    {
+      "id": "check-tour-fees",
+      "important": false
+    },
+    {
+      "id": "check-waldorf-late",
+      "important": false
+    },
+    {
+      "id": "check-aa-terminal",
+      "important": false
+    },
+    {
+      "id": "check-rental-luggage",
+      "important": false
+    }
   ]
 };
 // Reused from the incumbent app's icon family.

@@ -1,3 +1,4 @@
+import {openAppTools,selectAppTab} from './browser-fixtures.mjs';
 // Exercise the actual app with a revision-checked local server. No production access.
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -135,11 +136,11 @@ try {
     await page.locator('.checklist-text').last().fill('최신 목록 확인');await page.locator('#checklistSave').click();await page.locator('#checklistDialog').waitFor({state:'hidden'});
     // Preserve an unrelated ledger draft entered while an auto-save is in flight.
     delay=500;await check(5).click();await page.waitForFunction(()=>window.__prepTest.pending()>0);
-    await page.locator('.tabs label[for="money"]').click();await page.locator('#expenseName').fill('입력 중인 경비');
+    await selectAppTab(page,'money');await page.locator('#expenseName').fill('입력 중인 경비');
     await page.evaluate(()=>window.__prepTest.draft());assert.equal(await page.evaluate(()=>window.__prepTest.isDirty()),true);
     await idle();delay=0;assert.equal(row.content.expenses.some(e=>e.id==='unsaved-expense'),false);
     assert.equal(await page.locator('#expenseName').inputValue(),'입력 중인 경비','In-progress form input survives auto-save');
-    await page.locator('.tabs label[for="prep"]').click();
+    await selectAppTab(page,'prep');
     assert.equal(await page.evaluate(()=>window.__prepTest.captureState().expenses.some(e=>e.id==='unsaved-expense')),true);
     assert.equal(await page.evaluate(()=>window.__prepTest.isDirty()),true);
     // A deleted remote item must fail safely without checking the row that moved into its position.
@@ -151,7 +152,23 @@ try {
     assert.equal(row.content.expenses.some(e=>e.id==='unsaved-expense'),false);assert.equal(await page.evaluate(()=>window.__prepTest.captureState().expenses.some(e=>e.id==='unsaved-expense')),true);
     assert.equal(await page.evaluate(()=>window.__prepTest.isDirty()),true);
     // Global schedule editing cannot mutate checklist completion or text.
-    await page.locator('.tabs label[for="d1"]').click();await page.locator('#editBtn').click();await page.locator('.tabs label[for="prep"]').click();
+    // Importance-only edits participate in CAS and never publish another draft.
+    await page.locator('#editBtn').click();
+    await page.locator('[data-check-action="important"]').first().click();
+    conflict=doc=>{doc.content.checks[0]=!doc.content.checks[0];};
+    await page.locator('#checklistSave').click();await page.locator('#checklistDialog').waitFor({state:'hidden'});
+    assert.match(row.content.html,/data-check-important="true"/);
+    assert.equal(row.content.expenses.some(e=>e.id==='unsaved-expense'),false);
+    const persistedImportant=await page.evaluate(state=>window.__prepTest.checklistItems(state)[0],row.content);
+    assert.equal(persistedImportant.important,true);
+    assert.equal(await page.locator('[data-check-id="'+persistedImportant.id+'"] input').isChecked(),persistedImportant.checked);
+    await page.locator('#editBtn').click();await page.locator('[data-check-action="important"]').first().click();
+    const remoteSecondId=await page.evaluate(state=>window.__prepTest.checklistItems(state)[1].id,row.content);
+    conflict=doc=>{doc.content.html=doc.content.html.replace('data-check-id="'+remoteSecondId+'"','data-check-id="'+remoteSecondId+'" data-check-important="true"');};
+    await page.locator('#checklistSave').click();await page.waitForFunction(()=>document.querySelector('#checklistEditorError').textContent.includes('다른 곳'));
+    await page.locator('#checklistCancel').click();
+    assert.equal(row.content.expenses.some(e=>e.id==='unsaved-expense'),false);
+    await selectAppTab(page,'d1');await page.locator('#editBtn').click();await selectAppTab(page,'prep');
     assert.equal(await check(0).isDisabled(),true);assert.equal(await page.locator('.prepday label>span').first().getAttribute('contenteditable'),'false');
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No horizontal overflow');
     console.log(`${mobile?'Mobile':'Desktop'}: authentication, auto-save/reload, queue, rollback/retry, revision conflict, editor, cancel, blank input and draft isolation passed.`);

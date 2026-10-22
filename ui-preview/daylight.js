@@ -62,6 +62,8 @@ function daylightDaySummary(day) {
   return `<div class="dt-day-summary"><p>${stays.length?'체크인·숙박: '+stays.map(e=>esc(e.title)).join(' · '):'체크인·숙박 기록 없음'}</p><p>${moves.length?`이동 ${moves.length}건 · ${known.length?`입력된 구간 ${minutes}분${known.length<moves.length?' · 나머지 미정':''}`:'소요시간 미정'}`:'등록된 이동 없음'}</p></div>`;
 }
 function bindDaylight() {
+  bindDaylightPriority();
+  document.querySelectorAll('[data-important]').forEach(button=>button.onclick=event=>{event.preventDefault();const index=Number(button.dataset.important);daylightImportant.has(index)?daylightImportant.delete(index):daylightImportant.add(index);render();document.querySelector(`[data-important="${index}"]`).focus();});
   const rerenderFocus=selector=>{render();document.querySelector(selector)?.focus({preventScroll:true});};
   document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{state.view=b.dataset.view;rerenderFocus(`[data-view="${state.view}"]`);}));
   document.querySelectorAll('[data-range]').forEach(b=>b.addEventListener('click',()=>{state.range=b.dataset.range;rerenderFocus(`[data-range="${state.range}"]`);}));
@@ -84,3 +86,20 @@ function bindDaylight() {
 }
 // Recalculate the compact overview only when crossing its layout breakpoint.
 matchMedia('(max-width:800px)').addEventListener('change',()=>{if(state.tab==='schedule'&&state.view==='timetable')render();});
+
+// Explicit preview selections, kept separate from configuration and live data.
+const daylightImportant=new Set([2,5]);
+const daylightStays=[{day:4,event:4,end:'2027-01-29'}];
+function daylightLodging(){
+  const date=trip.days[state.day].date,stay=daylightStays.find(stay=>trip.days[stay.day].date<=date&&date<stay.end);
+  if(!stay)return '';
+  const event=trip.days[stay.day].events[stay.event],photo=event.photos[0];
+  return `<section class="stay">${photo?`<img src="${esc(photo.src)}" alt="${esc(photo.alt)}">`:''}<div class="stay-copy"><h3>${esc(event.title)}</h3><p>체크아웃 · ${stay.end} · 예시</p>${event.map?`<a class="text-link" href="${esc(event.map.url)}" target="_blank" rel="noopener noreferrer">지도 열기</a>`:''}</div></section>`;
+}
+function daylightPriority(){
+  const items=trip.prep.map((text,index)=>({text,index})).filter(item=>daylightImportant.has(item.index)&&!state.checked.has(item.index));
+  return items.length?`<section class="note-panel"><h3>먼저 확인해요</h3>${items.map(item=>`<button class="priority-jump" data-priority-jump="${item.index}">${esc(item.text)}</button>`).join('')}</section>`:'';
+}
+function bindDaylightPriority(){
+  document.querySelectorAll('[data-priority-jump]').forEach(button=>button.onclick=()=>{const input=document.querySelector(`[data-check="${button.dataset.priorityJump}"]`);input.focus();input.scrollIntoView({block:'center'});});
+}

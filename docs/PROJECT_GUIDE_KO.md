@@ -93,6 +93,16 @@ Realtime은 변경 알림입니다. 편집·초안·미리보기·체크리스�
 
 ## 저장 데이터와 화면 변환
 
+### Daylight 후보의 메타데이터
+
+문서 schemaVersion은 5를 유지합니다. 준비 label의 `data-check-important="true"`는 중요 여부이며 생략 시 false입니다. 원본 `.timeline-row`의 `data-stay-checkout="YYYY-MM-DD"`는 숙소 지정과 종료일을 함께 나타냅니다. 시작일은 해당 일정 패널의 설정 날짜에서 읽습니다. 실제 달력 날짜·여행 범위를 검증하고 체크아웃은 제외한 반개구간으로 선택합니다.
+
+`checklistItems`·`patchChecklist`·`checklistShape`가 중요 속성을 전달하므로 체크만 저장하거나 최신 체크와 목록을 병합해도 설정을 유지합니다. 중요 여부만 달라도 목록 충돌과 버전 차이에 나타납니다. `sanitizeMarkup`는 잘못된 요소·값을 제거하고 `buildDiff`는 중요 표시·숙박 종료일을 설명합니다.
+
+`#daylightContext`와 주 메뉴는 저장 main 밖에 한 벌만 존재합니다. 현재 적용된 DOM과 pendingChecks의 저장 전 상태에서 보조 영역을 다시 만들어 다른 초안·미적용 원격본과 섞이지 않습니다. 준비 제목의 포커스용 tabindex도 정규화에서 제외합니다. 주 메뉴·날짜·테마·시간표는 문서 데이터와 분리합니다. 읽기 전용 파일은 보조 영역을 제거하고 원본 일정에 숙박 종료일을 전달합니다.
+
+구형 앱은 중요 속성을 이해하지 못하므로 새 필드를 지울 수 있습니다. schemaVersion 유지나 변경 자체가 구형 쓰기를 차단하지는 않습니다. 운영 전환·복귀 조건은 [운영 안내서](OPERATIONS_KO.md#daylight-rollout)를 따릅니다.
+
 Supabase에는 단순 HTML만 저장하지 않는다. 전체 상태를 나타내는 JavaScript 객체를 JSON으로 바꾸어 저장한다.
 
 개념적으로는 다음과 같다.

@@ -1,3 +1,4 @@
+import {openAppTools,selectAppTab} from './browser-fixtures.mjs';
 // Exercise real ledger rendering, UI changes and downloaded CSV bytes offline.
 // Only fixture setup uses an app hook; calculations and exports are not mocked.
 import assert from 'node:assert/strict';
@@ -100,7 +101,7 @@ try {
     try {
       await page.goto(origin);
       await page.waitForFunction(() => window.__ledgerTest && !document.body.classList.contains('hydrating'));
-      await activate(page.locator('.tabs label[for="money"]'));
+      await activate(page.locator('.daylight-nav [data-daylight-tab="money"]'));
       scenario = 'mixed currency and unset budget'; diagnostics.scenario(`${mode} / ${scenario}`);
       await fixture(mixed);
       await totals(['₩12,000', '$12.35', '₩28,370']);

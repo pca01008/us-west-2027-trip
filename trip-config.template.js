@@ -1,3 +1,5 @@
+// Daylight optional metadata: prep.items[].important (boolean, default false);
+// days[].events[].stayCheckout (YYYY-MM-DD, checkout excluded). Missing means no stay card.
 /*
  * 새 여행용 설정 템플릿
  *

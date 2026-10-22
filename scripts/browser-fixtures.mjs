@@ -1,6 +1,16 @@
 // Never serve personal trip configuration or photos to recorded test contexts.
 import { readFile } from 'node:fs/promises';
 
+export async function openAppTools(page){
+  if(!await page.locator('.daylight-settings').getAttribute('open').then(value=>value!==null))await page.locator('#daylightSettingsToggle').click();
+}
+export async function selectAppTab(page,id){
+  if(!await page.locator('.daylight-nav').count()){await page.locator('.tabs label[for="'+id+'"]').click();return;}
+  if(id==='prep'||id==='money'){await page.locator('.daylight-nav [data-daylight-tab="'+id+'"]').click();return;}
+  if(await page.locator('.daylight-nav [data-daylight-tab="schedule"]').getAttribute('aria-pressed')!=='true')await page.locator('.daylight-nav [data-daylight-tab="schedule"]').click();
+  await page.locator('.tabs label[for="'+id+'"]').click();
+}
+
 export const fixtureConfig = {
   schemaVersion: 5, tripId: 'browser-fixture', cacheNamespace: 'browser_fixture',
   locale: 'ko-KR', pageTitle: 'Browser fixture', title: '테스트 여행', kicker: 'TEST TRIP',

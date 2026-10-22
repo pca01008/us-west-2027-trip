@@ -8,12 +8,13 @@ const trip = context.window.TRIP_CONFIG;
 const data = {
   timeZone: trip.clocks.destination.timeZone,
   days: trip.days.map(day => ({ date: day.date, subtitle: day.subtitle, events: day.events.map(event => ({
-    time: event.time, zone: event.zone || 'PST', title: event.title,
+    stayCheckout: event.stayCheckout || '', time: event.time, zone: event.zone || 'PST', title: event.title,
     detail: event.detail.replace(/ · Confirmation \w+/, ''), warnings: event.warnings || [],
     map: event.map ? { name: event.map.name, url: event.map.url } : null,
     photos: (event.photos || []).filter(photo => !photo.className?.includes('map')).map(photo => ({src: '../../' + photo.src, alt: photo.alt}))
   })) })),
-  prep: trip.prep.items.map(item => item.text)
+  prep: trip.prep.items.map(item => item.text),
+  prepMeta: trip.prep.items.map((item,i)=>({id:item.id||'preview-check-'+i,important:item.important===true}))
 };
 const source = await readFile(new URL('index.html', root), 'utf8');
 const icons = source.match(/const ICONS = (\{[\s\S]*?\n  \});/)[1];

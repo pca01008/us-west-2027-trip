@@ -1,0 +1,16 @@
+{
+  "runtime": "v24.19.0",
+  "fixtureVersion": 1,
+  "passed": true,
+  "widths": [
+    390,
+    1440
+  ],
+  "responsive": [
+    360,
+    390,
+    768,
+    1280,
+    1440
+  ]
+}

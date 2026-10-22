@@ -1,3 +1,4 @@
+import {openAppTools,selectAppTab} from './browser-fixtures.mjs';
 // Exercise the real app in isolated offline fixtures; never contact production APIs.
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -52,11 +53,11 @@ try {
     const page=await context.newPage();page.setDefaultTimeout(5000);page.on('pageerror',error=>errors.push(error.message));
     await page.goto(origin);await page.waitForFunction(()=>!document.body.classList.contains('hydrating'));
     const snapshot=await page.evaluate(()=>{const api=window.__inputsTest;return api.normalizeState(api.captureState());});
-    const label=id=>page.locator('.tabs label[for="'+id+'"]');
+    const label=id=>page.locator(id==='prep'||id==='money'?'.daylight-nav [data-daylight-tab="'+id+'"]':'.tabs label[for="'+id+'"]');
     const activate=locator=>mobile?locator.tap():locator.click();
     const settled=()=>page.waitForFunction(()=>Math.abs(document.querySelector('.tabs').getBoundingClientRect().top)<=2&&!document.querySelector('main').style.minHeight);
     const deep=async()=>{
-      await activate(label('d3'));
+      await selectAppTab(page,'d3');
       await page.waitForFunction(()=>!document.querySelector('main').style.minHeight);
       await page.evaluate(()=>window.scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'}));
       await page.waitForFunction(()=>Math.abs(document.querySelector('.tabs').getBoundingClientRect().top)<=1);
@@ -66,13 +67,13 @@ try {
     for(const target of ['money','prep','d11']) {
       await deep();
       await activate(target==='d11'?label(target).locator('span').last():label(target));
-      await settled();assert.equal(await page.locator('#'+target).isChecked(),true);
-      assert.equal(await label(target).getAttribute('aria-selected'),'true');
-      assert.equal(await label(target).evaluate(el=>document.activeElement===el),true,'Focus remains on the visible tab');
+      if(target==='d11')await settled();else await page.waitForFunction(()=>!document.querySelector('main').style.minHeight);assert.equal(await page.locator('#'+target).isChecked(),true);
+      assert.equal(await label(target).getAttribute(target==='d11'?'aria-selected':'aria-pressed'),'true');
+      if(target==='prep'){assert.equal(await page.evaluate(()=>scrollY),0);assert.equal(await page.locator('.prepday h2').evaluate(el=>document.activeElement===el),true);}else assert.equal(await label(target).evaluate(el=>document.activeElement===el),true,'Focus remains on the visible navigation');
     }
     await deep();await activate(label('d3'));await settled();
     assert.equal(await page.locator('#d3').isChecked(),true,'Reselecting a tab must not jump to the hidden radio');
-    for(const [key,target] of [['ArrowRight','d4'],['Home','prep'],['End','d11'],['Enter','d11'],['Space','d11']]) {
+    for(const [key,target] of [['ArrowRight','d4'],['Home','d1'],['End','d11'],['Enter','d11'],['Space','d11']]) {
       await page.keyboard.press(key);await settled();assert.equal(await page.locator('#'+target).isChecked(),true);
       assert.equal(await label(target).evaluate(el=>document.activeElement===el),true);
     }
@@ -99,7 +100,7 @@ try {
     context.on('page', p => { p.setDefaultTimeout(10000); p.on('pageerror', e => errors.push(e.message)); });
     const page = await context.newPage();
     const ready = p => p.waitForFunction(() => !document.body.classList.contains('hydrating'));
-    const tab = p => p.locator('.tabs label[for="d1"]').click();
+    const tab = p => selectAppTab(p,'d1');
     await page.goto(origin); await ready(page); await tab(page); await page.locator('#editBtn').click();
     const oldRows = await page.locator('.day1 .timeline-row').count();
     await page.locator('#addTimeBtn').click();
@@ -184,7 +185,7 @@ try {
     await page.locator('#photoCaption').pressSequentially('Hotel');
     assert.equal(await page.locator('#photoCaption').inputValue(), 'Hotel', 'Photo caption can be replaced directly');
     await page.locator('#photoEditCancel').click();
-    await page.locator('#themeSelect').selectOption('dark');
+    await openAppTools(page);await page.locator('#themeSelect').selectOption('dark');await page.locator('#daylightSettingsToggle').click();
     await row.scrollIntoViewIfNeeded(); await page.screenshot({ path: path.join(output, `${mobile ? 'mobile' : 'desktop'}-empty-fields.png`) });
     // Both exports must survive script execution/reload with empty values and correct view styles.
     for (const kind of ['editable', 'readonly']) {

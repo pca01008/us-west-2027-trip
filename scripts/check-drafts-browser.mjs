@@ -1,3 +1,4 @@
+import {openAppTools,selectAppTab} from './browser-fixtures.mjs';
 // Regression checks against the real app with a local revision-checked API.
 // All external requests are blocked; production data is never read or changed.
 import assert from 'node:assert/strict';
@@ -96,7 +97,7 @@ const ready = page => page.waitForFunction(() => Boolean(window.__draftTest)&&Bo
 const stored = page => page.evaluate(() => window.__draftTest.readDraftRecord());
 const title = page => page.locator('.day1 .timeline-row h3').first();
 async function edit(page, text) {
-  await page.locator('.tabs label[for="d1"]').click();
+  await selectAppTab(page,'d1');
   if (!await page.locator('body').evaluate(el => el.classList.contains('editing'))) await page.locator('#editBtn').click();
   await page.waitForFunction(() => document.querySelector('.day1 .timeline-row h3').isContentEditable);
   await title(page).fill(text);
@@ -122,12 +123,12 @@ async function seed(page) {
   await page.reload();await ready(page);
 }
 async function preview(page) {
-  await page.locator('#versionsBtn').click();
+  await openAppTools(page);await page.locator('#versionsBtn').click();
   await page.locator('.version-item').getByRole('button',{name:'미리보기',exact:true}).click();
   await page.waitForFunction(()=>document.body.classList.contains('previewing'));
 }
 async function enterExpense(page,name='New expense') {
-  await page.locator('.tabs label[for="money"]').click();
+  await selectAppTab(page,'money');
   await page.locator('#expenseName').fill(name);await page.locator('#expenseAmount').fill('25');
   await page.locator('#addExpense').click();
 }
@@ -207,7 +208,7 @@ try {
       const originalDraft=await stored(page);
       assert.ok(originalDraft?.state.html.includes('Deferred schedule before PREP save'));
       assert.equal(await page.evaluate(()=>window.__draftTest.isDirty()),false,'Deferred draft is not applied to the shared view');
-      await page.locator('.tabs label[for="prep"]').click();await page.locator('#editBtn').click();
+      await selectAppTab(page,'prep');await page.locator('#editBtn').click();
       await page.locator('#checklistDialog').waitFor({state:'visible'});
       await page.locator('.checklist-text').first().fill('PREP saved while recovery deferred');
       await page.locator('#checklistSave').click();await page.locator('#checklistDialog').waitFor({state:'hidden'});
@@ -259,7 +260,7 @@ try {
       await preview(page);
       assert.equal(await page.evaluate(()=>window.__draftTest.isDirty()),false);
       await page.evaluate(()=>window.__draftTest.flushDraftPersistence());assert.equal(await stored(page),null);
-      await page.locator('#versionsBtn').click();
+      await openAppTools(page);await page.locator('#versionsBtn').click();
       await page.locator('.version-item').getByRole('button',{name:'복원',exact:true}).click();
       await page.locator('#versionCompareRestore').click();
       await page.getByRole('button',{name:'취소',exact:true}).click();
@@ -278,7 +279,7 @@ try {
       else if(exit==='timeout')await page.evaluate(()=>window.__draftTest.logoutPreservingDraft('자동 로그아웃되었습니다.'));
       else if(exit==='reset')await page.evaluate(()=>window.__draftTest.discardDraft());
       else{
-        await page.locator('#logoutBtn').click();
+        await openAppTools(page);await page.locator('#logoutBtn').click();
         await page.getByRole('button',{name:exit==='save'?'저장 후 로그아웃':'폐기 후 로그아웃',exact:true}).click();
         await page.waitForFunction(()=>!window.__signedIn);
       }
@@ -308,7 +309,7 @@ try {
       // Schedule editing, ledger settings, and import must resolve the same
       // deferred draft before opening an editor or the system file picker.
       for(const panel of ['d1','money','import']){
-        if(panel!=='import')await page.locator('.tabs label[for="'+panel+'"]').click();
+        if(panel!=='import')await selectAppTab(page,panel);else await openAppTools(page);
         await page.locator(panel==='import'?'#importBtn':'#editBtn').click();
         if(source!=='reload'&&panel==='d1'){
           await page.locator('#authDialog').waitFor({state:'visible'});
@@ -340,7 +341,7 @@ try {
     // Incoming shared updates must preserve an entry that has not been added.
     for(const delivery of ['visible','reconnect','realtime']) {
       reset();const ctx=await context(`shared inputs ${delivery} / ${mobile ? "mobile" : "desktop"}`, options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
-      await page.locator('.tabs label[for="money"]').click();
+      await selectAppTab(page,'money');
       const category=row.content.categories.findLast(item=>!item.system).id;
       const values={expenseName:'택시비 Airport',expenseAmount:'37',expenseDate:'2027-03-15',expenseCurrency:'USD',expenseCategory:category};
       for(const [id,value] of Object.entries(values)) {
@@ -430,7 +431,7 @@ try {
         await page.reload();await ready(page);
         assert.equal(await page.locator('#noticeDialog').isVisible(),false);
         assert.equal(await title(page).textContent(),sharedTitle);assert.deepEqual(await stored(page),draft);
-        await page.locator('.tabs label[for="d1"]').click();await page.locator('#editBtn').click();
+        await selectAppTab(page,'d1');await page.locator('#editBtn').click();
         await page.locator('#authDialog').waitFor({state:'visible'});
         assert.equal(await page.locator('#noticeDialog').isVisible(),false);
         await page.locator('#editorPassword').fill('local-test-password');await page.locator('#authSubmit').click();
@@ -457,15 +458,15 @@ try {
   {
     const ctx = await context('logout draft choices'), page = await ctx.newPage(); await page.goto(origin); await ready(page);
     await edit(page, 'Keep after Escape');
-    await page.locator('#logoutBtn').click(); await page.locator('#noticeDialog').waitFor({ state: 'visible' });
+    await openAppTools(page);await page.locator('#logoutBtn').click(); await page.locator('#noticeDialog').waitFor({ state: 'visible' });
     await page.keyboard.press('Escape');
     assert.equal(await page.evaluate(() => window.__signedIn), true);
     assert.equal(await title(page).textContent(), 'Keep after Escape');
     assert.ok((await stored(page)).state.html.includes('Keep after Escape'));
-    await page.locator('#logoutBtn').click(); await page.locator('#noticeDialog').waitFor({ state: 'visible' });
+    await openAppTools(page);await page.locator('#logoutBtn').click(); await page.locator('#noticeDialog').waitFor({ state: 'visible' });
     await page.evaluate(() => window.__draftTest.closeNotice('replaced'));
     assert.equal(await page.evaluate(() => window.__signedIn), true);
-    await page.locator('#logoutBtn').click(); await page.getByRole('button', { name: '폐기 후 로그아웃', exact: true }).click();
+    await openAppTools(page);await page.locator('#logoutBtn').click(); await page.getByRole('button', { name: '폐기 후 로그아웃', exact: true }).click();
     await page.waitForFunction(() => !window.__signedIn);
     assert.equal(await stored(page), null);
     assert.deepEqual(await page.evaluate(()=>window.__signOutOptions),{scope:'local'});
@@ -483,7 +484,7 @@ try {
       assert.equal(await title(page).textContent(),originalTitle);
       assert.ok((await stored(page)).state.html.includes('Recovery dismissal draft'));
     }
-    await page.locator('.tabs label[for="prep"]').click();await page.locator('.prepday .checklist input').first().click();
+    await selectAppTab(page,'prep');await page.locator('.prepday .checklist input').first().click();
     await page.waitForFunction(()=>window.__draftTest.pending()===0);
     assert.ok((await stored(page)).state.html.includes('Recovery dismissal draft'),'Unrelated checklist save cannot clear deferred recovery');
     await page.reload();await page.getByRole('button',{name:'초안 삭제',exact:true}).click();await ready(page);
@@ -503,7 +504,7 @@ try {
     await page.reload();await recover(page);
     assert.equal(await page.evaluate(()=>window.__draftTest.captureState().budgetKrw),originalBudget);
     if(!legacy)assert.equal(await page.evaluate(()=>window.__draftTest.base().budgetKrw),originalBudget);
-    await page.locator('.tabs label[for="prep"]').click();await page.locator('.prepday .checklist input').first().click();
+    await selectAppTab(page,'prep');await page.locator('.prepday .checklist input').first().click();
     await page.waitForFunction(()=>window.__draftTest.pending()===0);
     assert.equal(row.revision,3,'Checklist patch succeeds against the latest remote revision');
     assert.equal(row.content.budgetKrw,987654);assert.ok(row.content.checks.some(Boolean));

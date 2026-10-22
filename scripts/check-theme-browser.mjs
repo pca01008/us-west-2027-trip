@@ -1,3 +1,4 @@
+import {openAppTools,selectAppTab} from './browser-fixtures.mjs';
 // Isolated UI checks with local fixtures. No production API/auth calls or writes.
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -60,8 +61,8 @@ try {
     await p.waitForFunction(() => !document.body.classList.contains('hydrating'));
   };
   const theme = p => p.locator('html').getAttribute('data-theme');
-  const choose = (p, value) => p.locator('#themeSelect').selectOption(value);
-  const tab = (p, id) => p.locator(`.tabs label[for="${id}"]`).click();
+  const choose = async (p, value) => {await openAppTools(p);await p.locator('#themeSelect').selectOption(value);await p.locator('#daylightSettingsToggle').click();};
+  const tab = (p, id) => selectAppTab(p,id);
   const color = (p, selector, property = 'backgroundColor') => p.locator(selector).first().evaluate((el, property) => getComputedStyle(el)[property], property);
   const capture = p => p.evaluate(() => JSON.stringify({ state: window.__themeTest.captureState(), dirty: window.__themeTest.isDirty() }));
   const unchanged = async (p, before) => assert.equal(await capture(p), before, 'Theme changes must preserve both content and the existing dirty flag');
@@ -70,9 +71,9 @@ try {
   assert.equal(await theme(page), 'light', 'First visit must stay light on a dark system');
   const baseline = await capture(page);
   await choose(page, 'dark'); await unchanged(page, baseline);
-  assert.equal(await color(page, 'body'), 'rgb(16, 25, 35)');
-  assert.equal(await color(page, '.prepday'), 'rgb(25, 37, 50)');
-  assert.equal(await color(page, '.checklist label'), 'rgb(32, 46, 61)');
+  assert.equal(await color(page, 'body'), 'rgb(18, 34, 28)');
+  assert.equal(await color(page, '.prepday'), 'rgba(0, 0, 0, 0)');
+  assert.equal(await color(page, '.checklist label'), 'rgba(0, 0, 0, 0)');
   await page.screenshot({ path: path.join(output, 'mobile-dark-prep.png'), fullPage: true });
   await page.reload(); await ready(page); assert.equal(await theme(page), 'dark');
   await choose(page, 'system'); await page.emulateMedia({ colorScheme: 'light' });
@@ -90,17 +91,17 @@ try {
 
   for (const id of ['d1', 'd2', 'money']) {
     await tab(page, id);
-    assert.equal(await color(page, '.day.is-active'), 'rgb(25, 37, 50)');
+    assert.equal(await color(page, '.day.is-active'), 'rgba(0, 0, 0, 0)');
     await page.screenshot({ path: path.join(output, `mobile-dark-${id}.png`), fullPage: true });
   }
-  assert.equal(await color(page, '.expense-filters'), 'rgb(36, 51, 68)');
-  assert.equal(await color(page, '#expenseFilterQuery'), 'rgb(25, 37, 50)');
+  assert.equal(await color(page, '.expense-filters'), 'rgb(32, 57, 46)');
+  assert.equal(await color(page, '#expenseFilterQuery'), 'rgb(25, 46, 37)');
   await tab(page, 'd1');
   await page.getByRole('button', { name: '시간표', exact: true }).click();
-  assert.equal(await color(page, '.tt-day-header'), 'rgb(36, 51, 68)');
+  assert.equal(await color(page, '.tt-day-header'), 'rgb(32, 57, 46)');
   await page.screenshot({ path: path.join(output, 'mobile-dark-timetable-day.png'), fullPage: true });
   await page.getByRole('button', { name: '전체', exact: true }).click();
-  assert.equal(await color(page, '.tt-overview-column'), 'rgb(25, 37, 50)');
+  assert.equal(await color(page, '.tt-overview-column'), 'rgb(25, 46, 37)');
   await page.screenshot({ path: path.join(output, 'mobile-dark-timetable.png'), fullPage: true });
   await page.getByRole('button', { name: '일별 일정', exact: true }).click();
 
@@ -128,8 +129,8 @@ try {
 
   // Every dialog's surface/input is inspected, including normally authenticated tools.
   const dialogColors = await offline.evaluate(() => Array.from(document.querySelectorAll('.notice-card,.auth-card,.version-card')).map(el => getComputedStyle(el).backgroundColor));
-  assert.ok(dialogColors.length > 10); assert.ok(dialogColors.every(c => c === 'rgb(25, 37, 50)'));
-  await offline.locator('#exportMenuBtn').click();
+  assert.ok(dialogColors.length > 10); assert.ok(dialogColors.every(c => c === 'rgb(25, 46, 37)'));
+  await openAppTools(offline);await offline.locator('#exportMenuBtn').click();
   await offline.screenshot({ path: path.join(output, 'mobile-dark-export-dialog.png') });
   const editableDownload = offline.waitForEvent('download'); await offline.locator('#offlineExportBtn').click();
   const editablePath = path.join(output, 'editable.html'); await (await editableDownload).saveAs(editablePath);
@@ -145,7 +146,7 @@ try {
   await artifact.reload(); await ready(artifact); assert.equal(await theme(artifact), 'dark');
   await diagnostics.close(artifactContext);
 
-  await offline.locator('#exportMenuBtn').click();
+  await openAppTools(offline);await offline.locator('#exportMenuBtn').click();
   const readonlyDownload = offline.waitForEvent('download'); await offline.locator('#exportBtn').click();
   const readonlyPath = path.join(output, 'readonly.html'); await (await readonlyDownload).saveAs(readonlyPath);
   const readonly = await readFile(readonlyPath, 'utf8');
