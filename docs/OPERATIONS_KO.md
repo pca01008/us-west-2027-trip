@@ -183,7 +183,8 @@ docker stop trip-sql-test
 
 | 검사 | 명령·범위 |
 |---|---|
-| 전체 브라우저 | `node scripts/check-browsers.mjs`: 아래 11개, 하나라도 실패하면 실패 코드 |
+| 전체 브라우저 | `node scripts/check-browsers.mjs`: 아래 12개, 하나라도 실패하면 실패 코드 |
+| Daylight | `node scripts/check-daylight-browser.mjs`: 숙박 경계·중복·중요 항목·체크 대기/실패·메타데이터 왕복·실제 내보낸 파일의 동작과 너비·5개 반응형 너비 |
 | 실패 진단 | `node scripts/check-diagnostics-browser.mjs`: 자식 프로세스에 실패를 주입해 실패 코드·시나리오·여러 탭의 PNG·콘솔/페이지/요청/HTTP 오류·trace ZIP 생성, 화면 캡처 실패 시 나머지 자료 보존, 시작 실패 및 성공 시 trace 폐기 확인 |
 | 초안 | `node scripts/check-drafts-browser.mjs`: 탭·복제 탭·복구·보류·충돌·미리보기·로그아웃·저장 제한·가계부 입력 보존, PC·모바일에서 PREP 목록 저장 후 보류 초안 유지·새로고침 복구, 외부 로그아웃·중복 알림 후 재인증과 새 편집 진입 시 복구·삭제·보류, 앱 복귀·재연결 재조회와 Realtime 갱신 시 미추가 입력·초점·선택 범위 보존 및 삭제된 카테고리 대체·후속 추가 |
 | 입력 | `node scripts/check-inputs-browser.mjs`: PC·모바일, 한글 조합·취소 불가능 입력·실행 취소·불러오기·내보내기 |
@@ -449,6 +450,8 @@ node scripts/build-ui-preview.mjs
 `node scripts/build-daylight-review.mjs`는 현재 후보 코드와 합성 여행 fixture로 `ui-preview/daylight-candidate.html`을 생성한다. 운영 계정·실제 여행 내용·외부 SDK·PWA 등록을 포함하지 않는다. 후보 소스 해시별 tripId·캐시 이름을 사용하고 오프라인 모드로 실행하므로 브라우저의 검토 초안과 운영 저장소가 분리된다. 검토본의 편집은 로컬에서만 저장되며 공유 저장·인증·충돌은 `node scripts/check-daylight-browser.mjs`와 기존 가상 API 검사로 확인한다. 생성물은 직접 편집하지 않는다.
 
 원격 검토 시 `ui-preview/`의 초안·후보 파일만 별도로 공개할 수 있다. 운영 루트 파일 변경과 혼합하지 않으며 배포 파일 목록·Pages 완료·HTTPS 응답을 확인한다. 후보 배너의 기준 커밋·소스 SHA-256·fixture 버전으로 검토 대상을 식별한다. 원본 index가 바뀌면 후보 생성과 관련 검사를 다시 수행한다.
+
+`node scripts/check-daylight-review.mjs`는 생성 파일을 실제로 열어 해시·저장소 분리·숙소·중요 체크 재로딩·외부 요청 부재를 검사한다. 공개 뒤에는 마지막 인자로 검토본 HTTPS 주소를 전달해 같은 검사를 실행한다. 소스 해시는 Git 줄바꿈과 일치하도록 LF로 정규화한다. 후보 CI는 PR 또는 기존 Validate 워크플로의 수동 실행으로 후보 브랜치를 지정하고, 공개 초안만 배포한 main의 CI와 구분한다.
 
 운영 전환 전 두 사용자 모두 열린 구형 앱·설치 앱을 닫고 갱신한 뒤 접속한다. 각자의 미저장 초안은 먼저 공유 저장하거나 파일로 보관하고, 구형 작업본은 후보 앱으로 불러온 차이를 확인한 후 저장한다. 신규 중요 표시·숙박 기간을 저장한 뒤에는 구형 앱으로 편집하지 않는다. 코드 복귀가 필요하면 최신 데이터 백업과 신규 속성 보존이 가능한 호환 수정이 우선이다. 과거 백업으로 실제 지출·일정을 일괄 덮어쓰지 않는다. 이 절차를 수행할 수 없으면 운영 전환을 보류한다.
 

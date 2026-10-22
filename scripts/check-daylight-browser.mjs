@@ -16,6 +16,7 @@ const server=createServer(async(req,res)=>{
   if(req.url==='/mock/save'){
    let raw='';for await(const part of req)raw+=part;const args=JSON.parse(raw);if(delay)await new Promise(resolve=>setTimeout(resolve,delay));
    if(fail){fail=false;res.end(JSON.stringify({error:{message:'fixture failure'}}));return;}
+   if(documentRow.revision!==args.p_expected_revision){res.end(JSON.stringify({error:{code:'40001',message:'Revision conflict'}}));return;}
    documentRow={content:args.p_content,revision:documentRow.revision+1,updated_at:new Date().toISOString()};res.end(JSON.stringify({data:documentRow,error:null}));return;
   }
   const url=new URL(req.url,'http://local'),relative=url.pathname.slice(1)||'index.html';
@@ -83,7 +84,10 @@ try{
    for(const id of ['prep','d1','d3','d4','d11','money'])await selectAppTab(artifact,id);
    await selectAppTab(artifact,'prep');assert.equal(await artifact.locator('[data-check-important="true"]').count(),1);
    await selectAppTab(artifact,'d1');assert.equal(await artifact.locator('[data-stay-checkout="2027-01-24"]').count(),1);
-   if(kind==='readonly'){assert.match(await artifact.locator('.stay-readonly-note').innerText(),/2027-01-24/);assert.equal(await artifact.locator('.checklist input').first().isDisabled(),true);}else assert.match(await artifact.locator('.daylight-stay').innerText(),/날짜별 숙소/);
+   if(kind==='readonly'){
+    assert.match(await artifact.locator('.stay-readonly-note').innerText(),/2027-01-24/);assert.equal(await artifact.locator('.checklist input').first().isDisabled(),true);
+    assert.ok(await artifact.locator('main').evaluate(el=>el.getBoundingClientRect().width>=innerWidth-80),'Readonly content uses the space freed by the removed sidebar');
+   }else assert.match(await artifact.locator('.daylight-stay').innerText(),/날짜별 숙소/);
    await artifact.reload();if(kind==='editable')await artifact.waitForFunction(()=>!document.body.classList.contains('hydrating'));await selectAppTab(artifact,'prep');assert.equal(await artifact.locator('[data-check-important="true"]').count(),1);
    assert.equal(requests.length,0,'Export makes no external requests');await artifactContext.close();
   }
