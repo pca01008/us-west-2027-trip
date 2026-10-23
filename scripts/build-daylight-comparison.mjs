@@ -26,7 +26,7 @@ const sources={before:execFileSync('git',['show',baseline+':index.html'],{cwd:ro
 const manifest={fixture:2,fixtureHash,baseline,candidate,beforeHash:digest(sources.before),afterHash:digest(sources.after)};
 for(const [side,original] of Object.entries(sources)){
  const hash=digest(original),namespace=`daylight_compare_${fixtureHash}_${hash}_${side}`;
- const scoped={...config,tripId:namespace.replaceAll('_','-'),cacheNamespace:namespace};
+ const scoped={...config,pageTitle:(side==='before'?'기존 버전':'Daylight')+' · 여행 비교',tripId:namespace.replaceAll('_','-'),cacheNamespace:namespace};
  const setup=`window.TRIP_CONFIG=${JSON.stringify(scoped).replaceAll('<','\\u003c')};(()=>{const session=new URLSearchParams(location.search).get('session')||'standalone';const safe=/^[a-zA-Z0-9_-]{1,64}$/.test(session)?session:'standalone';window.TRIP_CONFIG.tripId+='-'+safe.toLowerCase().replaceAll('_','-');window.TRIP_CONFIG.cacheNamespace+='_'+safe;document.documentElement.dataset.offlineId=window.TRIP_CONFIG.tripId;})();`;
  const seam='setEditable(false);lastSavedState=normalizeState(captureState());';
  assert.equal(original.split(seam).length,2,'Seed seam must match once in '+side);

@@ -1,0 +1,86 @@
+[
+  {
+    "width": 390,
+    "theme": "light",
+    "panel": "rgb(255, 255, 255)",
+    "text": "rgb(27, 48, 47)",
+    "input": "rgb(255, 255, 255)",
+    "inputText": "rgb(27, 48, 47)",
+    "muted": "rgb(83, 108, 99)",
+    "shadow": "none",
+    "broken": [],
+    "small": [
+      {
+        "text": "HOME",
+        "size": "10px"
+      },
+      {
+        "text": "DESTINATION",
+        "size": "10px"
+      },
+      {
+        "text": "기준 1b5c66a · 후보 746c729d28bb · fixture 1",
+        "size": "8.33333px"
+      }
+    ]
+  },
+  {
+    "width": 390,
+    "theme": "dark",
+    "panel": "rgb(25, 46, 37)",
+    "text": "rgb(231, 240, 233)",
+    "input": "rgb(25, 46, 37)",
+    "inputText": "rgb(231, 240, 233)",
+    "muted": "rgb(179, 201, 187)",
+    "shadow": "none",
+    "broken": [],
+    "small": [
+      {
+        "text": "HOME",
+        "size": "10px"
+      },
+      {
+        "text": "DESTINATION",
+        "size": "10px"
+      },
+      {
+        "text": "기준 1b5c66a · 후보 746c729d28bb · fixture 1",
+        "size": "8.33333px"
+      }
+    ]
+  },
+  {
+    "width": 1440,
+    "theme": "light",
+    "panel": "rgb(255, 255, 255)",
+    "text": "rgb(27, 48, 47)",
+    "input": "rgb(255, 255, 255)",
+    "inputText": "rgb(27, 48, 47)",
+    "muted": "rgb(83, 108, 99)",
+    "shadow": "none",
+    "broken": [],
+    "small": [
+      {
+        "text": "기준 1b5c66a · 후보 746c729d28bb · fixture 1",
+        "size": "8.33333px"
+      }
+    ]
+  },
+  {
+    "width": 1440,
+    "theme": "dark",
+    "panel": "rgb(25, 46, 37)",
+    "text": "rgb(231, 240, 233)",
+    "input": "rgb(25, 46, 37)",
+    "inputText": "rgb(231, 240, 233)",
+    "muted": "rgb(179, 201, 187)",
+    "shadow": "none",
+    "broken": [],
+    "small": [
+      {
+        "text": "기준 1b5c66a · 후보 746c729d28bb · fixture 1",
+        "size": "8.33333px"
+      }
+    ]
+  }
+]

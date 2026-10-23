@@ -37,6 +37,19 @@ try{
   await page.goto(origin);await page.waitForFunction(()=>!document.body.classList.contains('hydrating'));
   documentRow.content=await page.evaluate(()=>window.__daylight.captureState());
   const baseline=await page.evaluate(()=>window.__daylight.fingerprint(window.__daylight.captureState()));
+  // Open menus can clip to the left without increasing document.scrollWidth.
+  for(const screenWidth of [320,360,390,620,621,768,1100,1440]){
+   await page.setViewportSize({width:screenWidth,height:900});await openAppTools(page);
+   const box=await page.locator('.daylight-settings-panel').boundingBox();
+   assert.ok(box.x>=0&&box.x+box.width<=screenWidth,`Settings outside viewport at ${screenWidth}: ${JSON.stringify(box)}`);
+   await page.locator('#exportMenuBtn').focus();await page.keyboard.press('Enter');
+   await page.waitForFunction(()=>document.querySelector('#exportDialog').contains(document.activeElement));
+   assert.equal(await page.locator('.daylight-settings').getAttribute('open'),null);
+   await page.keyboard.press('Escape');
+   await page.waitForFunction(()=>document.activeElement.id==='daylightSettingsToggle');
+  }
+  await page.setViewportSize({width,height:900});
+  assert.equal(await page.evaluate(()=>window.__daylight.fingerprint(window.__daylight.captureState())),baseline,'Settings and dialogs never create a draft');
   await page.locator('#editBtn').click();await page.locator('[data-check-action="important"]').first().click();await page.keyboard.press('Escape');
   assert.equal(await page.evaluate(()=>window.__daylight.fingerprint(window.__daylight.captureState())),baseline,'Cancel discards importance');
   await page.locator('#editBtn').click();await page.locator('[data-check-action="important"]').first().click();await page.locator('#checklistSave').click();await page.locator('#checklistDialog').waitFor({state:'hidden'});

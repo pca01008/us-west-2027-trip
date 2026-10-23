@@ -844,8 +844,8 @@ html:not([data-artifact-type="readonly"]) body:not([data-daylight-tab="schedule"
 .tab-scroll{display:none}
 .editor-bar{position:relative;top:auto;width:auto;max-width:none;margin:0 32px;padding:14px 0;overflow:visible;flex-wrap:wrap;align-items:center;border:0;border-radius:0;box-shadow:none;background:transparent;gap:8px;z-index:25}
 .editor-bar button{font-size:13px;min-height:44px;padding:9px 12px;font-weight:650}.editor-bar #status{display:block;max-width:100%;margin:0 0 0 auto;background:none;border:0;color:var(--muted);font-size:12px;white-space:normal}.editor-bar #status:empty{display:none}
-.daylight-settings{margin-left:auto;position:relative}.daylight-settings summary{display:flex;align-items:center;gap:8px;cursor:pointer;min-height:44px;padding:8px 14px;border:1px solid var(--line-strong);border-radius:7px;font-weight:650;font-size:13px;list-style:none}.daylight-settings summary::-webkit-details-marker{display:none}
-.daylight-settings-panel{position:absolute;right:0;top:52px;width:290px;max-width:calc(100vw - 32px);max-height:70dvh;overflow:auto;padding:20px;background:var(--paper);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg)}
+.daylight-settings{margin-left:auto;position:static}.daylight-settings summary{display:flex;align-items:center;gap:8px;cursor:pointer;min-height:44px;padding:8px 14px;border:1px solid var(--line-strong);border-radius:7px;font-weight:650;font-size:13px;list-style:none}.daylight-settings summary::-webkit-details-marker{display:none}
+.daylight-settings-panel{position:absolute;right:0;top:100%;width:290px;max-width:100%;max-height:70dvh;overflow:auto;padding:20px;background:var(--paper);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg)}
 .daylight-settings-panel section+section{border-top:1px solid var(--line);padding-top:16px;margin-top:16px}.daylight-settings-panel h2{font-size:12px;color:var(--muted);margin:0 0 8px}.daylight-settings-panel button{width:100%;justify-content:flex-start;margin-top:6px;white-space:normal}.daylight-settings-panel .theme-toolbar{margin:0;display:block}.daylight-settings-panel .theme-choice{display:block}.daylight-settings-panel .theme-choice label{display:none}.daylight-settings-panel select{width:100%;max-width:none}.theme-toolbar{margin:0}#themeStorageStatus{color:var(--warning-ink);text-align:left}
 .schedule-view-switch{width:auto;max-width:none;margin:4px 32px 12px;padding:0;border-bottom:1px solid var(--line)}.schedule-view-switch>div{border:0;border-radius:0;background:transparent;gap:24px}.schedule-view-switch button{border:0;border-radius:0;background:transparent;color:var(--muted);min-height:48px;font-size:14px;padding:10px 0}.schedule-view-switch button[aria-pressed="true"]{border-bottom:2px solid var(--accent);color:var(--accent)}
 body:not([data-daylight-tab="schedule"]) .schedule-view-switch{display:none}
@@ -1226,8 +1226,12 @@ body>header,.hero-shell{background-image:none;text-shadow:none}
     }
     if(!$('.daylight-nav')){const nav=document.createElement('nav');nav.className='daylight-nav';nav.setAttribute('aria-label','주 메뉴');nav.innerHTML=[['schedule','map','일정'],['prep','check','준비'],['money','save','가계부']].map(([id,icon,name])=>'<button type="button" data-daylight-tab="'+id+'">'+iconSvg(icon)+'<span>'+name+'</span></button>').join('');body.prepend(nav);}
     $('#stayCancel').onclick=()=>{$('#stayDialog').hidden=true;stayTarget=null;};$('#stayApply').onclick=saveStay;
+    // Close before the button opens a dialog: focus must return to a visible control.
     document.addEventListener('click',event=>{
-      if(event.target.closest('.daylight-settings-panel button'))$('.daylight-settings').open=false;
+      const button=event.target.closest('.daylight-settings-panel button');
+      if(button&&!button.disabled){$('.daylight-settings').open=false;$('#daylightSettingsToggle').focus({preventScroll:true});}
+    },true);
+    document.addEventListener('click',event=>{
       const tab=event.target.closest('button[data-daylight-tab]');if(tab){activateDaylightTab(tab.dataset.daylightTab);return;}
       const jump=event.target.closest('[data-check-jump]');if(jump){const label=$$('.prepday .checklist label').find(label=>label.dataset.checkId===jump.dataset.checkJump),target=label?.querySelector('input')||$('.prepday h2');if(target){if(target.tagName==='H2')target.tabIndex=-1;target.focus({preventScroll:true});target.scrollIntoView({block:'center',behavior:'instant'});}}
     });
