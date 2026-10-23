@@ -15,7 +15,7 @@
 
 ## 검증 근거
 
-Windows, Node.js 24.19.0, Playwright Chromium. 운영 API·실제 공유 데이터를 사용하지 않고 합성 fixture와 로컬 가상 API를 사용했다. npm이 PATH에 없어 대응 Node 명령을 실행했다. 아래 결과는 최종 커밋 전 후보 작업 트리의 검사이며 공개본 식별값과 CI 결과는 확정 후 덧붙인다.
+Windows, Node.js 24.19.0, Playwright Chromium. 운영 API·실제 공유 데이터를 사용하지 않고 합성 fixture와 로컬 가상 API를 사용했다. npm이 PATH에 없어 대응 Node 명령을 실행했다. 아래 로컬 결과는 후보 작업 트리에서 수행한 검사다. 커밋·공개본 식별값과 CI는 아래에서 별도로 기록한다.
 
 | 검사 | 결과·범위 |
 |---|---|
@@ -39,14 +39,17 @@ Windows, Node.js 24.19.0, Playwright Chromium. 운영 API·실제 공유 데이�
 
 실제 휴대폰 키보드, Safari·삼성 인터넷 강제 다크모드, 두 사용자의 실제 계정·열린 구형 창 전환은 자동 검증 범위 밖이다. 구형 앱은 새 속성을 지울 수 있으므로 두 사용자의 초안 보관·앱 갱신 후 전환해야 한다. 복귀 때 실제 데이터를 과거 백업으로 덮어쓰지 않는다.
 
-운영 루트 배포·실제 공유 데이터 변경은 하지 않았다. 공개 검토본과 CI를 확인한 후 운영 적용 승인만 남긴다.
+운영 루트 배포·실제 공유 데이터 변경은 하지 않았다. 공개 검토본과 후보 CI 확인을 완료했으며 운영 적용 승인이 남아 있다.
 
 ## 공개 검토본 식별과 배포
 
-- [기능 통합 검토본](https://pca01008.github.io/us-west-2027-trip/ui-preview/daylight-candidate.html): 구현 소스 `ffe3bfe`, 검토본 고정 커밋 `7a435a6`, LF 정규화 index SHA-256 앞 12자리 `827aa889cbee`, fixture 1.
+- [기능 통합 검토본](https://pca01008.github.io/us-west-2027-trip/ui-preview/daylight-candidate.html): 최종 구현 소스 `7ba5285`, 검토본 고정 커밋 `38380e5`, LF 정규화 index SHA-256 앞 12자리 `e6f6cd083791`, fixture 1. 최초 후보 `ffe3bfe`·`7a435a6` 이후 읽기 전용 폭을 수정했다.
 - [A안 시각 초안](https://pca01008.github.io/us-west-2027-trip/ui-preview/a.html): 날짜별 예시 숙소와 중요 항목 반영. B/C 비교 기록은 유지했다.
-- 공개 전용 커밋 `a799d5b`: 별도 작업 트리에서 `ui-preview/`의 6개 파일만 main에 반영했다. 운영 index·설정·PWA는 변경하지 않았다.
+- 공개 전용 커밋 `a799d5b`와 `86114f0`: 별도 작업 트리에서 `ui-preview/`의 6개 파일만 main에 반영하고 마지막 후보 HTML을 갱신했다. 운영 index·설정·PWA는 변경하지 않았다.
 - [Pages 실행](https://github.com/pca01008/us-west-2027-trip/actions/runs/39873106260): 성공. 공개 HTTPS에서 `check-daylight-review.mjs`를 실행하여 해시·격리·숙소·중요 체크 재로딩·외부 요청 0건 통과.
 - 공개 운영 루트 응답은 `22ecee3:index.html`과 바이트 비교(LF 정규화)로 동일함을 확인했다. SHA-256 앞 12자리 `ae302c9f6d7c`.
 - PR 생성은 연결 도구 403, 로컬 Git 인증 API 404로 완료하지 못했다. 권한 설정은 변경하지 않았다. [후보 브랜치 비교](https://github.com/pca01008/us-west-2027-trip/compare/main...codex/daylight-implementation)에서 검토할 수 있다.
-- 후보 `7a435a6`의 [수동 CI](https://github.com/pca01008/us-west-2027-trip/actions/runs/39873250045)를 실행했다. main 공개 초안 CI와 다른 실행이므로 후보 결과를 별도로 확인한다.
+- 최초 후보 `7a435a6`의 [수동 CI](https://github.com/pca01008/us-west-2027-trip/actions/runs/39873250045)와 수정된 최종 후보 `38380e5`의 [수동 CI](https://github.com/pca01008/us-west-2027-trip/actions/runs/39873569293) 모두 단위·SQL·브라우저 3개 작업이 성공했다. 최종 후보는 Node 24 단위 117개 및 SQL, Node 22 브라우저 전체 실행을 통과했다. main 공개 초안 CI와 구분해 후보 자체의 결과를 확인했다.
+- [최종 Pages 빌드](https://github.com/pca01008/us-west-2027-trip/actions/runs/39873604560) `86114f0`은 성공했다. HTTPS에서 최종 소스 해시 `e6f6cd083791`과 검토본 동작을 다시 확인했다. [읽기 전용 PC 캡처](../ui-concepts/previews/daylight-candidate/1440-readonly.png)도 최종 폭 수정에 대응한다.
+- 이후 마무리 커밋은 이 검증 기록·계획 완료 표시·캡처만 추가한다. 앱·검사 실행 코드·공개 검토본은 CI 후보 `38380e5`와 같다. 문서 링크·프로젝트 검사와 `git diff --check`를 별도로 통과했다.
+- 일회성 예약 `daylight`는 삭제하여 재실행하지 않도록 정리했고, 공개용 임시 작업 트리는 복구 가능한 보관 상태로 전환했다.
