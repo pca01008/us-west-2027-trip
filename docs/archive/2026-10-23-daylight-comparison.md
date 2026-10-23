@@ -27,4 +27,10 @@ Windows, Node 24.19.0, Playwright Chromium.
 - [PC 비교 캡처](../ui-concepts/previews/daylight-comparison/side-by-side.png), [모바일 캡처](../ui-concepts/previews/daylight-comparison/mobile.png). 비교 셸의 시각 검토 결과 `ship`.
 - 실제 계정·실기기·Safari 검사는 하지 않았다. 기존 후보 앱의 전체 회귀 근거는 [구현 기록](2026-10-23-daylight-implementation.md)에 있으며 이번 변경은 비교 도구와 생성물에 한정된다.
 
-공개 배포 결과는 완료 후 아래에 추가한다.
+## 공개 배포 확인
+
+- 구현 커밋 `8386147`, 공개 전용 커밋 `70ffd9e`. `ui-preview/`의 비교용 파일 6개만 main에 추가했다.
+- [Pages 실행](https://github.com/pca01008/us-west-2027-trip/actions/runs/39903062729)의 build·deploy·report-build-status 모두 성공.
+- 배포 완료 뒤 `node scripts/check-daylight-comparison.mjs https://pca01008.github.io/us-west-2027-trip/ui-preview/daylight-compare.html` 전체 통과. 최초 공개 검사는 Pages 완료 전에 시작되어 대기시간을 초과했고, 배포 완료 후 동일 검사를 재실행했다.
+- 공개 운영 루트 응답을 `22ecee3:index.html`과 비교하여 동일함을 확인했다. 후보 앱 소스도 이번 작업에서 수정하지 않았다.
+- `node --test tests/project.test.mjs` 18개, `node scripts/check-project.mjs`, `git diff --check` 통과. 운영 앱 코드는 변경하지 않아 기존 전체 회귀 검사를 반복하지 않았다. 이번 비교 전용 검사는 로컬과 실제 HTTPS 양쪽에서 수행했다.
