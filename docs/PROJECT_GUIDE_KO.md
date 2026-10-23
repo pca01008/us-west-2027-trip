@@ -95,6 +95,8 @@ Realtime은 변경 알림입니다. 편집·초안·미리보기·체크리스�
 
 ### Daylight 후보의 메타데이터
 
+Daylight의 모바일 배치는 `index.html` 마지막 스타일 구간에서 정의합니다. 기존 CSS layer의 모바일 규칙보다 우선하므로 도구 모음의 순서, 두 지역 시계, 경비 입력과 지출 행의 열 구성을 이 구간에서 함께 관리합니다. 지출 행은 1100px 이하에서 한 열로 바꾸고, 620px 이하에서는 항목명·금액·작업 버튼을 각각 분리합니다. 긴 항목명은 줄바꿈하며 작업 버튼은 최소 44px를 확보합니다. 생성된 `daylight/index.html`은 직접 수정하지 않습니다.
+
 문서 schemaVersion은 5를 유지합니다. 준비 label의 `data-check-important="true"`는 중요 여부이며 생략 시 false입니다. 원본 `.timeline-row`의 `data-stay-checkout="YYYY-MM-DD"`는 숙소 지정과 종료일을 함께 나타냅니다. 시작일은 해당 일정 패널의 설정 날짜에서 읽습니다. 실제 달력 날짜·여행 범위를 검증하고 체크아웃은 제외한 반개구간으로 선택합니다.
 
 `checklistItems`·`patchChecklist`·`checklistShape`가 중요 속성을 전달하므로 체크만 저장하거나 최신 체크와 목록을 병합해도 설정을 유지합니다. 중요 여부만 달라도 목록 충돌과 버전 차이에 나타납니다. `sanitizeMarkup`는 잘못된 요소·값을 제거하고 `buildDiff`는 중요 표시·숙박 종료일을 설명합니다.
