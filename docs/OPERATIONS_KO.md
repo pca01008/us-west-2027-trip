@@ -445,6 +445,23 @@ node scripts/build-ui-preview.mjs
 
 ## Daylight 후보 검토와 운영 전환
 
+<a id="daylight-live"></a>
+
+### 실제 데이터에 연결한 병행 앱
+
+기존 루트 주소는 기존 화면을 유지하고 `/daylight/`에 온라인 Daylight를 배포한다. 두 앱은 같은 실제 공유본을 읽고 저장한다. 사용과 로그인·초안 분리 조건은 [사용자 안내서](USER_GUIDE_KO.md#shared-daylight), 저장 호환 처리는 [기술 설명서](PROJECT_GUIDE_KO.md)를 따른다. 루트 화면을 Daylight로 교체하는 전환은 별도다.
+
+아래 생성·검사 스크립트는 `codex/daylight-implementation` 브랜치에서 실행한다. main에는 배포 산출물과 기존 앱 호환 패치를 게시한다.
+
+- 후보 브랜치에서 `node scripts/build-daylight-live.mjs`를 실행한다. 생성한 `daylight/`는 직접 편집하지 않으며 후보 코드·설정·PWA·기본 이미지가 바뀌면 다시 생성한다. 소스 LF 해시는 생성 HTML의 `daylight-live-source` 메타에 기록된다.
+- `node scripts/check-daylight-live-browser.mjs`는 기준 기존 코드에 호환 패치를 적용하여 두 화면의 공유 저장·중요 표시 보존·숙박 날짜 보존·동시 목록 충돌을 가상 서버로 검증한다. 실제 API에 쓰지 않는다. Git 기준 커밋 `22ecee3`이 필요하므로 브라우저 CI는 전체 이력을 가져온다.
+- PowerShell에서 `$env:DAYLIGHT_LIVE='1'; node scripts/check-pwa-browser.mjs`로 `/trip/daylight/`의 설치 조건·오프라인 재열기·테마·온라인 갱신을 검증한다. 검사 후 `Remove-Item Env:DAYLIGHT_LIVE`로 해제한다.
+- main 배포에는 생성한 `daylight/` 전체와 기존 루트의 메타데이터 호환 패치를 포함한다. `scripts/daylight-legacy-compat.mjs`의 `preserveDaylightMetadata(legacy,candidate)`로 다섯 함수만 옮기고 diff에서 기존 탐색·화면 유지 여부를 확인한다. 후보 루트 전체를 main으로 덮어쓰지 않는다.
+- Pages 성공 뒤 두 공개 주소가 같은 최신 revision을 읽는지 확인한다. 실제 데이터 쓰기는 시험하지 않는다. 두 사용자의 기존 열린 창·설치 앱을 온라인에서 다시 열어 호환 패치를 적용한다. 되돌릴 때도 이 패치를 유지하고 여행 데이터는 과거본으로 덮어쓰지 않는다.
+- 공개 읽기 검사: `node scripts/check-daylight-live-public.mjs`. 실제 문서 내용은 출력·저장하지 않고 revision·항목 수만 보고한다. GET·HEAD 외 요청을 차단하며 로그인 창까지만 확인한다.
+
+검증 근거: [실제 데이터 병행 앱 기록](archive/2026-10-23-daylight-live.md).
+
 후보 코드·계획·현재 검증 범위는 [2026-10-23 구현 기록](archive/2026-10-23-daylight-implementation.md)을 기준으로 한다. 운영 전환은 별도 승인 대상이며 후보 브랜치의 `index.html`을 승인 없이 main에 병합하지 않는다.
 
 후속 비교·수정의 최신 로컬 근거는 [전환 준비 검토](archive/2026-10-23-daylight-readiness.md)를 따른다. 그 기록의 소스 해시와 공개 검토본을 구분한다. 로컬 생성물 갱신은 공개 배포나 후보 CI 성공을 뜻하지 않는다.

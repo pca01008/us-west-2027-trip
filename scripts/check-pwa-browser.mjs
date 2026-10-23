@@ -12,15 +12,16 @@ import { readBrowserFixture } from './browser-fixtures.mjs';
 
 const diagnostics = await createBrowserDiagnostics('pwa');
 const { chromium } = await import(process.argv[2] ? pathToFileURL(process.argv[2]).href : 'playwright');
-const root = new URL('../', import.meta.url);
+const repoRoot = new URL('../', import.meta.url);
+const root = new URL(process.env.DAYLIGHT_LIVE === '1' ? '../daylight/' : '../', import.meta.url);
 // npm ci supplies the same SDK version locally. jsDelivr may reformat its UMD
 // response, so only this fixture gets an integrity hash for the local bytes.
 const htmlSource = await readFile(new URL('index.html', root), 'utf8');
 const sdkURL = htmlSource.match(/https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@[^"\s]+/)[0];
 const sdkIntegrity = htmlSource.match(/integrity="(sha384-[^"]+)"/)[1];
-const sdkPackage = JSON.parse(await readFile(new URL('node_modules/@supabase/supabase-js/package.json', root), 'utf8'));
+const sdkPackage = JSON.parse(await readFile(new URL('node_modules/@supabase/supabase-js/package.json', repoRoot), 'utf8'));
 assert.ok(sdkURL.endsWith('@' + sdkPackage.version), 'PWA fixture must use the deployed SDK version');
-const sdk = await readFile(new URL('node_modules/@supabase/supabase-js/dist/umd/supabase.js', root));
+const sdk = await readFile(new URL('node_modules/@supabase/supabase-js/dist/umd/supabase.js', repoRoot));
 const localIntegrity = 'sha384-' + createHash('sha384').update(sdk).digest('base64');
 const mime = { html: 'text/html', js: 'text/javascript', webmanifest: 'application/manifest+json', png: 'image/png', svg: 'image/svg+xml', webp: 'image/webp' };
 let published = null;
@@ -36,7 +37,7 @@ const server = createServer(async (req, res) => {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(published)); return;
   }
-  const relative = url.pathname.replace(/^\/trip\//, '').replace(/^\//, '') || 'index.html';
+  const relative = url.pathname.replace(/^\/trip\/(?:daylight\/)?/, '').replace(/^\//, '') || 'index.html';
   if (!/^(index\.html|trip-config\.js|pwa\.js|sw\.js|manifest\.webmanifest|(?:icons|assets)\/[\w.-]+)$/.test(relative)) {
     res.writeHead(404); res.end(); return;
   }
@@ -54,7 +55,7 @@ await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 let browser;
 try {
   browser = await chromium.launch({ headless: true, ...(process.env.PWA_BROWSER_CHANNEL ? { channel: process.env.PWA_BROWSER_CHANNEL } : {}) });
-  for (const basePath of ['/trip/', '/']) {
+  for (const basePath of process.env.DAYLIGHT_LIVE === '1' ? ['/trip/daylight/'] : ['/trip/', '/']) {
     published = null;
     diagnostics.scenario(`install, offline reload and refresh / ${basePath}`);
     const context = await diagnostics.context(browser, { viewport: { width: 390, height: 844 }, isMobile: true, deviceScaleFactor: 2 });

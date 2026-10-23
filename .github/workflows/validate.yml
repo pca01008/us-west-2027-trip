@@ -52,6 +52,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The coexistence check reads the pinned legacy commit.
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -60,6 +63,10 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run test:browser
         env:
+          TMPDIR: ${{ runner.temp }}
+      - run: node scripts/check-pwa-browser.mjs
+        env:
+          DAYLIGHT_LIVE: '1'
           TMPDIR: ${{ runner.temp }}
       - uses: actions/upload-artifact@v4
         if: failure()
