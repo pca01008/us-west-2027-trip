@@ -10,7 +10,7 @@ createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   if(url.pathname === '/') { res.writeHead(302, { Location:'/docs/ui-concepts/index.html' }).end(); return; }
   const relative = url.pathname.slice(1);
-  if (!/^(docs\/ui-concepts\/[\w./-]+|assets\/[\w.-]+|icons\/[\w.-]+|index\.html|trip-config\.js)$/.test(relative) || relative.includes('..') || relative.endsWith('.mjs')) {
+  if (!/^(docs\/ui-concepts\/[\w./-]+|ui-preview\/daylight-[\w.-]+|assets\/[\w.-]+|icons\/[\w.-]+|index\.html|trip-config\.js)$/.test(relative) || relative.includes('..') || relative.endsWith('.mjs')) {
     res.writeHead(404).end(); return;
   }
   try {

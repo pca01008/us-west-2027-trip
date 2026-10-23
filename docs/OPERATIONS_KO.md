@@ -447,6 +447,18 @@ node scripts/build-ui-preview.mjs
 
 후보 코드·계획·현재 검증 범위는 [2026-10-23 구현 기록](archive/2026-10-23-daylight-implementation.md)을 기준으로 한다. 운영 전환은 별도 승인 대상이며 후보 브랜치의 `index.html`을 승인 없이 main에 병합하지 않는다.
 
+### 기존 버전과 같은 조건으로 비교
+
+[1:1 비교 화면](https://pca01008.github.io/us-west-2027-trip/ui-preview/daylight-compare.html)은 기존 운영 코드와 Daylight 후보를 같은 예시 일정·준비 목록·지출 3건으로 실행한다. 공통 설정에서 날짜·테마·여행 시점·일별 일정/시간표·390/768/1440px 너비를 선택한다. 나란히 또는 한 버전씩 볼 수 있고 각 화면을 새 탭으로 열 수 있다. 각 버전 안의 조작은 독립적이며 “두 화면 맞추기”는 공통 탐색 설정과 화면 상단을 다시 적용한다. 편집 중에는 앱의 기존 정책에 따라 시간표 전환이 제한될 수 있다.
+
+“새 예시로 시작”은 두 버전을 새 비교 공간으로 연다. 각 버전·비교 세션은 고유 tripId·캐시/초안 DB·오프라인 ID를 쓰며 테마도 비교 전용 범위를 사용한다. 운영 계정·API·SDK·PWA는 연결하지 않는다. 로그인·공유 저장·충돌은 이 공개 비교본의 시험 범위가 아니다. 원본 커밋과 공통 fixture 해시는 비교 화면의 버전 정보와 `ui-preview/daylight-comparison.json`에 기록한다.
+
+생성: `node scripts/build-daylight-comparison.mjs`. 기존 버전은 생성기의 명시된 기준 커밋에서, 후보는 현재 `index.html`에서 읽는다. 기준 버전을 바꿀 때는 baseline 커밋을 명시적으로 바꾸고 새 검증 기록을 남긴다. 공통 fixture와 오프라인 격리·초기 지출 주입 외에는 각 앱의 화면·기능 코드를 바꾸지 않는다. 앱 소스가 바뀌면 다시 생성한다. 생성 HTML을 직접 수정하지 않는다.
+
+검사: `node scripts/check-daylight-comparison.mjs`. 실제 공개본 검사에는 마지막 인자로 비교 페이지 HTTPS 주소를 전달한다. 두 설정의 동등성·가계부 합계·체크 격리/초기화·공통 탐색·정확한 프레임 너비·외부 요청 부재를 확인한다. 캡처는 `docs/ui-concepts/previews/daylight-comparison/`에 남긴다. 로컬 수동 검토는 기존 `node docs/ui-concepts/serve.mjs`를 실행하고 `/ui-preview/daylight-compare.html`을 연다. 공통 제어가 프레임에 접근해야 하므로 비교 페이지는 `file://` 대신 로컬 서버나 공개 HTTPS에서 연다.
+
+### 단일 후보 검토본
+
 `node scripts/build-daylight-review.mjs`는 현재 후보 코드와 합성 여행 fixture로 `ui-preview/daylight-candidate.html`을 생성한다. 운영 계정·실제 여행 내용·외부 SDK·PWA 등록을 포함하지 않는다. 후보 소스 해시별 tripId·캐시 이름을 사용하고 오프라인 모드로 실행하므로 브라우저의 검토 초안과 운영 저장소가 분리된다. 검토본의 편집은 로컬에서만 저장되며 공유 저장·인증·충돌은 `node scripts/check-daylight-browser.mjs`와 기존 가상 API 검사로 확인한다. 생성물은 직접 편집하지 않는다.
 
 원격 검토 시 `ui-preview/`의 초안·후보 파일만 별도로 공개할 수 있다. 운영 루트 파일 변경과 혼합하지 않으며 배포 파일 목록·Pages 완료·HTTPS 응답을 확인한다. 후보 배너의 기준 커밋·소스 SHA-256·fixture 버전으로 검토 대상을 식별한다. 원본 index가 바뀌면 후보 생성과 관련 검사를 다시 수행한다.

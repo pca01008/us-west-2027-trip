@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>기존 버전 · Daylight 비교</title><link rel="stylesheet" href="daylight-compare.css"></head>
+<body>
+<header><h1>기존 버전과 Daylight 비교</h1><p>같은 예시 일정·준비 목록·지출로 비교합니다. 실제 여행 데이터에는 영향을 주지 않습니다.</p></header>
+<main>
+ <form id="controls" aria-label="두 버전 공통 설정">
+  <label>화면 크기<select id="viewport"><option value="390">모바일 · 390px</option><option value="768">태블릿 · 768px</option><option value="1440">PC · 1440px</option></select></label>
+  <label>비교 방식<select id="layout"><option value="both">나란히</option><option value="before">기존 버전만</option><option value="after">Daylight만</option></select></label>
+  <label>화면<select id="section"><option value="d1">1/21 일정</option><option value="d2">1/22 일정</option><option value="d3">1/23 일정</option><option value="d4">1/24 일정</option><option value="d5">1/25 일정</option><option value="d6">1/26 일정</option><option value="d7">1/27 일정</option><option value="d8">1/28 일정</option><option value="d9">1/29 일정</option><option value="d10">1/30 일정</option><option value="d11">1/31 일정</option><option value="prep">준비</option><option value="money">가계부</option></select></label>
+  <label>테마<select id="theme"><option value="light">밝게</option><option value="dark">어둡게</option><option value="system">기기 설정</option></select></label>
+  <label>일정 보기<select id="schedule"><option value="list">일별 일정</option><option value="timetable">시간표</option></select></label>
+  <label>여행 시점<select id="moment"><option value="2027-01-20T12:00:00Z">출발 전</option><option value="2027-01-24T12:00:00Z">여행 중</option><option value="2027-02-01T12:00:00Z">여행 후</option></select></label>
+  <button type="button" id="align">두 화면 맞추기</button><button type="button" id="reset">새 예시로 시작</button>
+ </form>
+ <p class="hint">위 설정은 두 버전에 함께 적용됩니다. 각 화면 안에서는 자유롭게 조작할 수 있습니다. 화면이 잘리면 아래 영역을 가로로 움직이거나 “새 탭”으로 여세요.</p>
+ <p id="status" role="status">비교 화면을 준비하고 있습니다.</p>
+ <div class="comparison-scroll" tabindex="0" role="region" aria-label="버전 비교 화면, 가로 스크롤 가능">
+  <div id="comparison">
+   <section data-side="before"><div class="frame-heading"><h2>기존 버전 <small id="beforeCommit"></small></h2><a id="beforeLink" target="_blank" rel="noopener">새 탭</a></div><iframe id="before" title="기존 버전 비교 화면"></iframe></section>
+   <section data-side="after"><div class="frame-heading"><h2>Daylight <small id="afterCommit"></small></h2><a id="afterLink" target="_blank" rel="noopener">새 탭</a></div><iframe id="after" title="Daylight 비교 화면"></iframe></section>
+  </div>
+ </div>
+ <details><summary>비교 범위와 버전 정보</summary><p>체크·편집·파일 내보내기를 각 버전에서 시험할 수 있습니다. 로그인·공유 저장·동시 편집은 서버를 연결하지 않은 이 비교본에서 재현하지 않습니다. 중요 표시·날짜별 숙소는 Daylight에만 있는 기능입니다.</p><p>각 버전의 편집은 분리됩니다. “새 예시로 시작”은 양쪽을 새 비교 공간으로 열며, 운영 저장소를 지우지 않습니다. 예시 사진은 비교용 자리 표시입니다.</p><p id="versionInfo"></p></details>
+</main>
+<!-- COMPARISON_MANIFEST -->
+<script src="daylight-compare.js"></script>
+</body></html>
