@@ -455,6 +455,7 @@ node scripts/build-ui-preview.mjs
 
 - 후보 브랜치에서 `node scripts/build-daylight-live.mjs`를 실행한다. 생성한 `daylight/`는 직접 편집하지 않으며 후보 코드·설정·PWA·기본 이미지가 바뀌면 다시 생성한다. 소스 LF 해시는 생성 HTML의 `daylight-live-source` 메타에 기록된다.
 - `node scripts/check-daylight-live-browser.mjs`는 기준 기존 코드에 호환 패치를 적용하여 두 화면의 공유 저장·중요 표시 보존·숙박 날짜 보존·동시 목록 충돌을 가상 서버로 검증한다. 실제 API에 쓰지 않는다. Git 기준 커밋 `22ecee3`이 필요하므로 브라우저 CI는 전체 이력을 가져온다.
+- `node scripts/check-daylight-layout-browser.mjs`는 후보와 생성된 병행 앱을 합성 자료로 열어 320·360·390·520·540·620·621·768·1100·1280·1440px에서 일정·준비·가계부를 검사한다. 긴 한글·영문 지출명과 큰 금액을 넣어 행 내부 잘림·텍스트와 버튼 겹침·44px 터치 영역·입력 글자 크기·설정 메뉴 경계를 확인한다. Chromium의 모바일 터치 에뮬레이션이며 실제 휴대폰·삼성 인터넷 검증을 대신하지 않는다. 캡처 경로는 실행 결과에 출력하며 전체 브라우저 검사에도 포함된다.
 - PowerShell에서 `$env:DAYLIGHT_LIVE='1'; node scripts/check-pwa-browser.mjs`로 `/trip/daylight/`의 설치 조건·오프라인 재열기·테마·온라인 갱신을 검증한다. 검사 후 `Remove-Item Env:DAYLIGHT_LIVE`로 해제한다.
 - main 배포에는 생성한 `daylight/` 전체와 기존 루트의 메타데이터 호환 패치를 포함한다. `scripts/daylight-legacy-compat.mjs`의 `preserveDaylightMetadata(legacy,candidate)`로 다섯 함수만 옮기고 diff에서 기존 탐색·화면 유지 여부를 확인한다. 후보 루트 전체를 main으로 덮어쓰지 않는다.
 - Pages 성공 뒤 두 공개 주소가 같은 최신 revision을 읽는지 확인한다. 실제 데이터 쓰기는 시험하지 않는다. 두 사용자의 기존 열린 창·설치 앱을 온라인에서 다시 열어 호환 패치를 적용한다. 되돌릴 때도 이 패치를 유지하고 여행 데이터는 과거본으로 덮어쓰지 않는다.

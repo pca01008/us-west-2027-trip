@@ -872,7 +872,7 @@ body>header::before,body>header::after,.hero-shell::before,.hero-shell::after{di
 .money-total strong,.money-total small{color:var(--ink)}.money-total small{font-size:12px;font-weight:600}
 .expense-entry .add-expense{background:none;border:0;padding:0;box-shadow:none}
 .add-expense label>span,.expense-filters label>span,.exchange-rate-updated,.exchange-rate>span,.category-total small,.expense-filter-summary{font-size:12px}
-.daylight-settings{order:9;margin-left:0}.editor-bar #status{order:8}.editor-bar #themeStorageStatus{order:10;flex-basis:100%}
+.daylight-settings{order:7;margin-left:auto}.editor-bar #status{order:8}.editor-bar #themeStorageStatus{order:10;flex-basis:100%}
 @media(max-width:1100px){.daylight-content:has(.daylight-priority)>#daylightContext{order:-1;display:block}}
 .timeline-row>.card{grid-column:2}.timeline-row>.time{text-align:left}
 .editing .timeline-row{grid-template-columns:72px minmax(0,1fr)}
@@ -882,6 +882,39 @@ body>header,.hero-shell{background-image:none;text-shadow:none}
 .title{text-shadow:none}.time-gap strong,.time-gap b{color:var(--ink)}
 .day-head h2{border:0;border-radius:0}.day-head p,.checklist label{font-weight:500}.checklist h3{letter-spacing:0;text-transform:none;font-weight:650;font-size:15px}.editor-bar .primary{box-shadow:none}
 @media(min-width:621px) and (max-width:1100px){.expense-entry .add-expense{grid-template-columns:repeat(2,minmax(0,1fr))}.expense-entry .add-expense>label{grid-column:auto}.expense-entry .add-expense>.btn{grid-column:1/-1}.expense-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.expense-filters>label{grid-column:auto}.money-totals{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* Keep Daylight layout independent of the earlier legacy mobile layers. */
+.expense-entry .add-expense>.btn,.expense-filters button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;box-shadow:none}
+.expense-primary b{white-space:normal;overflow-wrap:anywhere}
+.expense-action{min-width:44px;min-height:44px;height:auto}
+@media(max-width:1100px){
+ .expense{grid-template-columns:minmax(0,1fr)}
+ .expense-primary{grid-template-columns:88px minmax(0,1fr)}
+ .expense-side{min-width:0;flex-wrap:wrap;justify-content:space-between;gap:10px 16px}
+ .expense .expense-amount{min-width:0;text-align:left;overflow-wrap:anywhere}
+ .expense-actions{flex-wrap:wrap;gap:6px;margin-left:auto}
+}
+@media(max-width:620px){
+ body>header{padding:calc(16px + env(safe-area-inset-top)) 20px 16px}
+ .world-clocks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:8px 16px}
+ .world-clock{flex-direction:column;align-items:flex-start;gap:4px}
+ .world-clock-copy small,.world-clock-copy span{white-space:normal;overflow-wrap:anywhere}
+ .world-clock time{font-size:20px;line-height:1.3}
+ .time-gap{grid-column:1/-1;white-space:normal;text-align:left;padding:0;line-height:1.5}
+ .editor-bar #status{padding:0;line-height:1.5}
+ .daylight-content{padding-top:8px}
+ .expense-entry,.exchange-rate,.expenses-section,.budget-overview,.money-totals{margin-left:0;margin-right:0}
+ .expense-entry .add-expense{grid-template-columns:minmax(0,1fr);gap:12px}
+ .expense-entry .add-expense>label,.expense-entry .add-expense>.btn{grid-column:1;min-width:0}
+ .expense-entry .add-expense input,.expense-entry .add-expense select,.expense-filters input,.expense-filters select{min-width:0;font-size:16px;min-height:44px}
+ .expense-entry .amount-with-currency{grid-template-columns:minmax(0,1fr) 88px}
+ .expense{padding:16px}
+ .expense-primary{display:block}
+ .expense-primary b{display:block;line-height:1.55}
+ .expense-category-badge{margin-top:6px}
+ .expense-side{align-items:flex-start}
+ .expense .expense-amount{flex-basis:100%;font-size:16px}
+ .expense-actions{width:100%;justify-content:flex-end}
+}
 @media print{.panel{background:#fff}body{padding:0;background:white}body::before,.daylight-nav,.daylight-settings,#daylightContext{display:none}.daylight-content{display:block;padding:0}.daylight-content main{width:100%;padding:0}.timeline-row{break-inside:avoid}.day-head{break-after:avoid}.checklist label[data-check-important="true"]>span:first-of-type::before{color:#222}}
 
 </style>
