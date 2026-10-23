@@ -1,0 +1,31 @@
+{
+  "name": "Daylight · 미국 서부 여행 2027",
+  "short_name": "Daylight 여행",
+  "description": "라스베이거스와 로스앤젤레스 여행 일정, 준비물, 경비",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6faf8",
+  "theme_color": "#177666",
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

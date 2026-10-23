@@ -1739,9 +1739,9 @@ input:disabled,select:disabled{opacity:.7}
   // document draft. The existing revision-checked RPC makes each patch atomic.
   function checklistItems(state) {
     const template=document.createElement('template');template.innerHTML=state.html;
-    return Array.from(template.content.querySelectorAll('.prepday .checklist label')).map((label,index)=>({id:label.dataset.checkId,text:checkLabelText(label),checked:Boolean(state.checks?.[index])}));
+    return Array.from(template.content.querySelectorAll('.prepday .checklist label')).map((label,index)=>({id:label.dataset.checkId,text:checkLabelText(label),important:label.dataset.checkImportant==='true',checked:Boolean(state.checks?.[index])}));
   }
-  function checklistShape(items){return JSON.stringify(items.map(({id,text})=>({id,text})));}
+  function checklistShape(items){return JSON.stringify(items.map(({id,text,important})=>({id,text,important:Boolean(important)})));}
   function patchCheck(state,id,value) {
     const next=clone(state),items=checklistItems(next),index=items.findIndex(item=>item.id===id);
     if(index<0)throw new Error('항목이 삭제되었습니다. 목록을 새로 확인해 주세요.');
@@ -1755,7 +1755,7 @@ input:disabled,select:disabled{opacity:.7}
     const next=clone(state),template=document.createElement('template');template.innerHTML=next.html;
     const list=template.content.querySelector('.prepday .checklist');
     list.querySelectorAll('label,.check-feedback').forEach(el=>el.remove());
-    items.forEach(item=>{const label=document.createElement('label');label.dataset.checkId=item.id;const input=document.createElement('input');input.type='checkbox';const span=document.createElement('span');span.contentEditable='false';span.textContent=item.text;label.append(input,span);list.append(label);});
+    items.forEach(item=>{const label=document.createElement('label');label.dataset.checkId=item.id;if(item.important)label.dataset.checkImportant='true';const input=document.createElement('input');input.type='checkbox';const span=document.createElement('span');span.contentEditable='false';span.textContent=item.text;label.append(input,span);list.append(label);});
     next.html=template.innerHTML;next.checks=items.map(item=>Boolean(item.checked));return next;
   }
   function syncChecklistControls() {
@@ -2476,7 +2476,7 @@ input:disabled,select:disabled{opacity:.7}
     finally{const status=$('#status').textContent;setOperationBusy(false);setStatus(status);}
   }
 
-  function stateSummary(state){const template=document.createElement('template');template.innerHTML=state.html;const schedules=[];template.content.querySelectorAll('.day:not(.prepday):not(.moneyday)').forEach((day,dayIndex)=>day.querySelectorAll('.timeline-row').forEach((row,index)=>{const mapLink=row.querySelector('.schedule-map a');schedules.push({id:row.dataset.rowId||'position-'+dayIndex+'-'+index,key:'DAY '+(dayIndex+1)+' 일정 '+(index+1),dayIndex,index,kind:TIMETABLE_KINDS[scheduleKindMode(row.dataset.scheduleKind)]||'자동',time:row.querySelector('.time')?.textContent.trim()||'',title:row.querySelector('h3')?.textContent.trim()||'',detail:row.querySelector('.remark')?.textContent.trim()||'',warning:Array.from(row.querySelectorAll('.schedule-warning')).map(item=>(item.querySelector('.schedule-warning-text')||item).textContent.trim()).filter(Boolean).join(' | '),mapName:mapPlaceName(mapLink),map:mapLink?.href||'',photos:Array.from(row.querySelectorAll('.schedule-photo')).map(photo=>{const img=photo.querySelector('img');return {id:photo.dataset.photoId||photo.dataset.fullPath||'photo',caption:photo.querySelector('figcaption')?.textContent.trim()||'',alt:img?.alt||''};})});}));const checks=Array.from(template.content.querySelectorAll('.checklist label span')).map((span,index)=>({id:span.closest('label')?.dataset.checkId||'position-'+index,text:span.textContent.trim(),checked:Boolean(state.checks?.[index])}));const days=Array.from(template.content.querySelectorAll('.day:not(.prepday):not(.moneyday)')).map(day=>day.querySelector('.day-head p')?.textContent.trim()||'');return {days,schedules,checks,expenses:state.expenses,categories:state.categories,exchangeRate:state.exchangeRate,budgetKrw:state.budgetKrw};}
+  function stateSummary(state){const template=document.createElement('template');template.innerHTML=state.html;const schedules=[];template.content.querySelectorAll('.day:not(.prepday):not(.moneyday)').forEach((day,dayIndex)=>day.querySelectorAll('.timeline-row').forEach((row,index)=>{const mapLink=row.querySelector('.schedule-map a');schedules.push({id:row.dataset.rowId||'position-'+dayIndex+'-'+index,key:'DAY '+(dayIndex+1)+' 일정 '+(index+1),dayIndex,index,stay:row.dataset.stayCheckout||'',kind:TIMETABLE_KINDS[scheduleKindMode(row.dataset.scheduleKind)]||'자동',time:row.querySelector('.time')?.textContent.trim()||'',title:row.querySelector('h3')?.textContent.trim()||'',detail:row.querySelector('.remark')?.textContent.trim()||'',warning:Array.from(row.querySelectorAll('.schedule-warning')).map(item=>(item.querySelector('.schedule-warning-text')||item).textContent.trim()).filter(Boolean).join(' | '),mapName:mapPlaceName(mapLink),map:mapLink?.href||'',photos:Array.from(row.querySelectorAll('.schedule-photo')).map(photo=>{const img=photo.querySelector('img');return {id:photo.dataset.photoId||photo.dataset.fullPath||'photo',caption:photo.querySelector('figcaption')?.textContent.trim()||'',alt:img?.alt||''};})});}));const checks=Array.from(template.content.querySelectorAll('.checklist label span')).map((span,index)=>({id:span.closest('label')?.dataset.checkId||'position-'+index,text:span.textContent.trim(),important:span.closest('label')?.dataset.checkImportant==='true',checked:Boolean(state.checks?.[index])}));const days=Array.from(template.content.querySelectorAll('.day:not(.prepday):not(.moneyday)')).map(day=>day.querySelector('.day-head p')?.textContent.trim()||'');return {days,schedules,checks,expenses:state.expenses,categories:state.categories,exchangeRate:state.exchangeRate,budgetKrw:state.budgetKrw};}
   function buildDiff(beforeState,afterState){
     const before=stateSummary(beforeState),after=stateSummary(afterState),groups=[];
     const addGroup=(title,items)=>{if(items.length)groups.push({title,items});};
@@ -2489,7 +2489,7 @@ input:disabled,select:disabled{opacity:.7}
     after.schedules.forEach(item=>{
       const old=beforeSchedules.get(item.id);
       if(!old){scheduleChanges.push(item.key+' 추가: '+value(item.time)+' · '+value(item.title));return;}
-      [['시간','time'],['제목','title'],['분류','kind'],['상세','detail'],['주의사항','warning'],['지도 장소','mapName'],['지도 링크','map']].forEach(([label,key])=>{if(old[key]!==item[key])scheduleChanges.push(item.key+' '+label+': '+value(old[key])+' → '+value(item[key]));});
+      [['숙박 종료일','stay'],['시간','time'],['제목','title'],['분류','kind'],['상세','detail'],['주의사항','warning'],['지도 장소','mapName'],['지도 링크','map']].forEach(([label,key])=>{if(old[key]!==item[key])scheduleChanges.push(item.key+' '+label+': '+value(old[key])+' → '+value(item[key]));});
       if(JSON.stringify(old.photos)!==JSON.stringify(item.photos))scheduleChanges.push(item.key+' 사진 구성·순서·설명 변경');
     });
     const beforeScheduleOrder=before.schedules.map(item=>item.id),afterScheduleOrder=after.schedules.map(item=>item.id),sameSchedules=beforeScheduleOrder.length===afterScheduleOrder.length&&beforeScheduleOrder.every(id=>afterSchedules.has(id));
@@ -2497,7 +2497,7 @@ input:disabled,select:disabled{opacity:.7}
     addGroup('일정',scheduleChanges);
     const checkChanges=[],beforeChecks=new Map(before.checks.map(item=>[item.id,item])),afterChecks=new Map(after.checks.map(item=>[item.id,item]));
     before.checks.forEach(item=>{if(!afterChecks.has(item.id))checkChanges.push('항목 삭제: '+value(item.text));});
-    after.checks.forEach(item=>{const old=beforeChecks.get(item.id);if(!old)checkChanges.push('항목 추가: '+value(item.text));else{if(old.text!==item.text)checkChanges.push('항목 내용: '+value(old.text)+' → '+value(item.text));if(old.checked!==item.checked)checkChanges.push(value(item.text)+': '+(old.checked?'완료':'미완료')+' → '+(item.checked?'완료':'미완료'));}});
+    after.checks.forEach(item=>{const old=beforeChecks.get(item.id);if(!old)checkChanges.push('항목 추가: '+value(item.text));else{if(old.important!==item.important)checkChanges.push(value(item.text)+' 중요 표시: '+(old.important?'켜짐':'꺼짐')+' → '+(item.important?'켜짐':'꺼짐'));if(old.text!==item.text)checkChanges.push('항목 내용: '+value(old.text)+' → '+value(item.text));if(old.checked!==item.checked)checkChanges.push(value(item.text)+': '+(old.checked?'완료':'미완료')+' → '+(item.checked?'완료':'미완료'));}});
     const beforeCheckOrder=before.checks.map(item=>item.id),afterCheckOrder=after.checks.map(item=>item.id),sameChecks=beforeCheckOrder.length===afterCheckOrder.length&&beforeCheckOrder.every(id=>afterChecks.has(id));
     if(sameChecks&&beforeCheckOrder.join('|')!==afterCheckOrder.join('|'))checkChanges.push('체크리스트 순서 변경');
     addGroup('체크리스트',checkChanges);
