@@ -1,12 +1,13 @@
 // Bump VERSION when changing the precache list, icons/images or caching behavior.
 // Updates activate after existing app windows close; never reload unsaved edits.
-const VERSION = 'v2';
+const VERSION = 'v3';
 const CACHE_PREFIX = 'westbound-pwa:' + encodeURIComponent(self.registration.scope) + ':';
 const CACHE_NAME = CACHE_PREFIX + VERSION;
 const localURL = path => new URL(path, self.registration.scope).href;
 const INDEX_URL = localURL('./index.html');
 const SHELL_PATHS = [
   './index.html', './trip-config.js', './pwa.js', './manifest.webmanifest',
+  './assets/PretendardVariable-1.3.9.woff2',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png',
   './assets/airbnb.webp', './assets/map-airbnb.9f74cd61fac3.webp',
   './assets/map-alexis-park.bb487c54e63d.webp', './assets/map-waldorf-astoria.40158ebf193c.webp'
@@ -65,7 +66,7 @@ self.addEventListener('fetch', event => {
   if (request.mode === 'navigate' && isAppPage) {
     // Preview/query pages may fall back to the shell but never replace its cache.
     event.respondWith(networkFirst(request, INDEX_URL, !url.search));
-  } else if (request.url === SDK_URL || (LOCAL_URLS.has(request.url) && /\.(?:webp|png|svg)$/.test(url.pathname))) {
+  } else if (request.url === SDK_URL || (LOCAL_URLS.has(request.url) && /\.(?:webp|png|svg|woff2)$/.test(url.pathname))) {
     event.respondWith(staticAsset(request));
   } else if (LOCAL_URLS.has(request.url)) {
     event.respondWith(networkFirst(request, request));

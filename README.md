@@ -10,6 +10,7 @@ Work now focuses on the existing app. Further Daylight development and productio
 |---|---|
 | Itinerary, timetable, PREP, ledger, draft recovery, installation, exports | [User guide](docs/USER_GUIDE.md) |
 | Architecture, data, saving, permissions, SQL | [Project guide](docs/PROJECT_GUIDE.md) |
+| Pretendard font loading, offline copies, validation limits | [Typography](docs/PROJECT_GUIDE.md#typography) · [October 24 checks](docs/archive/2026-10-24-pretendard.md) |
 | Setup, new trips, testing, deployment, DB checks, troubleshooting | [Operations guide](docs/OPERATIONS.md) |
 | Separate research from website files | [Directory guide](docs/DIRECTORY_PLAN.md) |
 | Dual KRW/USD entry and automatic conversion | [Plan](docs/LEDGER_DUAL_CURRENCY_PLAN.md) — deployed; see the [implementation record](docs/archive/2026-10-24-ledger-dual-currency.md) |

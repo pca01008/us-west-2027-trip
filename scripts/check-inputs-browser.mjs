@@ -26,7 +26,7 @@ const server = createServer(async (req, res) => {
       .replace('initializeTimetable();initializeDialogAccessibility();',
         'window.__inputsTest={captureState,applyState,normalizeState,recordHistory,exportOfflineHtml,exportStaticHtml};initializeTimetable();initializeDialogAccessibility();');
     const ext = relative.split('.').at(-1);
-    res.writeHead(200, { 'Content-Type': { html: 'text/html; charset=utf-8', js: 'text/javascript; charset=utf-8', webp: 'image/webp', png: 'image/png', svg: 'image/svg+xml' }[ext], 'Cache-Control': 'no-store' });
+    res.writeHead(200, { 'Content-Type': { html: 'text/html; charset=utf-8', js: 'text/javascript; charset=utf-8', webp: 'image/webp', png: 'image/png', svg: 'image/svg+xml', woff2: 'font/woff2' }[ext], 'Cache-Control': 'no-store' });
     res.end(content);
   } catch { res.writeHead(404).end(); }
 });
@@ -196,6 +196,8 @@ try {
       const file = path.join(output, `${mobile ? 'mobile' : 'desktop'}-${kind}.html`);
       await (await download).saveAs(file);
       const artifact = await context.newPage(); await artifact.goto(pathToFileURL(file).href);
+      assert.ok(await artifact.evaluate(async () => (await document.fonts.load('700 16px "Pretendard Variable"', '여행 ABC 0123')).length > 0), 'Export embeds the real font for local files');
+      assert.equal(await artifact.locator('#tripFontPreload').count(), 0, 'Export must not request a relative font preload');
       if (kind === 'editable') await ready(artifact);
       if(kind==='editable')await tab(artifact);
       const restored = artifact.locator(`[data-row-id="${rowId}"]`);
@@ -212,6 +214,19 @@ try {
         assert.equal(await restored.locator('.remark').textContent(), 'Restored');
       }
       await artifact.close();
+    }
+    if (!mobile) {
+      await context.route('**/*.woff2', route => route.fulfill({ status:503, body:'unavailable' }));
+      const fallbackDownload = page.waitForEvent('download');
+      await page.evaluate(() => window.__inputsTest.exportStaticHtml());
+      const fallbackFile = path.join(output, 'readonly-font-fallback.html');
+      await (await fallbackDownload).saveAs(fallbackFile);
+      const fallbackArtifact = await context.newPage();await fallbackArtifact.goto(pathToFileURL(fallbackFile).href);
+      assert.equal(await fallbackArtifact.locator('.title').isVisible(), true, 'Font failure preserves exported content');
+      assert.equal(await fallbackArtifact.locator('#trip-app-styles').count(), 1, 'Font failure preserves all other styles');
+      assert.equal(await fallbackArtifact.locator('#tripFontPreload').count(), 0);
+      assert.equal(await fallbackArtifact.evaluate(() => Array.from(document.fonts).length), 0, 'Failed font has no broken relative URL in the export');
+      await fallbackArtifact.close();
     }
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'No horizontal overflow');
     await diagnostics.close(context);

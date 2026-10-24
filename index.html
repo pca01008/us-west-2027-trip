@@ -83,12 +83,110 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script id="pwaRegistration" src="./pwa.js" defer></script>
 <title>여행 일정</title>
+<link id="tripFontPreload" rel="preload" href="./assets/PretendardVariable-1.3.9.woff2" as="font" type="font/woff2" crossorigin>
 <style id="trip-app-styles">
+/* Pretendard 1.3.9 license; retained in exported HTML.
+Copyright (c) 2021, Kil Hyung-jin (https://github.com/orioncactus/pretendard),
+with Reserved Font Name Pretendard.
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+This license is copied below, and is also available with a FAQ at:
+https://scripts.sil.org/OFL
+
+
+-----------------------------------------------------------
+SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
+-----------------------------------------------------------
+
+PREAMBLE
+The goals of the Open Font License (OFL) are to stimulate worldwide
+development of collaborative font projects, to support the font creation
+efforts of academic and linguistic communities, and to provide a free and
+open framework in which fonts may be shared and improved in partnership
+with others.
+
+The OFL allows the licensed fonts to be used, studied, modified and
+redistributed freely as long as they are not sold by themselves. The
+fonts, including any derivative works, can be bundled, embedded,
+redistributed and/or sold with any software provided that any reserved
+names are not used by derivative works. The fonts and derivatives,
+however, cannot be released under any other type of license. The
+requirement for fonts to remain under this license does not apply
+to any document created using the fonts or their derivatives.
+
+DEFINITIONS
+"Font Software" refers to the set of files released by the Copyright
+Holder(s) under this license and clearly marked as such. This may
+include source files, build scripts and documentation.
+
+"Reserved Font Name" refers to any names specified as such after the
+copyright statement(s).
+
+"Original Version" refers to the collection of Font Software components as
+distributed by the Copyright Holder(s).
+
+"Modified Version" refers to any derivative made by adding to, deleting,
+or substituting -- in part or in whole -- any of the components of the
+Original Version, by changing formats or by porting the Font Software to a
+new environment.
+
+"Author" refers to any designer, engineer, programmer, technical
+writer or other person who contributed to the Font Software.
+
+PERMISSION & CONDITIONS
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of the Font Software, to use, study, copy, merge, embed, modify,
+redistribute, and sell modified and unmodified copies of the Font
+Software, subject to the following conditions:
+
+1) Neither the Font Software nor any of its individual components,
+in Original or Modified Versions, may be sold by itself.
+
+2) Original or Modified Versions of the Font Software may be bundled,
+redistributed and/or sold with any software, provided that each copy
+contains the above copyright notice and this license. These can be
+included either as stand-alone text files, human-readable headers or
+in the appropriate machine-readable metadata fields within text or
+binary files as long as those fields can be easily viewed by the user.
+
+3) No Modified Version of the Font Software may use the Reserved Font
+Name(s) unless explicit written permission is granted by the corresponding
+Copyright Holder. This restriction only applies to the primary font name as
+presented to the users.
+
+4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
+Software shall not be used to promote, endorse or advertise any
+Modified Version, except to acknowledge the contribution(s) of the
+Copyright Holder(s) and the Author(s) or with their explicit written
+permission.
+
+5) The Font Software, modified or unmodified, in part or in whole,
+must be distributed entirely under this license, and must not be
+distributed under any other license. The requirement for fonts to
+remain under this license does not apply to any document created
+using the Font Software.
+
+TERMINATION
+This license becomes null and void if any of the above conditions are
+not met.
+
+DISCLAIMER
+THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
+OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
+DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
+OTHER DEALINGS IN THE FONT SOFTWARE.
+*/
+@font-face{font-family:"Pretendard Variable";font-style:normal;font-weight:100 900;font-display:swap;src:url("./assets/PretendardVariable-1.3.9.woff2") format("woff2")}
 @layer base,itinerary,timeline,session,modern,features,ledger,timetable,theme,refinement;
 @layer base {
 /* base */
-:root{--navy:#142b3d;--blue:#2f6685;--sky:#dceaf0;--sand:#e6a15c;--cream:#f7f3eb;--paper:#fffdf8;--ink:#22313a;--muted:#71808a;--line:#dce2e2;--red:#b9584d}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;background:var(--cream);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif}body{padding-bottom:38px}button,input,select{font:inherit}button{cursor:pointer}
+:root{--font-ui:"Pretendard Variable",-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;--navy:#142b3d;--blue:#2f6685;--sky:#dceaf0;--sand:#e6a15c;--cream:#f7f3eb;--paper:#fffdf8;--ink:#22313a;--muted:#71808a;--line:#dce2e2;--red:#b9584d}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;background:var(--cream);color:var(--ink);font-family:var(--font-ui)}body{padding-bottom:38px}button,input,select,textarea{font:inherit}button{cursor:pointer}
 header{padding:calc(20px + env(safe-area-inset-top)) 16px 18px;color:#fff;background:linear-gradient(135deg,var(--navy),#28546c)}
 .eyebrow{font-size:10px;font-weight:900;letter-spacing:.16em;color:#f6c17d}.title{margin:6px 0 3px;font-size:25px;line-height:1.05;font-weight:950;letter-spacing:-.05em}.subtitle{font-size:12px;opacity:.82}.panel,.expense{background:rgba(255,253,248,.97);border:1px solid var(--line);border-radius:14px;box-shadow:0 5px 16px rgba(25,45,57,.06)}
 .tabs{position:sticky;top:0;z-index:10;display:flex;gap:6px;overflow-x:auto;padding:8px 10px;background:rgba(247,243,235,.97);border-bottom:1px solid var(--line);backdrop-filter:blur(12px);scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.tabs label{flex:none;min-width:66px;padding:8px 7px;text-align:center;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--muted);font-size:11px;font-weight:900}.tabs label span{display:block;margin-top:2px;font-size:10px;font-weight:800}.day-radio{position:absolute;opacity:0;pointer-events:none}.day{display:none}
@@ -102,7 +200,7 @@ main{max-width:780px;margin:auto;padding:8px}.panel{padding:14px}.day-head{displ
 /* itinerary-redesign */
 /* Mobile itinerary redesign: one light theme, one coral accent, information-first. */
 :root{--navy:#15283e;--blue:#d85f4d;--sky:#fbe9e5;--sand:#d85f4d;--cream:#eef1f5;--paper:#ffffff;--ink:#172434;--muted:#657181;--line:#d8e0e9;--red:#b64539}
-html,body{background:var(--cream);color:var(--ink)}body{padding-bottom:24px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
+html,body{background:var(--cream);color:var(--ink)}body{padding-bottom:24px;font-family:var(--font-ui)}
 header{min-height:124px;padding:calc(26px + env(safe-area-inset-top)) 20px 22px;background:var(--navy);color:#f9fbfd}header:after{display:none}.eyebrow{display:none}.title{margin:0;font-size:29px;line-height:1.18;letter-spacing:-.055em}.subtitle{margin-top:7px;font-size:13px;color:#c7d3df;opacity:1}
 .tabs{gap:0;padding:7px 10px;background:rgba(238,241,245,.97);border-bottom:1px solid var(--line);box-shadow:0 1px 0 rgba(21,40,62,.03)}.tabs label{min-width:67px;padding:8px 6px;border:0;border-radius:0;background:transparent;color:var(--muted);font-size:12px;line-height:1.05}.tabs label span{margin-top:3px;font-size:10px;font-weight:700}.tabs label:active,.editor-bar button:active,.currency button:active,.btn:active{transform:scale(.97)}
 .editor-bar{max-width:680px;margin:0 auto;padding:8px 12px;background:var(--paper);border-bottom:1px solid var(--line);box-shadow:none}.editor-bar button{border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:#fff;color:var(--ink);font-size:11px}.editor-bar .primary{background:var(--navy);border-color:var(--navy);color:#fff}.editor-bar .chip{display:none}
@@ -601,7 +699,7 @@ header:before{content:"";position:absolute;top:-120px;right:-100px;width:360px;h
 
 @layer timetable {
 .schedule-kind-control{display:flex;flex-wrap:wrap;align-items:center;gap:8px;flex-basis:100%;margin-bottom:4px;color:var(--navy);font-size:11px;font-weight:750}.schedule-kind-control i{width:9px;height:9px;flex:none;border-radius:3px;background:var(--tt-color)}.schedule-kind-control select{min-height:44px;min-width:145px;max-width:100%;padding:8px 30px 8px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);font-size:12px;font-weight:650}
-.schedule-clock{position:relative;display:block;min-width:0}.schedule-clock input,.schedule-clock-display{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:16px;font-weight:700;line-height:24px;letter-spacing:0}.schedule-clock input{color:transparent;-webkit-text-fill-color:transparent;caret-color:var(--navy)}.schedule-clock input::placeholder{color:transparent}.schedule-clock-display{position:absolute;top:12px;left:13px;pointer-events:none;color:var(--ink);white-space:pre}.schedule-clock-display .clock-placeholder{color:#909bab}@media(forced-colors:active){.schedule-clock input{color:CanvasText;-webkit-text-fill-color:CanvasText}.schedule-clock-display{display:none}}
+.schedule-clock{position:relative;display:block;min-width:0}.schedule-clock input,.schedule-clock-display{font-family:var(--font-ui);font-variant-numeric:tabular-nums;font-size:16px;font-weight:700;line-height:24px;letter-spacing:0}.schedule-clock input{color:transparent;-webkit-text-fill-color:transparent;caret-color:var(--navy)}.schedule-clock input::placeholder{color:transparent}.schedule-clock-display{position:absolute;top:12px;left:13px;pointer-events:none;color:var(--ink);white-space:pre}.schedule-clock-display .clock-placeholder{color:#909bab}@media(forced-colors:active){.schedule-clock input{color:CanvasText;-webkit-text-fill-color:CanvasText}.schedule-clock-display{display:none}}
 #scheduleTimeDialog{z-index:1300}.schedule-time-card{width:min(100%,480px)}.schedule-time-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.schedule-time-grid input{min-width:0;font-variant-numeric:tabular-nums}.schedule-time-card .schedule-time-help{margin:8px 0 0;color:var(--muted);font-size:12px;line-height:1.6}.schedule-time-card .schedule-time-preview{margin:18px 0 0;padding:12px 14px;border-radius:10px;background:#f2f5f8;color:var(--navy);font-size:14px;font-weight:800;overflow-wrap:anywhere}.schedule-time-preview:empty{display:none}.schedule-time-card .schedule-time-error{margin:10px 0 0;color:#a93f35;font-size:12px}.schedule-time-card input[aria-invalid="true"]{border-color:#a93f35}.schedule-time-end{display:block;margin-top:3px;font-size:.86em;font-weight:650}.timeline-row>.time:has(.schedule-time-end){white-space:normal;overflow-wrap:anywhere}
 .schedule-view-switch{display:flex;align-items:center;justify-content:space-between;gap:12px;width:calc(100% - 32px);max-width:860px;margin:18px auto 0;color:var(--muted);font-size:12px}
 .schedule-view-switch>div,.tt-range{display:flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:12px;background:#fff}
@@ -2651,6 +2749,24 @@ input:disabled,select:disabled{opacity:.7}
   }
   function setArtifactBanner(root,type){resetArtifactTheme(root,type);root.querySelectorAll('#pwaRegistration,link[rel="manifest"],link[rel="icon"],link[rel="apple-touch-icon"]').forEach(el=>el.remove());root.querySelectorAll('.artifact-banner').forEach(el=>el.remove());const banner=document.createElement('div'),date=todayLocal();banner.className='artifact-banner '+(type==='readonly'?'readonly':'editable');banner.innerHTML=type==='readonly'?'<strong>인쇄·공유용 사본</strong><span>읽기 전용 · 온라인 반영 불가 · '+date+' 생성</span>':'<strong>오프라인 작업본</strong><span>인터넷 없이 수정 가능 · 수정 후 온라인 페이지에서 “편집본 불러오기”를 사용하세요.</span>';root.querySelector('header')?.insertAdjacentElement('afterend',banner);root.dataset.artifactType=type;}
   function embedTripConfig(root){const external=root.querySelector('#tripConfigScript,script[src$="trip-config.js"]');if(!external)return;const inline=document.createElement('script');inline.id='embeddedTripConfig';inline.textContent='window.TRIP_CONFIG='+JSON.stringify(CONFIG).replace(/</g,'\\u003c')+';';external.replaceWith(inline);}
+  async function embedArtifactFont(root){
+    root.querySelector('#tripFontPreload')?.remove();
+    const style=root.querySelector('#trip-app-styles'),rule=style?.textContent.match(/@font-face\s*\{[^}]+\}/)?.[0],source=rule?.match(/url\("([^"]+)"\)/)?.[1];
+    if(!source||source.startsWith('data:'))return;
+    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000),signal=operationController?.signal,abort=()=>controller.abort();
+    signal?.addEventListener('abort',abort,{once:true});
+    try{
+      if(signal?.aborted)controller.abort();
+      const response=await fetch(new URL(source,document.baseURI),{signal:controller.signal});
+      if(!response.ok)throw new Error('Font HTTP '+response.status);
+      const data=await blobToDataUrl(new Blob([await response.arrayBuffer()],{type:'font/woff2'}));
+      if(operationCancelled)throw new Error('작업을 취소했습니다.');
+      style.textContent=style.textContent.replace(source,data);
+    }catch(error){
+      if(operationCancelled)throw error;
+      style.textContent=style.textContent.replace(rule,'');console.warn('Export font unavailable; using the system font.',error);
+    }finally{clearTimeout(timeout);signal?.removeEventListener('abort',abort);}
+  }
   async function exportOfflineHtml(sourceState=captureState()) {
     if(operationBusy)return;setOperationBusy(true,{cancelable:true,status:'오프라인 작업본 준비 중'});
     try {
@@ -2662,6 +2778,7 @@ input:disabled,select:disabled{opacity:.7}
       if(cloneLoading){cloneLoading.hidden=false;cloneLoading.removeAttribute('aria-hidden');}
       cloneDoc.querySelector('#offlineEmbeddedState').textContent=JSON.stringify(state).replace(/</g,'\\u003c');
       cloneDoc.querySelector('script[src*="supabase"]')?.remove();embedTripConfig(cloneDoc);stripTransient(cloneDoc);setArtifactBanner(cloneDoc,'editable');
+      await embedArtifactFont(cloneDoc);
       const source='<!doctype html>\n'+cloneDoc.outerHTML,size=new Blob([source]).size;
       if(size>100*1024*1024){const choice=await showChoice({title:'오프라인 파일이 큽니다.',message:'사진을 포함한 파일 크기가 약 '+Math.ceil(size/1024/1024)+'MB입니다. 기기에 따라 열고 저장하는 데 시간이 걸릴 수 있습니다.',choices:[{label:'취소',value:'cancel'},{label:'계속 다운로드',value:'continue',className:'action-primary'}]});if(choice!=='continue'){setStatus('오프라인 작업본 생성을 취소했습니다.');return;}}
       downloadHtml(source,EXPORT_BASE_NAME+'_EDITABLE_'+todayLocal()+'.html');setStatus('오프라인 작업본을 만들었습니다.');
@@ -2701,7 +2818,7 @@ input:disabled,select:disabled{opacity:.7}
       cloneDoc.querySelector('body').className='viewing';stripTransient(cloneDoc);cloneDoc.querySelectorAll('.expense-entry,.category-manager,.expense-actions').forEach(el=>el.remove());
       cloneDoc.querySelectorAll('main input,main select').forEach(control=>control.disabled=true);
       cloneDoc.querySelectorAll('input[type="checkbox"]').forEach((input,index)=>{if($$('main input[type="checkbox"]')[index]?.checked)input.setAttribute('checked','');else input.removeAttribute('checked');input.disabled=true;});
-      setArtifactBanner(cloneDoc,'readonly');appendReadonlyRuntime(cloneDoc);downloadHtml('<!doctype html>\n'+cloneDoc.outerHTML,EXPORT_BASE_NAME+'_VIEW_ONLY_'+todayLocal()+'.html');
+      setArtifactBanner(cloneDoc,'readonly');appendReadonlyRuntime(cloneDoc);await embedArtifactFont(cloneDoc);downloadHtml('<!doctype html>\n'+cloneDoc.outerHTML,EXPORT_BASE_NAME+'_VIEW_ONLY_'+todayLocal()+'.html');
       setStatus(embedded.failures.length?'공유용 사본 생성 · '+embedded.failures.length+'개 사진은 온라인 주소 사용':'사진 포함 공유용 사본 생성 완료');
     }catch(error){console.error(error);if(operationCancelled){setStatus('인쇄·공유용 사본 생성을 취소했습니다.');return;}setStatus('인쇄·공유용 사본 생성 실패');await showChoice({title:'사본을 만들지 못했습니다.',message:error.message,choices:[{label:'확인',value:'ok',className:'action-primary'}]});}
     finally{const status=$('#status').textContent;setOperationBusy(false);setStatus(status);}

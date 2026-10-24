@@ -29,7 +29,7 @@ export const fixtureConfig = {
 const fixtureImage = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aP1sAAAAASUVORK5CYII=', 'base64');
 export async function readBrowserFixture(url) {
   if (url.pathname.endsWith('/trip-config.js')) return Buffer.from(`window.TRIP_CONFIG=${JSON.stringify(fixtureConfig)};`);
-  if (url.pathname.includes('/assets/')) return fixtureImage;
+  if (url.pathname.includes('/assets/') && !url.pathname.endsWith('.woff2')) return fixtureImage;
   return readFile(url);
 }
 

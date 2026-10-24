@@ -23,12 +23,20 @@ const server = createServer(async (req, res) => {
   if (!/^(index\.html|trip-config\.js|(?:assets|icons)\/[\w.-]+)$/.test(file)) { res.writeHead(404).end(); return; }
   try {
     const content = file === 'index.html' ? source : await readBrowserFixture(new URL(file, root));
-    res.writeHead(200, { 'Content-Type': file.endsWith('.html') ? 'text/html; charset=utf-8' : file.endsWith('.js') ? 'text/javascript; charset=utf-8' : 'image/png' }); res.end(content);
+    res.writeHead(200, { 'Content-Type': file.endsWith('.html') ? 'text/html; charset=utf-8' : file.endsWith('.js') ? 'text/javascript; charset=utf-8' : file.endsWith('.woff2') ? 'font/woff2' : 'image/png' }); res.end(content);
   } catch { res.writeHead(404).end(); }
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const origin = `http://127.0.0.1:${server.address().port}`;
-const ready = page => page.waitForFunction(() => window.__navigationTest && !document.body.classList.contains('hydrating'));
+const ready = async page => {
+  await page.waitForFunction(() => window.__navigationTest && !document.body.classList.contains('hydrating'));
+  const fonts = await page.evaluate(async () => {
+    const loaded = await document.fonts.load('700 16px "Pretendard Variable"', '여행 ABC 0123 ₩$');
+    return { loaded: loaded.length, family: getComputedStyle(document.body).fontFamily };
+  });
+  assert.ok(fonts.loaded > 0, 'Real Pretendard font must load before layout checks');
+  assert.equal(fonts.family.split(',')[0].trim().replaceAll('"','').replaceAll("'",''), 'Pretendard Variable');
+};
 let browser;
 try {
   browser = await playwright[engine].launch({ headless: true, ...(engine === 'chromium' && process.env.PWA_BROWSER_CHANNEL ? { channel: process.env.PWA_BROWSER_CHANNEL } : {}) });
@@ -102,6 +110,15 @@ try {
       await page.evaluate(() => window.scrollTo(0,document.documentElement.scrollHeight));
       assert.ok(await page.locator('#expenses .expense').last().evaluate(el=>el.getBoundingClientRect().bottom<=document.querySelector('.bottom-nav').getBoundingClientRect().top),`last row ${width}`);
       if ([320,1440].includes(width)) await page.screenshot({ path:path.join(output, `${theme}-${width}-ledger.png`), fullPage:true });
+      if ([320,390,768,1440].includes(width)) {
+        for (const section of ['d1','prep']) {
+          await selectTripTab(page, section);
+          if (section === 'd1') await page.locator('#listViewBtn').click();
+          assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${section} overflow ${theme} ${width}`);
+          await page.screenshot({ path:path.join(output, `${theme}-${width}-${section}.png`), fullPage:true });
+        }
+        await selectTripTab(page, 'money');
+      }
     }
   }
   // Reduced visual viewport approximates the layout available above a keyboard.
@@ -114,6 +131,18 @@ try {
   await page.locator('[data-remove-expense]').click();await page.locator('#noticeDialog').getByRole('button',{name:'삭제',exact:true}).click();
   await page.waitForFunction(()=>document.querySelectorAll('#expenses .expense').length===0);
   await diagnostics.close(context);
+  diagnostics.scenario('unavailable font keeps the interface usable');
+  const fallback = await diagnostics.context(browser, { viewport: { width: 320, height: 844 }, serviceWorkers: 'block' });
+  await fallback.route('**/*', route => route.request().url().endsWith('.woff2') || !route.request().url().startsWith(origin) ? route.abort() : route.continue());
+  const fallbackPage = await fallback.newPage();
+  await fallbackPage.goto(origin);await fallbackPage.waitForFunction(() => !document.body.classList.contains('hydrating'));
+  await fallbackPage.evaluate(() => document.fonts.ready);
+  assert.equal(await fallbackPage.locator('.title').isVisible(), true);
+  await fallbackPage.locator('#nav-schedule').click();
+  await fallbackPage.locator('#tab-money').click();
+  assert.equal(await fallbackPage.locator('#expenseName').isVisible(), true);
+  assert.ok(await fallbackPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  await diagnostics.close(fallback);
   console.log(`${engine}: Navigation/date boundaries, drafts, theme focus, responsive layout and ledger CRUD passed. Screenshots: ${output}`);
 } catch(error) { await diagnostics.fail(error);throw error; }
 finally { await browser?.close();await new Promise(resolve=>server.close(resolve)); }

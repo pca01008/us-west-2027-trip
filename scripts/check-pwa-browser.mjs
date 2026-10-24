@@ -22,7 +22,7 @@ const sdkPackage = JSON.parse(await readFile(new URL('node_modules/@supabase/sup
 assert.ok(sdkURL.endsWith('@' + sdkPackage.version), 'PWA fixture must use the deployed SDK version');
 const sdk = await readFile(new URL('node_modules/@supabase/supabase-js/dist/umd/supabase.js', root));
 const localIntegrity = 'sha384-' + createHash('sha384').update(sdk).digest('base64');
-const mime = { html: 'text/html', js: 'text/javascript', webmanifest: 'application/manifest+json', png: 'image/png', svg: 'image/svg+xml', webp: 'image/webp' };
+const mime = { html: 'text/html', js: 'text/javascript', webmanifest: 'application/manifest+json', png: 'image/png', svg: 'image/svg+xml', webp: 'image/webp', woff2: 'font/woff2' };
 let published = null;
 let disconnected = false;
 const server = createServer(async (req, res) => {
@@ -125,6 +125,7 @@ try {
     await page.reload();
     await page.waitForFunction(() => !document.body.classList.contains('hydrating'));
     assert.equal(await page.evaluate(() => typeof window.supabase), 'undefined');
+    assert.ok(await page.evaluate(async () => (await document.fonts.load('700 16px "Pretendard Variable"', '여행 ABC 0123')).length > 0), 'PWA font loads from precache with HTTP cache cleared and network disconnected');
     assert.equal(await page.locator('html').getAttribute('data-theme'), 'light', 'Theme bootstrap has no SDK dependency');
     assert.match(await page.locator('main').textContent(), /PWA 저장본 검증/);
     assert.match(await page.locator('#status').textContent(), /오프라인 캐시 표시/);

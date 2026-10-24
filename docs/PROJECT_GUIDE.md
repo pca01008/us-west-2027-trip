@@ -63,7 +63,7 @@ Pages serves files; browser JavaScript renders and manages data; Supabase handle
 - `trip-config.js`: title, dates, zones, PREP, ledger defaults, daily events, and Supabase configuration. `days` generates date tabs and itinerary.
 - `trip-config.template.js`: [new-trip starting point](OPERATIONS.md#new-trip).
 - `supabase_setup.sql`, `register_trip.sql`: shared schema and trip registration; they do not run when visiting the app.
-- `assets/`: Pages accommodation/map images. User uploads belong to Storage.
+- `assets/`: Pages images and the bundled UI font. User uploads belong to Storage.
 - `test.html`, `test2.html`: iframe previews using `index.html?previewDate=...` during/after travel; ordinary URLs use current time.
 - `manifest.webmanifest`, `pwa.js`, `sw.js`, `icons/`: installation and static caching.
 - `supabase/functions/trip-db-health/`: separately deployed [health function](OPERATIONS.md#db-health).
@@ -73,6 +73,12 @@ Pages serves files; browser JavaScript renders and manages data; Supabase handle
 - Local `reference.html` and `.agents/skills/`: design references, not deployment requirements.
 
 `tripId`, `schemaVersion`, and `cacheNamespace` also populate HTML identity attributes. `data-offline` distinguishes online originals from working copies. Online `offlineEmbeddedState` is JSON `null`; export embeds actual state.
+
+### Typography
+
+The existing app uses self-hosted [Pretendard](https://github.com/orioncactus/pretendard) Variable 1.3.9 (`assets/PretendardVariable-1.3.9.woff2`, 2,057,688 bytes), licensed under [SIL OFL 1.1](../assets/OFL-Pretendard.txt). `--font-ui` supplies the shared family and system fallbacks; controls inherit it, and the time editor uses tabular digits. Preload and `font-display:swap` keep text visible while loading. Icons and colors are independent of the font.
+
+Worker v3 precaches the font as a static asset. Editable/read-only HTML exports embed the font as a data URL and remove its relative preload; re-exporting embedded copies needs no font request. If the font cannot be fetched within eight seconds, export keeps the content and uses the system fallback. Canceling export still cancels the download. Daylight and historical UI previews retain their existing typography.
 
 <a id="cache"></a>
 

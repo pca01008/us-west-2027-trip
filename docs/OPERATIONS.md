@@ -159,7 +159,7 @@ Isolated local APIs block production. [Fixtures](../scripts/browser-fixtures.mjs
 | Storage | `node scripts/check-storage-browser.mjs`: open/quota/aborted write/delete, memory/old records, notices/save/export/retry/reload/logout/offline |
 | Photos | `node scripts/check-photos-browser.mjs`: conversion/PNG fallback/staging |
 | Theme | `node scripts/check-theme-browser.mjs`: choice/blocked storage/device changes/export/print |
-| Navigation | `node scripts/check-navigation-browser.mjs`: Seoul/US West date edges, menus/day/timetable/input, draft reopen/theme keyboard/focus, 320–1440px/breakpoints/reduced viewport/zoom simulation |
+| Navigation | `node scripts/check-navigation-browser.mjs`: real Pretendard loading/failure fallback, Seoul/US West date edges, menus/day/timetable/input, draft reopen/theme keyboard/focus, 320–1440px/breakpoints/reduced viewport/zoom simulation |
 | PWA | `node scripts/check-pwa-browser.mjs`: install/cache/offline/timeouts |
 
 Navigation supports `TRIP_BROWSER_ENGINE=firefox`/`webkit`, default Chromium; install that browser first and clear with `Remove-Item Env:TRIP_BROWSER_ENGINE`. Firefox uses a touch viewport, not mobile emulation. Paths are printed. Daylight checks belong to the preserved candidate, not the current root suite; use the runner for current counts.
@@ -203,7 +203,7 @@ Commit/push only within authorization. Verify tracking state/intended remote bef
 
 Pages: `main`, root `/`. `_config.yml` excludes `docs` from HTML deployment; repository access remains. Deploy manifest/PWA scripts/icons/assets with HTML/config. Keep relative install paths; omit manifest `id` so deployment-specific `start_url` identifies the app. Do not add `id: "./"`. Update names/description/Apple title for another trip.
 
-Bump worker `VERSION` for cache-list/strategy/icon/image changes. SDK updates must synchronize pinned HTML URL/SRI and worker `SDK_URL`/`SDK_INTEGRITY`. Close old windows for activation; avoid forced refresh while editing. `scripts/generate-icons.ps1` generates PNGs matching `icons/icon.svg`.
+Bump worker `VERSION` for cache-list/strategy/icon/image/font changes. Retain the bundled font and license when deploying or reusing the app; see [typography](PROJECT_GUIDE.md#typography) for loading/export behavior. SDK updates must synchronize pinned HTML URL/SRI and worker `SDK_URL`/`SDK_INTEGRITY`. Close old windows for activation; avoid forced refresh while editing. `scripts/generate-icons.ps1` generates PNGs matching `icons/icon.svg`.
 
 <a id="db-health"></a>
 
