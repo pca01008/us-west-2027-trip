@@ -24,6 +24,10 @@ function loadConfig(source, filename) {
 
 const config = loadConfig(configSource, 'trip-config.js');
 const template = loadConfig(templateSource, 'trip-config.template.js');
+const currencySource = await read('src/app/currency.js');
+for (const settings of [config, template]) {
+  vm.runInNewContext(currencySource, { CONFIG: settings }, { filename: 'src/app/currency.js' });
+}
 
 const appMatch = html.match(/<script id="tripAppV4">([\s\S]*?)<\/script>/);
 assert.ok(appMatch, 'index.html: tripAppV4 스크립트를 찾지 못했습니다.');
@@ -33,7 +37,8 @@ assert.match(config.tripId, /^[a-z0-9]+(?:-[a-z0-9]+)*$/);
 assert.equal(new Set(config.days.map(day => day.date)).size, config.days.length, '여행 날짜가 중복됩니다.');
 assert.ok(config.days.length > 0, '여행 날짜가 없습니다.');
 assert.ok(Date.parse(config.tripStart) < Date.parse(config.tripEnd), '여행 시작·종료 시간이 올바르지 않습니다.');
-assert.equal(config.schemaVersion, template.schemaVersion, '현재 설정과 템플릿의 schemaVersion이 다릅니다.');
+assert.ok([6,7].includes(config.schemaVersion), 'Unsupported trip schema.');
+assert.equal(template.schemaVersion, 7, 'New trips must use currency-aware schema 7.');
 
 const ids = new Set();
 for (const item of config.prep.items) {

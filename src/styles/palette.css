@@ -1,0 +1,71 @@
+/* PALETTE START — current site retained on 2026-10-25; proposals A/B/C are not applied. */
+:root{
+  color-scheme:only light;
+  /* Shared surfaces, typography and actions. */
+  --canvas:#f3f6fa;--paper:#ffffff;--ink:#18243a;--heading-ink:#172b4d;
+  --line:#dfe6ef;--line-strong:#ccd7e5;--red:#bd4038;
+  --surface:#fbfcfe;--surface-alt:#f4f7fb;--surface-hover:#edf2f8;--surface-selected:#eaf0f7;
+  --accent:#a93f35;--accent-hover:#91342c;--on-accent:#ffffff;--muted:#5f6e82;
+  --solid:#172b4d;--on-solid:#ffffff;--focus:#a93f35;--placeholder:#5f6e82;
+  --timeline-accent:#e2604f;--timeline-accent-hover:#c94d3e;
+  /* Compatibility names used by existing components and exported HTML. */
+  --cream:var(--canvas);--navy:var(--heading-ink);--navy-soft:#29466f;
+  --blue:var(--timeline-accent);--blue-dark:var(--timeline-accent-hover);--sky:#fbe9e5;--sand:#d85f4d;
+  /* Status colors keep their meaning independently of the brand palette. */
+  --danger-solid:#a93631;--on-danger:#ffffff;
+  --danger-bg:#fff3f1;--danger-line:#efc8c2;--edit-bg:#fff7f5;
+  --warning-bg:#fff8e9;--warning-ink:#725323;--warning-line:#f2d6a8;
+  --link:#245a7d;--link-bg:#f8fbff;--link-icon:#e1edf7;--link-line:#b9cfe2;
+  --overlay:rgba(12,25,43,.52);--track:#e4eaf1;
+  --shadow-sm:0 8px 24px rgba(23,43,77,.07);--shadow-lg:0 22px 60px rgba(23,43,77,.13);
+  --canvas-glow-warm:rgba(226,96,79,.08);--canvas-glow-cool:rgba(47,112,139,.08);
+  /* Header retains its composed colors in both brightness modes. */
+  --header-bg:linear-gradient(145deg,#10243a 0%,#183a55 58%,#24526c 100%);
+  --header-glow:radial-gradient(circle,rgba(255,170,139,.2),rgba(255,170,139,0) 69%);
+  --header-disc:rgba(226,96,79,.32);--header-text:#ffffff;--header-kicker:#ffb69e;
+  --header-meta-label:#9fb5c7;--header-meta-text:#f8fbfd;
+  --header-meta-bg:rgba(255,255,255,.075);--header-meta-line:rgba(255,255,255,.13);
+  --header-meta-shine:rgba(255,255,255,.05);--header-progress-bg:rgba(7,24,40,.28);
+  --header-progress-shadow:rgba(5,20,34,.16);--header-progress-meta:#b8c9d6;
+  --header-progress-track:rgba(255,255,255,.12);
+  --header-progress-fill:linear-gradient(90deg,#ff806c,#ffc98e);--header-progress-glow:rgba(255,151,111,.4);
+  --header-clock-bg:rgba(9,25,46,.22);--header-clock-line:rgba(255,255,255,.16);
+  --header-clock-shine:rgba(255,255,255,.08);--header-clock-label:#a9bfd3;
+  --header-clock-date:#d8e4ee;--header-clock-gap:#d5e3ee;
+  --header-control-line:rgba(255,255,255,.3);--header-control-bg:rgba(255,255,255,.08);
+  --header-control-hover:rgba(255,255,255,.16);--header-storage-warning:#ffdab5;
+  /* Ledger totals deliberately remain navy/teal, including in dark mode. */
+  --total-primary-bg:linear-gradient(135deg,#192f50,#294d71);
+  --total-secondary-bg:linear-gradient(135deg,#235668,#347b83);
+  --total-label:#d4e0ec;--total-text:#ffffff;
+  /* Timetable category roles, independent of primary action/status roles. */
+  --activity-line:#31735d;--activity-bg:#eef7f1;--activity-ink:#285b49;
+  --food-line:#ad5a2d;--food-bg:#fff3e9;--food-ink:#85421f;
+  --transit-line:#356c9e;--transit-bg:#edf4fc;--transit-ink:#29567e;
+  --stay-line:#6c6581;--stay-bg:#f3f1f8;--stay-ink:#575067;
+  --other-line:#687789;--other-bg:#f2f5f8;--other-ink:#4a586a;
+}
+/* Screen-only dark overrides mean print always uses the light token set. */
+@media screen{
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --canvas:#101923;--paper:#192532;--surface:#202e3d;--surface-alt:#243344;
+    --surface-hover:#2c3f52;--surface-selected:#30445a;
+    --ink:#e6edf5;--heading-ink:#d4e3f5;--muted:#b0bfd0;--placeholder:#a5b6c9;
+    --line:#3a4c60;--line-strong:#5a7087;--timeline-accent:#f39887;--timeline-accent-hover:#ffb3a4;
+    --sky:#40302f;--sand:#f39887;--red:#ffb3ab;
+    --accent:#f39887;--accent-hover:#ffb3a4;--on-accent:#291d1c;
+    --solid:#304c6c;--on-solid:#ffffff;--focus:#ffb3a4;
+    --danger-bg:#472d32;--danger-line:#83535b;--edit-bg:#3b3033;
+    --warning-bg:#3f3525;--warning-ink:#f3d39d;--warning-line:#7e6843;
+    --link:#a7d3f0;--link-bg:#21394a;--link-icon:#304e63;--link-line:#4c718b;
+    --overlay:rgba(3,9,16,.72);--track:#3a4c60;
+    --shadow-sm:0 8px 24px rgba(0,0,0,.16);--shadow-lg:0 22px 60px rgba(0,0,0,.24);
+    --activity-line:#84c6a6;--activity-bg:#233e35;--activity-ink:#b4e4cd;
+    --food-line:#e3aa79;--food-bg:#453327;--food-ink:#f4cfaa;
+    --transit-line:#8bbce4;--transit-bg:#273c53;--transit-ink:#bcddf7;
+    --stay-line:#b6a6d3;--stay-bg:#383147;--stay-ink:#ddd0ef;
+    --other-line:#a6b7cb;--other-bg:#303c4a;--other-ink:#d1dce8;
+  }
+}
+/* PALETTE END */

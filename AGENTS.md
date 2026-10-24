@@ -41,3 +41,9 @@
 - This app is intended for two users. Keep complexity and maintenance effort proportional to their actual needs.
 - Prefer simple solutions using existing patterns and dependencies. Add abstractions, infrastructure, or scalability features only when they solve a concrete current problem.
 - Avoid speculative work for hypothetical future growth. Preserve security, data integrity, and reliability.
+
+## Generated app sources
+
+- Search and edit `src/`, not generated `index.html` or `trip-config.js`. The source map is in `docs/PROJECT_GUIDE.md#source-modules`.
+- Run `npm run build` after source edits and commit source plus output. `npm test` rejects stale generated files.
+- Keep the current trip on schema 6/KRW/USD. Use a fresh trip ID/cache and the schema-7 template for another currency pair; never relabel existing expenses.

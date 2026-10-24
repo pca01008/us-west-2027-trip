@@ -57,13 +57,13 @@ Checks: `npm test`, `node scripts/check-ledger-browser.mjs`, `node scripts/check
 
 ## Reuse for another trip
 
-Common `index.html` generates date tabs/default itinerary from `trip-config.js`; reuse normally changes configuration only.
+Generated `index.html` uses `trip-config.js`; edit the source configuration and rebuild. The current US West app stays schema 6. New-trip template schema 7 supports configurable currencies; see [currency binding](PROJECT_GUIDE.md#currency-binding).
 
 1. Clone/copy under the normal user outside the elevated sandbox.
-2. Copy `trip-config.template.js` to `trip-config.js`; fill title/dates/zones/checklist/ledger/events.
+2. Copy `trip-config.template.js` to `src/trip/config.js`; fill title/dates/zones/checklist/ledger/events. Its inline days replace the current include. For larger trips, move the `days` property into `src/trip/days.js` and include it with `// @include trip/days.js`.
 3. Assign unique identifiers and connection/editor settings.
 4. Follow [setup](#setup) for a new project, or register another trip on the existing project.
-5. Update manifest name/description and HTML `apple-mobile-web-app-title`; see [deployment](#deployment).
+5. Update manifest name/description and `src/index.html` Apple title. Set palette roles in `src/styles/palette.css` when needed. Run `npm run build`; see [deployment](#deployment).
 6. Complete validation and the checklist below.
 
 | Unique setting | Purpose | Example |
@@ -77,7 +77,8 @@ Use lowercase letters/digits/hyphens for `tripId`; reuse can load another trip's
 - `tripStart`/`tripEnd`: ISO timestamps with offsets, e.g. `2028-05-01T09:00:00+09:00`.
 - `clocks.home`/`destination`: IANA zones such as `Asia/Seoul`, `Europe/Paris` for clocks/offset.
 - `prep.items`: initial checklist, unique IDs.
-- `ledger.defaultExchangeRate`: initial manual KRW-per-USD rate.
+- `ledger.currencies`: base/quote codes, e.g. `{ base: "KRW", quote: "JPY" }` or `{ base: "EUR", quote: "USD" }`. Use a fresh trip ID/cache and schema 7; never change the pair on an existing trip. Amount precision follows each currency.
+- `ledger.defaultExchangeRate`: initial base amount per one quote unit, e.g. `10` means 1 JPY = 10 KRW; update the example rate before use.
 - `ledger.defaultBudgetKrw`: compatibility-only initial budget; zero unset, no current UI editing.
 - `ledger.categories`: retain `misc`/`deleted`.
 - `days`: chronological `YYYY-MM-DD`, no fixed day limit.
@@ -117,6 +118,12 @@ npm run test:browser
 `npm test` runs unit regressions and `scripts/check-project.mjs` config/image/HTML/SQL checks. Without npm, use installed Node: `node --test tests/*.test.mjs` and `node scripts/check-project.mjs`.
 
 Without PostgreSQL, dispatch `.github/workflows/validate.yml` on the work branch to run `validate`, `sql`, `browser` without PR/main changes. SQL uses disposable PostgreSQL 17, never production. Verify commit/all jobs before production SQL/deployment.
+
+### Source editing and build
+
+Edit `src/` using the [source map](PROJECT_GUIDE.md#source-modules), then run `npm run build`. Commit source and generated `index.html`/`trip-config.js` together. `npm run build:check`, `npm run check`, and `npm test` reject stale output. Pages serves the committed output directly and excludes `src/`; it does not rebuild it. No watch server or new dependencies are required. Keep include order unless changing initialization intentionally.
+
+`trip-config.template.js` is the reusable template, not the current generated configuration. `styles:consolidate` is a historical one-time utility, not the editing workflow.
 
 ### Save/permission SQL execution
 
@@ -159,6 +166,7 @@ Isolated local APIs block production. [Fixtures](../scripts/browser-fixtures.mjs
 | Storage | `node scripts/check-storage-browser.mjs`: open/quota/aborted write/delete, memory/old records, notices/save/export/retry/reload/logout/offline |
 | Photos | `node scripts/check-photos-browser.mjs`: conversion/PNG fallback/staging |
 | Theme | `node scripts/check-theme-browser.mjs`: choice/blocked storage/device changes/export/print |
+| Reusable currencies | `node scripts/check-currency-browser.mjs`: synthetic KRW/JPY and EUR/USD entry, precision, draft recovery, CSV, editable/read-only HTML and mismatch write blocking |
 | Palette | `node scripts/check-palette-browser.mjs`: mobile/desktop, light/dark, itinerary/PREP/ledger/timetable/print and role aliases; optional `PALETTE_BASELINE_HTML` compares computed styles and exact PNG bytes against a saved HTML source |
 | Navigation | `node scripts/check-navigation-browser.mjs`: real Pretendard loading/failure fallback, Seoul/US West date edges, menus/day/timetable/input, draft reopen/theme keyboard/focus, 320–1440px/breakpoints/reduced viewport/zoom simulation |
 | PWA | `node scripts/check-pwa-browser.mjs`: install/cache/offline/timeouts |
@@ -193,7 +201,7 @@ For docs-only changes check paths/links/Pages exclusions and relevant unit/stati
 
 Keep the current-site palette unless a replacement is explicitly selected. [Color roles and source location](PROJECT_GUIDE.md#color-palette) define the implementation; [historical A/B/C previews](archive/2026-10-24-color-palettes.md) do not define production colors.
 
-1. Before a visual refactor, save the current `index.html` outside the deployed tree. Change role values in its marked palette block; review light/dark together. Avoid changing warning/error/category meanings with the brand colors.
+1. Before a visual refactor, save the current generated `index.html` outside the deployed tree. Change role values in `src/styles/palette.css`, run `npm run build`, and review light/dark together. Avoid changing warning/error/category meanings with the brand colors.
 2. Run `npm test`, `node scripts/check-palette-browser.mjs`, and `node scripts/check-theme-browser.mjs`. The palette check uses synthetic data and blocks remote traffic; theme checks cover persistence, dialogs and both export types.
 3. For a refactor intended to preserve appearance, set `PALETTE_BASELINE_HTML` to the saved source before running the palette check. It requires identical computed styles and screenshot bytes in 24 scenarios. Clear the variable afterward. For an intentional palette change, compare the saved/current PNGs visually instead of claiming parity. Screenshots and results are written to an OS temp `westbound-palette-*` folder, or to `PALETTE_OUTPUT_DIR` when set.
 4. Check text contrast (normal text 4.5:1, large text 3:1), focus/selection, warnings, links and totals in both themes. Unit tests derive key contrast pairs from the actual CSS tokens; they are not a complete accessibility audit.
@@ -210,13 +218,14 @@ Use one primary shell (PowerShell or WSL); inspect status/diff before/after. `.g
 ```sh
 git status --short --branch
 git diff
+npm run build
 npm test
 git diff --check
 ```
 
 Commit/push only within authorization. Verify tracking state/intended remote before claiming a push. Save trip content in the app.
 
-Pages: `main`, root `/`. `_config.yml` excludes `docs` from HTML deployment; repository access remains. Deploy manifest/PWA scripts/icons/assets with HTML/config. Keep relative install paths; omit manifest `id` so deployment-specific `start_url` identifies the app. Do not add `id: "./"`. Update names/description/Apple title for another trip.
+Pages: `main`, root `/`. `_config.yml` excludes `docs` and authoring `src` from HTML deployment; repository access remains. Deploy manifest/PWA scripts/icons/assets with HTML/config. Keep relative install paths; omit manifest `id` so deployment-specific `start_url` identifies the app. Do not add `id: "./"`. Update names/description/Apple title for another trip.
 
 Bump worker `VERSION` for cache-list/strategy/icon/image/font changes. Retain the bundled font and license when deploying or reusing the app; see [typography](PROJECT_GUIDE.md#typography) for loading/export behavior. SDK updates must synchronize pinned HTML URL/SRI and worker `SDK_URL`/`SDK_INTEGRITY`. Close old windows for activation; avoid forced refresh while editing. `scripts/generate-icons.ps1` generates PNGs matching `icons/icon.svg`.
 

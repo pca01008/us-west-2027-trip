@@ -83,10 +83,10 @@ test('초기 기본 일정은 최신 공유본 확인이 끝날 때까지 노출
   assert.match(html, /\.preview-banner,\.app-loading,\.tab-scroll/);
 });
 
-test('현재 여행과 재사용 템플릿은 보존형 스키마 6를 사용한다', async () => {
-  for (const file of ['trip-config.js', 'trip-config.template.js']) {
+test('current trip preserves schema 6; new trips use currency-aware schema 7', async () => {
+  for (const [file,version] of [['trip-config.js',6], ['trip-config.template.js',7]]) {
     const source = await readFile(path.join(root, file), 'utf8');
-    assert.match(source, /schemaVersion:\s*6/);
+    assert.match(source, new RegExp('schemaVersion:\\s*'+version));
   }
 });
 

@@ -7,7 +7,8 @@ const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 const arithmetic = html.slice(html.indexOf('  function decimalParts('), html.indexOf('  // End ledger arithmetic.'));
 const normalize = html.slice(html.indexOf('  function normalizeExpense('), html.indexOf('  function sanitizeMarkup('));
 const api = vm.createContext({ safeDataId: (id, fallback) => id || fallback, hashText: () => 'hash', findCategoryId: id => id });
-vm.runInContext(arithmetic + normalize, api);
+const currency = await readFile(new URL('../src/app/currency.js', import.meta.url), 'utf8');
+vm.runInContext('const CONFIG={schemaVersion:6};\n' + currency + arithmetic + normalize, api);
 const plain = value => JSON.parse(JSON.stringify(value));
 
 test('ledger decimal validation rejects precision, malformed commas, nonpositive and unsafe money', () => {

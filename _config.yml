@@ -3,4 +3,5 @@ exclude:
   - node_modules
   - vendor
   - docs
+  - src
   - PRODUCT.md

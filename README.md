@@ -10,6 +10,7 @@ Work now focuses on the existing app. Further Daylight development and productio
 |---|---|
 | Itinerary, timetable, PREP, ledger, draft recovery, installation, exports | [User guide](docs/USER_GUIDE.md) |
 | Architecture, data, saving, permissions, SQL | [Project guide](docs/PROJECT_GUIDE.md) |
+| Modular sources and reusable currencies | [Source map](docs/PROJECT_GUIDE.md#source-modules) · [Plan](docs/MODULARIZATION_PLAN.md) · [New trips](docs/OPERATIONS.md#new-trip) |
 | Current color palette and change workflow | [Color roles](docs/PROJECT_GUIDE.md#color-palette) · [Maintenance](docs/OPERATIONS.md#palette-maintenance) |
 | Pretendard font loading, offline copies, validation limits | [Typography](docs/PROJECT_GUIDE.md#typography) · [October 24 checks](docs/archive/2026-10-24-pretendard.md) |
 | Setup, new trips, testing, deployment, DB checks, troubleshooting | [Operations guide](docs/OPERATIONS.md) |
@@ -39,7 +40,7 @@ Trip data: browser ↔ Supabase Database / Auth / Storage / Realtime
 Unsaved drafts: IndexedDB in the current browser
 ```
 
-- `index.html` provides shared UI/behavior; `trip-config.js` supplies trip defaults and the initial itinerary.
+- `src/` owns editable app and trip sources. `npm run build` generates `index.html` and `trip-config.js`; commit both source and output. See the [source map](docs/PROJECT_GUIDE.md#source-modules).
 - The Supabase document for the same `tripId` takes precedence over defaults.
 - Git push deploys code; saving in the app updates trip data.
 - SQL, Edge Functions, and external scheduled jobs require separate application or deployment.
@@ -48,8 +49,9 @@ Unsaved drafts: IndexedDB in the current browser
 
 | File or directory | Purpose |
 |---|---|
-| `index.html` | Itinerary, PREP, ledger |
-| `trip-config.js`, `trip-config.template.js` | Current trip and new-trip template |
+| `src/`, `scripts/build-app.mjs` | Editable app modules, palette, trip settings/itinerary, deterministic build |
+| `index.html` | Generated standalone app: itinerary, PREP, ledger |
+| `trip-config.js`, `trip-config.template.js` | Generated current configuration and new-trip starting point |
 | `supabase_setup.sql`, `register_trip.sql` | Server structure and trip/editor registration |
 | `migrations/`, `supabase/` | DB changes and health function |
 | `pwa.js`, `sw.js`, `manifest.webmanifest`, `icons/` | Installed app and caching |
@@ -65,6 +67,7 @@ For development, Node.js 24 matches unit-test CI; the package minimum is Node.js
 
 ```sh
 npm ci
+npm run build
 npm test
 ```
 

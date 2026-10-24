@@ -83,6 +83,8 @@ Draft-storage failure means recent edits may exist only in the current tab. Save
 
 ## Ledger
 
+The current trip uses KRW/USD. Other trips may show a different configured pair; inputs, totals and exports use those currencies and their decimal precision. The manual rate always means one unit of the second currency in the first currency. A currency-mismatch message requires restoring the trip configuration; existing expenses are never relabeled automatically.
+
 - Enter date, category, description, KRW, and USD. KRW uses integers; USD allows two decimals; thousands separators are accepted. Actual changes require authentication and remain private until Save changes.
 - One entered amount automatically calculates the other with the manual exchange rate and displays a hint. Editing the calculated value makes both manual and removes the hint. Manual pairs retain their values even when their ratio differs from the configured rate.
 - Clear one manual amount to calculate from the remaining value. Clearing an automatic pair's source clears both; clearing only its result restores the calculation.

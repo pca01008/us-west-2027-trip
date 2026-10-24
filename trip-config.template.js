@@ -1,11 +1,10 @@
 /*
- * 새 여행용 설정 템플릿
- *
- * 이 파일을 trip-config.js로 복사한 뒤 값을 채우세요.
- * tripId는 다른 여행과 겹치지 않는 영문 소문자·숫자·하이픈 조합을 사용합니다.
+ * Copy to src/trip/config.js, fill settings, then run npm run build.
+ * Use a new tripId/cacheNamespace for a new currency pair. Never relabel an
+ * existing trip's expenses. Schema 7 stamps base/quote codes in every document.
  */
 window.TRIP_CONFIG = {
-  schemaVersion: 6,
+  schemaVersion: 7,
   tripId: 'sample-trip-2028',
   cacheNamespace: 'sample_trip_2028',
   locale: 'ko-KR',
@@ -44,6 +43,8 @@ window.TRIP_CONFIG = {
     ]
   },
   ledger: {
+    currencies: { base: 'KRW', quote: 'JPY' },
+    // Base currency per one quote unit: 1 JPY = 10 KRW (example only).
     defaultExchangeRate: 10,
     defaultBudgetKrw: 0,
     categories: [
@@ -82,8 +83,8 @@ window.TRIP_CONFIG = {
           },
           tourCosts: {
             title: '현장 비용',
-            items: [{ label: '입장료', amount: 'USD 20' }],
-            total: '합계 USD 20',
+            items: [{ label: '입장료', amount: 'JPY 2,000' }],
+            total: '합계 JPY 2,000',
             note: '현장 결제 여부를 확인하세요.'
           }
         }

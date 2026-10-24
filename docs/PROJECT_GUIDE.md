@@ -1,6 +1,6 @@
 # Project Guide
 
-For readers familiar with basic HTML who are learning JavaScript, SQL, and Supabase. The current document format is `schemaVersion 6`. [Usage](USER_GUIDE.md) and [operations](OPERATIONS.md) are maintained separately.
+For readers familiar with basic HTML who are learning JavaScript, SQL, and Supabase. The current US West document format remains `schemaVersion 6` (KRW/USD). New trips use `schemaVersion 7` to bind configurable currency pairs. [Usage](USER_GUIDE.md) and [operations](OPERATIONS.md) are maintained separately.
 
 ## Contents
 
@@ -59,8 +59,8 @@ Pages serves files; browser JavaScript renders and manages data; Supabase handle
 
 ## Files and runtime
 
-- `index.html`: shared HTML, CSS, dialogs, and `tripAppV4`; an immediately invoked function limits variable collisions.
-- `trip-config.js`: title, dates, zones, PREP, ledger defaults, daily events, and Supabase configuration. `days` generates date tabs and itinerary.
+- `index.html`: generated standalone HTML/CSS/dialogs and `tripAppV4`; edit the source modules below. An immediately invoked function limits variable collisions.
+- `trip-config.js`: generated from `src/trip/config.js` (settings) and `src/trip/days.js` (initial itinerary). `days` generates date tabs and itinerary.
 - `trip-config.template.js`: [new-trip starting point](OPERATIONS.md#new-trip).
 - `supabase_setup.sql`, `register_trip.sql`: shared schema and trip registration; they do not run when visiting the app.
 - `assets/`: Pages images and the bundled UI font. User uploads belong to Storage.
@@ -74,6 +74,26 @@ Pages serves files; browser JavaScript renders and manages data; Supabase handle
 
 `tripId`, `schemaVersion`, and `cacheNamespace` also populate HTML identity attributes. `data-offline` distinguishes online originals from working copies. Online `offlineEmbeddedState` is JSON `null`; export embeds actual state.
 
+<a id="source-modules"></a>
+
+### Editable source map
+
+| Source | Responsibility |
+|---|---|
+| `src/index.html` | Document, dialogs, static templates and ordered includes |
+| `src/theme.js` | First-paint theme and theme controls |
+| `src/styles.css`, `src/styles/*.css` | Ordered cascade layers; `palette.css` owns reusable light/dark color roles |
+| `src/app.js` | Ordered feature includes in one existing IIFE |
+| `src/app/config.js`, `runtime.js` | Configuration validation/scaffold, constants and shared state |
+| `src/app/currency.js`, `ledger*.js`, `categories.js` | Currency policy, exact money arithmetic, ledger display/editing |
+| `src/app/timetable.js`, `trip-clock.js`, `navigation.js`, `schedule-editor.js` | Trip times, views and navigation |
+| `src/app/state*.js`, `drafts.js`, `saving.js`, `auth-dialogs.js` | Normalization, recovery, persistence and authorization |
+| `src/app/checklist-schedule.js`, `photos.js`, `exports.js`, `versions.js` | Checklist/row behavior, media, standalone files and history |
+| `src/app/startup.js`, `utilities.js`, `ui-helpers.js` | Wiring and small shared helpers |
+| `src/trip/config.js`, `src/trip/days.js` | Current trip settings and default itinerary |
+
+These are source fragments with explicit include order, not independently loaded ES modules. Functions retain the existing shared closure to avoid a broad state-management rewrite. `scripts/build-app.mjs` expands root-relative `@include` lines under `src/`, normalizes LF and writes committed `index.html`/`trip-config.js`. It rejects path escapes and cycles; `--check` rejects stale outputs without rewriting them. No runtime requests, bundler dependencies or new PWA assets are introduced. Exports remain self-contained. Search/edit `src/`; inspect generated output only for deployment/debugging.
+
 ### Typography
 
 The existing app uses self-hosted [Pretendard](https://github.com/orioncactus/pretendard) Variable 1.3.9 (`assets/PretendardVariable-1.3.9.woff2`, 2,057,688 bytes), licensed under [SIL OFL 1.1](../assets/OFL-Pretendard.txt). `--font-ui` supplies the shared family and system fallbacks; controls inherit it, and the time editor uses tabular digits. Preload and `font-display:swap` keep text visible while loading. Icons and colors are independent of the font.
@@ -84,7 +104,7 @@ Worker v3 precaches the font as a static asset. Editable/read-only HTML exports 
 
 ### Color palette
 
-The current site's navy/coral palette is the approved baseline (2026-10-25). Proposals A/B/C remain unselected historical previews. The `PALETTE START` / `PALETTE END` block in `index.html`, inside `@layer theme`, is the source of truth for UI color roles. Keep it inline: editable/read-only HTML exports include it automatically, with no extra stylesheet fetch or PWA asset.
+The current site's navy/coral palette is the approved baseline (2026-10-25). Proposals A/B/C remain unselected historical previews. `src/styles/palette.css` is the source of truth for UI color roles. The build embeds its `PALETTE START` / `PALETTE END` block inside `@layer theme` in `index.html`; editable/read-only HTML exports include it automatically, with no extra stylesheet fetch or PWA asset.
 
 | Role | Tokens | Use |
 |---|---|---|
@@ -99,7 +119,7 @@ The current site's navy/coral palette is the approved baseline (2026-10-25). Pro
 
 Light defaults are followed by screen-only dark overrides in the same block. Print/share uses light colors. Header and total-card colors deliberately stay composed in both themes; do not invert them automatically. Legacy `--cream`, `--navy` and `--blue` names alias `--canvas`, `--heading-ink` and `--timeline-accent`; use the role names for new code. `--accent` and `--timeline-accent` intentionally differ: readable action red versus brighter timeline coral.
 
-Change role values here rather than adding a competing root block, a production palette JSON, or per-component theme overrides. Historical component layers still contain fallback/one-off literals; their overridden values are not the current core palette. New reusable colors belong in this block; preserve one-off photographic overlays unless their treatment is in scope. Platform chrome (`theme-color`, its bootstrap values, manifest and icons) has separate startup/install requirements; update those explicitly only when that branding changes.
+Change role values in `src/styles/palette.css` rather than adding a competing root block, a production palette JSON, or per-component theme overrides. Historical component layers still contain fallback/one-off literals; their overridden values are not the current core palette. New reusable colors belong in this block; preserve one-off photographic overlays unless their treatment is in scope. Platform chrome (`theme-color`, its bootstrap values, manifest and icons) has separate startup/install requirements; update those explicitly only when that branding changes.
 
 Theme choice remains a per-browser brightness preference, excluded from trip documents, drafts and versions. No palette selector or data migration is introduced. [Operations](OPERATIONS.md#palette-maintenance) owns change/review steps; [the dated record](archive/2026-10-25-current-palette.md) owns verification evidence.
 
@@ -167,6 +187,16 @@ Itinerary/checklist markup is already complex DOM. Saving `<main>` as a string p
 
 View-mode checks call `requireEditor('checklist')`; canceled authentication restores the original checkbox. Authenticated saves patch stable IDs onto the latest document using revision checks, excluding other drafts. Offline checks remain local. [Usage](USER_GUIDE.md) is authoritative.
 
+<a id="currency-binding"></a>
+
+### Currency binding for new trips
+
+`ledger.currencies = { base: "KRW", quote: "JPY" }` selects two distinct ISO currency codes. `defaultExchangeRate` is base units per **one** quote unit. `src/app/currency.js` supplies symbols, Korean labels and ISO minor-unit precision; `ledger.js` uses that precision for exact conversions, validation and totals. Inputs, settings, CSV, diffs and both HTML exports use the same policy.
+
+Schema 6 remains KRW/USD with its existing state shape and draft keys. New trips use schema 7 and store `currencyCodes: {base, quote}` in every snapshot, draft, version and offline file. Historical field names `amountKrw`/`amountUsd`, source values `krw`/`usd`, and DOM IDs remain storage slots for base/quote, not instructions to reinterpret old money. An unstamped pre-7 document means KRW/USD only; missing schema-7 codes or a mismatched pair stops reads/writes before applying data. Use a fresh trip ID/cache for a new pair. No conversion of existing production data or new SQL is required; the existing RPC schema-downgrade guard protects schema-7 trips from old clients.
+
+`budgetKrw` is still unused compatibility metadata. Existing Daylight remains unchanged and is not a supported client for schema-7 trips.
+
 ### State functions and import protection
 
 `captureState()` clones `<main>`, removes editing-only tools, empties generated ledger lists/summaries, and collects HTML, expenses, categories, rates, budget, and checks.
@@ -212,9 +242,9 @@ Idle warning occurs at 29 minutes; at 30, `scheduleSessionTimers()` or expiry in
 
 ## Ledger and timetable
 
-`amountKrw`/`amountUsd` are fixed amounts. `amountSource=krw` calculates only USD; `usd` calculates only KRW; `both` means manual. Automatic pairs store the positive calculation rate in `appliedExchangeRate`; manual pairs store null. Old `amount`/`currency` are not written. Lists, totals, CSV, and comparisons use new fields.
+`amountKrw`/`amountUsd` are fixed amounts. For the current trip, `amountSource=krw` calculates only USD; `usd` calculates only KRW; `both` means manual. In schema 7 these slots mean base/quote respectively (see [currency binding](#currency-binding)). Automatic pairs store the positive calculation rate in `appliedExchangeRate`; manual pairs store null. Old `amount`/`currency` are not written. Lists, totals, CSV, and comparisons use new fields.
 
-`decimalParts`/`roundRatio` use BigInt rational arithmetic and positive half-up rounding. They check safe KRW integers/USD cents and JSON Number round-trip precision. New input validation is separate from legacy reading: original decimal precision survives; only the opposite currency rounds to won/cents. Corrupt new amounts throw errors instead of becoming zero or being recomputed at today's rate.
+`decimalParts`/`roundRatio` use BigInt rational arithmetic and positive half-up rounding. They check safe currency minor units (KRW integers/USD cents in the current trip) and JSON Number round-trip precision. New input validation is separate from legacy reading: original decimal precision survives; only the opposite currency rounds to its minor unit. Corrupt new amounts throw errors instead of becoming zero or being recomputed at today's rate.
 
 Each schema-5-or-earlier document, draft baseline, or version converts using its own `exchangeRate`; invalid rates use the configured default with a notice. Normalized schema 6 never reconverts. Reads do not save publicly; baselines normalize consistently. Original JSON is backed up once to localStorage `<tripId>_ledger_v5_backup`; failure is reported and old server versions remain unchanged.
 
