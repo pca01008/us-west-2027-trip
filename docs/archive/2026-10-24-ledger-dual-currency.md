@@ -1,6 +1,6 @@
 # 원화·달러 가계부 구현 기록
 
-작성일: 2026-10-24 (Asia/Seoul). 로컬 `codex/legacy-ui-refinement` 작업이며 운영 서버의 지출 데이터는 조회하거나 변경하지 않았다. 계획은 [원화·달러 동시 입력](../LEDGER_DUAL_CURRENCY_PLAN_KO.md), 최종 사용법·구조·배포 절차는 [사용자 안내](../USER_GUIDE_KO.md#가계부), [기술 설명](../PROJECT_GUIDE_KO.md#ledger-timetable), [운영 안내](../OPERATIONS_KO.md#ledger-schema-6)를 따른다.
+작성일: 2026-10-24 (Asia/Seoul). `codex/legacy-ui-refinement` 작업의 최초 로컬 검증, 후속 CI, 운영 적용·공개 확인을 시점별로 구분한다. 최초 로컬 검증에서는 운영 서버의 지출 데이터를 조회하거나 변경하지 않았다. 계획은 [원화·달러 동시 입력](../LEDGER_DUAL_CURRENCY_PLAN_KO.md), 최종 사용법·구조·배포 절차는 [사용자 안내](../USER_GUIDE_KO.md#가계부), [기술 설명](../PROJECT_GUIDE_KO.md#ledger-timetable), [운영 안내](../OPERATIONS_KO.md#ledger-schema-6)를 따른다.
 
 ## 변경
 
@@ -49,3 +49,21 @@
 수정 커밋은 `114ed04`이다. [수정본 CI 실행 #40](https://github.com/pca01008/us-west-2027-trip/actions/runs/40097976140)에서 `validate`, `sql`, `browser` 작업이 모두 성공했다. PostgreSQL 17 SQL 검사 24개, 단위 검사 120개와 프로젝트 검사, 브라우저 검사 13개가 통과했다. SQL 검사는 신규 설치·구버전 업그레이드, 자동·명시적 권한 환경, 정상 저장·동시 저장 충돌·스키마 6의 구형 저장 거부와 변환 복원을 포함한다. 로컬 단위 검사도 120개 통과했다.
 
 운영 DB 적용·배포는 아직 완료되지 않았다. 운영 DB에는 검증한 증분 마이그레이션을 먼저 적용한다. 현재 `main`은 `f03e727`이며 `git push --dry-run origin HEAD:main`으로 수정본의 fast-forward 반영 경로를 확인했다. 실제 `main` 푸시와 Pages 배포는 운영 DB 적용 결과 확인 후 진행한다.
+
+## 운영 적용 및 공개 확인
+
+2026-10-24 사용자가 운영 SQL 적용 완료를 확인했다. 운영 서버의 함수 정의를 직접 조회한 결과와 구분한다. 이후 `2b71ccb`를 `origin/main`에 fast-forward 반영했다. [Pages 실행](https://github.com/pca01008/us-west-2027-trip/actions/runs/40100061664)의 build·deploy 작업이 성공했다. [배포 브랜치 Validate](https://github.com/pca01008/us-west-2027-trip/actions/runs/40100061797)도 단위 120개·프로젝트 검사, SQL 24개, 브라우저 13개 검사가 모두 성공했다.
+
+공개 URL의 `index.html`, `trip-config.js`, `daylight/index.html`이 모두 HTTP 200이며, LF로 정규화한 내용이 배포 커밋과 일치했다.
+
+| 파일 | LF 정규화 SHA-256 |
+|---|---|
+| `index.html` | `7ca47c5e2c727aa4a9d63593bf705ce748defb301a8a5a9a3e47c01915ea8163` |
+| `trip-config.js` | `1201c65323a8e9f568063b4b4cead7a6ab4f78f3dfc4f8d453a17ed04c6ec15a` |
+| `daylight/index.html` | `b59362ef1cdeef77cade0ec902fbb3f91b9c68ff87180bbcd96bbdcd3f7a6436` |
+
+격리된 Chromium에서 공개 루트 앱을 열어 공유 문서 GET 200, 클라이언트 스키마 6, 1440px·390px의 원화·달러 입력란 표시와 가로 넘침 없음을 확인했다. JavaScript 오류와 쓰기 요청은 0건이었다. 검사에서 GET·HEAD·OPTIONS만 허용했고 로그인이나 실제 저장은 수행하지 않았다. 운영 데이터 본문·사진·화면 캡처는 검증 출력에 남기지 않았다. 이 확인은 실제 기기의 설치 앱 갱신·운영 저장 검증을 대신하지 않는다.
+
+로컬에 내보낸 작업본을 보존하고 공개 저장소에 포함하지 않도록 루트 `*_EDITABLE_*.html`을 `.gitignore`에서 제외했다. 실제 운영 문서는 사용자의 다음 정상 저장 시 스키마 6으로 전환될 수 있다.
+
+배포 확인 뒤의 후속 커밋은 README·계획 상태·이 검증 기록만 갱신하며 앱과 SQL은 변경하지 않는다.
