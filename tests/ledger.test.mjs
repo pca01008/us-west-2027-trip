@@ -67,6 +67,6 @@ test('server incremental migration matches installed RPC and checks schema under
   const migration=await readFile(new URL('../migrations/20261024_ledger_schema_guard.sql',import.meta.url),'utf8');
   const body=source=>source.replaceAll('\r\n','\n').match(/function public.save_trip_document\([\s\S]*?\n\$\$;/)[0];
   assert.equal(body(migration),body(setup));
-  assert.match(body(setup),/for update;[\s\S]*incoming_schema < current_schema[\s\S]*insert into public.trip_document_versions/);
+  assert.match(body(setup),/for update;[\s\S]*incoming_schema_version < stored_schema_version[\s\S]*insert into public.trip_document_versions/);
   assert.match(body(setup),/is_trip_editor/);assert.match(body(setup),/p_expected_revision <> current_revision/);
 });

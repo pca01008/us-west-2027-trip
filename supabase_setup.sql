@@ -144,8 +144,8 @@ set search_path = public, pg_temp
 as $$
 declare
   current_revision bigint;
-  current_schema numeric;
-  incoming_schema numeric;
+  stored_schema_version numeric;
+  incoming_schema_version numeric;
   next_revision bigint;
   saved_version_id bigint;
   saved_at timestamptz;
@@ -172,9 +172,9 @@ begin
     or (p_content->>'schemaVersion') !~ '^[0-9]+$') then
     raise exception 'Invalid document schema' using errcode = '22023';
   end if;
-  incoming_schema := coalesce((p_content->>'schemaVersion')::numeric, 0);
+  incoming_schema_version := coalesce((p_content->>'schemaVersion')::numeric, 0);
 
-  select revision, coalesce((content->>'schemaVersion')::numeric, 0) into current_revision, current_schema
+  select revision, coalesce((content->>'schemaVersion')::numeric, 0) into current_revision, stored_schema_version
   from public.trip_documents
   where trip_id = p_trip_id
   for update;
@@ -188,7 +188,7 @@ begin
       using errcode = '40001';
   end if;
 
-  if incoming_schema < current_schema then
+  if incoming_schema_version < stored_schema_version then
     raise exception 'Document schema downgrade rejected; refresh the app' using errcode = '22023';
   end if;
 

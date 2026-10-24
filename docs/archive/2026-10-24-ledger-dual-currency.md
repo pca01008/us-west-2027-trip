@@ -34,8 +34,16 @@
 
 브라우저 실행은 설치된 Chromium과 `PLAYWRIGHT_BROWSERS_PATH=C:/Users/이승종/AppData/Local/ms-playwright`를 사용했다. 별도 서버 배포 없이 localhost에서 검증했다. 최종 가계부 캡처·내보내기는 임시 `westbound-ledger-Uk82M3`, 테마/탐색 캡처는 `westbound-navigation-chromium-diagnostics-6Ry9Ze`에 생성됐다. 밝은 테마 오류 상태와 어두운 테마의 PC·320px 결과를 직접 확인했다.
 
-## 적용 전 남은 조건
+## 최초 로컬 검증 당시 남은 조건
 
 `node --test scripts/check-trip-sql.mjs`는 `TRIP_SQL_TEST_URL` 미설정으로 실행 시작 단계에서 중단됐다. 로컬 PostgreSQL 서비스/실행 파일도 확인되지 않았다. 실제 DB의 권한·revision·하향 저장 거부 결과를 확인했다고 주장하지 않는다. 폐기 가능한 로컬 DB에서 SQL 검사를 통과시킨 뒤 서버 migration을 먼저 적용하고 앱을 배포해야 한다.
 
 운영 migration·배포·구형 운영 탭 저장 거부는 미실행이다. Git 커밋·푸시도 하지 않았다.
+
+## 후속 배포 전 검증
+
+구현은 `eb12e00`으로 커밋하여 `origin/codex/legacy-ui-refinement`에 푸시했다. PR 없이 기존 GitHub Actions의 `Validate`를 작업 브랜치에서 수동 실행했다. 운영 DB와 배포 브랜치는 변경하지 않았다.
+
+[최초 CI 실행 #39](https://github.com/pca01008/us-west-2027-trip/actions/runs/40097751940)에서 PostgreSQL 17의 실제 저장 검사가 실패했다. PL/pgSQL 변수 `current_schema`가 PostgreSQL 내장 이름으로 해석되어 `numeric < name` 비교 오류를 일으켰다. 설치 SQL과 증분 마이그레이션의 변수 이름을 `stored_schema_version`, `incoming_schema_version`으로 바꿨다. 기존 SQL 검사의 정상 저장·권한·revision·구버전 저장 거부 시나리오로 재검증한다.
+
+이 시점에는 수정본 CI 재검증과 운영 DB 적용이 남아 있다. SQL 검증 통과 전에는 운영 DB에 마이그레이션을 적용하지 않는다.
