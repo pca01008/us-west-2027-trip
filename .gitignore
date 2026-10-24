@@ -3,6 +3,9 @@ node_modules/
 .DS_Store
 Thumbs.db
 
+# Exported offline travel backups contain user data.
+/*_EDITABLE_*.html
+
 # Local design references and raw source assets (not deployed)
 /.codex-remote-attachments/
 /.agents/
