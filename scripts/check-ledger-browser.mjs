@@ -95,7 +95,7 @@ try {
       scenario = 'mixed currency and unset budget'; diagnostics.scenario(`${mode} / ${scenario}`);
       await fixture(mixed);
       await totals(['₩28,370', '$21.40']);
-      assert.deepEqual(await page.locator('#categorySummary .category-total b').allTextContents(), ['₩26,357 · $19.88', '₩2,013 · $1.52']);
+      assert.deepEqual(await page.locator('#categorySummary .category-total b').allTextContents(), ['₩26,357 ($19.88)', '₩2,013 ($1.52)']);
       assert.deepEqual(await page.locator('#categorySummary small').allTextContents(), []);
       await csv(mixedCsv);
 
@@ -111,7 +111,7 @@ try {
         expense('usd-half', '센트', 0.01, 'USD', '2027-03-02')
       ], { exchangeRate: 1350, budgetKrw: 16.49 });
       await totals(['₩17', '$0.01']);
-      assert.deepEqual(await page.locator('.expense-amount').allTextContents(), ['₩1 · $0.00 자동 계산', '₩2 · $0.00 자동 계산', '₩14 자동 계산 · $0.01']);
+      assert.deepEqual(await page.locator('.expense-amount').allTextContents(), ['₩1 ($0.00 자동 계산)', '₩2 ($0.00 자동 계산)', '₩14 자동 계산 ($0.01)']);
       await csv(['"2027-03-02","소수 원화","식비","1.49","0","USD","1350"', '"2027-03-02","반 원화","식비","1.5","0","USD","1350"', '"2027-03-02","센트","식비","14","0.01","KRW","1350"']);
 
       await fixture(mixed, { budgetKrw: 987654 });

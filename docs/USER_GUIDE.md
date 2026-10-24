@@ -92,6 +92,7 @@ The current trip uses KRW/USD. Other trips may show a different configured pair;
 - Remote saving, app resume, and reconnection preserve unadded input/cursor position. Deleted categories fall back to available ones. Input has no draft protection until Add.
 - Ledger settings manages the manual rate and categories. Category deletion moves its expenses to Deleted category.
 - KRW totals sum every expense's KRW amount; USD totals sum every USD amount. These express the same spending; do not add them together. Category totals follow the same rule. KRW totals no longer count only original KRW entries. Budget controls and expense filters are absent.
+- Expense rows and category totals display KRW (USD), with the second amount in teal. Currency symbols and parentheses distinguish the amounts in both themes and print; automatic-calculation labels remain beside the relevant amount.
 - CSV exports all entries, including unsaved changes, in screen order. Columns: date, description, category, KRW amount, USD amount, calculated currency, applied exchange rate. The last two are empty for manual pairs. Empty ledgers export headers only.
 - Rates affect **new calculations only**. Added amounts stay fixed. Editing name/date/category preserves amounts and the applied rate; amount edits recalculate with the current rate. If the entry changes remotely during editing, cancel and inspect the latest entry.
 - Remote rate changes update only automatic results in unadded input; manual pairs remain unchanged.

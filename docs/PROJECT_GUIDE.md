@@ -113,6 +113,7 @@ The current site's navy/coral palette is the approved baseline (2026-10-25). Pro
 | Actions | `--accent`, `--accent-hover`, `--on-accent`, `--solid`, `--on-solid`, `--focus` | Coral actions, navy controls and keyboard focus |
 | Timeline markers | `--timeline-accent`, `--timeline-accent-hover` | Schedule dots and legacy coral treatments |
 | Header | `--header-*`, `--canvas-glow-*` | Composed navy header, clocks, progress and page glow |
+| Ledger amount pairs | `--ledger-base`, `--ledger-quote` | Base amount followed by the teal quote amount in parentheses; expense rows and category totals |
 | Ledger totals | `--total-*` | Navy KRW and teal USD cards |
 | Status and links | `--red`, `--danger-*`, `--on-danger`, `--warning-*`, `--link-*`, `--link`, `--edit-bg`, `--overlay` | Errors, warnings, navigation and editing feedback |
 | Timetable categories | `--activity-*`, `--food-*`, `--transit-*`, `--stay-*`, `--other-*` | Each category's line, background and text |

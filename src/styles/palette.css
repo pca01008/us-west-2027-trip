@@ -37,6 +37,7 @@
   /* Ledger totals deliberately remain navy/teal, including in dark mode. */
   --total-primary-bg:linear-gradient(135deg,#192f50,#294d71);
   --total-secondary-bg:linear-gradient(135deg,#235668,#347b83);
+  --ledger-base:var(--heading-ink);--ledger-quote:#235e68;
   --total-label:#d4e0ec;--total-text:#ffffff;
   /* Timetable category roles, independent of primary action/status roles. */
   --activity-line:#31735d;--activity-bg:#eef7f1;--activity-ink:#285b49;
@@ -58,6 +59,7 @@
     --solid:#304c6c;--on-solid:#ffffff;--focus:#ffb3a4;
     --danger-bg:#472d32;--danger-line:#83535b;--edit-bg:#3b3033;
     --warning-bg:#3f3525;--warning-ink:#f3d39d;--warning-line:#7e6843;
+    --ledger-quote:#8bd3d9;
     --link:#a7d3f0;--link-bg:#21394a;--link-icon:#304e63;--link-line:#4c718b;
     --overlay:rgba(3,9,16,.72);--track:#3a4c60;
     --shadow-sm:0 8px 24px rgba(0,0,0,.16);--shadow-lg:0 22px 60px rgba(0,0,0,.24);
