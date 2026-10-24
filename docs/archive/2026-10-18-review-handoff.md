@@ -1,168 +1,39 @@
-# 2026-10-18 프로젝트 검토 및 후속 작업 인계
+# Project Review and Handoff — 2026-10-18
 
-이 문서는 2026-10-18에 수행한 코드·문서 검토의 기록이다. 이후 세션에서 수정 작업을 이어가기 위한 자료이며, 현재 구현이 이미 수정되었다는 뜻은 아니다. 이후 변경이 있을 수 있으므로 함수 이름과 현재 코드를 다시 확인한다.
+Historical code/document review for subsequent work, not a claim of current fixes. Recheck functions/current source. Requested scope: find bugs/potential issues/docs improvements without overengineering for two users. Workspace: `D:\Workspace\travel\website`.
 
-## 요청과 작업 상태
+Found three reproduced bugs, one inspection-only risk, two policy proposals. Review/reproduction only: no app/production DB/deployment/commit/push. Saving this handoff did not approve proposals/implementation. Existing untracked attachments/directory-plan document were user work to preserve. Follow AGENTS/metadata approval; never change ownership/ACL arbitrarily.
 
-- 사용자 요청: 프로젝트를 원점에서 검토하여 버그·잠재 문제·문서 개선점을 찾되, **2명이 사용하는 소규모 프로젝트에서 과도한 설계를 하지 않는다.**
-- 작업 위치: `D:\Workspace\travel\website`
-- 검토 결과: 실제 재현한 버그 3개, 코드에서 확인한 잠재 문제 1개, 문서·사용정책 제안 2개.
-- 이번 세션에서는 검토와 재현만 했다. **앱 코드 수정, 운영 DB 변경, 배포, 커밋·푸시는 하지 않았다.**
-- 사용자는 검토 결과를 다른 세션에 전달할 Markdown 저장을 요청했다. 아래 정책 제안을 채택하거나 구현까지 요청한 것으로 간주하지 않는다.
-- 인계 문서 작성 전 기존 미추적 항목: `.codex-remote-attachments/`, `docs/DIRECTORY_PLAN_KO.md`. 사용자 작업으로 보존한다.
-- 작업 전에 저장소의 `AGENTS.md`를 따른다. Git 메타데이터 쓰기에는 지정된 승인 정책을 적용하고, `.git` 소유권·ACL을 임의로 바꾸지 않는다.
+Recommended order: deferred draft/PREP, external logout/reentry, remote input preservation, photo timeout/cancel, then user-directed policy decisions. Retain static app/Supabase/revisions and existing helpers; no framework, DB decomposition, automatic merge, queue, or multitrip platform needed.
 
-## 권장 작업 순서
+## 1. High: PREP list save deletes deferred draft
 
-1. 보류한 초안이 PREP 목록 저장으로 삭제되는 문제 수정.
-2. 외부 로그아웃 이후 새 편집이 기존 초안을 덮어쓰는 문제 수정.
-3. 공유본 갱신 시 작성 중인 가계부 입력 보존.
-4. 사진 통신의 시간 제한과 취소 처리 보완.
-5. 일정의 기준 저장소와 자동 로그아웃 정책은 사용자 지시에 따라 정리.
+Reproduced: edit title/wait for IndexedDB → refresh → Esc recovery → PREP Edit list/change/save → `readDraftRecord()` returns null. `saveChecklistEditor()` near index.html: 1851 clears drafts for `!pendingDraft && !OFFLINE_MODE`; deferred content is unapplied, so pending can be false. `queueCheck()` near1807 already checks `!deferredDraftRecovery`. Reuse protection; list must save while draft survives/reloads for recovery.
 
-정적 페이지·Supabase·revision 충돌 확인 구조는 유지한다. 이 문제를 해결하기 위해 프레임워크 교체, DB 세분화, 자동 병합, 별도 작업 큐, 다중 여행 플랫폼을 도입할 필요는 없다. 기존 보호 함수와 상태를 재사용하고 실제 재현 사례에 대한 회귀 검사만 추가하는 방향을 권한다.
+## 2. High: new editing after external sign-out overwrites preserved draft
 
-## 1. 보류한 초안이 PREP 목록 저장으로 삭제됨
+Reproduced external-sign-out path: edit/persist → call `handleExternalSignOut()` → verify record remains → start editing without refresh/reauthenticate as needed → no recovery prompt → new draft overwrites old. Near2006, sign-out uses `setEditingUI(false,{preserveDraft:true})` but never establishes deferred recovery. `runPurpose()` only prompts for deferred state. Connect preserved drafts to recover/explicit-delete before itinerary/ledger/import and other mutating entry points. Existing tests stopped at immediate retention; new tests must continue into editing. Reproduction invoked handler/auth stub locally, not production Auth.
 
-**우선순위: 높음 / 브라우저에서 재현 완료**
+## 3. Medium: shared refresh clears unadded expense input
 
-쉽게 말하면, 일정 초안을 나중에 복구하려고 남겨뒀는데 준비물 목록을 저장하는 순간 그 초안까지 삭제되는 문제다.
+Reproduced: type Taxi/USD37 without Add → change mock content/revision → `refreshPublishedState('visible')` → name/amount become empty. Resume/Realtime are relevant real paths, not loss of added entries. Direct `applyState()` near2501/Realtime2539 replaces inputs; unadded values do not set pendingDraft. Reuse existing `applyStatePreservingInputs()` from full/checklist save. Preserve name/amount/date/currency/category/focus/selection; deleted categories need a valid fallback. Realtime risk also confirmed by matching code pattern.
 
-### 재현 순서
+## 4. Medium: photo requests lack deadlines/cancellation
 
-1. 일정 제목을 수정하고 초안이 IndexedDB에 기록되게 한다.
-2. 페이지를 새로고침한다.
-3. 초안 복구 안내를 Esc로 닫아 복구를 보류한다.
-4. PREP 탭에서 `목록 편집`을 연다.
-5. 항목 내용을 바꾸고 목록을 저장한다.
-6. 기존 일정 초안이 삭제된다. 검사에서 `readDraftRecord()`가 `null`을 반환했다.
+Inspection-only; long stalls not reproduced. HEAD `immutableBlobExists()` near2228 has no app limit; `uploadImmutableBlob()`2229 lacks cancellation; export `fetchAsDataUrl()`2271 lacks limit; `cancelCurrentOperation()`1338 only sets a flag. Full-save12s starts after `materializeStagedPhotos()`, not photo preparation. Add suitable per-request deadlines/abort signals, cleanup, and draft retention. No complex retry/queue needed.
 
-### 원인과 수정 방향
+## 5. Proposal: clarify itinerary source of truth
 
-- `index.html`의 `saveChecklistEditor()`가 `!pendingDraft && !OFFLINE_MODE`이면 `clearDraftRecord()`를 호출한다. 검토 당시 약 1851행.
-- 보류한 초안은 화면에 적용되지 않았으므로 `pendingDraft`가 거짓일 수 있다.
-- 체크 완료 처리인 `queueCheck()`에는 `!deferredDraftRecovery` 조건이 있지만 목록 저장에는 빠져 있다. 약 1807행과 비교한다.
-- 목록 저장도 보류된 초안을 삭제하지 않도록 기존 보호 조건을 재사용한다.
-- 목록은 정상 저장되면서 이전 일정 초안은 유지되고, 새로고침 후 복구할 수 있는지 확인한다.
+Not a bug/approved policy. Then-untracked [directory proposal](../DIRECTORY_PLAN.md), around84, preferred planning originals first; [README](../../README.md), around73, said save active changes in app/shared data overrides defaults. Duplicate ownership creates confusion. Recommend planning for research/alternatives/booking evidence/reasons; app for current itinerary/PREP/spending. If user prefers document originals, honor that instead. Automatic sync is not the default solution; proposed directory layout was not already approved/completed.
 
-## 2. 외부 로그아웃 후 새 편집이 기존 초안을 덮어씀
+## 6. Proposal: separate idle logout from draft deletion
 
-**우선순위: 높음 / 브라우저에서 외부 로그아웃 처리 경로 재현 완료**
+Then-documented behavior, not a bug; no unilateral change. Warning29min/logout30min also discarded drafts via scheduleSessionTimers/discardAndLogout. For private two-person use, recommend ending auth while retaining drafts for reauthentication. Preserve explicit Discard and sign out. If adopted, update usage/internals/tests together.
 
-쉽게 말하면, 다른 탭에서 로그아웃되어 초안을 보관했는데 다시 편집할 때 복구 여부를 묻지 않고 새 작업으로 덮어쓰는 문제다.
+## Historical validation and limits
 
-### 재현 순서
+October 18 local tree: 110 units; project 11 days/36 events/12 checks; six browser suites drafts/inputs/prep/photos/theme/pwa passed. Separate cases1–3 reproduced with no page JS errors. Passing existing tests did not cover these combinations. Local draft-test mocks/auth stubs/exposed functions blocked outbound traffic; temporary repro scripts were deleted, so add permanent regressions from the steps above.
 
-1. 일정 제목을 수정하고 초안을 기록한다.
-2. 외부 로그아웃 처리인 `handleExternalSignOut()`을 실행한다.
-3. 기존 초안이 IndexedDB에 남아 있는 것을 확인한다.
-4. 페이지를 새로고침하지 않고 편집을 다시 시작한다. 실제 사용에서는 필요하면 재인증한다.
-5. 이전 초안을 복구할지 묻는 안내 없이 편집이 시작된다.
-6. 새 내용을 수정해 초안을 기록하면 이전 초안이 대체된다.
+Windows Node 24.19.0, npm absent; ran `node --test tests/*.test.mjs`, `node scripts/check-project.mjs`; browser runner with `PWA_BROWSER_CHANNEL=chrome` because default Chromium absent. Initial sandbox blocked two HTTP units/browser localhost (`ERR_NETWORK_ACCESS_DENIED`); authorized elevated execution passed, not counted as app defects. Installed Chrome is not iPhone/Samsung evidence. Recheck current runtime paths rather than reuse old temporary state. Production Supabase/real phones were untested.
 
-### 원인과 수정 방향
-
-- `handleExternalSignOut()`은 초안을 보관하고 화면을 마지막 저장본으로 되돌린다. 검토 당시 약 2006행.
-- `setEditingUI(false, {preserveDraft:true})`는 당시 초안 삭제를 막지만, 이후 편집을 보호할 `deferredDraftRecovery` 상태로 연결하지 않는다.
-- `runPurpose()`는 복구 보류 상태일 때만 편집 전에 `recoverOnlineDraft()`를 호출한다.
-- 보관한 초안을 다시 편집하기 전에 복구 또는 명시적 삭제를 선택하도록 기존 복구 흐름에 연결한다.
-- 일정 편집뿐 아니라 가계부·불러오기 등 초안을 바꾸는 진입점도 확인한다.
-
-기존 검사는 외부 로그아웃 직후 초안이 남아 있는지만 확인했다. 후속 편집까지 이어지는 검사가 필요하다. 추가 재현에서는 `handleExternalSignOut()`을 직접 호출하고 인증은 로컬 스텁으로 처리했으며, 운영 인증 서버를 이용하지 않았다.
-
-## 3. 공유본 갱신 시 작성 중인 가계부 입력이 사라짐
-
-**우선순위: 보통 / 브라우저에서 재조회 경로 재현 완료**
-
-쉽게 말하면, 가계부에 `택시비 / 37달러`를 입력하고 아직 `추가`를 누르지 않았는데 상대방의 변경사항을 받으면 입력칸이 비워지는 문제다. 이미 추가된 내역이 사라진다는 뜻은 아니다.
-
-### 재현 순서
-
-1. 가계부 탭에서 항목명과 금액을 입력한다. 아직 추가하지 않는다.
-2. 로컬 모의 서버의 공유본 내용과 revision을 변경한다.
-3. `refreshPublishedState('visible')`를 실행한다.
-4. 항목명과 금액이 모두 빈 문자열로 바뀐다.
-
-실제 앱에서는 다른 앱을 보고 돌아올 때의 재조회나 상대방 저장에 따른 실시간 반영이 관련 경로다.
-
-### 원인과 수정 방향
-
-- `refreshPublishedState()`가 최신본 적용 시 `applyState()`를 직접 호출한다. 검토 당시 약 2501행.
-- Realtime 콜백도 `applyState(remoteState)`를 직접 호출한다. 약 2539행. 이 경로는 같은 코드 패턴으로 확인했다.
-- 아직 추가하지 않은 폼 입력은 공유 데이터의 초안 여부인 `pendingDraft`에 포함되지 않는다.
-- 전체 저장 완료와 체크리스트 반영에서는 이미 `applyStatePreservingInputs()`를 사용한다.
-- 공유본 갱신에도 기존 입력값·초점 보존 함수를 적용하는 방안을 우선 검토한다.
-- 항목명·금액뿐 아니라 날짜·통화·카테고리·커서 위치도 확인한다. 상대방이 카테고리를 삭제한 경우에는 유효한 선택값으로 처리해야 한다.
-
-## 4. 사진 통신의 대기시간·취소 처리 부족
-
-**우선순위: 보통 / 코드 검토에서 확인한 잠재 문제, 실제 장시간 통신 장애는 미재현**
-
-쉽게 말하면, 여행 중 불안정한 Wi-Fi에서 사진을 업로드하거나 내려받다가 작업이 오래 멈춘 것처럼 보일 수 있다. 취소 버튼도 현재 통신이 끝나기를 기다린다.
-
-### 관련 코드와 수정 방향
-
-- `immutableBlobExists()`: 사진 존재 여부를 확인하는 HEAD 요청에 앱의 명시적 제한 시간이 없다. 약 2228행.
-- `uploadImmutableBlob()`: 업로드에 작업 취소 신호가 연결되어 있지 않다. 약 2229행.
-- `fetchAsDataUrl()`: 내보내기용 사진 다운로드에 앱의 명시적 제한 시간이 없다. 약 2271행.
-- `cancelCurrentOperation()`: `operationCancelled` 플래그를 바꾸며 현재 통신을 직접 중단하지 않는다. 약 1338행.
-- 전체 공유 저장의 12초 제한은 `materializeStagedPhotos()`가 끝난 뒤 DB 저장 요청 단계부터 적용된다. 사진 준비까지 포함한 전체 작업 제한이 아니다.
-- 사진 통신에 적절한 제한 시간과 취소 신호를 연결하고, 실패·취소 후 작업 중 상태가 해제되며 초안이 유지되도록 한다.
-- 별도 작업 큐나 복잡한 재시도 시스템은 필요하지 않다. 제한 시간은 사진 크기와 사용 환경을 고려해 정한다.
-
-## 5. 문서 제안: 일정의 기준 저장소 명확화
-
-**현재 구현 버그가 아니라, 제안 문서 적용 전에 정할 사항이다.**
-
-- [디렉터리 구성안](../DIRECTORY_PLAN_KO.md)은 계획 원본을 먼저 수정한 뒤 웹사이트에 반영하도록 제안한다. 검토 당시 약 84행.
-- [README](../../README.md)는 현재 여행 내용은 앱에서 저장하고, 설정 파일의 기본 일정을 바꿔도 이미 저장된 공유 일정은 바뀌지 않는다고 안내한다. 약 73행.
-- 두 곳에서 같은 일정을 관리하면 수정이 이중으로 필요하고 최신본이 무엇인지 헷갈릴 수 있다.
-- 소규모 운영 권장안: `planning`에는 조사·후보·예약 근거·결정 이유를 보관하고, 앱에서 운영 중인 최신 일정·준비물·지출을 관리한다.
-- 사용자가 계획 문서를 일정의 원본으로 유지하려는 경우에는 그 의도를 우선한다. 별도 자동 동기화 구축을 기본 해결책으로 삼지 않는다.
-- `docs/DIRECTORY_PLAN_KO.md`는 당시 미추적 사용자 파일이며, 제안 문서임을 명시하고 있었다. 완료된 구조나 승인된 정책으로 취급하지 않는다.
-
-## 6. 사용정책 제안: 자동 로그아웃과 초안 삭제 분리
-
-**문서대로 구현된 현재 정책이며, 버그가 아니다. 사용자 결정 전에는 임의로 바꾸지 않는다.**
-
-- 현재는 마지막 활동 후 29분에 경고하고, 30분에 자동 로그아웃하면서 초안도 폐기한다.
-- 근거: [사용자 안내서](../USER_GUIDE_KO.md), `scheduleSessionTimers()`, `discardAndLogout()`.
-- 개인 기기로 2명이 사용하는 경우, 식사·이동 중 자리를 비웠다는 이유로 작성하던 내용을 잃을 수 있다.
-- 권장안: 인증 세션은 종료하되 미저장 초안은 보관하고, 다시 인증한 뒤 복구하도록 한다.
-- 채택하면 자동 로그아웃 경로와 명시적인 `폐기 후 로그아웃`을 구분해야 한다. 사용자가 직접 폐기를 선택한 경우까지 보존하도록 바꾸지는 않는다.
-- 관련 사용자 안내서·기술 설명서·회귀 검사도 함께 갱신한다.
-
-## 당시 검증 결과와 범위
-
-2026-10-18 로컬 작업 트리에서 확인했다. 아래 결과는 해당 날짜의 관측이며 후속 수정 후에는 관련 검사를 다시 실행한다.
-
-| 검사 | 결과 |
-| --- | --- |
-| Node.js 단위 검사 | 110개 모두 통과 |
-| `scripts/check-project.mjs` | 통과: 11일, 36개 일정, 12개 체크 항목 |
-| 브라우저 검사 6개 묶음 | drafts, inputs, prep, photos, theme, pwa 모두 통과 |
-| 별도 재현 검사 | 위 버그 1~3 확인, 페이지 JavaScript 오류 없음 |
-| 운영 Supabase / 실제 휴대폰 | 검증하지 않음 |
-
-기존 검사가 통과한다는 사실은 이번에 발견한 흐름이 안전하다는 뜻이 아니다. 기존 검사에 없던 동작의 조합에서 버그를 재현했다.
-
-추가 재현은 기존 `scripts/check-drafts-browser.mjs`의 로컬 모의 서버·인증 스텁·앱 함수 노출 방식을 활용했다. 외부 운영 요청은 차단했다. 임시 재현 스크립트는 검토 후 삭제했으므로 후속 작업에서는 위 재현 순서에 따라 영구 회귀 사례를 추가한다.
-
-### 실행 환경 참고
-
-- 실행한 Node.js: v24.19.0.
-- 당시 `npm`이 PATH에 없어 번들 Node 실행 파일로 명령을 직접 실행했다.
-- 단위 검사: `node --test tests/*.test.mjs`
-- 정적 검사: `node scripts/check-project.mjs`
-- 브라우저 검사: PowerShell에서 `$env:PWA_BROWSER_CHANNEL='chrome'` 설정 후 `node scripts/check-browsers.mjs`.
-- 처음에는 샌드박스가 localhost 연결을 차단해 HTTP 단위 검사 2개와 브라우저 검사가 실패했다. 승인 정책에 따른 `require_escalated` 실행에서 모두 통과했다. 이를 앱 결함으로 집계하지 않는다.
-- Playwright 기본 Chromium 실행 파일이 없어 설치된 Chrome을 사용했다. 실제 iPhone·삼성 인터넷 검증을 대신하지 않는다.
-- 다음 세션에서는 현재 런타임 경로를 다시 확인한다. 문서의 과거 임시 경로나 환경 상태를 그대로 가정하지 않는다.
-
-## 수정 시 문서 관리
-
-- [사용자 안내서](../USER_GUIDE_KO.md): 초안 복구·입력 보존·로그아웃·사진 오류 등 사용자 동작.
-- [기술 설명서](../PROJECT_GUIDE_KO.md): 초안 상태와 저장·복구·취소 원리.
-- [운영 안내서](../OPERATIONS_KO.md): 검증 방법과 장애 대응.
-- [README](../../README.md): 개요와 문서 길잡이.
-- 이 문서는 발견 당시 증거로 보존하고, 현재 동작의 기준 문서를 대신하지 않는다.
+Update [usage](../USER_GUIDE.md) for recovery/input/logout/photos, [internals](../PROJECT_GUIDE.md) for draft/save/cancel, [operations](../OPERATIONS.md) for tests/troubleshooting, README for navigation. Retain this record as dated evidence, not the behavior specification.

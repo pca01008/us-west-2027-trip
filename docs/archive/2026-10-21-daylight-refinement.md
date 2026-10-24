@@ -1,31 +1,24 @@
-# A · Daylight 초안 개선 — 2026-10-21
+# A · Daylight Prototype Refinement — 2026-10-21
 
-## 승인 범위
+## Authorization
 
-사용자는 기존 웹사이트의 기능·목적을 유지하면서 준비 탭 이동 표현, 설정 버튼 구분, 확인 사항 상시 표시, 기존 시간표 반영을 요청했다. 적용 범위는 **A안 초안을 먼저 개선하고 검토**하는 것으로 확인했다. 기능·목적의 변경이 불가피하면 먼저 사용자에게 확인한다.
+User requested clearer PREP navigation/settings, always-visible cautions, and existing timetable while preserving functionality/purpose. Confirmed scope: **refine/review A prototype first**; confirm unavoidable purpose/function changes. Production root/auth/save/recovery/shared data untouched; B/C retained. [Initial handoff](2026-10-21-daylight-handoff.md) describes the earlier unwired state; timetable was added afterward.
 
-운영 `index.html`, 인증·저장·복구 정책과 서버 여행 데이터는 수정하지 않았다. B/C 화면은 비교 기록으로 보존한다. 최초 [인계 문서](2026-10-21-daylight-handoff.md)의 미연결 기능 설명은 당시 상태이며, 현재 초안에는 아래 시간표를 추가했다.
+## Changes
 
-## 변경 결과
+- Go to PREP plus right arrow communicates navigation.
+- Settings groups Editing and saving / Files / Display, emphasized edit entry, icons/borders/spacing. Disabled before real integration and labeled layout preview.
+- Caution heading/list always visible.
+- Daily/timetable and all/one-day controls, desktop All/mobile One defaults, selected-date retention; date heading opens One day.
+- Reuse production time/category/overlap logic; no inferred end. Unspecified/all-day/other-zone events above grid; overnight continuation. Details retain notes/cautions/maps/photos; One day includes stay/transport summary.
+- Wide overview compresses the axis; small screens scroll internally. One day starts near first timed event.
 
-- `준비 탭으로 이동`과 오른쪽 화살표로 탭 전환을 표현한다.
-- 설정은 편집과 저장 / 파일 / 화면으로 나누고, 편집 진입을 강조한다. 기능별 아이콘·버튼 테두리·간격을 적용했다. 실제 인증·저장 연결 전이므로 버튼은 비활성화하고 배치 미리보기임을 표시한다.
-- 일정의 확인 사항은 제목과 목록을 항상 표시하며 접지 않는다.
-- 일정 상단에서 일별 일정과 시간표를 전환한다. PC는 전체, 모바일은 1일 보기가 기본이며 선택 날짜는 보기 전환 후에도 유지한다. 전체 날짜 제목을 누르면 1일 보기로 이동한다.
-- 시간표는 운영 코드의 시간 해석·분류·겹침 계산을 재사용한다. 종료 시간은 추정하지 않고, 미정·종일·다른 시간대 일정은 상단에 표시한다. 자정을 넘는 구간은 다음 날짜에 연결한다. 상세에는 설명·확인 사항·지도·사진을 표시한다. 1일 보기 하단에는 체크인·숙박과 이동 요약을 제공한다.
-- 넓은 화면은 전체 시간축을 압축하고 작은 화면은 시간표 안에서 스크롤한다. 1일 보기는 첫 시간 지정 일정이 보이는 위치에서 시작한다.
+A-only `daylight.css`/`daylight.js` are used by the common renderer only for A. `timetable-core.js` is generated from production; never hand-edit. See [operations](../OPERATIONS.md#ui-concepts).
 
-## 구현과 확인 방법
+[A prototype](../ui-concepts/a.html); [desktop](../ui-concepts/previews/a-desktop.png), [mobile](../ui-concepts/previews/a-mobile.png), [settings](../ui-concepts/previews/a-desktop-settings.png), [all days](../ui-concepts/previews/a-desktop-timetable.png), [mobile one day](../ui-concepts/previews/a-mobile-timetable-day.png).
 
-A 전용 스타일·상호작용은 `docs/ui-concepts/daylight.css`, `daylight.js`에 있다. 공통 렌더러는 A일 때만 이를 사용한다. `timetable-core.js`는 운영 코드에서 생성하며 직접 편집하지 않는다. 생성·캡처·배포 절차와 초안의 한계는 [운영 안내서](../OPERATIONS_KO.md#ui-concepts)를 따른다.
+## Verification
 
-검토 진입점: [A안](../ui-concepts/a.html). 캡처: [PC 일정](../ui-concepts/previews/a-desktop.png), [모바일 일정](../ui-concepts/previews/a-mobile.png), [설정](../ui-concepts/previews/a-desktop-settings.png), [전체 시간표](../ui-concepts/previews/a-desktop-timetable.png), [모바일 1일](../ui-concepts/previews/a-mobile-timetable-day.png).
+Chromium A/B/C desktop/mobile navigation/check/filter/date passed. A additionally passed settings close/range defaults/switching/KST separation/details/Esc/focus/date/data immutability. No page overflow360/390/768/1280/1440px, including A settings/timetable. Updated/visually inspected desktop/mobile/settings/range captures; Impeccable returned an empty finding list.114 units/static/whitespace passed; npm absent, ran its component commands directly.
 
-## 이번 검증
-
-- Playwright Chromium: A/B/C의 PC·모바일 탐색, 체크, 필터, 날짜 이동 통과. A의 설정 닫기, 시간표 기본 범위·전환, KST 별도 표시, 상세 열기·Esc 닫기·포커스 복원, 선택 날짜 유지와 표시 데이터 불변을 확인했다.
-- 360·390·768·1280·1440px에서 페이지 가로 넘침 없음. A의 시간표와 설정에서도 확인했다.
-- PC·모바일 일정, 설정, 전체·1일 시간표 캡처를 갱신하고 주요 화면을 직접 검토했다. Impeccable 기계 검사 결과는 빈 목록이었다.
-- `node --test tests/*.test.mjs`: 114개 통과. `node scripts/check-project.mjs`와 `git diff --check` 통과. 이 환경에 `npm` 명령이 없어 `npm test`의 두 구성 명령을 직접 실행했다.
-
-실제 공유본, 로그인, 저장, 오프라인 편집, 다크 테마는 이 초안의 검증 범위가 아니다. 운영 기능을 제거한다는 뜻이 아니며 실제 화면 적용 시 별도 연결·회귀 검증이 필요하다. 운영 동작이 바뀌지 않아 사용자 안내서의 사용 절차와 기술 설명서의 운영 구조는 유지했다.
+No real shared data/login/save/offline editing/dark-theme validation in this prototype. Those functions remain required for later integration. Unchanged production usage/internals needed no behavioral update.

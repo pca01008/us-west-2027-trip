@@ -1,64 +1,44 @@
-# DB 점검 검증 기록 — 2026-10-05
+# DB Health Verification — 2026-10-05
 
-> 당시 검증 증거를 보존한 이력입니다. 현재 설정·재검증 절차는 [운영 안내서](../OPERATIONS_KO.md#db-health)를 따릅니다. 본문의 파일명·환경·작업 상태는 검증 당시 기준입니다.
+Historical evidence only. Current procedures: [operations](../OPERATIONS.md#db-health). Paths/environments/job states refer to October 5, Asia/Seoul.
 
-검증 날짜: 2026-10-05 (Asia/Seoul).
+## Completed checks
 
-## 완료한 검증
-
-| 검사 | 결과 |
+| Check | Historical result |
 |---|---|
-| 전체 Node.js 테스트 `node --test tests/*.test.mjs` | 110개 통과, 실패·생략 0개 |
-| 신규 점검·예약 등록·비밀값 관리 테스트 | 위 전체 중 54개 |
-| 실제 HTTP 응답 본문이 멈춘 경우 | 기본 제한시간으로 약 21.08초 후 503, 두 요청 모두 취소 |
-| Deno 함수 진입점 `deno check` | 통과 |
-| Deno의 실제 로컬 HTTP 실행 | 39개 검사 통과 |
-| 격리된 PostgreSQL(PGlite 0.5.8) | SQL 및 권한 16개 검사 통과 |
-| 프로젝트 정적 검사 | 11일·36개 일정·12개 체크 항목 통과 |
-| `git diff --check` | 통과 |
-| 로컬 `.secrets/` 파일 Git 제외 | 두 환경 파일 모두 확인 |
-| cron-job.org API 인증 | HTTP 200, 준비 시점 등록 작업 0개 |
-| 운영 점검 API | 12개 검사 통과: 200·401·405, JSON 결과, 캐시 금지 |
-| 운영 점검 테이블 권한 | 한 행, RLS, 익명 id 조회, 익명·로그인 역할의 쓰기 차단 확인 |
-| 운영 여행 데이터 보존 | 모든 여행 ID·revision·updated_at·내용 해시가 배포 전후 일치 |
+| `node --test tests/*.test.mjs` | 110 passed, zero failed/skipped; 54 health/scheduler/secret tests |
+| Stalled real HTTP response body | 503 after about21.08s at default limits; both requests aborted |
+| Deno entrypoint/typecheck | Passed |
+| Local Deno HTTP | 39 checks passed |
+| Isolated PGlite 0.5.8 | 16 SQL/permission checks passed |
+| Static project | 11 days/36 events/12 checks |
+| Whitespace/secret ignore | Passed; both env files ignored |
+| cron API auth | HTTP200, zero registered jobs at preparation |
+| Production endpoint | 12 checks: 200/401/405, JSON/no-cache |
+| Production permissions | One row/RLS/anonymous id read, anon/authenticated writes denied |
+| Trip preservation | All trip IDs/revisions/timestamps/content hashes matched before/after deployment |
 
-Node.js는 v24.19.0을 사용했다. PostgreSQL 검사는 메모리 내 독립 DB에서 실행했으며 운영 서버에 SQL을 실행하지 않았다. Deno HTTP 검사는 `127.0.0.1`만 접근했다.
+Node v24.19.0. Isolated SQL ran in memory, not production; Deno HTTP accessed loopback only.
 
-## 검사한 실패 상황
+Failure coverage: missing/wrong token, non-GET, missing env/admin key/bad project URL; missing/wrong/duplicate row, bad JSON/HTTP/redirect/network; query/body delay/retry success/permanent exactly-two attempts; preflight failure/duplicate/incomplete job lists/prevent bad activation; random token/matched env/rerun preservation/mismatch refusal; migration repetition/singleton/RLS/read/write/DDL/row recovery/trip fixture preservation.
 
-- 토큰 누락·불일치, GET 이외 요청, 환경 변수 누락, 관리자 키 및 잘못된 프로젝트 URL
-- 점검 행 누락·잘못된 ID·중복 행·잘못된 JSON·DB HTTP 오류·리다이렉트·네트워크 예외
-- 조회 응답 지연과 응답 본문 읽기 지연, 첫 실패 후 재시도 성공, 영구 실패 후 정확히 두 번의 요청
-- 예약 작업 등록 전 사전 점검 실패, 중복 작업·불완전한 작업 목록, 잘못 저장된 설정의 활성화 방지
-- 난수 토큰 생성, 두 환경 파일의 토큰 일치, 재실행 시 기존 토큰·API 키 보존, 불일치 파일 덮어쓰기 방지
-- SQL 반복 적용, 한 행 제약, RLS 활성화, 익명 조회, 쓰기·DDL 권한 차단, 점검 행 복구, 여행 fixture 보존
+## Production activation and notifications
 
-## 운영 활성화 확인
+CLI login/project ACTIVE_HEALTHY, SQL/two env variables/function deployed. Valid token200, missing/wrong401, POST405. Active job **8582896**, title `DB healthcheck: xuzhcogshnjqtunkbsuo`; Asia/Seoul daily00:17/06:17/12:17/18:17, no expiry; first-failure/recovery/auto-disable alerts via account email only.
 
-운영 활성화와 외부 알림 전달까지 완료했다.
+Real scheduled call October 5 **19:26:19 KST**, HTTP200/about2.29s at a temporary shorter interval; restored four daily times and reread settings. Next recorded run October 6 00:17 KST.
 
-- Supabase CLI 로그인 및 프로젝트 `ACTIVE_HEALTHY` 확인 완료
-- 운영 SQL, 두 환경 변수와 `trip-db-health` 함수 배포 완료
-- 운영 HTTP 검사 완료: 유효 토큰 200, 토큰 누락·오류 401, POST 405
-- 운영 작업 ID: **8582896**, 활성 상태. 제목 `DB healthcheck: xuzhcogshnjqtunkbsuo`
-- 최종 시간대: **Asia/Seoul**, 매일 **00:17·06:17·12:17·18:17**, 만료 없음
-- 실패 1회·복구·자동 비활성화 알림 활성화, 계정 이메일 채널만 선택
-- 외부 예약 호출: 2026-10-05 **19:26:19 KST**, HTTP 200, 약 2.29초. 검증용 단축 주기로 실제 외부 호출을 확인한 뒤 원래 하루 4회 주기로 복구하고 설정을 재조회했다.
-- 최종 확인 시 다음 실행: **2026-10-06 00:17 KST**
-- 임시 복구 검증 작업 **8582948**은 URL·헤더·주기를 고정하고 임시 함수 응답만 503에서 200으로 전환했다.
-- [실패 이메일 수신](https://mail.google.com/mail/u/?authuser=pca01008%40gmail.com#all/1a10ba00d1771829): **19:33:20 KST**, `pca01008@gmail.com`
-- [복구 이메일 수신](https://mail.google.com/mail/u/?authuser=pca01008%40gmail.com#all/1a10ba1d7109a69c): **19:35:17 KST**, 같은 이메일 주소
-- 초기 토큰 변경 검증 작업 **8582904**에서도 실패 이메일은 수신했으며, 설정 변경 후 복구 이메일은 확인되지 않아 고정된 작업과 별도 함수로 검증을 보완했다.
-- 임시 작업 **8582904·8582948** 모두 비활성화. 최종 계정 목록에서 활성 작업은 운영 작업 한 개다.
-- 임시 함수 `trip-db-health-notify-test`와 `HEALTHCHECK_NOTIFY_TEST_FAIL` 환경 변수 제거 완료
-- 정리 후 운영 API 12개 검사와 운영 함수 목록 확인 완료
+Temporary recovery job **8582948** retained URL/header/schedule while endpoint changed503→200:
 
-받은 테스트 실패 이메일 2건과 복구 이메일 1건은 위 검증을 위해 발생시킨 알림이다. 운영 여행 일정 장애를 의미하지 않는다.
+- [Failure email](https://mail.google.com/mail/u/?authuser=pca01008%40gmail.com#all/1a10ba00d1771829): 19:33:20 KST, `pca01008@gmail.com`.
+- [Recovery email](https://mail.google.com/mail/u/?authuser=pca01008%40gmail.com#all/1a10ba1d7109a69c): 19:35:17 KST, same address.
 
-기존 사용자 변경인 `AGENTS.md`와 `.codex-remote-attachments/`는 수정하지 않았다. 앱 화면·기능은 변경하지 않아 브라우저 UI 회귀 검사는 재실행하지 않았다.
+Earlier token-change job8582904 produced failure mail but no confirmed recovery after settings edits; fixed-job/temporary-function testing resolved that limitation. Both temporary jobs disabled; final account list had one active production job. Removed `trip-db-health-notify-test`/`HEALTHCHECK_NOTIFY_TEST_FAIL`, reran12 live checks/function-list inspection. Two failure/one recovery emails were deliberate tests, not itinerary outages.
 
-## GitHub 배포 검증 보완
+Existing user AGENTS.md/attachments were untouched. No UI changes, so no browser UI rerun.
 
-2026-10-05 GitHub의 Node.js 22.23.3 검사에서 약 21초 제한시간·재시도·503 응답은 통과했으나, 취소된 HTTP 연결 두 개의 서버 측 close 확인이 실패했다. 같은 버전의 로컬 실행에서도 재현했고, 관측 대기를 3초로 늘리거나 응답 객체를 유지해도 첫 연결이 테스트 정리 전까지 닫히지 않았다. 짧은 0.5초 요청과 Node.js 24.19.0의 기본 10초 요청에서는 두 연결 모두 닫혔다. 정확한 내부 원인은 확정하지 않았다.
+## GitHub runtime follow-up
 
-전체 단위·정적 검사 작업은 검증된 Node.js 24로 맞추었다. 서버의 close 이벤트 확인은 고정 50ms 대기 대신 최대 3초의 제한된 관측 대기를 사용하며, 함수 응답 제한시간은 그 전에 별도로 측정하고 두 연결 종료 조건도 유지한다. 브라우저 검사 작업은 Node.js 22로 통과했다. 운영 함수는 Deno에서 검증·실행되며 함수 코드와 예약 설정은 변경하지 않았다.
+Node 22.23.3 passed ~21s timeout/retry/503 but failed server-side close observations for two aborted connections, reproduced locally. Three-second waiting/retained response objects did not close the first before cleanup. Short0.5s requests and Node 24.19.0 default10s requests closed both; internal cause remained unknown.
+
+Unit/static CI moved to verified Node 24. Close observation now waits up to3s instead of fixed50ms; response deadline is measured independently first and both-close assertions remain. Browser CI passed on Node 22. Production Deno/function/schedule unchanged.

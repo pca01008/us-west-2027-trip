@@ -1,88 +1,83 @@
 # US West 2027 Trip
 
-2027년 1월 21일~31일 라스베이거스와 로스앤젤레스 여행을 위한 공유 일정 웹앱입니다.
-일정·PREP 체크리스트·가계부·사진을 확인하고, 지정된 편집자 계정으로 수정합니다.
+A shared travel web app for Las Vegas and Los Angeles, January 21–31, 2027. View the itinerary, PREP checklist, expenses, and photos; designated editors can make changes.
 
-기존 앱의 UI 개선을 진행하며 Daylight 추가 개발·운영 전환은 보류합니다. [수정 계획](docs/LEGACY_UI_REFINEMENT_PLAN_KO.md)과 [구현·검증 기록](docs/archive/2026-10-24-legacy-ui-refinement.md)을 기준으로 합니다.
+Work now focuses on the existing app. Further Daylight development and production migration are on hold. See the [refinement plan](docs/LEGACY_UI_REFINEMENT_PLAN.md) and [implementation and validation record](docs/archive/2026-10-24-legacy-ui-refinement.md).
 
-## 문서 길잡이
+## Documentation
 
-| 하고 싶은 일 | 기준 문서 |
+| Task | Reference |
 |---|---|
-| 일정·시간표·PREP·가계부 사용, 초안 복구, 설치·내보내기 | [사용자 안내서](docs/USER_GUIDE_KO.md) |
-| 앱 구조, 데이터·저장·권한·SQL 원리 이해 | [기술 설명서](docs/PROJECT_GUIDE_KO.md) |
-| 초기 구축, 다른 여행 추가, 테스트·배포, DB 점검·장애 대응 | [운영 안내서](docs/OPERATIONS_KO.md) |
-| 여행 조사 자료와 웹사이트 폴더 구분 | [디렉터리 구성 안내](docs/DIRECTORY_PLAN_KO.md) |
-| 가계부 원화·달러 동시 입력과 자동 계산 개선 | [수정 계획](docs/LEDGER_DUAL_CURRENCY_PLAN_KO.md) — 배포 완료, 적용·검증 결과는 [구현 기록](docs/archive/2026-10-24-ledger-dual-currency.md) |
-| 과거 DB 점검 배포·알림 검증 근거 확인 | [2026-10-05 검증 기록](docs/archive/2026-10-05-db-health-verification.md) |
-| 초안·복원 버그의 발견·수정·검증 경위 확인 | [2026-10-16 검토 기록](docs/archive/2026-10-16-review.md) |
-| 2026-10-18 검토 당시 발견 사항과 인계 기록 | [2026-10-18 검토 및 인계](docs/archive/2026-10-18-review-handoff.md) |
-| 2026-10-19 테스트 실행 결과와 보강 제안 | [2026-10-19 테스트 검토](docs/archive/2026-10-19-test-review.md) |
-| 에이전트 작업 규칙 확인 | [AGENTS.md](AGENTS.md) |
-| UI 개편 후보 3안 비교 | [온라인 비교 화면](https://pca01008.github.io/us-west-2027-trip/ui-preview/) · [로컬 원본](docs/ui-concepts/index.html) · [검토 기록](docs/archive/2026-10-21-ui-concepts.md) · [실행·배포 방법](docs/OPERATIONS_KO.md#ui-concepts) |
-| 선택한 A안(Daylight) 개선 검토 | [최신 세션 인계](docs/archive/2026-10-22-daylight-handoff.md) · [개선 초안](docs/ui-concepts/a.html) · [1차 개선](docs/archive/2026-10-21-daylight-refinement.md) · [사용성 개선](docs/archive/2026-10-22-daylight-usability.md) |
-| A안 운영 전환 범위·구현 순서·검증 기준 | [Daylight 구현 계획](docs/DAYLIGHT_IMPLEMENTATION_PLAN_KO.md) · [후보 구현과 검증](docs/archive/2026-10-23-daylight-implementation.md) — 보류한 후보 이력 |
-| 기존 버전과 Daylight를 같은 조건으로 비교 | [1:1 비교 화면](https://pca01008.github.io/us-west-2027-trip/ui-preview/daylight-compare.html) · [비교 환경 기록](docs/archive/2026-10-23-daylight-comparison.md) |
-| 두 버전을 별도 사이트처럼 직접 열기 | [기존 버전](https://pca01008.github.io/us-west-2027-trip/ui-preview/daylight-before.html) · [Daylight](https://pca01008.github.io/us-west-2027-trip/ui-preview/daylight-after.html) · [단독 페이지 공개 기록](docs/archive/2026-10-23-daylight-standalone.md) |
-| 실제 여행 데이터로 두 앱 사용 | [기존 앱](https://pca01008.github.io/us-west-2027-trip/) · [Daylight](https://pca01008.github.io/us-west-2027-trip/daylight/) · [공유 데이터 사용법](docs/USER_GUIDE_KO.md#shared-daylight) |
-| Daylight 전환 준비 상태·후속 수정 확인 | [전환 준비 검토](docs/archive/2026-10-23-daylight-readiness.md) · [전환 실행 순서](docs/OPERATIONS_KO.md#daylight-rollout) — 로컬 수정본과 공개본 구분 |
+| Itinerary, timetable, PREP, ledger, draft recovery, installation, exports | [User guide](docs/USER_GUIDE.md) |
+| Architecture, data, saving, permissions, SQL | [Project guide](docs/PROJECT_GUIDE.md) |
+| Setup, new trips, testing, deployment, DB checks, troubleshooting | [Operations guide](docs/OPERATIONS.md) |
+| Separate research from website files | [Directory guide](docs/DIRECTORY_PLAN.md) |
+| Dual KRW/USD entry and automatic conversion | [Plan](docs/LEDGER_DUAL_CURRENCY_PLAN.md) — deployed; see the [implementation record](docs/archive/2026-10-24-ledger-dual-currency.md) |
+| Historical DB health deployment and notification evidence | [2026-10-05 verification](docs/archive/2026-10-05-db-health-verification.md) |
+| Draft and restore bugs, fixes, and validation | [2026-10-16 review](docs/archive/2026-10-16-review.md) |
+| Findings and handoff as of October 18 | [2026-10-18 review and handoff](docs/archive/2026-10-18-review-handoff.md) |
+| Test results and proposed coverage | [2026-10-19 test review](docs/archive/2026-10-19-test-review.md) |
+| Agent rules | [AGENTS.md](AGENTS.md) |
+| Compare three UI concepts | [Online comparison](https://pca01008.github.io/us-west-2027-trip/ui-preview/) · [Local source](docs/ui-concepts/index.html) · [Review](docs/archive/2026-10-21-ui-concepts.md) · [Run and publish](docs/OPERATIONS.md#ui-concepts) |
+| Review selected concept A (Daylight) | [Latest handoff](docs/archive/2026-10-22-daylight-handoff.md) · [Refined prototype](docs/ui-concepts/a.html) · [First refinement](docs/archive/2026-10-21-daylight-refinement.md) · [Usability changes](docs/archive/2026-10-22-daylight-usability.md) |
+| Daylight scope, implementation sequence, acceptance criteria | [Implementation plan](docs/DAYLIGHT_IMPLEMENTATION_PLAN.md) · [Candidate implementation](docs/archive/2026-10-23-daylight-implementation.md) — paused candidate history |
+| Compare existing and Daylight versions equally | [Side-by-side comparison](https://pca01008.github.io/us-west-2027-trip/ui-preview/daylight-compare.html) · [Environment record](docs/archive/2026-10-23-daylight-comparison.md) |
+| Open each preview as a standalone site | [Existing version](https://pca01008.github.io/us-west-2027-trip/ui-preview/daylight-before.html) · [Daylight](https://pca01008.github.io/us-west-2027-trip/ui-preview/daylight-after.html) · [Publication record](docs/archive/2026-10-23-daylight-standalone.md) |
+| Use both apps with actual trip data | [Existing app](https://pca01008.github.io/us-west-2027-trip/) · [Daylight](https://pca01008.github.io/us-west-2027-trip/daylight/) · [Shared-data instructions](docs/USER_GUIDE.md#shared-daylight) |
+| Daylight readiness and follow-up fixes | [Readiness review](docs/archive/2026-10-23-daylight-readiness.md) · [Rollout sequence](docs/OPERATIONS.md#daylight-rollout) — distinguish local fixes from published files |
 
-사용법은 사용자 안내서, 구현 원리는 기술 설명서, 실행 절차는 운영 안내서에서 관리합니다.
-이력 문서는 해당 날짜의 관측 기록이며 현재 운영 상태를 보증하지 않습니다.
+The user guide owns usage, the project guide owns implementation details, and the operations guide owns procedures. Archived records describe observations on their stated dates; they do not certify the current production state.
 
-## 구조와 저장 위치
+## Architecture and storage
 
 ```text
-앱 코드: 로컬 파일 → GitHub → GitHub Pages → 브라우저
-여행 내용: 브라우저 ↔ Supabase Database / Auth / Storage / Realtime
-미저장 초안: 현재 브라우저의 IndexedDB
+App code: local files → GitHub → GitHub Pages → browser
+Trip data: browser ↔ Supabase Database / Auth / Storage / Realtime
+Unsaved drafts: IndexedDB in the current browser
 ```
 
-- `index.html`은 공통 화면·기능을, `trip-config.js`는 여행별 기본 설정과 일정을 제공합니다.
-- 페이지를 열면 같은 `tripId`의 Supabase 저장본이 기본 일정보다 우선합니다.
-- Git push는 코드 배포 경로이고, 앱의 저장은 여행 데이터 반영 경로입니다.
-- SQL과 Edge Function, 외부 예약 작업은 Git push로 자동 적용되지 않습니다.
+- `index.html` provides shared UI/behavior; `trip-config.js` supplies trip defaults and the initial itinerary.
+- The Supabase document for the same `tripId` takes precedence over defaults.
+- Git push deploys code; saving in the app updates trip data.
+- SQL, Edge Functions, and external scheduled jobs require separate application or deployment.
 
-## 주요 파일
+## Main files
 
-| 파일·폴더 | 역할 |
+| File or directory | Purpose |
 |---|---|
-| `index.html` | 일정·PREP·가계부 웹앱 |
-| `trip-config.js`, `trip-config.template.js` | 현재 여행 설정과 새 여행용 예시 |
-| `supabase_setup.sql`, `register_trip.sql` | 공통 서버 구조와 여행·편집자 등록 |
-| `migrations/`, `supabase/` | DB 변경과 점검 함수 |
-| `pwa.js`, `sw.js`, `manifest.webmanifest`, `icons/` | 홈 화면 앱과 캐시 |
-| `assets/` | 숙소 사진·지도 캡처 |
-| `scripts/`, `tests/`, `.github/workflows/validate.yml` | 자동 검증 |
-| `test.html`, `test2.html` | 여행 진행 중·종료 후 헤더 미리보기 |
+| `index.html` | Itinerary, PREP, ledger |
+| `trip-config.js`, `trip-config.template.js` | Current trip and new-trip template |
+| `supabase_setup.sql`, `register_trip.sql` | Server structure and trip/editor registration |
+| `migrations/`, `supabase/` | DB changes and health function |
+| `pwa.js`, `sw.js`, `manifest.webmanifest`, `icons/` | Installed app and caching |
+| `assets/` | Accommodation photos and map captures |
+| `scripts/`, `tests/`, `.github/workflows/validate.yml` | Automated validation |
+| `test.html`, `test2.html` | Header previews during and after travel |
 
-## 시작하기
+## Getting started
 
-여행 참가자는 배포된 HTTPS 주소에서 이용합니다. 로그인 없이 열람할 수 있고 편집에는 지정 계정이 필요합니다.
-처음 사용하는 기능은 [사용자 안내서](docs/USER_GUIDE_KO.md)를 참고하세요.
+Travelers use the deployed HTTPS URL. Viewing needs no login; editing requires a designated account. See the [user guide](docs/USER_GUIDE.md).
 
-개발자는 현재 단위 검사 CI와 같은 Node.js 24를 권장합니다. 패키지의 최소 요구 버전은 22입니다.
+For development, Node.js 24 matches unit-test CI; the package minimum is Node.js 22.
 
 ```sh
 npm ci
 npm test
 ```
 
-브라우저 검사:
+Browser checks:
 
 ```sh
 npx playwright install chromium
 npm run test:browser
 ```
 
-검사 범위와 개별 명령은 [운영 안내서의 검증 절차](docs/OPERATIONS_KO.md#validation)에 있습니다.
-로컬 `index.html`을 열어 화면을 확인할 수 있으며, PWA 설치·서비스 워커 확인에는 HTTPS 또는 localhost가 필요합니다.
+See [validation procedures](docs/OPERATIONS.md#validation) for coverage and individual commands. Local `index.html` can preview the screen; PWA installation/service workers require HTTPS or localhost.
 
-## 구축과 배포
+## Setup and deployment
 
-새 환경은 [초기 구축](docs/OPERATIONS_KO.md#setup), 기존 서버 변경은 [업데이트](docs/OPERATIONS_KO.md#updates), 다른 여행은 [재사용](docs/OPERATIONS_KO.md#new-trip) 절차를 따릅니다.
-GitHub Pages는 `main` 브랜치 루트를 사용하며 `docs/`는 Pages 빌드에서 제외합니다.
+Follow [initial setup](docs/OPERATIONS.md#setup), [server updates](docs/OPERATIONS.md#updates), or [new-trip reuse](docs/OPERATIONS.md#new-trip). GitHub Pages serves the `main` branch root; `docs/` is excluded from Pages builds.
 
-현재 여행 내용의 변경은 앱에서 저장합니다. 설정 파일의 기본 일정만 바꾸면 이미 저장된 공유 일정은 바뀌지 않습니다.
-확정 일정·준비물·실제 지출은 앱에서, 조사·후보·예약 근거는 `planning`에서 관리합니다. 자세한 기준은 [자료 관리 원칙](docs/USER_GUIDE_KO.md#planning-policy)을 참고하세요.
-공개 키는 브라우저 설정에 사용하지만 비밀번호·service role 키·호출 토큰은 저장소에 넣지 않습니다.
+Save current trip changes in the app. Editing configuration defaults does not replace an existing shared itinerary. Keep confirmed plans, PREP, and actual expenses in the app; research, alternatives, and booking evidence belong in `planning`. See the [data policy](docs/USER_GUIDE.md#planning-policy).
+
+Public keys belong in browser configuration. Never commit passwords, service-role keys, or invocation tokens.

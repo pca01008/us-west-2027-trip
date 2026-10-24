@@ -224,7 +224,7 @@ test('기본 일정은 자유 HTML 대신 구조화된 링크와 비용 데이�
 });
 
 test('문서와 GitHub 검증 설정은 스키마 6 운영 방식과 일치한다', async () => {
-  const docs = ['README.md', 'docs/USER_GUIDE_KO.md', 'docs/PROJECT_GUIDE_KO.md', 'docs/OPERATIONS_KO.md'];
+  const docs = ['README.md', 'docs/USER_GUIDE.md', 'docs/PROJECT_GUIDE.md', 'docs/OPERATIONS.md'];
   const contents = await Promise.all(docs.map(file => readFile(path.join(root, file), 'utf8')));
   const [readme, , guide] = contents;
   const [workflow, ignore, pages] = await Promise.all([

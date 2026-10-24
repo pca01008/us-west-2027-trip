@@ -1,52 +1,33 @@
-# 2026-10-21 UI 원점 검토 및 선택용 초안
+# UI Review and Selection Concepts — 2026-10-21
 
-이 문서는 해당 날짜에 로컬 기본 설정으로 확인한 화면과 제안 기록이다. 서버 공유본, 실제 지출, 실제 예약 상태의 검증 기록이 아니다.
+Historical local-default screens/proposals, not verification of shared data, actual expenses, or bookings.
 
-## 요청과 범위
+## Request and findings
 
-상업 서비스 수준의 UI 완성도를 목표로, 사용자가 선택할 수 있는 세 가지 방향을 제공한다. 사용자는 여행 전 PC 계획·예산 편집과 여행 중 모바일 조회를 같은 비중으로 지정했다. 운영 `index.html`, 저장·인증·초안·권한 코드는 수정하지 않았다.
+Provide three directions toward commercial-quality UI, equally supporting desktop planning/budget editing and mobile travel lookup. Production root/auth/save/draft/permission code stayed unchanged.
 
-## 현행 화면에서 확인한 문제
+[Desktop](../ui-concepts/current-desktop.png)/[390×844 mobile](../ui-concepts/current-mobile.png) captured with outbound blocked, showing connection failure/default PREP. Mobile header occupied about490px; PREP title appeared after 700px. Functional PREP/ledger and11 dates shared one navigation level. Theme/clocks/dates/route/progress/tools crowded before content; heavy header/cards/shadows/borders/bold text weakened hierarchy.
 
-근거: [데스크톱 캡처](../ui-concepts/current-desktop.png), [390×844 모바일 캡처](../ui-concepts/current-mobile.png). 원격 요청을 차단했으므로 연결 실패 상태와 로컬 기본 PREP 목록이 표시된다.
+## Three directions
 
-1. 모바일에서 헤더가 약 490px를 차지하고, 준비 목록 제목은 700px 이후에 나타난다. 반복 사용하는 도구에서 행동 가능한 정보까지의 거리가 길다.
-2. 준비·가계부라는 기능과 11일의 날짜가 같은 가로 탐색 줄에 있다. 기능 전환과 날짜 선택이 하나의 단계에 섞인다.
-3. 화면 테마, 시계, 여행 기간·경로, 진행률, 편집 도구가 본문 앞에 밀집한다. 읽기와 관리 행동의 위계가 약하다.
-4. 두꺼운 헤더, 다중 카드, 그림자, 경계선, 굵은 글씨가 겹치며 강조 요소 사이의 차이가 작다.
-
-## 세 가지 방향
-
-| 안 | 구성 | 팔레트 | 특징과 비용 |
+| Concept | Structure | Palette | Tradeoff |
 |---|---|---|---|
-| A · Daylight | PC 왼쪽 기능 메뉴 + 중앙 일별 일정 + 오른쪽 숙소, 모바일 하단 메뉴 | 세이지 `#eff5f1`, 짙은 녹색 `#147161`, 흰 바탕 | 조회와 계획의 균형, 브랜드 표현은 절제 |
-| B · Postcard | 상단 기능 메뉴 + 사진과 여행 소개 + 일별 일정, 모바일에서도 짧은 사진 영역 | 코발트 `#234dc5`, 옅은 블루 `#edf2ff`, 흰 바탕 | 여행 인상이 강함, 첫 일정까지 더 스크롤 필요 |
-| C · Trip Desk | PC 인접 3일 비교, 모바일 선택한 하루, 상단 짙은 메뉴 | 차콜 `#25303d`, 앰버 `#a34c23`, 회색 `#f3f4f6` | 계획 검토에 유리, 감성적 표현은 적음 |
+| A Daylight | Desktop left menu/central daily plan/right accommodation; mobile bottom navigation | Sage `#eff5f1`, green `#147161`, white | Balanced lookup/planning, restrained branding |
+| B Postcard | Top menu/photo/trip introduction/daily plan; short mobile photo | Cobalt `#234dc5`, pale blue `#edf2ff`, white | Strong travel impression, more scroll to events |
+| C Trip Desk | Desktop adjacent three-day comparison/mobile selected day/dark top menu | Charcoal `#25303d`, amber `#a34c23`, gray `#f3f4f6` | Planning-focused, less emotional |
 
-세 안은 동일한 1월 25일 일정을 시작 화면으로 사용한다. 색상 교체만으로 비교하지 않도록 탐색 위치와 PC 본문 구조를 다르게 했다. 선택 전이므로 `DESIGN.md`와 영구 토큰 계약은 만들지 않는다.
+All start January 25; differing navigation/content structure permits more than color comparison. No permanent DESIGN.md/token contract before selection.
 
-## 동작과 데이터
+## Behavior and data
 
-[비교 화면](../ui-concepts/index.html)에서 각 안으로 이동한다. 일정·준비·가계부 탐색, 날짜 선택, 준비 체크, 주의 사항 펼치기, 지출 필터를 확인할 수 있다. 체크 변경은 현재 페이지 메모리에서만 유지된다. 지도는 실제 외부 링크다.
+[Comparison](../ui-concepts/index.html) supports navigation/dates/PREP checks/caution disclosure/expense filters. Checks remain page memory; map links are real external URLs. Default configuration snapshot, reused `assets/airbnb.webp`/existing SVG icons, no generated/downloaded photos. Time/next-event/check state/three expenses are samples. Editing/auth/save/version/offline/dark were unwired, not removed requirements.
 
-일정은 `trip-config.js`의 기본 설정에서 추출한 스냅샷이다. 숙소 사진은 기존 `assets/airbnb.webp`, 아이콘은 기존 앱의 SVG를 재사용했다. 이미지 생성이나 외부 사진 수집은 하지 않았다. 시각, 다음 일정 강조, 체크 완료 상태, 지출 3건은 예시로 표시했다. 편집·인증·저장·버전·오프라인·다크 테마는 이번 선택 단계에 연결하지 않았다.
+## Historical validation
 
-## 2026-10-21 확인 범위
+Chromium A/B/C1440×1000/390×844 navigation/check/filter/date passed; no page overflow360/390/768/1280/1440px, intentional date scrolling retained. Six basic screens had no JS errors; empty category/return checked. Fixed comparison low contrast/small type after machine review and visually inspected main/mobile views. Separate review found B's fixed-date button wording mismatched scroll; renamed Browse itinerary/recaptured and received resolved/ready-for-selection result. In-app browser loopback4174 displayed all options/links. These are concept tests, not real-device/full-accessibility/production-save certification.
 
-- Playwright Chromium: A/B/C 각각 1440×1000, 390×844 렌더링과 탐색·체크·지출 필터·날짜 이동 통과.
-- 360, 390, 768, 1280, 1440px에서 문서 전체의 가로 넘침 없음. 날짜 줄의 의도된 가로 스크롤은 유지.
-- 6개 기본 화면에서 JavaScript 오류 없음. 지출 카테고리 빈 상태와 복귀 확인.
-- 기계 검사에서 비교 페이지의 낮은 대비와 작은 글씨를 발견해 수정. 별도 렌더링 확인으로 주요 화면과 모바일 레이아웃 검토.
-- 별도 리뷰에서 B안의 날짜 고정 버튼 문구와 스크롤 동작 간 불일치를 발견했다. 문구를 `일정 살펴보기`로 수정하고 다시 캡처해 해당 지적의 해결 및 선택용 전달 가능 판정을 받았다.
-- 앱 내 브라우저에서 `127.0.0.1:4174` 비교 화면을 열어 세 안과 링크가 표시되는 것을 확인했다.
-- 새 UI를 선택하기 위한 초안 검증이며, 실제 기기·모든 접근성 기준·운영 저장 기능의 검증은 아니다.
+See [procedures](../OPERATIONS.md#ui-concepts). Later integration must cover edits/save/error/recovery/timetable/offline/dark.
 
-실행과 재캡처 절차는 [운영 안내서](../OPERATIONS_KO.md#ui-concepts)를 따른다. 선택 후에는 편집·저장 상태, 오류·복구 안내, 시간표, 오프라인, 다크 테마까지 선택한 디자인으로 확장해야 한다.
+## Remote publication and selection
 
-## 원격 접근 보완
-
-사용자가 원격에서 로컬 비교 주소에 접속할 수 없다고 알려, 기존 GitHub Pages의 `/ui-preview/`에 비교용 정적 파일을 배포하는 경로를 추가했다. 원본은 `docs/ui-concepts/`에 유지하고 `scripts/build-ui-preview.mjs`가 배포 파일만 생성한다. 운영 앱과 Supabase 데이터는 변경하지 않는다. 온라인 주소와 재배포 절차는 운영 안내서를 따른다.
-
-## 후속 선택
-
-사용자는 A · Daylight를 다음 논의의 기반으로 선택했다. 위의 선택 전 기록은 당시 상태로 보존한다. 최신 선택 범위·미결정 사항·다음 세션 시작점은 [A안 인계 문서](2026-10-21-daylight-handoff.md)에 정리했다.
+User could not reach loopback remotely, so `scripts/build-ui-preview.mjs` generates static `/ui-preview/` from retained `docs/ui-concepts/`, without touching production app/data. User selected **A Daylight** for further discussion. Preserve this preselection history; see [handoff](2026-10-21-daylight-handoff.md).

@@ -1,53 +1,41 @@
-# 기존 앱 UI 개선 구현·검증 기록
+# Existing-App Refinement Implementation and Validation
 
-실행일: 2026-10-24 (Asia/Seoul)
+Executed 2026-10-24, Asia/Seoul.
 
-## 범위와 기준
+## Scope/baseline
 
-- `origin`은 `https://github.com/pca01008/us-west-2027-trip.git`이며 작업 시작 시 fetch로 확인한 최신 `origin/main`은 `1ff42eb3205d8f499042df462e2026f8798296f8`이었다.
-- `codex/legacy-ui-refinement`를 해당 기준에서 만들고 계획 커밋 `37a93be`의 [수정 계획](../LEGACY_UI_REFINEMENT_PLAN_KO.md)·시각 참고·제품 방향을 가져왔다. Daylight 후보 브랜치 전체를 합치지 않았다.
-- 기존 네이비·코럴·카드·글꼴을 유지했다. Daylight 공개 파일·비교본·실제 여행 데이터·SQL·스키마·의존성은 변경하지 않았다.
-- 이 기록은 구현 브랜치의 로컬 구현·검증 기록이다. 후속 사용자 요청으로 2026-10-24에 검증한 `7d08bedbe92728540c4f56a6a779cbbad3cb12d6`을 `main`에 fast-forward push해 Pages에 배포했다. 공개 주소에서 HTTP 200, 새 하단 메뉴·테마·CSV 버튼, 예산 UI 제거를 확인했다. 해당 커밋의 GitHub Actions Validate·SQL·browser 세 job도 모두 성공했다. 운영 데이터는 수정하지 않았다.
+Origin `https://github.com/pca01008/us-west-2027-trip.git`; fetched baseline `1ff42eb3205d8f499042df462e2026f8798296f8`. Created `codex/legacy-ui-refinement` there and brought [plan](../LEGACY_UI_REFINEMENT_PLAN.md)/visuals/product direction from 37a93be, not the entire Daylight branch. Retained navy/coral/cards/fonts; no Daylight artifacts/comparisons/actual data/SQL/schema/dependency changes.
 
-## 구현
+Initial record covers local implementation. Following user request, verified `7d08bedbe92728540c4f56a6a779cbbad3cb12d6` was fast-forwarded to main/Pages October 24. Public200/new navigation/theme/CSV/no budgets checked; that commit's Validate/SQL/browser all passed. No production data edits.
 
-1. PC·모바일 공통 하단 메뉴 `일정 · 준비 · 가계부`. 기존 day radio와 원본 일정 DOM을 사용한다. 접속 기기 날짜에 따른 최초 화면 판정을 유지하며 날짜·시간표 선택과 입력 중인 지출은 메뉴 왕복 시 유지한다.
-2. 예산·검색/카테고리/기간 필터·등록순 표시와 필터 상태/이벤트를 제거했다. `budgetKrw`·`defaultBudgetKrw`는 호환 데이터로 유지하며 과거 가계부 HTML을 현재 템플릿으로 정규화한다. 예산 차이의 화면 표시도 제거했다.
-3. 지출 제목 오른쪽의 `CSV 내보내기`는 저장 전 변경을 포함한 전체 배열을 현재 순서로 내보낸다. 경비 추가는 아이콘을 눌러도 동작하며 버튼은 기존 글꼴·아이콘으로 한 줄 정렬하고 모바일 전체 폭·최소 44px 높이를 확보했다.
-4. B안 테마 버튼과 펼침 메뉴. native radio의 단일 선택·체크 표시, 적용 밝기 아이콘, Esc·밖 클릭·포커스 이탈·복귀를 구현했다. 저장 차단 안내는 메뉴 밖에 남으며 기존 경로별 저장·기기 설정 실시간 반영을 유지한다.
-5. 오프라인 작업본은 새 탐색·테마를 유지한다. 인쇄·공유용 사본은 하단 탐색·날짜·테마·CSV 조작을 제거하고 모든 패널을 이어서 표시한다. 사진 보기는 유지한다.
-6. README·사용자·기술·운영 안내서를 최종 구현에 맞췄다. 기존 문서의 Daylight 전용 사용법은 현재 루트 앱과 구분하고 후보 이력·공개 경로는 보존했다. 기존 후보의 로컬 내보내기 HTML은 보존하고 `.gitignore`에 해당 생성물만 제외하는 규칙을 유지했다. `docs/`의 기존 Pages 제외가 적용되므로 `_config.yml` 수정은 필요하지 않았다.
+## Implementation
 
-## 검증
+Shared desktop/mobile bottom itinerary/PREP/ledger uses existing radios/original DOM. Device-date initial rules/day/timetable/unadded input survive navigation. Removed budget/search/category/date filters/registration-order text and filter events/state; retain budget fields and normalize old ledger HTML/current template, without budget diff display.
 
-최종 추가 검증에서 단위 검사 114개와 Chromium 전체 브라우저 12개 묶음이 한 번의 전체 실행으로 모두 통과했다(종료 코드 0). 초기 실행의 imports 예산 표시 기대값은 환율 차이와 예산 표시 부재를 확인하도록 갱신했으며, 최종 전체 실행에도 포함했다. Firefox·WebKit 추가 탐색 검사도 각각 통과했다. 모든 브라우저 검사는 합성 여행·가상 API만 사용한다.
+CSV beside Expenses exports all current/unsaved entries in array order. Add works through icon, inherited font/icons/one line, full mobile width/min44px. Theme B uses native radios/checks/effective-brightness icon/Esc/outside/focus behavior; storage warning stays outside closed menu, preserving path persistence/live device modes.
 
-- 단위 검사: `node --test tests/*.test.mjs` — 114개 통과.
-- 프로젝트 정적 검사: `node scripts/check-project.mjs` — 통과(11일·36개 일정·12개 준비 항목). `git diff --check`도 통과.
-- 전체 브라우저 검사: `node scripts/check-browsers.mjs` — diagnostics, drafts, storage, inputs, imports, ledger, prep, auth, photos, theme, navigation, pwa의 12개 묶음 모두 통과(전체 실행 종료 코드 0).
-- 새 `navigation` 검사는 서울/미국 서부 기기의 여행 전·첫날·중간·마지막 날·여행 후 및 동일 UTC 시각의 날짜 차이를 확인한다. 메뉴·날짜·시간표·갱신 후 선택·미추가 입력 보존, 지출 추가·수정·삭제·초안 재열기, 테마 키보드·포커스와 메뉴 닫기를 검사한다.
-- 화면 검사는 밝게/어둡게에서 320·390·519·520·521·620·621·680·681·768·899·900·901·1440px를 검사한다. 메뉴 실제 좌우 경계·클릭 가능 위치, 경비 버튼과 통화 선택의 겹침·가로 넘침, 마지막 지출과 하단 메뉴의 간격을 확인한다. 390×360 축소 뷰포트와 CSS zoom 2배도 모사한다.
-- 추가 엔진 검증: Firefox 153.0·WebKit 26.5에서 `TRIP_BROWSER_ENGINE=firefox` / `webkit`로 같은 navigation 검사를 각각 실행하여 종료 코드 0을 확인했다. 날짜 경계·탐색·초안·테마 키보드·14개 너비의 두 테마·지출 CRUD를 모두 통과했다. Firefox는 모바일 에뮬레이션 없이 터치 가능한 뷰포트를 사용했다. Firefox 390px 밝은 메뉴와 WebKit 1440px 어두운 가계부 캡처도 직접 확인했다. 실제 Firefox Android·iOS Safari 검증으로 간주하지 않는다.
-- 가계부 검사는 PC·모바일 전체 CSV 다운로드 8개씩을 실제 바이트와 비교한다. 빈 목록, 한글·쉼표·따옴표·줄바꿈·수식 접두사, BOM, 통화·반올림, 사용자 순서, 카테고리 삭제, 과거 예산 HTML과 값·중요 표시·숙박 기간 보존을 포함한다.
-- 기존 검사에는 공유 저장·충돌·버전 복원·초안·저장 차단·사진·인증·오프라인 재열기·내보낸 HTML 재실행이 포함된다. 시험 범위는 [운영 안내서](../OPERATIONS_KO.md#validation)를 따른다.
+Offline retains navigation/theme. Print/share removes navigation/date/theme/CSV controls, shows all panels/keeps photo viewing. README/guides align with final behavior, distinguish current root from preserved candidate/public paths, retain local candidate exports/targeted ignore rule. Existing docs exclusion needed no config change then.
 
-초기 실행의 Windows 샌드박스 localhost 접근 거부(`ERR_NETWORK_ACCESS_DENIED`)는 로컬 검사 실행 권한으로 재실행했다. 도중 자동 승인 검토의 사용량 제한으로 실행이 중단되었으며 사용자 계속 진행 요청 후 재개했다. ACL·소유권은 변경하지 않았다.
+## Validation
 
-초기 회귀 실패 중 날짜 테스트는 Playwright가 가로로 가려진 날짜를 클릭하기 전에 세로 스크롤을 0으로 바꾸는 것이 원인이었다. 가로 스크롤로 날짜를 먼저 드러낸 뒤 실제 포인터·터치로 클릭하도록 수정했다. 준비 목록 테마 검사는 열린 modal 아래 버튼 클릭을 대신해 기존처럼 설정 변경 이벤트를 주입하며, 실제 메뉴 키보드·클릭은 별도 theme/navigation 검사로 확인한다. PWA 검사는 하단 일정 메뉴를 거쳐 날짜를 선택하도록 갱신했다.
+Final single full run: 114 units and all12 Chromium suites exit0; Firefox/WebKit navigation separately passed, synthetic APIs only. Initial import budget expectation updated to rate difference/no-budget UI and included in final run.
 
-## 화면 증거와 디자인 검사
+- Units114; static11days/36 events/12 PREP; whitespace passed.
+- Full suites: diagnostics/drafts/storage/inputs/imports/ledger/prep/auth/photos/theme/navigation/pwa.
+- Navigation: before/first/middle/last/after travel in Seoul/US West, same-UTC different dates, menu/day/timetable/remote selection/unadded input, expense CRUD/draft reopening, theme keyboard/focus/closing.
+- Both themes at 320/390/519/520/521/620/621/680/681/768/899/900/901/1440: menu actual bounds/click positions, Add/currency overlap/overflow/final-expense spacing.390×360 reduced viewport/CSS zoom2 simulated.
+- Firefox 153.0/WebKit 26.5 same navigation suite exit0, date edges/draft/theme/14 widths/both themes/CRUD. Firefox uses touch viewport, not mobile emulation. Firefox 390 light menu/WebKit 1440 dark ledger visually reviewed; not Firefox Android/iOS Safari evidence.
+- Ledger compared eight actual CSV downloads per desktop/mobile: empty/Korean/commas/quotes/newlines/formula/BOM/currency/rounding/order/deleted category/legacy budget HTML/value/importance/stay preservation.
+- Existing shared-save/conflict/restore/draft/write blocking/photos/auth/offline/exported-file regressions included. [Operations](../OPERATIONS.md#validation) defines limits.
 
-아래 캡처는 합성 여행이며 실제 여행 내용이 아니다. 긴 전체 페이지 캡처에서 sticky 도구 모음은 캡처 시점의 스크롤 위치에 표시될 수 있다.
+Initial sandbox localhost denial retried with local-test permission. Automatic approval-review usage limit interrupted execution; resumed after user continuation. No ownership/ACL changes. Date regression came from Playwright resetting vertical scroll before clicking horizontally hidden dates: reveal horizontally then use real pointer/touch. PREP theme tests inject existing change events under modal; real theme interactions covered separately. PWA now selects bottom itinerary before dates.
 
-- [390px 밝은 테마 메뉴](../ui-concepts/previews/legacy-refinement-implementation/light-390-menu.png)
-- [1440px 밝은 가계부](../ui-concepts/previews/legacy-refinement-implementation/light-1440-ledger.png)
-- [320px 어두운 가계부](../ui-concepts/previews/legacy-refinement-implementation/dark-320-ledger.png)
-- [768px 어두운 테마 메뉴](../ui-concepts/previews/legacy-refinement-implementation/dark-768-menu.png)
+## Visual evidence and limits
 
-Impeccable detector를 최종 UI에 1회 실행했다. [기계 검사 원문](2026-10-24-legacy-ui-design-check.json)은 기존 헤더의 작은 보조 글자·kicker·장식, 배경을 흰색으로 추정한 헤더 대비, src를 사진 선택 때 채우는 숨겨진 사진 뷰어 등을 경고했다. 새 테마/탐색/버튼은 실제 렌더와 상호작용으로 확인했다. 확정 범위 밖의 기존 헤더·타임라인 디자인은 유지했으며 전체 앱 접근성 인증으로 해석하지 않는다.
+Synthetic [390 light menu](../ui-concepts/previews/legacy-refinement-implementation/light-390-menu.png), [1440 light ledger](../ui-concepts/previews/legacy-refinement-implementation/light-1440-ledger.png), [320 dark ledger](../ui-concepts/previews/legacy-refinement-implementation/dark-320-ledger.png), [768 dark menu](../ui-concepts/previews/legacy-refinement-implementation/dark-768-menu.png). Sticky tools may appear at capture-time scroll position in long images.
 
-검증한 루트 `index.html`의 SHA-256: `f2f2dfd6efc5674c7b9313d88cb6a7935c06326f2e406dc4950c13727c640999`.
+Impeccable ran once. [Raw result](2026-10-24-legacy-ui-design-check.json) warned about old small header text/kicker/decoration, assumed-white header contrast, hidden viewer src populated on selection. New controls were checked by actual rendering/interaction; approved scope retained old header/timeline. Not full accessibility certification.
 
-## 검증 한계
+Verified root SHA-256 `f2f2dfd6efc5674c7b9313d88cb6a7935c06326f2e406dc4950c13727c640999`.
 
-실제 휴대폰 OS 키보드·노치·기기 확대, 삼성 인터넷 강제 다크모드, 스크린리더 수동 조작과 공개 HTTPS 배포는 확인하지 않았다. 뷰포트·터치·CSS 확대 검사는 실제 기기 검사를 대체하지 않는다. DB·권한·SQL 변경이 없어 별도 SQL 통합 검사·운영 계정 저장은 수행하지 않았다.
+Initial local validation did not include physical keyboards/notches/device zoom/Samsung forced darkening/screen-reader interaction/public HTTPS. Viewport/touch/CSS zoom is not device evidence. No additional local SQL integration/actual-account save because DB/grants/SQL unchanged. Later public deployment checks above are separate from these initial limits.

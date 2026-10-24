@@ -30,8 +30,9 @@
 
 ## Documentation maintenance
 
+- Write new and revised documentation in concise English to reduce token usage; explain work to the user in Korean.
 - Before finishing a change, update affected docs in the same task; compare them with the final implementation, not the initial plan.
-- Keep one source per topic: `README.md` for overview/navigation, `docs/USER_GUIDE_KO.md` for user behavior, `docs/PROJECT_GUIDE_KO.md` for internals, `docs/OPERATIONS_KO.md` for setup, reuse, testing, deployment, and troubleshooting. Link instead of duplicating details.
+- Keep one source per topic: `README.md` for overview/navigation, `docs/USER_GUIDE.md` for user behavior, `docs/PROJECT_GUIDE.md` for internals, `docs/OPERATIONS.md` for setup, reuse, testing, deployment, and troubleshooting. Link instead of duplicating details.
 - Check docs when changing UI, save/draft behavior, configuration, schema, permissions, dependencies, tests, or deployment. Preserve dated evidence in `docs/archive/`; never present old results as current verification.
 - When moving or deleting docs, update links, test file paths, and Pages exclusions in `_config.yml`. Run relevant checks and report doc updates, or briefly explain why none were needed.
 

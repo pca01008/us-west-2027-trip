@@ -1,74 +1,48 @@
-# Daylight 전환 준비 검토
+# Daylight Rollout Readiness Review
 
-2026-10-23 (Asia/Seoul). 기존 버전과 비교하고 문제를 수정하되 운영 전환 직전까지 진행해 달라는 요청에 따른 후속 검토다. 이전 [구현 기록](2026-10-23-daylight-implementation.md)과 [비교 환경 기록](2026-10-23-daylight-comparison.md)은 당시 증거로 보존한다.
+2026-10-23, Asia/Seoul. User requested comparison/fixes through readiness just before production transition. Preserve earlier [implementation](2026-10-23-daylight-implementation.md)/[comparison](2026-10-23-daylight-comparison.md) as dated evidence.
 
-## 판정과 검토 대상
+## Verdict and identifiers
 
-**로컬 후보의 기능 검증·수정 완료. 운영 전환·실제 공유 데이터 변경은 하지 않았다.** 수정한 비교본은 로컬 생성물이며 기존 공개 HTTPS 검토본에는 아직 반영되지 않았다. 이번 작업은 커밋·푸시·후보 CI 실행을 포함하지 않는다.
+**Local functional review/fixes complete; no production transition/actual-data changes.** Updated comparison was local only, not yet public. No commit/push/candidate CI in this task.
 
-| 대상 | 식별 |
+| Source | Identity |
 |---|---|
-| 기존 운영 코드 기준 | `22ecee308d3019cf6303a3d464013ea7172e4d6c`, LF 정규화 index SHA-256 앞 12자리 `ae302c9f6d7c` |
-| 이번 수정 기준 | `codex/daylight-implementation`, HEAD `1b5c66a` 위의 작업 트리 변경 |
-| 수정 후 후보 index | LF 정규화 SHA-256 앞 12자리 `746c729d28bb` |
-| 동일 조건 비교 | fixture 2, 해시 `a2c796346162`, 일정·준비 12개·지출 3건·예산 동일 |
+| Legacy |`22ecee308d3019cf6303a3d464013ea7172e4d6c`, LF hash `ae302c9f6d7c`|
+| Worktree |`codex/daylight-implementation`, changes above HEAD `1b5c66a`|
+| Fixed root |LF hash `746c729d28bb`|
+| Common fixture |2/hash `a2c796346162`, same itinerary/12 PREP/three expenses/budget|
 
-비교 manifest의 `candidate`는 index의 마지막 커밋 `7ba5285`를 뜻한다. 이번 미커밋 수정까지 포함한 정확한 소스는 `afterHash`로 식별한다. 단일 후보 검토본의 기준 커밋도 생성 시 HEAD이며 실제 소스 해시를 함께 확인해야 한다.
+Manifest candidate `7ba5285` is last committed root, while `afterHash` identifies uncommitted fixes. Single-review baseline uses generation HEAD and also needs source hash.
 
-## 기존 버전과의 비교
+## Comparison
 
-| 영역 | 기존 버전 → Daylight | 확인 결과 |
-|---|---|---|
-| 탐색·화면 | 상단의 통합 탭 → PC 왼쪽/모바일 하단 주 메뉴, 일정 날짜 분리 | 여행 전·중·후 초기 선택, 날짜·시간표 전환, 키보드 탐색 유지 |
-| 설정 | 분산된 버튼 → 설정의 편집·파일·화면 그룹 | 아래 메뉴 잘림·포커스 회귀 수정 |
-| 일정·사진 | 기존 일정과 편집 기능을 새 화면에서 사용 | 시간 입력·분류·사진·지도·주의사항·실행 취소·다시 실행 회귀 통과 |
-| 숙소 | 날짜별 파생 카드 추가 | 체크인 포함/체크아웃 제외, 겹침 안내, 삭제·편집·이력 반영. 연결 없는 기존 저장본에 임의 숙소를 지정하지 않음 |
-| 준비 | 기존 체크 목록에 중요 표시 추가 | 중요 미완료만 표시, 체크 저장 대기/실패·재시도, 동시 변경과 별도 목록 저장 유지 |
-| 가계부 | 카테고리 노출·배치 개선 | 동일 합계, 통화·환율·예산·필터·삭제·순서·CSV, 작성 중 입력 보호 유지 |
-| 데이터 | schemaVersion 5와 기존 저장 경로 유지 | 구형 v4 자료 불러오기, 초안·충돌·버전 미리보기·복구, 신규 속성 왕복 검증 |
-| 파일·PWA | 기존 내보내기·설치·캐시 정책 유지 | 실제 생성 HTML 재열기, 읽기 전용/작업본, 오프라인·온라인 재연결, 미저장 초안 보존 검증 |
+Navigation moves from combined top tabs to desktop-left/mobile-bottom/separate dates, preserving initial phases/day/timetable/keyboard. Settings grouped edit/files/display; clipping/focus fixed below. Event time/category/photo/map/caution/undo/redo regressions passed. Stays use inclusive/exclusive boundaries, overlap notice, source deletion/edit/history, never assign missing legacy links. Important incomplete PREP preserves pending/failure/retry/concurrent/list behavior. Ledger retains equal totals/currency/rate/budget/filters/delete/order/CSV/unadded inputs. Schema5/persistence retained with v4 import/draft/conflict/preview/recovery/metadata round trips. Actual exports/PWA/offline/reconnect preserved work.
 
-숙소 카드·중요 강조 영역·탐색은 저장 main과 분리된다. 반복 적용·탭/날짜 이동·설정 창 열기만으로 저장 상태의 fingerprint가 바뀌지 않았다. `trip-config.js`의 기존 후보 변경은 신규 선택 속성을 설명하는 주석 두 줄뿐이며, 서버의 여행 내용을 새 기본 일정으로 덮어쓰는 마이그레이션은 없다.
+Derived stays/priorities/navigation remain outside saved main; repeated apply/tab/date/settings leaves fingerprint unchanged. Existing config changes were only two explanatory comments, no default-data overwrite migration.
 
-## 발견하고 수정한 문제
+## Fixed findings
 
-### P1 · 모바일 설정 메뉴가 화면 밖으로 잘림
+### P1: mobile settings clipped left
 
-360/390px에서 설정 패널의 왼쪽 좌표가 약 **-202px**, 너비가 290px로 재현됐다. 설정 버튼이 상태 문구 다음 줄의 왼쪽으로 이동하지만 패널은 버튼 오른쪽에 정렬되어 대부분이 화면 밖에 있었다. 기존 문서 전체의 가로 넘침 검사만으로는 발견하지 못했다.
+At360/390px, panel left about **-202px**, width290px. Button wrapped to toolbar left but panel right-aligned to it. Whole-page overflow checks missed left clipping. Anchored panel to toolbar/constrained width; checker now directly asserts both open-panel bounds at 320/360/390/620/621/768/1100/1440px.
 
-패널의 위치 기준을 도구 모음 전체로 바꾸고 너비를 그 영역 안으로 제한했다. 320·360·390·620·621·768·1100·1440px에서 열린 패널의 양쪽 경계를 직접 검증하도록 `check-daylight-browser.mjs`를 보강했다.
+### P2: closing settings dialog loses keyboard focus
 
-### P2 · 설정에서 연 창을 닫으면 키보드 포커스 소실
+Settings→Export→Esc left focus on body because action opened dialog before bubbling menu close, leaving a hidden return target. Close menu in capture phase/focus visible Settings before action so dialog records it. Enter/dialog focus/Esc/return tested at eight widths and mouse path checked in generated review.
 
-설정 → 내보내기 → Esc에서 포커스가 body로 빠졌다. 메뉴 버튼의 대화상자 열기 처리와 문서 버블링 단계의 메뉴 닫기가 겹쳐 숨겨진 버튼이 복귀 대상으로 남았다.
+## Verification
 
-버튼 동작 전에 캡처 단계에서 메뉴를 닫고 설정 버튼에 포커스를 준다. 대화상자는 이제 보이는 설정 버튼을 복귀 대상으로 기록한다. 키보드 Enter 진입·대화상자 내부 포커스·Esc·설정 버튼 복귀를 8개 너비에서 검증했고 마우스 클릭 경로도 생성 검토본에서 확인했다.
+Windows Node 24.19.0/Playwright 1.62.1 Chromium; npm absent/direct Node. Initial sandbox blocked two HTTP units/browser localhost; permitted local rerun, no ACL/ownership changes.
 
-## 검증 근거
+117 units passed **before final UI fixes**. Static11/36/12 passed. Full12-browser suites passed before/after: diagnostics/drafts/storage/inputs/imports/ledger/prep/auth/photos/theme/pwa/daylight. Final Daylight tested390/1440 functionality/eight menu widths/focus/exports/metadata. Both builders regenerated candidate/comparison; review/comparison checked hashes/isolation/stays/reloaded importance/equal totals/check/reset/date-theme-phase/exact390-768-1440 frames/zero outbound. Whitespace passed. After final docs, 18 project units/static reran successfully. Distinguish pre-fix117-unit result from final-source full-browser result.
 
-Windows, Node **24.19.0**, Playwright **1.62.1**, Chromium. npm이 PATH에 없어 번들 Node 실행 파일로 동일 스크립트를 실행했다. 처음 샌드박스 실행은 localhost 차단으로 단위 HTTP 2개와 브라우저 접근이 실패했고, 허용된 로컬 실행으로 재검증했다. ACL·소유권은 변경하지 않았다.
+Synthetic mobile light (`../ui-concepts/previews/daylight-readiness/390-settings-light.png`; historical artifact unavailable in this checkout), mobile dark (`../ui-concepts/previews/daylight-readiness/390-settings-dark.png`; historical artifact unavailable in this checkout), desktop light (`../ui-concepts/previews/daylight-readiness/1440-settings-light.png`; historical artifact unavailable in this checkout), desktop dark (`../ui-concepts/previews/daylight-readiness/1440-settings-dark.png`; historical artifact unavailable in this checkout), comparison (`../ui-concepts/previews/daylight-comparison/side-by-side.png`; historical artifact unavailable in this checkout).
 
-| 실행 | 결과 |
-|---|---|
-| `node --test tests/*.test.mjs` | 117개 통과 |
-| `node scripts/check-project.mjs` | 11일·36개 일정·12개 준비 항목과 프로젝트 정합성 통과 |
-| `node scripts/check-browsers.mjs` | 수정 전·후 모두 12개 묶음 통과: diagnostics·drafts·storage·inputs·imports·ledger·prep·auth·photos·theme·pwa·daylight |
-| `node scripts/check-daylight-browser.mjs` | 수정 후 390/1440px 기능, 열린 메뉴 8개 너비, 포커스, 내보내기, 메타데이터 왕복 통과 |
-| 두 `build-daylight-*.mjs` 생성기 | 현재 소스에서 단일 후보·기존/후보 비교본 재생성 |
-| `node scripts/check-daylight-review.mjs` | 후보 해시·고유 저장소·숙소·중요 체크 재로딩·외부 요청 0건 통과 |
-| `node scripts/check-daylight-comparison.mjs` | 동일 입력·합계·편집 격리·새 예시 초기화·날짜/테마/시점·390/768/1440 프레임·외부 요청 0건 통과 |
-| `git diff --check` | 통과 |
+Impeccable ran; old CSS colors/shadows/hidden description/dynamic photo-viewer src were not treated automatically as rendered defects. Actual theme/background/text/input/shadow/image states checked in render evidence (`../ui-concepts/previews/daylight-readiness/render-check.json`; historical artifact unavailable in this checkout)/captures. Small support text remained an improvement opportunity, not WCAG/full-device certification.
 
-최종 문서 갱신 후 `node --test tests/project.test.mjs` 18개와 프로젝트 검사도 다시 통과했다. 단위 117개 전체 결과는 UI 수정 전, 보강한 Daylight 검사와 브라우저 12개 전체 결과는 최종 UI 소스 기준이다.
+## Remaining rollout checks
 
-시각 검토: [모바일 밝은 설정](../ui-concepts/previews/daylight-readiness/390-settings-light.png), [모바일 어두운 설정](../ui-concepts/previews/daylight-readiness/390-settings-dark.png), [PC 밝은 설정](../ui-concepts/previews/daylight-readiness/1440-settings-light.png), [PC 어두운 설정](../ui-concepts/previews/daylight-readiness/1440-settings-dark.png), [동일 조건 비교](../ui-concepts/previews/daylight-comparison/side-by-side.png). 모두 합성 데이터다.
+Follow [operations](../OPERATIONS.md#daylight-rollout): commit exact fixes/verify its CI, preserve both drafts/latest shared backup, close/update old apps, obtain production approval. Prior38380e5 CI does not certify this source. Actual account saves/devices/old windows/Safari/Samsung/keyboards excluded. No SQL/grants/server changes, so no expanded SQL execution. Old code can erase new attributes; simple code rollback is not assured data recovery.
 
-Impeccable 정적 검사도 실행했다. 구형 CSS 색상·그림자·숨긴 헤더 설명, src가 열 때 설정되는 사진 창을 현재 화면의 확정 오류로 취급하지 않았다. 실제 메뉴의 밝은/어두운 배경·글자·입력 색상, 그림자 및 표시 이미지 상태는 [렌더 기록](../ui-concepts/previews/daylight-readiness/render-check.json)과 캡처로 확인했다. 작은 보조 글자 등 기존 시각 개선 여지는 남아 있으며 WCAG 전체 준수나 실기기 접근성을 인증한 검사는 아니다.
-
-## 전환 시 남은 확인
-
-전환 실행 순서의 기준은 [운영 안내서](../OPERATIONS_KO.md#daylight-rollout)다. 새 수정본을 후보 커밋으로 확정한 뒤 그 커밋의 CI를 확인하고, 두 사용자의 초안·최신 공유본 백업과 구형 앱 종료/갱신을 거쳐 운영 적용을 승인해야 한다. 이전 후보 `38380e5`의 CI 성공을 이번 소스의 성공으로 재사용하지 않는다.
-
-실제 계정 저장, 두 사용자의 실제 기기·열린 구형 창, Safari·삼성 인터넷·실물 모바일 키보드는 이번 자동 검증 범위 밖이다. SQL·권한·서버 설정은 변경하지 않아 SQL 실행 검사를 별도로 확대하지 않았다. 새 중요 표시·숙박 기간을 저장한 뒤 구형 앱으로 다시 편집하면 속성을 잃을 수 있으므로 단순 코드 되돌리기를 안전한 데이터 복구로 취급하지 않는다.
-
-문서는 README·사용자·기술·운영 안내서와 구현 계획을 갱신했다. 기존 기록은 유지했고 파일 이동·삭제가 없으며 `docs/`는 이미 Pages 제외 대상이므로 `_config.yml` 변경은 필요하지 않다.
+README/user/project/operations/plan updated. No files moved/deleted; existing docs Pages exclusion sufficed at that time.
