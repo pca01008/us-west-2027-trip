@@ -160,6 +160,8 @@ npm run test:browser
 
 `npm test`는 단위 회귀와 `scripts/check-project.mjs`의 설정·이미지 경로·HTML·SQL 구조 검사를 수행한다. npm이 PATH에 없으면 설치된 Node로 `node --test tests/*.test.mjs`와 `node scripts/check-project.mjs`를 실행할 수 있다.
 
+로컬 PostgreSQL이 없으면 `.github/workflows/validate.yml`의 `workflow_dispatch`를 작업 브랜치에서 실행한다. PR 생성이나 `main` 반영 없이 `validate`, `sql`, `browser`를 검사할 수 있다. `sql`은 폐기 가능한 PostgreSQL 17을 사용하며 운영 DB에는 접속하지 않는다. 실행한 커밋과 각 작업의 성공 결과를 확인한 뒤 운영 SQL 적용과 사이트 배포를 진행한다.
+
 ### 저장·권한 SQL 실행 검사
 
 `npm run test:sql`은 [SQL 실행 검사](../scripts/check-trip-sql.mjs)에서 실제 `supabase_setup.sql`과 `register_trip.sql`을 PostgreSQL에 적용한다. Node.js 24, `npm ci`, 별도로 실행한 로컬 테스트용 PostgreSQL 17이 필요하다. 예를 들어 Docker가 설치되어 있으면 다음처럼 일회용 서버를 실행한다.
@@ -196,11 +198,12 @@ docker stop trip-sql-test
 
 | 검사 | 명령·범위 |
 |---|---|
-| 전체 브라우저 | `node scripts/check-browsers.mjs`: 아래 12개, 하나라도 실패하면 실패 코드 |
+| 전체 브라우저 | `node scripts/check-browsers.mjs`: 아래 13개, 하나라도 실패하면 실패 코드 |
 | 실패 진단 | `node scripts/check-diagnostics-browser.mjs`: 자식 프로세스에 실패를 주입해 실패 코드·시나리오·여러 탭의 PNG·콘솔/페이지/요청/HTTP 오류·trace ZIP 생성, 화면 캡처 실패 시 나머지 자료 보존, 시작 실패 및 성공 시 trace 폐기 확인 |
 | 초안 | `node scripts/check-drafts-browser.mjs`: 탭·복제 탭·복구·보류·충돌·미리보기·로그아웃·저장 제한·가계부 입력 보존, PC·모바일에서 PREP 목록 저장 후 보류 초안 유지·새로고침 복구, 외부 로그아웃·중복 알림 후 재인증과 새 편집 진입 시 복구·삭제·보류, 앱 복귀·재연결 재조회와 Realtime 갱신 시 미추가 입력·초점·선택 범위 보존 및 삭제된 카테고리 대체·후속 추가 |
 | 입력 | `node scripts/check-inputs-browser.mjs`: PC·모바일, 한글 조합·취소 불가능 입력·실행 취소·불러오기·내보내기 |
 | 가계부 | `node scripts/check-ledger-browser.mjs`: PC·모바일에서 원화·달러 합계와 카테고리별 합계, 환율 변경·반올림·빈 목록·카테고리 삭제·배열 순서, 예산 호환 값·과거 HTML 정규화와 전체 CSV 다운로드 결과 |
+| 가계부 호환성 | `node scripts/check-ledger-compat-browser.mjs`: 기존 앱의 미래 스키마, Daylight의 스키마 6, 손상된 스키마 6 초안에서 쓰기 차단과 원본 초안 보존 |
 | 가져오기 | `node scripts/check-imports-browser.mjs`: PC·모바일 실제 파일 입력으로 잘못된 파일 거부·기존 초안 보존, 위험 HTML·주소·중복 ID·비정상 숫자 정제, 구버전 내용·체크·ID 보존, 비교 중 revision 변경 시 재확인·취소·명시적 저장 |
 | PREP | `node scripts/check-prep-browser.mjs`: 즉시 저장, 인증 취소·실패·재시도, 목록 편집과 다른 초안 보호 |
 | 인증 SDK | `node scripts/check-auth-browser.mjs`: 실제 SDK의 로그인 실패·서버 503·비편집자 세션, 자동 토큰 갱신·갱신 토큰 만료, 다른 탭 로그아웃, 초안 보존·새로고침·재인증·복구 후 저장 |

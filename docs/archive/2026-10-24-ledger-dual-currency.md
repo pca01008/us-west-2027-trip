@@ -46,4 +46,6 @@
 
 [최초 CI 실행 #39](https://github.com/pca01008/us-west-2027-trip/actions/runs/40097751940)에서 PostgreSQL 17의 실제 저장 검사가 실패했다. PL/pgSQL 변수 `current_schema`가 PostgreSQL 내장 이름으로 해석되어 `numeric < name` 비교 오류를 일으켰다. 설치 SQL과 증분 마이그레이션의 변수 이름을 `stored_schema_version`, `incoming_schema_version`으로 바꿨다. 기존 SQL 검사의 정상 저장·권한·revision·구버전 저장 거부 시나리오로 재검증한다.
 
-이 시점에는 수정본 CI 재검증과 운영 DB 적용이 남아 있다. SQL 검증 통과 전에는 운영 DB에 마이그레이션을 적용하지 않는다.
+수정 커밋은 `114ed04`이다. [수정본 CI 실행 #40](https://github.com/pca01008/us-west-2027-trip/actions/runs/40097976140)에서 `validate`, `sql`, `browser` 작업이 모두 성공했다. PostgreSQL 17 SQL 검사 24개, 단위 검사 120개와 프로젝트 검사, 브라우저 검사 13개가 통과했다. SQL 검사는 신규 설치·구버전 업그레이드, 자동·명시적 권한 환경, 정상 저장·동시 저장 충돌·스키마 6의 구형 저장 거부와 변환 복원을 포함한다. 로컬 단위 검사도 120개 통과했다.
+
+운영 DB 적용·배포는 아직 완료되지 않았다. 운영 DB에는 검증한 증분 마이그레이션을 먼저 적용한다. 현재 `main`은 `f03e727`이며 `git push --dry-run origin HEAD:main`으로 수정본의 fast-forward 반영 경로를 확인했다. 실제 `main` 푸시와 Pages 배포는 운영 DB 적용 결과 확인 후 진행한다.
