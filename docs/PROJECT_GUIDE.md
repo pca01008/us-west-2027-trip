@@ -1,6 +1,6 @@
 # Project Guide
 
-For readers familiar with basic HTML who are learning JavaScript, SQL, and Supabase. The current US West document format remains `schemaVersion 6` (KRW/USD). New trips use `schemaVersion 7` to bind configurable currency pairs. [Usage](USER_GUIDE.md) and [operations](OPERATIONS.md) are maintained separately.
+For readers familiar with basic HTML who are learning JavaScript, SQL, and Supabase. The current US West app writes `schemaVersion 6` (KRW/USD); older saved documents normalize in memory without automatic public saves. New trips use `schemaVersion 7` to bind configurable currency pairs. [Usage](USER_GUIDE.md) and [operations](OPERATIONS.md) are maintained separately.
 
 ## Contents
 
