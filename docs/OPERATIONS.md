@@ -159,6 +159,7 @@ Isolated local APIs block production. [Fixtures](../scripts/browser-fixtures.mjs
 | Storage | `node scripts/check-storage-browser.mjs`: open/quota/aborted write/delete, memory/old records, notices/save/export/retry/reload/logout/offline |
 | Photos | `node scripts/check-photos-browser.mjs`: conversion/PNG fallback/staging |
 | Theme | `node scripts/check-theme-browser.mjs`: choice/blocked storage/device changes/export/print |
+| Palette | `node scripts/check-palette-browser.mjs`: mobile/desktop, light/dark, itinerary/PREP/ledger/timetable/print and role aliases; optional `PALETTE_BASELINE_HTML` compares computed styles and exact PNG bytes against a saved HTML source |
 | Navigation | `node scripts/check-navigation-browser.mjs`: real Pretendard loading/failure fallback, Seoul/US West date edges, menus/day/timetable/input, draft reopen/theme keyboard/focus, 320–1440px/breakpoints/reduced viewport/zoom simulation |
 | PWA | `node scripts/check-pwa-browser.mjs`: install/cache/offline/timeouts |
 
@@ -185,6 +186,20 @@ Actions jobs: unit/static Node 24; SQL Node 24/PostgreSQL 17; browser Node 22. S
 Open with `npx playwright show-trace "<trace.zip path>"`. DOM/bodies may be sensitive: use synthetic data/new contexts only. Startup failures yield JSON without images/trace. Forced termination/180-second child timeout may prevent capture.
 
 For docs-only changes check paths/links/Pages exclusions and relevant unit/static tests. UI/behavior needs corresponding browser/device checks. Do not present historical counts as current passes.
+
+<a id="palette-maintenance"></a>
+
+### Palette maintenance
+
+Keep the current-site palette unless a replacement is explicitly selected. [Color roles and source location](PROJECT_GUIDE.md#color-palette) define the implementation; [historical A/B/C previews](archive/2026-10-24-color-palettes.md) do not define production colors.
+
+1. Before a visual refactor, save the current `index.html` outside the deployed tree. Change role values in its marked palette block; review light/dark together. Avoid changing warning/error/category meanings with the brand colors.
+2. Run `npm test`, `node scripts/check-palette-browser.mjs`, and `node scripts/check-theme-browser.mjs`. The palette check uses synthetic data and blocks remote traffic; theme checks cover persistence, dialogs and both export types.
+3. For a refactor intended to preserve appearance, set `PALETTE_BASELINE_HTML` to the saved source before running the palette check. It requires identical computed styles and screenshot bytes in 24 scenarios. Clear the variable afterward. For an intentional palette change, compare the saved/current PNGs visually instead of claiming parity. Screenshots and results are written to an OS temp `westbound-palette-*` folder, or to `PALETTE_OUTPUT_DIR` when set.
+4. Check text contrast (normal text 4.5:1, large text 3:1), focus/selection, warnings, links and totals in both themes. Unit tests derive key contrast pairs from the actual CSS tokens; they are not a complete accessibility audit.
+5. Update the project guide if roles/rules change and record the choice and actual checks in `docs/archive/`. Publish application code through the normal deployment procedure. Changing only inline palette values does not add an asset or require a worker-version bump; browser chrome/manifest/icons need their own synchronized update when changed.
+
+On Windows, set `$env:PLAYWRIGHT_BROWSERS_PATH` if the browser cache is outside the sandbox default. Set `$env:PALETTE_BASELINE_HTML='C:/path/before.html'` for the parity run and clear with `Remove-Item Env:PALETTE_BASELINE_HTML`. Preview sources/dated evidence remain under excluded `docs/`.
 
 <a id="deployment"></a>
 
@@ -359,6 +374,14 @@ node scripts/build-ui-preview.mjs
 ```
 
 Online publication follows main Pages success without changing production root/worker.
+
+<a id="color-palettes"></a>
+
+### Current-app color palette previews
+
+Use the same local server and open `http://127.0.0.1:4173/docs/ui-concepts/palettes-2026-10-24/index.html`. Switch framing, section and brightness together, or open a proposal separately. These are isolated mockups; app editing/saving is disconnected and ledger totals are examples. See the [proposal record](archive/2026-10-24-color-palettes.md).
+
+Rebuild snapshots and screenshots from the current local app with `node docs/ui-concepts/palettes-2026-10-24/build.mjs`. Requires the installed Playwright browser; set `PLAYWRIGHT_BROWSERS_PATH` to its cache if needed. The build blocks remote requests/service workers, strips cloud configuration, and checks navigation, theme switching and document overflow at mobile/desktop sizes. It changes only the proposal folder. Preview files remain excluded from Pages under `docs/`.
 
 <a id="daylight-rollout"></a>
 

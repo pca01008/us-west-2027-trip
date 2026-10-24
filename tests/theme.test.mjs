@@ -5,6 +5,28 @@ import vm from 'node:vm';
 
 const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 const script = html.match(/<script id="tripThemeBootstrap">([\s\S]*?)<\/script>/)[1];
+const palette = html.match(/\/\* PALETTE START[\s\S]*?\/\* PALETTE END \*\//)?.[0];
+const tokens = dark => {
+  const read = css => Object.fromEntries(Array.from(css.matchAll(/(--[\w-]+):([^;]+);/g), match => [match[1], match[2].trim()]));
+  const light = read(palette.match(/:root\{([\s\S]*?)\n\}/)[1]);
+  return dark ? { ...light, ...read(palette.match(/:root\[data-theme="dark"\]\{([\s\S]*?)\n  \}/)[1]) } : light;
+};
+
+test('현재 팔레트는 한 영역에서 관리하며 기존 변수는 역할별 이름을 참조한다', () => {
+  assert.ok(palette);
+  const css = html.match(/<style id="trip-app-styles">([\s\S]*?)<\/style>/)[1];
+  const outside = css.replace(palette, '');
+  for (const rule of outside.matchAll(/:root(?:\[[^\]]+\])?\s*\{([^}]+)\}/g)) {
+    assert.doesNotMatch(rule[1], /--[\w-]+:\s*(?:#|rgba?\(|linear-gradient|radial-gradient)/, 'Root color definitions belong in the palette block');
+  }
+  for (const dark of [false, true]) {
+    const roles = tokens(dark);
+    assert.equal(roles['--cream'], 'var(--canvas)');
+    assert.equal(roles['--navy'], 'var(--heading-ink)');
+    assert.equal(roles['--blue'], 'var(--timeline-accent)');
+    for (const value of Object.values(roles)) for (const ref of value.matchAll(/var\((--[\w-]+)\)/g)) assert.ok(roles[ref[1]], `Missing palette role ${ref[1]}`);
+  }
+});
 
 function app({ stored = null, dark = false, unavailable = false, quota = false, scope, url = 'https://example.com/trip/' } = {}) {
   const root = { dataset: scope ? { themeScope: scope } : {} };
@@ -107,9 +129,13 @@ test('테마의 본문·보조 글자·버튼·경고·링크 색은 대비 4.5:
     const rgb = color.match(/[a-f\d]{2}/gi).map(x => parseInt(x, 16) / 255).map(x => x <= .04045 ? x / 12.92 : ((x + .055) / 1.055) ** 2.4);
     return rgb[0] * .2126 + rgb[1] * .7152 + rgb[2] * .0722;
   };
-  const pairs = [['e6edf5', '192532'], ['b0bfd0', '243344'], ['291d1c', 'f39887'], ['f3d39d', '3f3525'], ['a7d3f0', '21394a'], ['ffffff', '304c6c'], ['ffffff', 'a93f35'], ['5f6e82', 'edf2f8']];
-  for (const [fg, bg] of pairs) {
-    const a = luminance(fg), b = luminance(bg);
-    assert.ok((Math.max(a, b) + .05) / (Math.min(a, b) + .05) >= 4.5, `${fg} on ${bg}`);
+  for (const dark of [false, true]) {
+    const roles = tokens(dark);
+    const pairs = [['--ink', '--paper'], ['--muted', '--surface-hover'], ['--on-accent', '--accent'], ['--warning-ink', '--warning-bg'], ['--link', '--link-bg'], ['--on-solid', '--solid'], ['--on-danger', '--danger-solid']];
+    for (const [foreground, background] of pairs) {
+      const fg = roles[foreground], bg = roles[background];
+      const a = luminance(fg), b = luminance(bg);
+      assert.ok((Math.max(a, b) + .05) / (Math.min(a, b) + .05) >= 4.5, `${dark ? 'dark' : 'light'}: ${foreground} (${fg}) on ${background} (${bg})`);
+    }
   }
 });

@@ -80,6 +80,29 @@ The existing app uses self-hosted [Pretendard](https://github.com/orioncactus/pr
 
 Worker v3 precaches the font as a static asset. Editable/read-only HTML exports embed the font as a data URL and remove its relative preload; re-exporting embedded copies needs no font request. If the font cannot be fetched within eight seconds, export keeps the content and uses the system fallback. Canceling export still cancels the download. Daylight and historical UI previews retain their existing typography.
 
+<a id="color-palette"></a>
+
+### Color palette
+
+The current site's navy/coral palette is the approved baseline (2026-10-25). Proposals A/B/C remain unselected historical previews. The `PALETTE START` / `PALETTE END` block in `index.html`, inside `@layer theme`, is the source of truth for UI color roles. Keep it inline: editable/read-only HTML exports include it automatically, with no extra stylesheet fetch or PWA asset.
+
+| Role | Tokens | Use |
+|---|---|---|
+| Canvas and surfaces | `--canvas`, `--paper`, `--surface`, `--surface-alt`, `--surface-hover`, `--surface-selected` | Page, cards, groups and selection |
+| Text and borders | `--ink`, `--heading-ink`, `--muted`, `--placeholder`, `--line`, `--line-strong` | Reading hierarchy and boundaries |
+| Actions | `--accent`, `--accent-hover`, `--on-accent`, `--solid`, `--on-solid`, `--focus` | Coral actions, navy controls and keyboard focus |
+| Timeline markers | `--timeline-accent`, `--timeline-accent-hover` | Schedule dots and legacy coral treatments |
+| Header | `--header-*`, `--canvas-glow-*` | Composed navy header, clocks, progress and page glow |
+| Ledger totals | `--total-*` | Navy KRW and teal USD cards |
+| Status and links | `--red`, `--danger-*`, `--on-danger`, `--warning-*`, `--link-*`, `--link`, `--edit-bg`, `--overlay` | Errors, warnings, navigation and editing feedback |
+| Timetable categories | `--activity-*`, `--food-*`, `--transit-*`, `--stay-*`, `--other-*` | Each category's line, background and text |
+
+Light defaults are followed by screen-only dark overrides in the same block. Print/share uses light colors. Header and total-card colors deliberately stay composed in both themes; do not invert them automatically. Legacy `--cream`, `--navy` and `--blue` names alias `--canvas`, `--heading-ink` and `--timeline-accent`; use the role names for new code. `--accent` and `--timeline-accent` intentionally differ: readable action red versus brighter timeline coral.
+
+Change role values here rather than adding a competing root block, a production palette JSON, or per-component theme overrides. Historical component layers still contain fallback/one-off literals; their overridden values are not the current core palette. New reusable colors belong in this block; preserve one-off photographic overlays unless their treatment is in scope. Platform chrome (`theme-color`, its bootstrap values, manifest and icons) has separate startup/install requirements; update those explicitly only when that branding changes.
+
+Theme choice remains a per-browser brightness preference, excluded from trip documents, drafts and versions. No palette selector or data migration is introduced. [Operations](OPERATIONS.md#palette-maintenance) owns change/review steps; [the dated record](archive/2026-10-25-current-palette.md) owns verification evidence.
+
 <a id="cache"></a>
 
 ## Startup and cache

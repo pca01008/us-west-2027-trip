@@ -10,6 +10,7 @@ Work now focuses on the existing app. Further Daylight development and productio
 |---|---|
 | Itinerary, timetable, PREP, ledger, draft recovery, installation, exports | [User guide](docs/USER_GUIDE.md) |
 | Architecture, data, saving, permissions, SQL | [Project guide](docs/PROJECT_GUIDE.md) |
+| Current color palette and change workflow | [Color roles](docs/PROJECT_GUIDE.md#color-palette) · [Maintenance](docs/OPERATIONS.md#palette-maintenance) |
 | Pretendard font loading, offline copies, validation limits | [Typography](docs/PROJECT_GUIDE.md#typography) · [October 24 checks](docs/archive/2026-10-24-pretendard.md) |
 | Setup, new trips, testing, deployment, DB checks, troubleshooting | [Operations guide](docs/OPERATIONS.md) |
 | Separate research from website files | [Directory guide](docs/DIRECTORY_PLAN.md) |
@@ -20,6 +21,7 @@ Work now focuses on the existing app. Further Daylight development and productio
 | Test results and proposed coverage | [2026-10-19 test review](docs/archive/2026-10-19-test-review.md) |
 | Agent rules | [AGENTS.md](AGENTS.md) |
 | Compare three UI concepts | [Online comparison](https://pca01008.github.io/us-west-2027-trip/ui-preview/) · [Local source](docs/ui-concepts/index.html) · [Review](docs/archive/2026-10-21-ui-concepts.md) · [Run and publish](docs/OPERATIONS.md#ui-concepts) |
+| Compare three color palettes for the current app | [Local comparison](docs/ui-concepts/palettes-2026-10-24/index.html) · [Preview record](docs/archive/2026-10-24-color-palettes.md) |
 | Review selected concept A (Daylight) | [Latest handoff](docs/archive/2026-10-22-daylight-handoff.md) · [Refined prototype](docs/ui-concepts/a.html) · [First refinement](docs/archive/2026-10-21-daylight-refinement.md) · [Usability changes](docs/archive/2026-10-22-daylight-usability.md) |
 | Daylight scope, implementation sequence, acceptance criteria | [Implementation plan](docs/DAYLIGHT_IMPLEMENTATION_PLAN.md) · [Candidate implementation](docs/archive/2026-10-23-daylight-implementation.md) — paused candidate history |
 | Compare existing and Daylight versions equally | [Side-by-side comparison](https://pca01008.github.io/us-west-2027-trip/ui-preview/daylight-compare.html) · [Environment record](docs/archive/2026-10-23-daylight-comparison.md) |
