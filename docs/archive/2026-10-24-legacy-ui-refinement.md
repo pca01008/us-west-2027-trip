@@ -7,7 +7,7 @@
 - `origin`은 `https://github.com/pca01008/us-west-2027-trip.git`이며 작업 시작 시 fetch로 확인한 최신 `origin/main`은 `1ff42eb3205d8f499042df462e2026f8798296f8`이었다.
 - `codex/legacy-ui-refinement`를 해당 기준에서 만들고 계획 커밋 `37a93be`의 [수정 계획](../LEGACY_UI_REFINEMENT_PLAN_KO.md)·시각 참고·제품 방향을 가져왔다. Daylight 후보 브랜치 전체를 합치지 않았다.
 - 기존 네이비·코럴·카드·글꼴을 유지했다. Daylight 공개 파일·비교본·실제 여행 데이터·SQL·스키마·의존성은 변경하지 않았다.
-- 이 기록은 구현 브랜치에 보관할 로컬 검증 결과다. main 반영·공개 배포·운영 데이터 저장은 이 작업에 포함하지 않는다.
+- 이 기록은 구현 브랜치의 로컬 구현·검증 기록이다. 후속 사용자 요청으로 2026-10-24에 검증한 `7d08bedbe92728540c4f56a6a779cbbad3cb12d6`을 `main`에 fast-forward push해 Pages에 배포했다. 공개 주소에서 HTTP 200, 새 하단 메뉴·테마·CSV 버튼, 예산 UI 제거를 확인했다. 해당 커밋의 GitHub Actions Validate·SQL·browser 세 job도 모두 성공했다. 운영 데이터는 수정하지 않았다.
 
 ## 구현
 
