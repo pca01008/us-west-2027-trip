@@ -1,3 +1,4 @@
+import { selectTripTab } from './browser-fixtures.mjs';
 // Exercise real ledger rendering, UI changes and downloaded CSV bytes offline.
 // Only fixture setup uses an app hook; calculations and exports are not mocked.
 import assert from 'node:assert/strict';
@@ -65,7 +66,6 @@ try {
     const activate = locator => mobile ? locator.tap() : locator.click();
     const totals = async expected => assert.deepEqual(await Promise.all(['#totalKrw', '#totalUsd', '#totalConverted'].map(text)), expected, scenario);
     const fixture = async (expenses, options = {}) => {
-      await activate(page.locator('#expenseFilterClear'));
       await page.evaluate(({ expenses, options, categories }) => {
         const api = window.__ledgerTest;
         api.applyState(api.normalizeState({ ...api.captureState(), expenses, categories, exchangeRate: 1325.5, exchangeRateUpdated: '', budgetKrw: 0, ...options }));
@@ -82,46 +82,28 @@ try {
       assert.deepEqual([...bytes.subarray(0, 3)], [0xef, 0xbb, 0xbf], `${scenario}: UTF-8 BOM`);
       assert.equal(bytes.toString('utf8'), '\ufeff' + [header, ...expectedLines].join('\r\n'), `${scenario}: downloaded CSV`);
     };
-    const settings = async (rate, budget) => {
+    const settings = async rate => {
       await activate(page.locator('#editBtn'));
       if (rate !== undefined) await page.locator('#settingsExchangeRate').fill(String(rate));
-      // Blur the rate first: its change handler renders the budget input again.
-      await page.locator('#settingsBudgetKrw').focus();
-      if (budget !== undefined) await page.locator('#settingsBudgetKrw').fill(String(budget));
       await activate(page.locator('#ledgerSettingsClose'));
       await page.locator('#ledgerSettingsDialog').waitFor({ state: 'hidden' });
-    };
-    const budget = async (status, remaining, percent, over) => {
-      assert.equal(await text('#budgetStatus'), status, scenario);
-      assert.equal(await text('#budgetRemaining'), remaining, scenario);
-      assert.equal(await page.locator('#budgetOverview .budget-track').getAttribute('aria-valuenow'), percent, scenario);
-      assert.equal(await page.locator('#budgetOverview').evaluate(el => el.classList.contains('over-budget')), over, scenario);
     };
     try {
       await page.goto(origin);
       await page.waitForFunction(() => window.__ledgerTest && !document.body.classList.contains('hydrating'));
-      await activate(page.locator('.tabs label[for="money"]'));
+      await selectTripTab(page, 'money', mobile);
       scenario = 'mixed currency and unset budget'; diagnostics.scenario(`${mode} / ${scenario}`);
       await fixture(mixed);
       await totals(['₩12,000', '$12.35', '₩28,370']);
-      await budget('예산 미설정', '', '0', false);
       assert.deepEqual(await page.locator('#categorySummary .category-total b').allTextContents(), ['₩10,000 + $12.34', '₩2,000 + $0.01']);
       assert.deepEqual(await page.locator('#categorySummary small').allTextContents(), ['(원화 환산 ₩26,357)', '(원화 환산 ₩2,014)']);
       await csv(mixedCsv);
 
       scenario = 'rate and budget changes through settings'; diagnostics.scenario(`${mode} / ${scenario}`);
-      await settings(1400, 30000);
+      await settings(1400);
       await totals(['₩12,000', '$12.35', '₩29,290']);
-      await budget('₩29,290 / ₩30,000', '남은 금액 ₩710', '98', false);
       assert.deepEqual(await page.locator('#categorySummary small').allTextContents(), ['(원화 환산 ₩27,276)', '(원화 환산 ₩2,014)']);
       await csv([mixedCsv[0], '"2027-03-03","저녁 CAFE","식비","USD","12.34","17276"', mixedCsv[2], '"","팁","교통","USD","0.01","14"']);
-      await settings(undefined, 20000);
-      await budget('₩29,290 / ₩20,000', '초과 ₩9,290', '100', true);
-      assert.equal(await page.locator('#budgetFill').evaluate(el => el.style.width), '100%');
-      await settings(undefined, 0);
-      await budget('예산 미설정', '', '0', false);
-      assert.equal(await page.locator('#budgetFill').evaluate(el => el.style.width), '0%');
-
       scenario = 'rounding at half won and aggregate before rounding'; diagnostics.scenario(`${mode} / ${scenario}`);
       await fixture([
         expense('below-half', '소수 원화', 1.49, 'KRW', '2027-03-02'),
@@ -129,52 +111,45 @@ try {
         expense('usd-half', '센트', 0.01, 'USD', '2027-03-02')
       ], { exchangeRate: 1350, budgetKrw: 16.49 });
       await totals(['₩3', '$0.01', '₩16']);
-      await budget('₩16 / ₩16', '남은 금액 ₩0', '100', false);
       assert.deepEqual(await page.locator('.expense-amount').allTextContents(), ['₩1', '₩2', '$0.01']);
       await csv(['"2027-03-02","소수 원화","식비","KRW","1.49","1"', '"2027-03-02","반 원화","식비","KRW","1.5","2"', '"2027-03-02","센트","식비","USD","0.01","14"']);
 
+      await fixture(mixed, { budgetKrw: 987654 });
+      assert.equal(await page.locator('#budgetOverview,#settingsBudgetKrw,.expense-filters,.expense-filter-summary').count(), 0);
+      assert.doesNotMatch(await page.locator('.moneyday').innerText(), /등록순/);
+      assert.equal(await page.evaluate(() => window.__ledgerTest.captureState().budgetKrw), 987654);
+      assert.equal(await page.locator('[data-move-expense="krw-meal"][data-move-direction="-1"]').isDisabled(), true);
+      assert.equal(await page.locator('[data-move-expense="usd-tip"][data-move-direction="1"]').isDisabled(), true);
+      await activate(page.locator('[data-move-expense="usd-meal"][data-move-direction="-1"]'));
+      await page.waitForFunction(() => document.querySelector('#expenses .expense').dataset.expenseId === 'usd-meal');
+      await csv([mixedCsv[1], mixedCsv[0], mixedCsv[2], mixedCsv[3]]);
+      await selectTripTab(page, 'prep', mobile);await selectTripTab(page, 'money', mobile);
+      assert.equal(await page.locator('#expenses .expense').first().getAttribute('data-expense-id'), 'usd-meal');
+      // A previous HTML snapshot may still contain removed controls and compatibility metadata.
+      await page.evaluate(() => {
+        const api=window.__ledgerTest, state=api.captureState();
+        const template=document.createElement('template');template.innerHTML=state.html;
+        template.content.querySelector('.moneyday').insertAdjacentHTML('beforeend','<div id="budgetOverview">옛 예산</div><div class="expense-filters"><input id="expenseFilterQuery" value="숨은 필터"></div>');
+        template.content.querySelector('.prepday label').dataset.checkImportant='true';
+        template.content.querySelector('.timeline-row').dataset.stayCheckout='2027-01-23';
+        state.html=template.innerHTML;api.applyState(state);
+      });
+      assert.equal(await page.locator('#budgetOverview,.expense-filters').count(), 0);
+      assert.equal(await page.evaluate(() => window.__ledgerTest.captureState().budgetKrw), 987654);
+      assert.equal(await page.locator('.prepday label').first().getAttribute('data-check-important'), 'true');
+      assert.equal(await page.locator('.timeline-row').first().getAttribute('data-stay-checkout'), '2027-01-23');
+      await csv([mixedCsv[1], mixedCsv[0], mixedCsv[2], mixedCsv[3]]);
       await fixture(mixed);
-      for (const [label, query, category, from, to, indices] of [
-        ['search case and whitespace', ' cafe ', 'all', '', '', [0, 1, 2]],
-        ['category', '', 'travel', '', '', [2, 3]],
-        ['category name search', '식비', 'all', '', '', [0, 1]],
-        ['inclusive date bounds', '', 'all', '2027-03-02', '2027-03-03', [0, 1]],
-        ['start only excludes undated', '', 'all', '2027-03-03', '', [1, 2]],
-        ['combined filters', 'cafe', 'food', '2027-03-03', '2027-03-04', [1]],
-        ['no matches', '없는 항목', 'food', '2027-03-03', '2027-03-04', []],
-        ['reversed dates', '', 'all', '2027-03-04', '2027-03-02', []]
-      ]) {
-        scenario = label; diagnostics.scenario(`${mode} / ${scenario}`);
-        await activate(page.locator('#expenseFilterClear'));
-        await page.locator('#expenseFilterQuery').fill(query);
-        await page.locator('#expenseFilterCategory').selectOption(category);
-        await page.locator('#expenseFilterFrom').fill(from);
-        await page.locator('#expenseFilterTo').fill(to);
-        await page.locator('#expenseFilterQuery').focus();
-        assert.deepEqual(await page.locator('#expenses .expense').evaluateAll(rows => rows.map(row => row.dataset.expenseId)), indices.map(index => mixed[index].id), label);
-        await csv(indices.map(index => mixedCsv[index]));
-        await totals(['₩12,000', '$12.35', '₩28,370']);
-        if (!indices.length) assert.equal(await text('#expenses .remark'), '필터 조건에 맞는 경비가 없습니다.');
-      }
-      scenario = 'filter reset'; diagnostics.scenario(`${mode} / ${scenario}`);
-      await activate(page.locator('#expenseFilterClear'));
-      assert.equal(await text('#expenseFilterSummary'), '전체 4개 · 등록순');
-      assert.deepEqual(await page.locator('#expenses .expense').evaluateAll(rows => rows.map(row => row.dataset.expenseId)), mixed.map(item => item.id));
-      await csv(mixedCsv);
-
       scenario = 'delete category preserves amounts and exports'; diagnostics.scenario(`${mode} / ${scenario}`);
-      await page.locator('#expenseFilterCategory').selectOption('food');
       await activate(page.locator('#editBtn'));
       await activate(page.locator('#settingsCategoryList [data-category-delete="food"]'));
       await activate(page.locator('#noticeDialog').getByRole('button', { name: '삭제', exact: true }));
       await page.locator('#settingsCategoryList [data-category-delete="food"]').waitFor({ state: 'detached' });
       await activate(page.locator('#ledgerSettingsClose'));
-      assert.equal(await page.locator('#expenseFilterCategory').inputValue(), 'all');
       assert.equal(await page.locator('#expenseCategory option[value="deleted"]').count(), 0);
-      await page.locator('#expenseFilterCategory').selectOption('deleted');
-      assert.deepEqual(await page.locator('#expenses .expense-category-badge').allTextContents(), ['🗑️ 삭제된 카테고리', '🗑️ 삭제된 카테고리']);
+      assert.deepEqual(await page.locator('#expenses .expense-category-badge').allTextContents(), ['🗑️ 삭제된 카테고리', '🗑️ 삭제된 카테고리', '🚗 교통', '🚗 교통']);
       await totals(['₩12,000', '$12.35', '₩28,370']);
-      await csv(['"2027-03-02","점심 Cafe","삭제된 카테고리","KRW","10000","10000"', '"2027-03-03","저녁 CAFE","삭제된 카테고리","USD","12.34","16357"']);
+      await csv(['"2027-03-02","점심 Cafe","삭제된 카테고리","KRW","10000","10000"', '"2027-03-03","저녁 CAFE","삭제된 카테고리","USD","12.34","16357"', mixedCsv[2], mixedCsv[3]]);
 
       scenario = 'CSV punctuation, multiline Korean and formula prefixes'; diagnostics.scenario(`${mode} / ${scenario}`);
       await fixture([
@@ -199,13 +174,10 @@ try {
       scenario = 'empty ledger'; diagnostics.scenario(`${mode} / ${scenario}`);
       await fixture([]);
       await totals(['₩0', '$0.00', '₩0']);
-      await budget('예산 미설정', '', '0', false);
       assert.equal(await text('#expenses .remark'), '아직 기록된 경비가 없습니다.');
       assert.equal(await text('#categorySummary'), '아직 카테고리별 내역이 없습니다.');
       await csv([]);
-      await settings(undefined, 30000);
-      await budget('₩0 / ₩30,000', '남은 금액 ₩30,000', '0', false);
-      console.log(`${mode}: mixed totals, rate changes, rounding, budgets, filters, deleted categories and ${downloadIndex} CSV downloads passed.`);
+      console.log(`${mode}: mixed totals, rate changes, rounding, budget compatibility, ordering, deleted categories and ${downloadIndex} CSV downloads passed.`);
     } catch (error) {
       await diagnostics.fail(new Error(`${mode} ledger scenario: ${scenario}`, { cause: error }));
       throw new Error(`${mode} ledger scenario: ${scenario}`, { cause: error });

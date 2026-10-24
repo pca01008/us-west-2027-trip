@@ -1,3 +1,4 @@
+import { selectTripTab, selectTheme } from './browser-fixtures.mjs';
 // Optional integration check: node scripts/check-pwa-browser.mjs [playwright/index.mjs]
 // Uses an isolated browser and a local API fixture; never contacts the live trip database.
 import assert from 'node:assert/strict';
@@ -100,7 +101,7 @@ try {
         };
       });
     });
-    await page.locator('#themeSelect').selectOption('dark');
+    await selectTheme(page, 'dark');
     await context.setOffline(true);
     disconnected = true;
     await page.reload();
@@ -108,9 +109,9 @@ try {
     assert.match(await page.locator('main').textContent(), /PWA 저장본 검증/);
     assert.match(await page.locator('#status').textContent(), /오프라인 캐시 표시/);
     assert.equal(await page.locator('html').getAttribute('data-theme'), 'dark', 'Offline restart restores theme');
-    await page.locator('#themeSelect').selectOption('light');
+    await selectTheme(page, 'light');
     assert.equal(await page.locator('html').getAttribute('data-theme'), 'light', 'Theme changes work offline');
-    await page.locator('label[for="d1"]').click();
+    await selectTripTab(page, 'd1');
     assert.equal(await page.locator('#d1').isChecked(), true);
 
     // Verify the previously broken path when the CDN SDK is unavailable as well.

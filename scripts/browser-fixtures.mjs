@@ -32,3 +32,17 @@ export async function readBrowserFixture(url) {
   if (url.pathname.includes('/assets/')) return fixtureImage;
   return readFile(url);
 }
+
+export async function selectTripTab(page, id, mobile = false) {
+  const activate = locator => mobile ? locator.tap() : locator.click();
+  if (/^d\d+$/.test(id)) {
+    await activate(page.locator('#nav-schedule'));
+    await activate(page.locator('.tabs label[for="' + id + '"]'));
+  } else await activate(page.locator('[data-section="' + id + '"]'));
+}
+export async function selectTheme(page, value) {
+  await page.locator('#themeToggle').click();
+  await page.locator('input[name="themePreference"][value="' + value + '"]').check();
+  // Selecting the active radio closes the menu too.
+  if (await page.locator('#themeMenu').isVisible()) await page.locator('input[name="themePreference"]:checked').click();
+}

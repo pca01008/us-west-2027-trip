@@ -18,3 +18,4 @@ Thumbs.db
 /supabase/.temp/
 .env
 .env.*
+/docs/ui-concepts/previews/daylight-candidate/*.html

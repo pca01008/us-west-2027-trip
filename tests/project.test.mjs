@@ -161,15 +161,15 @@ test('버전 목록은 메타데이터만 받고 본문은 선택 시 지연 로
   assert.doesNotMatch(restore, /applyState\(restored\)/);
 });
 
-test('가계부는 예산·필터·안전한 CSV와 필수 카테고리 보호를 제공한다', async () => {
+test('가계부는 예산 호환 필드를 보존하고 전체 CSV와 필수 카테고리 보호를 제공한다', async () => {
   const [html, config] = await Promise.all([
     readFile(path.join(root, 'index.html'), 'utf8'),
     readFile(path.join(root, 'trip-config.js'), 'utf8')
   ]);
-  assert.match(html, /id="budgetOverview"/);
-  assert.match(html, /id="expenseFilterCategory"/);
-  assert.match(html, /id="expenseFilterQuery"/);
-  assert.match(html, /haystack\.includes\(query\)/);
+  assert.doesNotMatch(html, /id="budgetOverview"/);
+  assert.doesNotMatch(html, /id="expenseFilterCategory"/);
+  assert.doesNotMatch(html, /id="expenseFilterQuery"/);
+  assert.doesNotMatch(html, /ledgerFilter|filteredExpenses|등록순/);
   assert.match(html, /function exportExpensesCsv/);
   assert.match(html, /if\(\/\^\[=\+\\-@\]\//);
   assert.match(html, /budgetKrw:Number\.isFinite/);

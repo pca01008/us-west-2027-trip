@@ -1,3 +1,4 @@
+import { selectTripTab, selectTheme } from './browser-fixtures.mjs';
 // Exercise the real app in isolated offline fixtures; never contact production APIs.
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -52,31 +53,33 @@ try {
     const page=await context.newPage();page.setDefaultTimeout(5000);page.on('pageerror',error=>errors.push(error.message));
     await page.goto(origin);await page.waitForFunction(()=>!document.body.classList.contains('hydrating'));
     const snapshot=await page.evaluate(()=>{const api=window.__inputsTest;return api.normalizeState(api.captureState());});
-    const label=id=>page.locator('.tabs label[for="'+id+'"]');
+    const label=id=>page.locator(id==='money'||id==='prep'?'[data-section="'+id+'"]':'.tabs label[for="'+id+'"]');
     const activate=locator=>mobile?locator.tap():locator.click();
     const settled=()=>page.waitForFunction(()=>Math.abs(document.querySelector('.tabs').getBoundingClientRect().top)<=2&&!document.querySelector('main').style.minHeight);
     const deep=async()=>{
-      await activate(label('d3'));
+      await selectTripTab(page, 'd3', mobile);
       await page.waitForFunction(()=>!document.querySelector('main').style.minHeight);
       await page.evaluate(()=>window.scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'}));
       await page.waitForFunction(()=>Math.abs(document.querySelector('.tabs').getBoundingClientRect().top)<=1);
     };
-    // A page still showing its header should not be forced down to the tab bar.
-    await activate(label('money'));assert.ok(await page.evaluate(()=>scrollY<=1));
+    // Section navigation hides the date strip outside the schedule.
+    await activate(label('money'));assert.equal(await page.locator('.tabs').isHidden(),true);
     for(const target of ['money','prep','d11']) {
       await deep();
+      // Reveal distant dates by horizontal scrolling before the real pointer click.
+      if(target==='d11')await label(target).evaluate(el=>{el.parentElement.scrollLeft=el.offsetLeft;});
       await activate(target==='d11'?label(target).locator('span').last():label(target));
-      await settled();assert.equal(await page.locator('#'+target).isChecked(),true);
-      assert.equal(await label(target).getAttribute('aria-selected'),'true');
+      if(target==='d11')await settled();assert.equal(await page.locator('#'+target).isChecked(),true);
+      assert.equal(await label(target).getAttribute(target==='d11'?'aria-selected':'aria-current'),target==='d11'?'true':'page');
       assert.equal(await label(target).evaluate(el=>document.activeElement===el),true,'Focus remains on the visible tab');
     }
     await deep();await activate(label('d3'));await settled();
     assert.equal(await page.locator('#d3').isChecked(),true,'Reselecting a tab must not jump to the hidden radio');
-    for(const [key,target] of [['ArrowRight','d4'],['Home','prep'],['End','d11'],['Enter','d11'],['Space','d11']]) {
+    for(const [key,target] of [['ArrowRight','d4'],['Home','d1'],['End','d11'],['Enter','d11'],['Space','d11']]) {
       await page.keyboard.press(key);await settled();assert.equal(await page.locator('#'+target).isChecked(),true);
       assert.equal(await label(target).evaluate(el=>document.activeElement===el),true);
     }
-    await deep();await page.evaluate(()=>{document.querySelector('label[for="money"]').click();document.querySelector('label[for="prep"]').click();document.querySelector('label[for="d11"]').click();});
+    await deep();await page.evaluate(()=>{document.querySelector('[data-section="money"]').click();document.querySelector('[data-section="prep"]').click();document.querySelector('#nav-schedule').click();document.querySelector('label[for="d11"]').click();});
     await settled();assert.equal(await page.locator('#d11').isChecked(),true,'Rapid switching keeps the final selection');
     // Timetable reselect still returns to the tab's date, exactly once.
     await activate(label('d3'));await activate(page.locator('#timetableViewBtn'));await activate(page.locator('[data-tt-range="1"]'));
@@ -99,7 +102,7 @@ try {
     context.on('page', p => { p.setDefaultTimeout(10000); p.on('pageerror', e => errors.push(e.message)); });
     const page = await context.newPage();
     const ready = p => p.waitForFunction(() => !document.body.classList.contains('hydrating'));
-    const tab = p => p.locator('.tabs label[for="d1"]').click();
+    const tab = p => selectTripTab(p, 'd1');
     await page.goto(origin); await ready(page); await tab(page); await page.locator('#editBtn').click();
     const oldRows = await page.locator('.day1 .timeline-row').count();
     await page.locator('#addTimeBtn').click();
@@ -184,7 +187,7 @@ try {
     await page.locator('#photoCaption').pressSequentially('Hotel');
     assert.equal(await page.locator('#photoCaption').inputValue(), 'Hotel', 'Photo caption can be replaced directly');
     await page.locator('#photoEditCancel').click();
-    await page.locator('#themeSelect').selectOption('dark');
+    await selectTheme(page, 'dark');
     await row.scrollIntoViewIfNeeded(); await page.screenshot({ path: path.join(output, `${mobile ? 'mobile' : 'desktop'}-empty-fields.png`) });
     // Both exports must survive script execution/reload with empty values and correct view styles.
     for (const kind of ['editable', 'readonly']) {
@@ -194,13 +197,13 @@ try {
       await (await download).saveAs(file);
       const artifact = await context.newPage(); await artifact.goto(pathToFileURL(file).href);
       if (kind === 'editable') await ready(artifact);
-      await tab(artifact);
+      if(kind==='editable')await tab(artifact);
       const restored = artifact.locator(`[data-row-id="${rowId}"]`);
       assert.equal(await restored.locator('h3').textContent(), '');
       assert.equal(await restored.locator('h3').evaluate(el => getComputedStyle(el, '::before').content), '"제목 없음"');
       assert.equal(await restored.locator('.remark').isVisible(), false);
       assert.equal(await restored.locator('.schedule-warning').isVisible(), false);
-      await artifact.reload(); if (kind === 'editable') await ready(artifact); await tab(artifact);
+      await artifact.reload(); if (kind === 'editable') await ready(artifact); if(kind==='editable')await tab(artifact);
       assert.equal(await restored.locator('h3').textContent(), '');
       if (kind === 'editable') {
         await artifact.locator('#editBtn').click();

@@ -1,3 +1,4 @@
+import { selectTripTab } from './browser-fixtures.mjs';
 // Real IndexedDB transactions with faults injected at browser API boundaries.
 // Application storage functions are never replaced. All HTTP traffic stays local.
 import assert from 'node:assert/strict';
@@ -94,7 +95,7 @@ const title=page=>page.locator('.day1 .timeline-row h3').first();
 const durable=page=>page.evaluate(()=>window.__durableDrafts());
 const setFault=(page,mode)=>page.evaluate(mode=>{window.__idbFault.mode=mode;},mode);
 async function edit(page,text){
-  await page.locator('.tabs label[for="d1"]').click();
+  await selectTripTab(page, 'd1');
   if(!await page.locator('body').evaluate(el=>el.classList.contains('editing')))await page.locator('#editBtn').click();
   await page.waitForFunction(()=>document.querySelector('.day1 .timeline-row h3').isContentEditable);
   await title(page).fill(text);

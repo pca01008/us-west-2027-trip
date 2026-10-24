@@ -184,18 +184,20 @@ docker stop trip-sql-test
 | 검사 | 명령·범위 |
 |---|---|
 | 전체 브라우저 | `node scripts/check-browsers.mjs`: 아래 12개, 하나라도 실패하면 실패 코드 |
-| Daylight | `node scripts/check-daylight-browser.mjs`: 숙박 경계·중복·중요 항목·체크 대기/실패·메타데이터 왕복·실제 내보낸 파일의 동작과 너비·5개 반응형 너비 |
 | 실패 진단 | `node scripts/check-diagnostics-browser.mjs`: 자식 프로세스에 실패를 주입해 실패 코드·시나리오·여러 탭의 PNG·콘솔/페이지/요청/HTTP 오류·trace ZIP 생성, 화면 캡처 실패 시 나머지 자료 보존, 시작 실패 및 성공 시 trace 폐기 확인 |
 | 초안 | `node scripts/check-drafts-browser.mjs`: 탭·복제 탭·복구·보류·충돌·미리보기·로그아웃·저장 제한·가계부 입력 보존, PC·모바일에서 PREP 목록 저장 후 보류 초안 유지·새로고침 복구, 외부 로그아웃·중복 알림 후 재인증과 새 편집 진입 시 복구·삭제·보류, 앱 복귀·재연결 재조회와 Realtime 갱신 시 미추가 입력·초점·선택 범위 보존 및 삭제된 카테고리 대체·후속 추가 |
 | 입력 | `node scripts/check-inputs-browser.mjs`: PC·모바일, 한글 조합·취소 불가능 입력·실행 취소·불러오기·내보내기 |
-| 가계부 | `node scripts/check-ledger-browser.mjs`: PC·모바일에서 원화·달러 합계와 카테고리별 합계, 환율 변경, 반올림, 예산 미설정·잔액·초과, 빈 목록, 카테고리 삭제, 날짜·카테고리·검색 필터와 실제 CSV 다운로드 결과 |
+| 가계부 | `node scripts/check-ledger-browser.mjs`: PC·모바일에서 원화·달러 합계와 카테고리별 합계, 환율 변경·반올림·빈 목록·카테고리 삭제·배열 순서, 예산 호환 값·과거 HTML 정규화와 전체 CSV 다운로드 결과 |
 | 가져오기 | `node scripts/check-imports-browser.mjs`: PC·모바일 실제 파일 입력으로 잘못된 파일 거부·기존 초안 보존, 위험 HTML·주소·중복 ID·비정상 숫자 정제, 구버전 내용·체크·ID 보존, 비교 중 revision 변경 시 재확인·취소·명시적 저장 |
 | PREP | `node scripts/check-prep-browser.mjs`: 즉시 저장, 인증 취소·실패·재시도, 목록 편집과 다른 초안 보호 |
 | 인증 SDK | `node scripts/check-auth-browser.mjs`: 실제 SDK의 로그인 실패·서버 503·비편집자 세션, 자동 토큰 갱신·갱신 토큰 만료, 다른 탭 로그아웃, 초안 보존·새로고침·재인증·복구 후 저장 |
 | IndexedDB 장애 | `node scripts/check-storage-browser.mjs`: PC·모바일에서 DB 열기 실패·용량 초과·쓰기 중단·삭제 실패, 메모리 편집과 기존 초안 보존, 실패 안내·공유 저장·내보내기·재시도·새로고침 복구, 로그아웃·오프라인 저장 |
 | 사진 | `node scripts/check-photos-browser.mjs`: 실제 변환·PNG 반환 대체·초안 저장 |
-| 테마 | `node scripts/check-theme-browser.mjs`: 테마 선택·저장·내보내기 |
+| 테마 | `node scripts/check-theme-browser.mjs`: 테마 선택·저장 차단·기기 변경·내보내기·인쇄 |
+| 기존 UI 탐색 | `node scripts/check-navigation-browser.mjs`: 서울/미국 서부 기기 날짜 경계, 세 메뉴·날짜·시간표·입력 유지, 초안 재열기, 테마 키보드·포커스, 320~1440px와 분기점 전후·축소 뷰포트·확대 모사 |
 | PWA | `node scripts/check-pwa-browser.mjs`: 설치·캐시·오프라인·시간 제한 |
+
+탐색 검사는 `TRIP_BROWSER_ENGINE`을 `firefox` 또는 `webkit`으로 설정해 추가 실행할 수 있다(기본 `chromium`). 해당 Playwright 브라우저를 먼저 설치한다. Firefox는 모바일 에뮬레이션 대신 같은 크기의 터치 가능 뷰포트를 사용한다. 추가 엔진의 캡처는 진단용 임시 폴더에 남기며 경로를 출력한다. PowerShell에서는 실행 후 `Remove-Item Env:TRIP_BROWSER_ENGINE`으로 해제한다. Daylight 검사는 아래 후보 브랜치 절차에만 해당하며 현재 루트의 12개 묶음에는 포함하지 않는다.
 
 개별 브라우저 스크립트는 첫 인자로 Playwright 모듈의 절대 경로를 받을 수 있다. 설치된 Chrome을 사용하려면 PowerShell에서 `$env:PWA_BROWSER_CHANNEL='chrome'`을 설정한다. PWA·인증 SDK 검사는 앱과 같은 npm SDK를 로컬 파일로 제공하고 테스트 페이지의 URL·SRI만 대체하므로 CDN 연결 없이 실행된다.
 
@@ -445,6 +447,8 @@ node scripts/build-ui-preview.mjs
 
 ## Daylight 후보 검토와 운영 전환
 
+2026-10-24 이후 추가 개발·운영 전환은 보류했습니다. 아래 생성·전환 절차는 보존한 Daylight 후보 브랜치에만 적용합니다. 기존 앱 개선 브랜치의 루트로 Daylight 생성 스크립트를 실행하지 않습니다.
+
 <a id="daylight-live"></a>
 
 ### 실제 데이터에 연결한 병행 앱
@@ -526,3 +530,9 @@ Windows 샌드박스에서 localhost가 `ERR_NETWORK_ACCESS_DENIED`로 거부되
 3. 이후 조사·예약 근거는 해당 여행의 `planning`에 보관하고, 확정 내용은 앱에서 저장한다. `planning` 파일을 수정해도 앱에 자동 반영되지는 않는다.
 
 이 운영 원칙을 적용하기 위해 DB 이전이나 폴더 개편을 할 필요는 없다. `trip-config.js`는 기본 설정과 초기 일정을 제공하며, 운영 중인 일정 변경은 앱에서 저장한다. 일정 변경 때마다 설정 파일 수정이나 Git 배포를 할 필요는 없다. 새 여행의 초기 설정은 [재사용 절차](#new-trip)를 따른다.
+
+## 기존 앱 UI 개선본 검증과 배포
+
+[수정 계획](LEGACY_UI_REFINEMENT_PLAN_KO.md)에 따라 최신 배포 기준 `1ff42eb`에서 별도 `codex/legacy-ui-refinement` 브랜치로 작업합니다. 검증 결과·한계는 [2026-10-24 구현 기록](archive/2026-10-24-legacy-ui-refinement.md)을 따릅니다. 단위 검사와 전체 브라우저 실행 목록에 새 탐색 검사가 포함됩니다. 새 검사는 합성 여행만 사용하며 캡처는 `docs/ui-concepts/previews/legacy-refinement-implementation/`에 남깁니다. 실제 모바일 키보드·기기 확대는 모사와 구분해 기기에서 확인합니다.
+
+배포 시 이 개선본의 루트 앱·관련 검사·문서 변경만 검토해 main에 반영하고 Validate·Pages 결과를 확인합니다. Daylight 후보 브랜치 전체를 합치거나 `daylight/`·기존 공개 비교본을 재생성하지 않습니다. SQL·스키마·서버 설정 변경은 없습니다. 사용자는 기존 초안을 저장하거나 작업본으로 보관한 뒤 열린 앱을 닫고 온라인에서 다시 열어 새 하단 메뉴와 테마를 확인합니다. 공개 배포·실제 공유 데이터 저장 검사는 로컬 회귀 결과와 별도로 기록합니다.

@@ -1,3 +1,4 @@
+import { selectTripTab } from './browser-fixtures.mjs';
 // Actual file input + application code, with a local revision-checked API only.
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -74,7 +75,7 @@ try {
     const page=await context.newPage();page.setDefaultTimeout(10000);page.on('pageerror',e=>errors.push(e.message));
     await page.goto(origin);await ready(page);
     row={...row,content:await state(page),revision:3};await page.reload();await ready(page);
-    await page.locator('.tabs label[for="d1"]').click();await page.locator('#editBtn').click();
+    await selectTripTab(page, 'd1');await page.locator('#editBtn').click();
     await page.waitForFunction(()=>document.querySelector('.day1 .timeline-row h3').isContentEditable);
     await page.locator('.day1 .timeline-row h3').first().fill('보존해야 할 기존 초안');
     await page.evaluate(async()=>{window.__importTest.recordHistory();await window.__importTest.flushDraftPersistence();});
@@ -191,11 +192,11 @@ try {
     const incoming={...old,html:old.html.replace('직접 추가한 아침 일정','사용자가 확인한 새 일정')};
     const priorDraft=await stored(page);
     await upload(page,incoming);await page.locator('#importDialog').waitFor({state:'visible'});
-    row={...row,revision:4,content:{...serverBefore.content,budgetKrw:7654321}};
+    row={...row,revision:4,content:{...serverBefore.content,budgetKrw:7654321,exchangeRate:1555}};
     const newer=structuredClone(row);
     await page.locator('#importApply').click();
     await page.waitForFunction(()=>document.querySelector('#importSummary').textContent.includes('다시 계산'));
-    assert.equal(await page.locator('#importDialog').isVisible(),true);assert.match(await page.locator('#importDiff').textContent(),/7,654,321/);
+    assert.equal(await page.locator('#importDialog').isVisible(),true);assert.match(await page.locator('#importDiff').textContent(),/1555/);assert.doesNotMatch(await page.locator('#importDiff').textContent(),/예산|7,654,321/);
     assert.deepEqual(await state(page),old);assert.deepEqual(await stored(page),priorDraft);assert.equal(saves,0);assert.deepEqual(row,newer);
     // Canceling the refreshed comparison must also leave the draft intact.
     await page.locator('#importCancel').click();assert.deepEqual(await state(page),old);assert.deepEqual(await stored(page),priorDraft);

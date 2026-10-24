@@ -1,3 +1,4 @@
+import { selectTripTab, selectTheme } from './browser-fixtures.mjs';
 // Isolated UI checks with local fixtures. No production API/auth calls or writes.
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -60,8 +61,8 @@ try {
     await p.waitForFunction(() => !document.body.classList.contains('hydrating'));
   };
   const theme = p => p.locator('html').getAttribute('data-theme');
-  const choose = (p, value) => p.locator('#themeSelect').selectOption(value);
-  const tab = (p, id) => p.locator(`.tabs label[for="${id}"]`).click();
+  const choose = selectTheme;
+  const tab = selectTripTab;
   const color = (p, selector, property = 'backgroundColor') => p.locator(selector).first().evaluate((el, property) => getComputedStyle(el)[property], property);
   const capture = p => p.evaluate(() => JSON.stringify({ state: window.__themeTest.captureState(), dirty: window.__themeTest.isDirty() }));
   const unchanged = async (p, before) => assert.equal(await capture(p), before, 'Theme changes must preserve both content and the existing dirty flag');
@@ -80,21 +81,21 @@ try {
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
   await choose(page, 'light'); await page.emulateMedia({ colorScheme: 'dark' }); assert.equal(await theme(page), 'light');
-  assert.equal(await color(page, '.tabs label.is-active .tab-label-icon'), 'rgba(0, 0, 0, 0)');
+  assert.equal(await page.locator('[data-section=prep]').getAttribute('aria-current'), 'page');
   await page.screenshot({ path: path.join(output, 'mobile-light-prep.png'), fullPage: true });
 
   const second = await context.newPage(); await second.goto(origin + '/trip/index.html'); await ready(second);
   await choose(page, 'dark');
   await second.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
-  assert.equal(await second.locator('#themeSelect').inputValue(), 'dark'); await second.close();
+  assert.equal(await second.locator('input[name=themePreference]:checked').inputValue(), 'dark'); await second.close();
 
   for (const id of ['d1', 'd2', 'money']) {
     await tab(page, id);
     assert.equal(await color(page, '.day.is-active'), 'rgb(25, 37, 50)');
     await page.screenshot({ path: path.join(output, `mobile-dark-${id}.png`), fullPage: true });
   }
-  assert.equal(await color(page, '.expense-filters'), 'rgb(36, 51, 68)');
-  assert.equal(await color(page, '#expenseFilterQuery'), 'rgb(25, 37, 50)');
+  assert.equal(await color(page, '.expense-entry'), 'rgb(36, 51, 68)');
+  assert.equal(await color(page, '#expenseName'), 'rgb(25, 37, 50)');
   await tab(page, 'd1');
   await page.getByRole('button', { name: '시간표', exact: true }).click();
   assert.equal(await color(page, '.tt-day-header'), 'rgb(36, 51, 68)');
@@ -134,7 +135,7 @@ try {
   const editableDownload = offline.waitForEvent('download'); await offline.locator('#offlineExportBtn').click();
   const editablePath = path.join(output, 'editable.html'); await (await editableDownload).saveAs(editablePath);
   const editable = await readFile(editablePath, 'utf8');
-  assert.match(editable, /id="tripThemeBootstrap"/); assert.match(editable, /id="themeSelect"/);
+  assert.match(editable, /id="tripThemeBootstrap"/); assert.match(editable, /id="themeToggle"/);
   assert.doesNotMatch(editable.match(/<html[^>]*>/)[0], /data-theme=|data-theme-preference=/);
   assert.doesNotMatch(editable, /src="(?:\.\/)?pwa\.js"/);
   diagnostics.scenario('editable export theme');
@@ -149,14 +150,14 @@ try {
   const readonlyDownload = offline.waitForEvent('download'); await offline.locator('#exportBtn').click();
   const readonlyPath = path.join(output, 'readonly.html'); await (await readonlyDownload).saveAs(readonlyPath);
   const readonly = await readFile(readonlyPath, 'utf8');
-  assert.doesNotMatch(readonly, /<script id="tripThemeBootstrap"|id="themeSelect"/);
+  assert.doesNotMatch(readonly, /<script id="tripThemeBootstrap"|id="themeToggle"/);
   assert.doesNotMatch(readonly.match(/<html[^>]*>/)[0], /data-theme=|data-theme-preference=/);
   diagnostics.scenario('readonly export theme');
   const readonlyContext = await diagnostics.context(browser, { colorScheme: 'dark' });
   const readOnlyPage = await readonlyContext.newPage(); readOnlyPage.on('pageerror', e => errors.push(e.message));
   await readOnlyPage.goto(pathToFileURL(readonlyPath).href);
   assert.equal(await color(readOnlyPage, '.panel'), 'rgb(255, 255, 255)');
-  await tab(readOnlyPage, 'money'); await diagnostics.close(readonlyContext);
+  assert.equal(await readOnlyPage.locator('.moneyday').isVisible(), true);assert.equal(await readOnlyPage.locator('.bottom-nav,.tabs,#expenseCsvExport').count(), 0); await diagnostics.close(readonlyContext);
 
   diagnostics.scenario('print and responsive theme');
   await offline.emulateMedia({ media: 'print' });

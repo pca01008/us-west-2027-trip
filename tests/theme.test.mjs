@@ -8,7 +8,7 @@ const script = html.match(/<script id="tripThemeBootstrap">([\s\S]*?)<\/script>/
 
 function app({ stored = null, dark = false, unavailable = false, quota = false, scope, url = 'https://example.com/trip/' } = {}) {
   const root = { dataset: scope ? { themeScope: scope } : {} };
-  const meta = { content: '' }, chrome = { content: '' }, select = { value: '', id: 'themeSelect' }, status = {};
+  const meta = { content: '' }, chrome = { content: '' }, select = { value: '', name: 'themePreference' }, status = {};
   const events = {}, windowEvents = {}, writes = [], reads = [];
   const storage = {
     getItem(key) { reads.push(key); if (unavailable) throw Error('blocked'); return stored; },
@@ -18,7 +18,8 @@ function app({ stored = null, dark = false, unavailable = false, quota = false, 
   const document = {
     documentElement: root,
     querySelector(selector) { return selector.includes('color-scheme') ? meta : chrome; },
-    getElementById(id) { return id === 'themeSelect' ? select : status; },
+    querySelectorAll() { return ['light','dark','system'].map(value => ({ value, set checked(on) { if(on) select.value=value; } })); },
+    getElementById(id) { return id === 'themeStorageStatus' ? status : null; },
     addEventListener(type, fn) { events[type] = fn; }
   };
   vm.runInNewContext(script, { document, URL, location: { href: url }, localStorage: storage,

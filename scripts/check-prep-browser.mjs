@@ -1,3 +1,4 @@
+import { selectTripTab } from './browser-fixtures.mjs';
 // Exercise the actual app with a revision-checked local server. No production access.
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -106,7 +107,7 @@ try {
     assert.equal(await page.locator('#checklistEditorRows input[type="checkbox"]').nth(1).isChecked(),true);
     await page.locator('#checklistAdd').click();await page.locator('.checklist-text').last().fill('새 준비물');
     assert.equal(await page.locator('#checklistEditorRows input[type="checkbox"]').last().isChecked(),false);
-    await page.locator('#themeSelect').evaluate(el=>{el.value='dark';el.dispatchEvent(new Event('change',{bubbles:true}));});
+    await page.locator('input[name=themePreference][value=dark]').evaluate(el=>{el.checked=true;el.dispatchEvent(new Event('change',{bubbles:true}));});
     await page.screenshot({path:path.join(output,`${mobile?'mobile':'desktop'}-list-editor.png`)});
     await page.locator('#checklistSave').click();await page.locator('#checklistDialog').waitFor({state:'hidden'});
     assert.equal(await page.locator('#noticeDialog').isVisible(),false,'No second save confirmation');
@@ -135,11 +136,11 @@ try {
     await page.locator('.checklist-text').last().fill('최신 목록 확인');await page.locator('#checklistSave').click();await page.locator('#checklistDialog').waitFor({state:'hidden'});
     // Preserve an unrelated ledger draft entered while an auto-save is in flight.
     delay=500;await check(5).click();await page.waitForFunction(()=>window.__prepTest.pending()>0);
-    await page.locator('.tabs label[for="money"]').click();await page.locator('#expenseName').fill('입력 중인 경비');
+    await selectTripTab(page, 'money');await page.locator('#expenseName').fill('입력 중인 경비');
     await page.evaluate(()=>window.__prepTest.draft());assert.equal(await page.evaluate(()=>window.__prepTest.isDirty()),true);
     await idle();delay=0;assert.equal(row.content.expenses.some(e=>e.id==='unsaved-expense'),false);
     assert.equal(await page.locator('#expenseName').inputValue(),'입력 중인 경비','In-progress form input survives auto-save');
-    await page.locator('.tabs label[for="prep"]').click();
+    await selectTripTab(page, 'prep');
     assert.equal(await page.evaluate(()=>window.__prepTest.captureState().expenses.some(e=>e.id==='unsaved-expense')),true);
     assert.equal(await page.evaluate(()=>window.__prepTest.isDirty()),true);
     // A deleted remote item must fail safely without checking the row that moved into its position.
@@ -151,7 +152,7 @@ try {
     assert.equal(row.content.expenses.some(e=>e.id==='unsaved-expense'),false);assert.equal(await page.evaluate(()=>window.__prepTest.captureState().expenses.some(e=>e.id==='unsaved-expense')),true);
     assert.equal(await page.evaluate(()=>window.__prepTest.isDirty()),true);
     // Global schedule editing cannot mutate checklist completion or text.
-    await page.locator('.tabs label[for="d1"]').click();await page.locator('#editBtn').click();await page.locator('.tabs label[for="prep"]').click();
+    await selectTripTab(page, 'd1');await page.locator('#editBtn').click();await selectTripTab(page, 'prep');
     assert.equal(await check(0).isDisabled(),true);assert.equal(await page.locator('.prepday label>span').first().getAttribute('contenteditable'),'false');
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No horizontal overflow');
     console.log(`${mobile?'Mobile':'Desktop'}: authentication, auto-save/reload, queue, rollback/retry, revision conflict, editor, cancel, blank input and draft isolation passed.`);

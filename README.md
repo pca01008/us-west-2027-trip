@@ -3,6 +3,8 @@
 2027년 1월 21일~31일 라스베이거스와 로스앤젤레스 여행을 위한 공유 일정 웹앱입니다.
 일정·PREP 체크리스트·가계부·사진을 확인하고, 지정된 편집자 계정으로 수정합니다.
 
+기존 앱의 UI 개선을 진행하며 Daylight 추가 개발·운영 전환은 보류합니다. [수정 계획](docs/LEGACY_UI_REFINEMENT_PLAN_KO.md)과 [구현·검증 기록](docs/archive/2026-10-24-legacy-ui-refinement.md)을 기준으로 합니다.
+
 ## 문서 길잡이
 
 | 하고 싶은 일 | 기준 문서 |
@@ -18,7 +20,7 @@
 | 에이전트 작업 규칙 확인 | [AGENTS.md](AGENTS.md) |
 | UI 개편 후보 3안 비교 | [온라인 비교 화면](https://pca01008.github.io/us-west-2027-trip/ui-preview/) · [로컬 원본](docs/ui-concepts/index.html) · [검토 기록](docs/archive/2026-10-21-ui-concepts.md) · [실행·배포 방법](docs/OPERATIONS_KO.md#ui-concepts) |
 | 선택한 A안(Daylight) 개선 검토 | [최신 세션 인계](docs/archive/2026-10-22-daylight-handoff.md) · [개선 초안](docs/ui-concepts/a.html) · [1차 개선](docs/archive/2026-10-21-daylight-refinement.md) · [사용성 개선](docs/archive/2026-10-22-daylight-usability.md) |
-| A안 운영 전환 범위·구현 순서·검증 기준 | [Daylight 구현 계획](docs/DAYLIGHT_IMPLEMENTATION_PLAN_KO.md) · [후보 구현과 검증](docs/archive/2026-10-23-daylight-implementation.md) — 후보 구현, 운영 적용 별도 승인 |
+| A안 운영 전환 범위·구현 순서·검증 기준 | [Daylight 구현 계획](docs/DAYLIGHT_IMPLEMENTATION_PLAN_KO.md) · [후보 구현과 검증](docs/archive/2026-10-23-daylight-implementation.md) — 보류한 후보 이력 |
 | 기존 버전과 Daylight를 같은 조건으로 비교 | [1:1 비교 화면](https://pca01008.github.io/us-west-2027-trip/ui-preview/daylight-compare.html) · [비교 환경 기록](docs/archive/2026-10-23-daylight-comparison.md) |
 | 두 버전을 별도 사이트처럼 직접 열기 | [기존 버전](https://pca01008.github.io/us-west-2027-trip/ui-preview/daylight-before.html) · [Daylight](https://pca01008.github.io/us-west-2027-trip/ui-preview/daylight-after.html) · [단독 페이지 공개 기록](docs/archive/2026-10-23-daylight-standalone.md) |
 | 실제 여행 데이터로 두 앱 사용 | [기존 앱](https://pca01008.github.io/us-west-2027-trip/) · [Daylight](https://pca01008.github.io/us-west-2027-trip/daylight/) · [공유 데이터 사용법](docs/USER_GUIDE_KO.md#shared-daylight) |
