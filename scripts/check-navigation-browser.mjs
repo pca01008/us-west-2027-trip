@@ -11,7 +11,7 @@ const engine = process.env.TRIP_BROWSER_ENGINE || 'chromium';
 assert.ok(['chromium', 'firefox', 'webkit'].includes(engine), `Unsupported browser: ${engine}`);
 const root = new URL('../', import.meta.url);
 const diagnostics = await createBrowserDiagnostics(`navigation-${engine}`);
-const output = engine === 'chromium' ? fileURLToPath(new URL('../docs/ui-concepts/previews/legacy-refinement-implementation/', import.meta.url)) : diagnostics.output;
+const output = diagnostics.output;
 await mkdir(output, { recursive: true });
 const source = (await readFile(new URL('index.html', root), 'utf8'))
   .replace('data-offline="false"', 'data-offline="true"')
@@ -59,14 +59,14 @@ try {
   const start = await page.locator('#timetableStart').inputValue();
   await selectTripTab(page, 'money', true);
   assert.equal(await page.locator('.tabs').isVisible(), false);assert.equal(await page.locator('#scheduleViewSwitch').isVisible(), false);
-  await page.locator('#expenseName').fill('입력 중인 경비');await page.locator('#expenseAmount').fill('12.34');await page.locator('#expenseCurrency').selectOption('USD');
+  await page.locator('#expenseName').fill('입력 중인 경비');await page.locator('#expenseUsd').fill('12.34');
   await selectTripTab(page, 'prep', true);await page.locator('#nav-schedule').tap();
   assert.equal(await page.locator('#d4').isChecked(), true);assert.equal(await page.locator('#timetableView').isVisible(), true);
   assert.equal(await page.locator('#timetableStart').inputValue(), start);
   await page.evaluate(() => { const api=window.__navigationTest;api.applyStatePreservingInputs(api.captureState());api.updateTripProgress();api.updateWorldClocks(); });
   assert.equal(await page.locator('#d4').isChecked(), true);assert.equal(await page.locator('#timetableView').isVisible(), true);
   await selectTripTab(page, 'money', true);
-  assert.equal(await page.locator('#expenseName').inputValue(), '입력 중인 경비');assert.equal(await page.locator('#expenseAmount').inputValue(), '12.34');assert.equal(await page.locator('#expenseCurrency').inputValue(), 'USD');
+  assert.equal(await page.locator('#expenseName').inputValue(), '입력 중인 경비');assert.equal(await page.locator('#expenseUsd').inputValue(), '12.34');
   await page.locator('#addExpense .button-icon').tap();await page.waitForFunction(() => document.querySelectorAll('#expenses .expense').length === 1);
   await page.locator('[data-edit-expense]').tap();await page.locator('#expenseEditName').fill('수정한 경비');await page.locator('#expenseEditSave').tap();
   await page.waitForFunction(() => document.querySelector('#expenses .expense-primary b').textContent === '수정한 경비');
@@ -92,7 +92,7 @@ try {
       await page.locator('#themeToggle').click();
       const geometry=await page.evaluate(() => {
         const menu=document.querySelector('#themeMenu').getBoundingClientRect(),add=document.querySelector('#addExpense'),rect=add.getBoundingClientRect(),nav=document.querySelector('.bottom-nav').getBoundingClientRect();
-        return { overflow:document.documentElement.scrollWidth>innerWidth, menu:[menu.left,menu.right], add:[rect.width,rect.height,add.scrollWidth,add.clientWidth], nav:nav.bottom, overlap:rect.top < document.querySelector('#expenseCurrency').getBoundingClientRect().bottom && rect.bottom > document.querySelector('#expenseCurrency').getBoundingClientRect().top && rect.left < document.querySelector('#expenseCurrency').getBoundingClientRect().right, hit:document.elementFromPoint(menu.right-12,menu.bottom-12)?.closest('#themeMenu')?.id };
+        return { overflow:document.documentElement.scrollWidth>innerWidth, menu:[menu.left,menu.right], add:[rect.width,rect.height,add.scrollWidth,add.clientWidth], nav:nav.bottom, overlap:rect.top < document.querySelector('#expenseUsd').getBoundingClientRect().bottom && rect.bottom > document.querySelector('#expenseUsd').getBoundingClientRect().top && rect.left < document.querySelector('#expenseUsd').getBoundingClientRect().right, hit:document.elementFromPoint(menu.right-12,menu.bottom-12)?.closest('#themeMenu')?.id };
       });
       assert.equal(geometry.overflow,false,`overflow ${theme} ${width}`);assert.ok(geometry.menu[0]>=0&&geometry.menu[1]<=width,`menu ${width}`);assert.equal(geometry.hit,'themeMenu');
       assert.ok(geometry.add[1]>=44&&geometry.add[2]<=geometry.add[3],`add ${width}`);assert.equal(geometry.nav,900);assert.equal(geometry.overlap,false,`currency/add overlap ${width}`);

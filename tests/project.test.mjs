@@ -83,10 +83,10 @@ test('초기 기본 일정은 최신 공유본 확인이 끝날 때까지 노출
   assert.match(html, /\.preview-banner,\.app-loading,\.tab-scroll/);
 });
 
-test('현재 여행과 재사용 템플릿은 보존형 스키마 5를 사용한다', async () => {
+test('현재 여행과 재사용 템플릿은 보존형 스키마 6를 사용한다', async () => {
   for (const file of ['trip-config.js', 'trip-config.template.js']) {
     const source = await readFile(path.join(root, file), 'utf8');
-    assert.match(source, /schemaVersion:\s*5/);
+    assert.match(source, /schemaVersion:\s*6/);
   }
 });
 
@@ -143,7 +143,7 @@ test('오프라인 불러오기는 revision을 재확인하고 최종 기준점�
   assert.match(html, /seenCheckIds\.has\(label\.dataset\.checkId\)/);
   assert.match(html, /seenRowIds\.has\(row\.dataset\.rowId\)/);
   assert.match(html, /seenPhotoIds\?\.has\(figure\.dataset\.photoId\)/);
-  assert.match(html, /amount:Number\.isFinite\(amount\)\?amount:0/);
+  assert.match(html, /DOCUMENT_LEDGER/);
   assert.match(html, /a\.rel='noopener noreferrer'/);
 });
 
@@ -223,7 +223,7 @@ test('기본 일정은 자유 HTML 대신 구조화된 링크와 비용 데이�
   assert.match(html, /renderConfigTourCosts/);
 });
 
-test('문서와 GitHub 검증 설정은 스키마 5 운영 방식과 일치한다', async () => {
+test('문서와 GitHub 검증 설정은 스키마 6 운영 방식과 일치한다', async () => {
   const docs = ['README.md', 'docs/USER_GUIDE_KO.md', 'docs/PROJECT_GUIDE_KO.md', 'docs/OPERATIONS_KO.md'];
   const contents = await Promise.all(docs.map(file => readFile(path.join(root, file), 'utf8')));
   const [readme, , guide] = contents;
@@ -232,7 +232,7 @@ test('문서와 GitHub 검증 설정은 스키마 5 운영 방식과 일치한�
     readFile(path.join(root, '.gitignore'), 'utf8'),
     readFile(path.join(root, '_config.yml'), 'utf8')
   ]);
-  assert.match(guide, /schemaVersion 5/);
+  assert.match(guide, /schemaVersion 6/);
   assert.doesNotMatch(guide, /trip_documents\.editor_id/);
   assert.match(readme, /npm test/);
   assert.match(workflow, /run: npm test/);

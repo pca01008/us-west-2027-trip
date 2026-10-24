@@ -94,7 +94,10 @@ try {
       ['missing HTML',{}, {},/편집 데이터/],
       ['non-string HTML',{}, {html:42},/편집 데이터/],
       ['empty HTML',{}, {html:'   '},/편집 데이터/],
-      ['future embedded version',{}, {...before,schemaVersion:999},/더 새로운 버전/]
+      ['future embedded version',{}, {...before,schemaVersion:999},/더 새로운 버전/],
+      ['missing dual amounts',{}, {...before,expenses:[{id:'bad',amount:10,currency:'USD'}]},/복구/],
+      ['damaged dual amount',{}, {...before,expenses:[{id:'bad',amountKrw:14000,amountUsd:null,amountSource:'usd',appliedExchangeRate:1400}]},/복구/],
+      ['damaged legacy amount',{}, {...before,schemaVersion:5,expenses:[{id:'bad',amount:'Infinity',currency:'USD'}]},/복구/]
     ];
     for(const [name,options,incoming,message] of rejected) {
       diagnostics.scenario(`reject ${name} / ${mobile ? 'mobile' : 'desktop'}`);
@@ -125,8 +128,8 @@ try {
         <a class="safe-link" href="https://example.com/travel">정상 링크</a><a class="bad-link" href="javascript:window.__importExecuted=true">위험 링크</a><a class="bad-link" href="data:text/html,bad">데이터 링크</a>
         <img class="bad-image" src="javascript:window.__importExecuted=true" onerror="window.__importExecuted=true" data-full-url="javascript:window.__importExecuted=true">
         <div class="schedule-photos"><figure class="schedule-photo" data-photo-id="duplicate-photo"><img src="${photo}" srcset="https://invalid.example/import-probe-srcset 1x" data-full-url="${photo}" alt="정상 사진"><figcaption>사진 하나</figcaption></figure><figure class="schedule-photo" data-photo-id="duplicate-photo" data-full-path="../bad" data-thumb-path="../bad"><img src="${photo}" data-full-url="${photo}" alt="두 번째 사진"><figcaption>사진 둘</figcaption></figure></div></div>`);
-      raw.html=t.innerHTML;raw.exchangeRate='not-a-number';raw.budgetKrw=-1;
-      raw.expenses=[{id:'duplicate-expense',name:'정상 지출',amount:'12.5',currency:'USD'},{id:'duplicate-expense',name:'잘못된 숫자',amount:'Infinity',currency:'INVALID',date:'bad'}];
+      raw.schemaVersion=5;raw.html=t.innerHTML;raw.exchangeRate='not-a-number';raw.budgetKrw=-1;
+      raw.expenses=[{id:'duplicate-expense',name:'정상 지출',amount:'12.5',currency:'USD'},{id:'duplicate-expense',name:'기존 지출',amount:'1',currency:'INVALID',date:'bad'}];
       return raw;
     });
     await upload(page,hostile);await page.locator('#importDialog').waitFor({state:'visible'});
@@ -161,7 +164,7 @@ try {
     assert.equal(inspection.photos.length,2);for(const photo of inspection.photos){assert.match(photo.src,/^data:image\/png;base64,/);assert.equal(photo.full,photo.src);assert.deepEqual(photo.paths,[undefined,undefined]);}
     assert.deepEqual(inspection.photos.map(p=>p.caption),['사진 하나','사진 둘']);
     assert.match(clean.html,/정상 일정 유지/);assert.equal(clean.exchangeRate,inspection.defaults[0]);assert.equal(clean.budgetKrw,inspection.defaults[1]);
-    assert.deepEqual(clean.expenses.map(e=>e.amount),[12.5,0]);assert.notEqual(clean.expenses[0].id,clean.expenses[1].id);
+    assert.deepEqual(clean.expenses.map(e=>e.amountUsd),[12.5,1]);assert.notEqual(clean.expenses[0].id,clean.expenses[1].id);
     assert.equal(inspection.executed,false);assert.deepEqual(attempted,[],'Unsafe media must not even issue a request');
     assert.equal(saves,0);assert.deepEqual(row,serverBefore);
     assert.deepEqual(await page.evaluate(async()=>window.__importTest.normalizeState((await window.__importTest.readDraftRecord()).state)),clean);
@@ -182,7 +185,7 @@ try {
     assert.deepEqual(identities(old.html),identities(expected.html),'Import must use deterministic legacy IDs');
     for(const [kind,id] of [['row','kept-row'],['check','kept-check'],['photo','kept-photo']])assert.ok(identities(old.html).some(pair=>pair[0]===kind&&pair[1]===id),'Preserve existing '+kind+' ID');
     assert.deepEqual(old.checks,[true,false]);assert.deepEqual(old.expenses,expected.expenses);
-    assert.deepEqual(old.expenses,[{id:'kept-expense',name:'예약금',amount:25.5,currency:'USD',date:'2027-01-21',categoryId:'food'}]);
+    assert.deepEqual(old.expenses,[{id:'kept-expense',name:'예약금',amountKrw:35700,amountUsd:25.5,amountSource:'usd',appliedExchangeRate:1400,date:'2027-01-21',categoryId:'food'}]);
     for(const text of ['직접 수정한 여행 설명','직접 추가한 아침 일정','구버전 메모 보존','식당 예약','창가 자리','여권 확인','충전기 챙기기','사진 설명 보존'])assert.ok(old.html.includes(text),text);
     await upload(page,{...legacy,schemaVersion:undefined},{version:4});await page.locator('#importDialog').waitFor({state:'visible'});await apply(page);
     assert.deepEqual(await state(page),old,'Repeated import keeps IDs and content stable');

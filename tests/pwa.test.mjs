@@ -127,7 +127,7 @@ test('SDK 미연결 또는 오프라인 시작에서도 기존 공개본을 읽�
     const record = { state: { html: 'saved itinerary' }, revision: 7, cachedAt: '2026-09-01T00:00:00Z' };
     const context = vm.createContext({
       OFFLINE_MODE: false, client, navigator: { onLine: false }, lastSavedState: record.state,
-      console: { warn() {} }, readPublicCache: async () => record,
+      blockUnsupportedDocument: () => false, console: { warn() {} }, readPublicCache: async () => record,
       normalizeState: value => value, migratePublishedState: value => value,
       applyState: value => { displayed = value; },
       setPublishedBaseline: (_row, _state, metadata) => { baselineMetadata = metadata; },

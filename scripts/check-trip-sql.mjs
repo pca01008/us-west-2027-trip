@@ -305,6 +305,20 @@ async function checkFreshInstall(autoGrants, t) {
       assert.equal(version.content_size, 4194304);
       assert.deepEqual(version.content, content);
     });
+    await t.test('schema 6 rejects old tabs without changing documents or versions; converted restoration succeeds', async () => {
+      const migration=await source('migrations/20261024_ledger_schema_guard.sql');
+      await db.query(migration);await db.query(migration);
+      const content={...document('dual amounts'),schemaVersion:6,expenses:[{id:'meal',amountKrw:14500,amountUsd:10,amountSource:'both',appliedExchangeRate:null}]};
+      assert.equal((await save(db,A,TRIP,content,58)).revision,59);
+      const before=await snapshot(db);
+      for(const schemaVersion of [undefined,4,5,'6',null,-1,6.5]){
+        await rejected(()=>save(db,A,TRIP,{...document('old client PREP save'),...(schemaVersion===undefined?{}:{schemaVersion})},59),'22023');
+        assert.deepEqual(await snapshot(db),before);
+      }
+      await rejected(()=>save(db,B,TRIP,content,59),'42501');
+      await rejected(()=>save(db,A,TRIP,content,58),'40001');
+      assert.equal((await save(db,A,TRIP,{...content,html:'<main>converted historical version</main>'},59)).revision,60);
+    });
   });
 }
 

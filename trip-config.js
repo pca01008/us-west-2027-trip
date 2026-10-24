@@ -6,7 +6,7 @@
  * tripId는 영문 소문자, 숫자, 하이픈만 사용하세요.
  */
 window.TRIP_CONFIG = {
-  schemaVersion: 5,
+  schemaVersion: 6,
   tripId: 'us-west-2027',
   cacheNamespace: 'uswest2027',
   locale: 'ko-KR',

@@ -870,6 +870,16 @@ input:disabled,select:disabled{opacity:.7}
   @media print{body{padding-bottom:0}.bottom-nav,#expenseCsvExport{display:none}}
   html[data-artifact-type="readonly"] body{padding-bottom:0}
 }
+  .expense-entry .add-expense{grid-template-columns:repeat(3,minmax(0,1fr));align-items:start}
+  .expense-entry #addExpense{margin-top:25px}
+  .amount-hint{display:block;font-size:12px;line-height:1.5;color:var(--muted);overflow-wrap:anywhere}
+  .amount-error{color:var(--red)}
+  .money-totals{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .expense-amount{white-space:normal;overflow-wrap:anywhere}
+  .expense-amount small{display:inline;margin:0;font-size:12px;font-weight:500}
+  .expense-side,.money-total strong{min-width:0;overflow-wrap:anywhere}
+  @media(max-width:1100px){.expense-entry .add-expense{grid-template-columns:repeat(2,minmax(0,1fr))}.expense-entry #addExpense{grid-column:1/-1;width:100%;margin-top:0}}
+  @media(max-width:480px){.expense-entry .add-expense,.expense-edit-grid{grid-template-columns:minmax(0,1fr)}.expense-edit-grid .wide{grid-column:auto}.expense-side{max-width:100%;flex-wrap:wrap;gap:10px}.expense-amount{flex-basis:100%;text-align:left}.expense-actions{margin-left:auto}.expense-action{white-space:nowrap}}
 </style>
 </head>
 <body class="viewing hydrating">
@@ -890,8 +900,8 @@ input:disabled,select:disabled{opacity:.7}
 <section class="notice-dialog" id="versionCompareDialog" hidden aria-modal="true" aria-labelledby="versionCompareTitle" role="dialog"><div class="notice-card import-card"><h2 id="versionCompareTitle">버전 차이 비교</h2><p id="versionCompareSummary"></p><div class="import-diff" id="versionCompareDiff"></div><div class="notice-actions"><button class="action-muted" id="versionCompareClose" type="button">닫기</button><button class="action-primary" id="versionCompareRestore" type="button">이 버전 복원</button></div></div></section>
 <section class="notice-dialog" id="categoryDialog" hidden aria-modal="true" aria-labelledby="categoryTitle" role="dialog"><div class="notice-card category-card"><h2 id="categoryTitle">카테고리 편집</h2><label class="dialog-field"><span>카테고리 이름</span><input id="categoryName" maxlength="24" type="text"></label><div class="icon-picker" id="categoryIconPicker" aria-label="카테고리 아이콘"></div><div class="notice-actions"><button class="action-muted" id="categoryCancel" type="button">취소</button><button class="action-primary" id="categorySave" type="button">적용</button></div></div></section>
 <section class="notice-dialog" id="checklistDialog" hidden aria-modal="true" aria-labelledby="checklistDialogTitle" role="dialog"><div class="notice-card checklist-editor-card"><h2 id="checklistDialogTitle">목록 편집</h2><div id="checklistEditorRows"></div><button class="btn" id="checklistAdd" type="button" data-icon="plus">항목 추가</button><p id="checklistEditorError" role="status" aria-live="polite"></p><div class="notice-actions"><button class="action-muted" id="checklistCancel" type="button">취소</button><button class="action-primary" id="checklistSave" type="button">저장</button></div></div></section>
-<section class="notice-dialog" id="ledgerSettingsDialog" hidden aria-modal="true" aria-labelledby="ledgerSettingsTitle" role="dialog"><div class="notice-card"><h2 id="ledgerSettingsTitle">가계부 설정</h2><label class="ledger-settings-rate"><span>수동 환율</span><span class="ledger-settings-rate-control">1 USD = <input id="settingsExchangeRate" inputmode="decimal" type="text"> KRW</span></label><div class="ledger-settings-heading"><strong>카테고리</strong><button class="btn" data-icon="plus" id="settingsAddCategory" type="button">카테고리 추가</button></div><div class="ledger-settings-list" id="settingsCategoryList"></div><div class="notice-actions"><button class="action-primary" id="ledgerSettingsClose" type="button">설정 닫기</button></div></div></section>
-<section class="notice-dialog" id="expenseDialog" hidden aria-modal="true" aria-labelledby="expenseDialogTitle" role="dialog"><div class="notice-card expense-edit-card"><h2 id="expenseDialogTitle">가계부 항목 수정</h2><div class="expense-edit-grid"><label class="dialog-field"><span>날짜</span><input id="expenseEditDate" type="date"></label><label class="dialog-field"><span>카테고리</span><select id="expenseEditCategory"></select></label><label class="dialog-field wide"><span>항목</span><input id="expenseEditName" maxlength="80" type="text"></label><label class="dialog-field"><span>금액</span><input id="expenseEditAmount" inputmode="decimal" type="text"></label><label class="dialog-field"><span>통화</span><select id="expenseEditCurrency"><option value="KRW">KRW</option><option value="USD">USD</option></select></label></div><div class="notice-actions"><button class="action-muted" id="expenseEditCancel" type="button">취소</button><button class="action-primary" id="expenseEditSave" type="button">수정 적용</button></div></div></section>
+<section class="notice-dialog" id="ledgerSettingsDialog" hidden aria-modal="true" aria-labelledby="ledgerSettingsTitle" role="dialog"><div class="notice-card"><h2 id="ledgerSettingsTitle">가계부 설정</h2><label class="ledger-settings-rate"><span>수동 환율 · 새 자동 계산에 적용</span><span class="ledger-settings-rate-control">1 USD = <input id="settingsExchangeRate" inputmode="decimal" type="text"> KRW</span></label><div class="ledger-settings-heading"><strong>카테고리</strong><button class="btn" data-icon="plus" id="settingsAddCategory" type="button">카테고리 추가</button></div><div class="ledger-settings-list" id="settingsCategoryList"></div><div class="notice-actions"><button class="action-primary" id="ledgerSettingsClose" type="button">설정 닫기</button></div></div></section>
+<section class="notice-dialog" id="expenseDialog" hidden aria-modal="true" aria-labelledby="expenseDialogTitle" role="dialog"><div class="notice-card expense-edit-card"><h2 id="expenseDialogTitle">가계부 항목 수정</h2><div class="expense-edit-grid"><label class="dialog-field"><span>날짜</span><input id="expenseEditDate" type="date"></label><label class="dialog-field"><span>카테고리</span><select id="expenseEditCategory"></select></label><label class="dialog-field wide"><span>항목</span><input id="expenseEditName" maxlength="80" type="text"></label><label class="dialog-field" for="expenseEditKrw"><span>원화 (KRW)</span><input id="expenseEditKrw" inputmode="decimal" placeholder="0" type="text" aria-describedby="expenseEditKrwHint"><small class="amount-hint" id="expenseEditKrwHint"></small></label><label class="dialog-field" for="expenseEditUsd"><span>달러 (USD)</span><input id="expenseEditUsd" inputmode="decimal" placeholder="0" type="text" aria-describedby="expenseEditUsdHint"><small class="amount-hint" id="expenseEditUsdHint"></small></label></div><div class="notice-actions"><button class="action-muted" id="expenseEditCancel" type="button">취소</button><button class="action-primary" id="expenseEditSave" type="button">수정 적용</button></div></div></section>
 <section class="notice-dialog" id="scheduleTimeDialog" hidden aria-modal="true" aria-labelledby="scheduleTimeTitle" role="dialog">
   <div class="notice-card schedule-time-card">
     <h2 id="scheduleTimeTitle">일정 시간 설정</h2><p id="scheduleTimeContext"></p>
@@ -924,7 +934,8 @@ input:disabled,select:disabled{opacity:.7}
         <label><span>날짜</span><input id="expenseDate" type="date"></label>
         <label class="expense-category"><span>카테고리</span><select id="expenseCategory"></select></label>
         <label class="expense-name"><span>항목</span><input id="expenseName" maxlength="80" placeholder="예: 교통비" type="text"></label>
-        <label><span>금액</span><span class="amount-with-currency"><input id="expenseAmount" inputmode="decimal" placeholder="0" type="text"><select id="expenseCurrency" aria-label="통화"><option value="KRW">KRW</option><option value="USD">USD</option></select></span></label>
+        <label class="" for="expenseKrw"><span>원화 (KRW)</span><input id="expenseKrw" inputmode="decimal" placeholder="0" type="text" aria-describedby="expenseKrwHint"><small class="amount-hint" id="expenseKrwHint"></small></label>
+        <label class="" for="expenseUsd"><span>달러 (USD)</span><input id="expenseUsd" inputmode="decimal" placeholder="0" type="text" aria-describedby="expenseUsdHint"><small class="amount-hint" id="expenseUsdHint"></small></label>
         <button class="btn" data-icon="plus" id="addExpense" type="button">경비 추가</button>
       </div>
     </div>
@@ -935,8 +946,7 @@ input:disabled,select:disabled{opacity:.7}
     </div>
     <div class="money-totals">
       <div class="money-total"><small>원화 합계</small><strong id="totalKrw">₩0</strong></div>
-      <div class="money-total"><small>USD 합계</small><strong id="totalUsd">$0.00</strong></div>
-      <div class="money-total combined-total"><small>원화 환산 합계</small><strong id="totalConverted">₩0</strong></div>
+      <div class="money-total"><small>달러 합계</small><strong id="totalUsd">$0.00</strong></div>
     </div>
     <div class="category-summary" id="categorySummary"></div>
     <div class="category-manager edit-only mode-only">
@@ -1045,7 +1055,7 @@ input:disabled,select:disabled{opacity:.7}
   const PREVIEW_NOW = PREVIEW_DATE_PARAM ? Date.parse(PREVIEW_DATE_PARAM) : NaN;
   const DELETED_CATEGORY_ID = 'deleted';
   const REQUIRED_CATEGORY_IDS = new Set(['misc',DELETED_CATEGORY_ID]);
-  const IMPORT_ALLOWED_MONEY_IDS = new Set(['expenseDate','expenseCategory','expenseName','expenseAmount','expenseCurrency','addExpense','exchangeRate','exchangeRateUpdated','totalKrw','totalUsd','totalConverted','categorySummary','addCategoryBtn','categoryManagerList','expenseCsvExport','expenses']);
+  const IMPORT_ALLOWED_MONEY_IDS = new Set(['expenseDate','expenseCategory','expenseName','expenseKrw','expenseUsd','expenseKrwHint','expenseUsdHint','addExpense','exchangeRate','exchangeRateUpdated','totalKrw','totalUsd','categorySummary','addCategoryBtn','categoryManagerList','expenseCsvExport','expenses']);
   const ICON_CANDIDATES = ['✈️','🏨','🍽️','☕','🚗','🚕','⛽','🅿️','🎟️','🎭','🏞️','🛍️','💆','🍸','🎁','💊','📱','💵','📦','🗑️'];
   const DEFAULT_CATEGORIES = (CONFIG.ledger?.categories||[]).map(item=>({...item}));
   const ICONS = {
@@ -1152,7 +1162,17 @@ input:disabled,select:disabled{opacity:.7}
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
   function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function hashText(value) { let hash=2166136261; for (const c of String(value)) { hash^=c.charCodeAt(0); hash=Math.imul(hash,16777619); } return (hash>>>0).toString(36); }
-  function setStatus(message) { if ($('#status')) $('#status').textContent = message; }
+  let documentWriteBlock='';
+  function assertSupportedSchema(raw){
+    const version=raw?.schemaVersion??0;
+    if(!Number.isInteger(Number(version))||Number(version)<0||Number(version)>SCHEMA_VERSION){const error=new Error('앱을 새로고침해 주세요');error.code='DOCUMENT_SCHEMA';throw error;}
+  }
+  function blockUnsupportedDocument(error){
+    if(!['DOCUMENT_SCHEMA','DOCUMENT_LEDGER'].includes(error?.code))return false;
+    documentWriteBlock=error.code==='DOCUMENT_SCHEMA'?'앱을 새로고침해 주세요':'지출 데이터를 읽지 못했습니다. 작업본을 보관하고 최근 저장 버전을 확인해 주세요.';
+    clearTimeout(draftWriteTimer);setStatus(documentWriteBlock);return true;
+  }
+  function setStatus(message) { if ($('#status')) $('#status').textContent = documentWriteBlock||message; }
   function finishHydration() {
     if (!body.classList.contains('hydrating')) return;
     body.classList.remove('hydrating');
@@ -1483,6 +1503,7 @@ input:disabled,select:disabled{opacity:.7}
     return draftStoragePromise;
   }
   async function writeDraftRecord(record) {
+    if(documentWriteBlock)return false;
     if(deferredDraftRecovery)return false;
     const generation=draftWriteGeneration;
     memoryDraftRecord=clone(record);
@@ -1518,6 +1539,7 @@ input:disabled,select:disabled{opacity:.7}
     }catch(error){console.warn('초안을 읽지 못했습니다.',error);showDraftStorageWarning('read');return null;}
   }
   async function clearDraftRecord() {
+    if(documentWriteBlock)return false;
     draftWriteGeneration++;clearTimeout(draftWriteTimer);draftWriteTimer=null;
     let cleared=false;
     try{
@@ -1686,17 +1708,120 @@ input:disabled,select:disabled{opacity:.7}
     const byName = cats.find(item => item.name === raw || (item.icon+' '+item.name) === raw);
     return byName?.id || cats.find(item=>item.id==='misc')?.id || cats[0]?.id || DELETED_CATEGORY_ID;
   }
-  function normalizeExpense(item,index,cats) {
-    const amount=Number(item?.amount);
-    return {
-      id:safeDataId(item?.id,'legacy-'+index+'-'+hashText(JSON.stringify(item||{}))),
-      name:String(item?.name||'').trim().slice(0,80), amount:Number.isFinite(amount)?amount:0,
-      currency:item?.currency === 'KRW' ? 'KRW' : 'USD',
-      date:/^\d{4}-\d{2}-\d{2}$/.test(item?.date||'') ? item.date : '',
-      categoryId:findCategoryId(item?.categoryId || item?.category || 'misc',cats)
-    };
+  // Ledger arithmetic uses decimal integers; only JSON boundaries use Number.
+  function decimalParts(value) {
+    const text=String(value),match=text.match(/^(\d+)(?:\.(\d+))?(?:e([+-]?\d+))?$/i);
+    if(!match||text.length>400)throw new Error('올바른 금액을 입력해 주세요.');
+    const shift=(match[2]||'').length-Number(match[3]||0);
+    if(Math.abs(shift)>400)throw new Error('금액 범위를 초과했습니다.');
+    return {n:BigInt(match[1]+(match[2]||''))*10n**BigInt(Math.max(0,-shift)),d:10n**BigInt(Math.max(0,shift))};
   }
-  function normalizeExpenses(input,cats){const seen=new Set();return (Array.isArray(input)?input:[]).map((item,index)=>{const expense=normalizeExpense(item,index,cats);if(seen.has(expense.id))expense.id=uid('expense');seen.add(expense.id);return expense;});}
+  function roundRatio(n,d){return (n*2n+d)/(d*2n);}
+  function safeMinor(n){if(n>BigInt(Number.MAX_SAFE_INTEGER))throw new Error('금액 범위를 초과했습니다.');return Number(n);}
+  function parseLedgerInput(raw,currency) {
+    const text=String(raw).trim();
+    if(!text)throw new Error('금액을 입력해 주세요.');
+    if(!/^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?$/.test(text))throw new Error('올바른 숫자를 입력해 주세요.');
+    const clean=text.replace(/,/g,''),digits=(clean.split('.')[1]||'').length,places=currency==='krw'?0:2;
+    if(digits>places)throw new Error(currency==='krw'?'원 단위로 입력해 주세요.':'소수 둘째 자리까지 입력해 주세요.');
+    const {n,d}=decimalParts(clean),minor=n*(currency==='krw'?1n:100n)/d;
+    if(minor<=0n)throw new Error('0보다 큰 금액을 입력해 주세요.');
+    safeMinor(minor);
+    const value=Number(clean),back=decimalParts(value);
+    if(back.n*d!==n*back.d)throw new Error('금액 범위를 초과했습니다.');
+    return value;
+  }
+  function parseLedgerRate(raw){
+    const text=String(raw).trim();
+    if(!/^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?$/.test(text))throw new Error('올바른 환율을 입력해 주세요.');
+    const value=Number(text.replace(/,/g,''));
+    if(!Number.isFinite(value)||value<=0)throw new Error('올바른 환율을 입력해 주세요.');
+    return value;
+  }
+  function convertLedgerAmount(amount,source,rate) {
+    if(!Number.isFinite(rate)||rate<=0)throw new Error('자동 계산에 사용할 환율을 확인해 주세요.');
+    const a=decimalParts(amount),r=decimalParts(rate);
+    const minor=source==='krw'?roundRatio(a.n*r.d*100n,a.d*r.n):roundRatio(a.n*r.n,a.d*r.d);
+    const value=safeMinor(minor)/(source==='krw'?100:1),back=decimalParts(value);
+    if(back.n*(source==='krw'?100n:1n)!==minor*back.d)throw new Error('금액 범위를 초과했습니다.');
+    return value;
+  }
+  function ledgerSumParts(items,key){
+    let n=0n,d=1n;
+    for(const item of items){const part=decimalParts(item[key]);const scale=part.d>d?part.d:d;n=n*(scale/d)+part.n*(scale/part.d);d=scale;}
+    return {n,d};
+  }
+  function sumLedgerAmounts(items,key){
+    const {n,d}=ledgerSumParts(items,key);
+    return Number(n)/Number(d);
+  }
+  function formatLedgerSum(items,currency){
+    const {n,d}=ledgerSumParts(items,currency==='krw'?'amountKrw':'amountUsd');
+    const minor=roundRatio(n*(currency==='krw'?1n:100n),d);
+    return currency==='krw'?'₩'+minor.toLocaleString('ko-KR'):'$'+(minor/100n).toLocaleString('en-US')+'.'+String(minor%100n).padStart(2,'0');
+  }
+  function expenseMoney(item){return {amountKrw:item.amountKrw,amountUsd:item.amountUsd,amountSource:item.amountSource,appliedExchangeRate:item.appliedExchangeRate};}
+  function emptyExpenseInput(){return {krw:'',usd:'',original:null,touched:false,composing:false};}
+  function calculateExpenseInput(form,rate){
+    if(form.original&&!form.touched)return {money:expenseMoney(form.original),errors:{}};
+    const errors={},values={};
+    for(const currency of ['krw','usd'])if(form[currency].trim())try{values[currency]=parseLedgerInput(form[currency],currency);}catch(error){errors[currency]=error.message;}
+    const source=form.krw.trim()?(form.usd.trim()?'both':'krw'):(form.usd.trim()?'usd':null);
+    if(!source)return {errors:{krw:'원화 또는 달러를 입력해 주세요.'},empty:true};
+    if(form.composing||Object.keys(errors).length)return {errors};
+    try{
+      const money={amountKrw:values.krw,amountUsd:values.usd,amountSource:source,appliedExchangeRate:source==='both'?null:rate};
+      if(source==='krw')money.amountUsd=convertLedgerAmount(values.krw,'krw',rate);
+      if(source==='usd')money.amountKrw=convertLedgerAmount(values.usd,'usd',rate);
+      return {money,errors};
+    }catch(error){return {errors:{[source]:error.message}};}
+  }
+  // End ledger arithmetic.
+  let expenseInput=emptyExpenseInput(),expenseEditInput=emptyExpenseInput(),expenseEditSnapshot=null,expenseAddPending=false;
+  function drawExpenseInput(edit=false,submit=false){
+    const form=edit?expenseEditInput:expenseInput,prefix=edit?'expenseEdit':'expense',result=calculateExpenseInput(form,exchangeRate);
+    for(const currency of ['krw','usd']){
+      const suffix=currency==='krw'?'Krw':'Usd',input=$('#'+prefix+suffix),hint=$('#'+prefix+suffix+'Hint');if(!input)continue;
+      const auto=result.money&&result.money.amountSource!=='both'&&result.money.amountSource!==currency;
+      const value=form[currency]||(result.money?String(result.money['amount'+suffix]):'');
+      if(!form.composing&&input.value!==value)input.value=value;
+      const error=(!result.empty||submit)?result.errors[currency]:'';
+      input.setAttribute('aria-invalid',error?'true':'false');hint.textContent=error||(auto?'수동 환율로 자동 계산':'');hint.classList.toggle('amount-error',Boolean(error));
+    }
+    if(submit&&!result.money){$('#'+prefix+(result.errors.usd?'Usd':'Krw')).focus();setStatus('금액을 확인해 주세요.');}
+    return result.money;
+  }
+  function handleExpenseInput(event){
+    const match=event.target.id?.match(/^(expense|expenseEdit)(Krw|Usd)$/);if(!match)return;
+    const edit=match[1]==='expenseEdit',form=edit?expenseEditInput:expenseInput,currency=match[2].toLowerCase();
+    form[currency]=event.target.value;form.touched=true;form.composing=Boolean(event.isComposing);
+    drawExpenseInput(edit);
+  }
+  function normalizeExpense(item,index,cats,rate,version) {
+    const base={id:safeDataId(item?.id,'legacy-'+index+'-'+hashText(JSON.stringify(item||{}))),name:String(item?.name||'').trim().slice(0,80),date:/^\d{4}-\d{2}-\d{2}$/.test(item?.date||'')?item.date:'',categoryId:findCategoryId(item?.categoryId||item?.category||'misc',cats)};
+    if(version>=6||['amountKrw','amountUsd','amountSource','appliedExchangeRate'].some(key=>Object.hasOwn(item||{},key))){
+      const money=expenseMoney(item),source=money.amountSource;
+      if(!['krw','usd','both'].includes(source))throw new Error('지출의 금액 출처를 복구해 주세요.');
+      for(const [key,currency] of [['amountKrw','krw'],['amountUsd','usd']]){
+        const value=money[key],automatic=source!=='both'&&source!==currency;
+        if(typeof value!=='number'||!Number.isFinite(value)||value<0||(!automatic&&value===0))throw new Error('지출 금액을 복구해 주세요.');
+        const part=decimalParts(value),scale=currency==='krw'?1n:100n;
+        if(part.n*scale>BigInt(Number.MAX_SAFE_INTEGER)*part.d||((automatic||source==='both')&&part.n*scale%part.d!==0n))throw new Error('지출 금액 범위를 확인해 주세요.');
+      }
+      if(source==='both'?money.appliedExchangeRate!==null:typeof money.appliedExchangeRate!=='number'||!Number.isFinite(money.appliedExchangeRate)||money.appliedExchangeRate<=0)throw new Error('지출의 적용 환율을 복구해 주세요.');
+      if(source!=='both'&&convertLedgerAmount(source==='krw'?money.amountKrw:money.amountUsd,source,money.appliedExchangeRate)!==(source==='krw'?money.amountUsd:money.amountKrw))throw new Error('지출의 자동 계산 금액을 복구해 주세요.');
+      return {...base,...money};
+    }
+    const amount=Number(item?.amount),source=item?.currency==='KRW'?'krw':'usd';
+    if(!Number.isFinite(amount)||amount<=0)throw new Error('기존 지출 금액을 복구해 주세요.');
+    const part=decimalParts(amount);if(part.n*(source==='usd'?100n:1n)>BigInt(Number.MAX_SAFE_INTEGER)*part.d)throw new Error('기존 지출 금액 범위를 확인해 주세요.');
+    const converted=convertLedgerAmount(amount,source,rate);
+    return {...base,amountKrw:source==='krw'?amount:converted,amountUsd:source==='usd'?amount:converted,amountSource:source,appliedExchangeRate:rate};
+  }
+  function normalizeExpenses(input,cats,rate,version){
+    if(input!==undefined&&!Array.isArray(input))throw new Error('지출 목록을 복구해 주세요.');
+    const seen=new Set();return (input||[]).map((item,index)=>{const expense=normalizeExpense(item,index,cats,rate,version);if(seen.has(expense.id))expense.id+='-duplicate-'+index;seen.add(expense.id);return expense;});
+  }
   function sanitizeMarkup(markup, imported=false) {
     const template=document.createElement('template'); template.innerHTML=markup||'';
     template.content.querySelectorAll('script,style,iframe,object,embed,link,meta,form,.memo,.map,.schedule-media-tools,.photo-actions,.row-actions,.photo-delete,.row-delete,.check-delete,.check-actions,.check-feedback,.warning-delete').forEach(el=>el.remove());
@@ -1761,12 +1886,13 @@ input:disabled,select:disabled{opacity:.7}
     return template.innerHTML;
   }
   function normalizeState(raw, imported=false) {
+    assertSupportedSchema(raw);
     const cats=normalizeCategories(raw?.categories);
     const rate=Number(raw?.exchangeRate);
     return {
       schemaVersion:SCHEMA_VERSION,
       html:sanitizeMarkup(raw?.html || $('main').innerHTML, imported),
-      expenses:normalizeExpenses(raw?.expenses,cats),
+      expenses:(()=>{try{return normalizeExpenses(raw?.expenses,cats,Number.isFinite(rate)&&rate>0?rate:DEFAULT_EXCHANGE_RATE,Number(raw?.schemaVersion)||0);}catch(error){error.code='DOCUMENT_LEDGER';throw error;}})(),
       categories:cats,
       exchangeRate:Number.isFinite(rate)&&rate>0 ? rate : DEFAULT_EXCHANGE_RATE,
       exchangeRateUpdated:String(raw?.exchangeRateUpdated||''),
@@ -1777,8 +1903,23 @@ input:disabled,select:disabled{opacity:.7}
   function checkLabelText(label) {
     return (label.querySelector('span')?.textContent || Array.from(label.childNodes).filter(node=>node.nodeType===Node.TEXT_NODE).map(node=>node.textContent).join('')).trim();
   }
+  let ledgerMigrationNotice='';
+  function preserveLegacyLedger(raw){
+    if(Number(raw?.schemaVersion||0)>=6||!raw?.expenses?.length)return;
+    const normalized=normalizeState(raw),rate=normalized.exchangeRate;
+    const oldTotal=raw.expenses.reduce((sum,item)=>sum+(item.currency==='KRW'?Number(item.amount):Number(item.amount)*rate),0);
+    const delta=Math.round(sumLedgerAmounts(normalized.expenses,'amountKrw'))-Math.round(oldTotal);
+    const key=TRIP_ID+'_ledger_v5_backup';
+    try{
+      if(localStorage.getItem(key))return;
+      localStorage.setItem(key,JSON.stringify(raw));
+      ledgerMigrationNotice='기존 내역은 저장된 환율로 계산해 유지합니다. 전환 기준 1 USD = '+rate.toLocaleString('ko-KR')+' KRW · 이전 원화 환산 합계와 차이 '+(delta>0?'+':'')+delta+'원.'+(!Number.isFinite(Number(raw.exchangeRate))||Number(raw.exchangeRate)<=0?' 저장된 환율이 없어 기본 환율을 사용했습니다.':'');
+    }catch(_){ledgerMigrationNotice='기존 내역은 저장된 환율로 계산해 유지합니다. 전환 전 작업본 보관에 실패했습니다. 저장 전 작업본을 별도로 보관해 주세요.';}
+  }
   function migratePublishedState(raw) {
+    assertSupportedSchema(raw);
     if (!raw?.html || Number(raw.schemaVersion||0) >= SCHEMA_VERSION) return raw;
+    preserveLegacyLedger(raw);
     const previous=document.createElement('template');previous.innerHTML=raw.html;
     previous.content.querySelectorAll('.timeline-row').forEach((row,index)=>{
       if(!row.dataset.rowId)row.dataset.rowId='legacy-row-'+index+'-'+hashText(row.textContent||'');
@@ -1786,7 +1927,7 @@ input:disabled,select:disabled{opacity:.7}
     previous.content.querySelectorAll('.prepday .checklist label').forEach((label,index)=>{
       if(!label.dataset.checkId)label.dataset.checkId='legacy-check-'+index+'-'+hashText(checkLabelText(label));
     });
-    return {...raw,schemaVersion:SCHEMA_VERSION,html:previous.innerHTML,checks:Array.isArray(raw.checks)?raw.checks.map(Boolean):null};
+    return {...raw,html:previous.innerHTML,checks:Array.isArray(raw.checks)?raw.checks.map(Boolean):null};
   }
 
   function decorateDates() {
@@ -1841,15 +1982,18 @@ input:disabled,select:disabled{opacity:.7}
   }
   function applyStatePreservingInputs(state) {
     // Preserve unsubmitted expense entry and keyboard focus across rendering.
+    const preservedExpenseInput=clone(expenseInput);
     const fields=$$('.add-expense input,.add-expense select').map(input=>({id:input.id,value:input.value}));
     const active=document.activeElement,wasInMain=Boolean(active?.closest('main')),focusId=active?.id,checkId=active?.closest('.prepday [data-check-id]')?.dataset.checkId;
     const selection=active instanceof HTMLInputElement?[active.selectionStart,active.selectionEnd]:null;
     applyState(state);
     fields.forEach(({id,value})=>{const input=document.getElementById(id);if(input&&(input.tagName!=='SELECT'||Array.from(input.options).some(option=>option.value===value)))input.value=value;});
+    expenseInput=preservedExpenseInput;drawExpenseInput();
     const focus=checkId?$$('.prepday [data-check-id]').find(label=>label.dataset.checkId===checkId)?.querySelector('input'):focusId?document.getElementById(focusId):null;
     if(focus&&wasInMain&&!focus.disabled){focus.focus({preventScroll:true});if(selection&&selection[0]!==null)focus.setSelectionRange(...selection);}
   }
   async function commitChecklistPatch(transform,note) {
+    if(documentWriteBlock)throw new Error(documentWriteBlock);
     if(saveInFlight||operationBusy)throw new Error('다른 저장이 끝난 뒤 다시 시도해 주세요.');
     checklistSaving=true;syncChecklistControls();
     try {
@@ -2045,20 +2189,24 @@ input:disabled,select:disabled{opacity:.7}
   function setExpenseCategoryOptions(select,selected='',includeDeleted=false){if(!select)return;const items=categories.filter(item=>item.id!==DELETED_CATEGORY_ID||includeDeleted||item.id===selected);select.innerHTML=items.map(item=>'<option value="'+escapeHtml(item.id)+'"'+(item.id===DELETED_CATEGORY_ID?' disabled':'')+'>'+escapeHtml(item.icon+' '+item.name)+'</option>').join('');if(items.some(item=>item.id===selected))select.value=selected;}
   function formatExpenseDate(date){return date?date.replace(/-/g,'.'):'날짜 미지정';}
   function renderLedger() {
-    const krw=expenses.filter(item=>item.currency==='KRW').reduce((sum,item)=>sum+item.amount,0),usd=expenses.filter(item=>item.currency==='USD').reduce((sum,item)=>sum+item.amount,0),converted=krw+usd*exchangeRate;
-    $('#totalKrw').textContent=formatKrw(krw);$('#totalUsd').textContent=formatUsd(usd);$('#totalConverted').textContent=formatKrw(converted);
+    $('#totalKrw').textContent=formatLedgerSum(expenses,'krw');$('#totalUsd').textContent=formatLedgerSum(expenses,'usd');
     $('#exchangeRate').value=String(exchangeRate);$('#exchangeRateUpdated').textContent=exchangeRateUpdated?'수정 '+new Date(exchangeRateUpdated).toLocaleDateString('ko-KR'):'수동 환율';
     const select=$('#expenseCategory'),previous=select.value;setExpenseCategoryOptions(select,previous);
-    $('#categorySummary').innerHTML=categories.map(category=>{const items=expenses.filter(item=>item.categoryId===category.id);if(!items.length)return'';const categoryKrw=items.filter(item=>item.currency==='KRW').reduce((sum,item)=>sum+item.amount,0),categoryUsd=items.filter(item=>item.currency==='USD').reduce((sum,item)=>sum+item.amount,0),parts=[categoryKrw?formatKrw(categoryKrw):'',categoryUsd?formatUsd(categoryUsd):''].filter(Boolean).join(' + ');return '<div class="category-total"><span>'+escapeHtml(category.icon+' '+category.name)+'</span><b>'+escapeHtml(parts)+'</b>'+(categoryUsd?'<small>(원화 환산 '+escapeHtml(formatKrw(categoryKrw+categoryUsd*exchangeRate))+')</small>':'')+'</div>';}).join('')||'<div class="diff-empty">아직 카테고리별 내역이 없습니다.</div>';
+    $('#categorySummary').innerHTML=categories.map(category=>{const items=expenses.filter(item=>item.categoryId===category.id);if(!items.length)return '';return '<div class="category-total"><span>'+escapeHtml(category.icon+' '+category.name)+'</span><b>'+escapeHtml(formatLedgerSum(items,'krw')+' · '+formatLedgerSum(items,'usd'))+'</b></div>';}).join('')||'<div class="diff-empty">아직 카테고리별 내역이 없습니다.</div>';
     const categoryChips=categories.map(category=>'<span class="category-chip'+(category.system?' system':'')+'"><b>'+escapeHtml(category.icon)+'</b>'+escapeHtml(category.name)+(category.system?'':'<button data-category-edit="'+escapeHtml(category.id)+'" type="button">수정</button><button data-category-delete="'+escapeHtml(category.id)+'" type="button">삭제</button>')+'</span>').join('');$('#categoryManagerList').innerHTML=categoryChips;if($('#settingsCategoryList'))$('#settingsCategoryList').innerHTML=categoryChips;
     if($('#ledgerSettingsDialog')&&!$('#ledgerSettingsDialog').hidden){$('#settingsExchangeRate').value=String(exchangeRate);}
-    $('#expenses').innerHTML=expenses.length?expenses.map(item=>{const category=getCategory(item.categoryId),id=escapeHtml(item.id),name=escapeHtml(item.name),index=expenses.findIndex(entry=>entry.id===item.id);return '<div class="expense" data-expense-id="'+id+'"><div class="expense-copy"><div class="expense-primary"><time class="expense-date" datetime="'+escapeHtml(item.date||'')+'">'+escapeHtml(formatExpenseDate(item.date))+'</time><b>'+name+'</b></div><span class="expense-category-badge">'+escapeHtml(category.icon+' '+category.name)+'</span></div><div class="expense-side"><strong class="expense-amount">'+escapeHtml(item.currency==='KRW'?formatKrw(item.amount):formatUsd(item.amount))+'</strong><div class="expense-actions"><button class="expense-action" data-icon="up" data-move-expense="'+id+'" data-move-direction="-1" type="button" aria-label="'+name+' 위로 이동" title="위로 이동"'+(index===0?' disabled':'')+'></button><button class="expense-action" data-icon="down" data-move-expense="'+id+'" data-move-direction="1" type="button" aria-label="'+name+' 아래로 이동" title="아래로 이동"'+(index===expenses.length-1?' disabled':'')+'></button><button class="expense-action" data-edit-expense="'+id+'" data-icon="edit" type="button">수정</button><button class="expense-action delete" data-remove-expense="'+id+'" type="button">삭제</button></div></div></div>';}).join(''):'<div class="remark">'+'아직 기록된 경비가 없습니다.'+'</div>';
+    $('#expenses').innerHTML=expenses.length?expenses.map(item=>{const category=getCategory(item.categoryId),id=escapeHtml(item.id),name=escapeHtml(item.name),index=expenses.findIndex(entry=>entry.id===item.id);return '<div class="expense" data-expense-id="'+id+'"><div class="expense-copy"><div class="expense-primary"><time class="expense-date" datetime="'+escapeHtml(item.date||'')+'">'+escapeHtml(formatExpenseDate(item.date))+'</time><b>'+name+'</b></div><span class="expense-category-badge">'+escapeHtml(category.icon+' '+category.name)+'</span></div><div class="expense-side"><strong class="expense-amount">'+escapeHtml(formatKrw(item.amountKrw))+(item.amountSource==='usd'?' <small>자동 계산</small>':'')+' · '+escapeHtml(formatUsd(item.amountUsd))+(item.amountSource==='krw'?' <small>자동 계산</small>':'')+'</strong><div class="expense-actions"><button class="expense-action" data-icon="up" data-move-expense="'+id+'" data-move-direction="-1" type="button" aria-label="'+name+' 위로 이동" title="위로 이동"'+(index===0?' disabled':'')+'></button><button class="expense-action" data-icon="down" data-move-expense="'+id+'" data-move-direction="1" type="button" aria-label="'+name+' 아래로 이동" title="아래로 이동"'+(index===expenses.length-1?' disabled':'')+'></button><button class="expense-action" data-edit-expense="'+id+'" data-icon="edit" type="button">수정</button><button class="expense-action delete" data-remove-expense="'+id+'" type="button">삭제</button></div></div></div>';}).join(''):'<div class="remark">'+'아직 기록된 경비가 없습니다.'+'</div>';
+    if(ledgerMigrationNotice){let notice=$('#ledgerMigrationNotice');if(!notice){notice=document.createElement('p');notice.id='ledgerMigrationNotice';notice.className='remark';$('.expense-entry').before(notice);}notice.textContent=ledgerMigrationNotice;}
+    drawExpenseInput();
     decorateButtonIcons($('#expenses'));decorateButtonIcons($('.expenses-head'));if(!$('#expenseDate').value)$('#expenseDate').value=todayLocal();
   }
   function captureState() {
     const main=$('main').cloneNode(true);
     main.querySelectorAll('[contenteditable]').forEach(el=>el.setAttribute('contenteditable','false'));
     main.querySelectorAll('.schedule-media-tools,.photo-actions,.row-actions,.photo-delete,.schedule-map-delete,.row-delete,.check-delete,.check-actions,.check-feedback,.warning-delete').forEach(el=>el.remove());
+    main.querySelector('#ledgerMigrationNotice')?.remove();
+    main.querySelectorAll('.add-expense .amount-hint').forEach(el=>{el.textContent='';el.classList.remove('amount-error');});
+    main.querySelectorAll('.add-expense input').forEach(el=>{el.removeAttribute('value');el.removeAttribute('aria-invalid');});
     const rendered=main.querySelector('#expenses');if(rendered)rendered.innerHTML='';
     const manager=main.querySelector('#categoryManagerList');if(manager)manager.innerHTML='';
     const summary=main.querySelector('#categorySummary');if(summary)summary.innerHTML='';
@@ -2067,9 +2215,11 @@ input:disabled,select:disabled{opacity:.7}
   }
   function applyState(raw) {
     if(!raw?.html)return; const state=normalizeState(raw); applyingHistory=true;
+    const pendingEntry=expenseAddPending?$$('.add-expense input,.add-expense select').map(input=>({id:input.id,value:input.value})):[];
     $('#timetableDetail').hidden=true;closeScheduleTimeDialog();
     $('main').innerHTML=state.html; expenses=clone(state.expenses);categories=clone(state.categories);exchangeRate=state.exchangeRate;exchangeRateUpdated=state.exchangeRateUpdated;budgetKrw=state.budgetKrw;
     decorateDates();decorateChecklist();decorateScheduleRows();renderLedger();
+    pendingEntry.forEach(({id,value})=>{const input=$('#'+id);if(input&&(input.tagName!=='SELECT'||Array.from(input.options).some(option=>option.value===value)))input.value=value;});drawExpenseInput();
     if(Array.isArray(state.checks))$$('main input[type="checkbox"]').forEach((input,index)=>input.checked=Boolean(state.checks[index]));
     setEditable(body.classList.contains('editing'));updateContextControls();applyingHistory=false;renderCheckFeedback();
   }
@@ -2159,6 +2309,7 @@ input:disabled,select:disabled{opacity:.7}
     setStatus('내 초안을 유지했습니다. 저장 전 충돌을 다시 확인합니다.');return false;
   }
   async function persistState(state,{note='수동 저장'}={}){
+    if(documentWriteBlock){setStatus(documentWriteBlock);return false;}
     if(body.classList.contains('previewing')){setStatus('미리보기를 닫은 뒤 저장해 주세요.');return false;}
     if(deferredDraftRecovery){setStatus('보관한 초안을 복구하거나 삭제한 뒤 편집해 주세요.');return false;}
     if(saveInFlight||operationBusy||checklistSaving||pendingChecks.size){setStatus('다른 작업이 끝난 뒤 저장해 주세요.');return false;}
@@ -2207,9 +2358,10 @@ input:disabled,select:disabled{opacity:.7}
 
   async function saveAndFinish(note='수동 저장'){const state=captureState(),wasEditing=body.classList.contains('editing');setEditingUI(false);const saved=await persistState(state,{note});if(!saved){const message=$('#status').textContent;updateDirtyState();if(wasEditing)setEditingUI(true);setStatus(message);return false;}initializeHistory();updateDirtyState();resetInactivityTimer();setStatus(OFFLINE_MODE?'오프라인 작업본 생성 중':'공유 저장 완료');if(OFFLINE_MODE)await exportOfflineHtml(lastSavedState);return true;}
   async function requestFinishEditing(){clearTimeout(historyTimer);recordHistory();if(!isDirty()){setEditingUI(false);resetInactivityTimer();return;}setEditingUI(false);const choice=await showChoice({title:'편집을 완료할까요?',message:OFFLINE_MODE?'저장하면 수정된 오프라인 작업본을 새 파일로 내려받습니다.':'저장해야 공개 링크에 변경 내용이 반영됩니다.',input:OFFLINE_MODE?null:{label:'버전 메모 (선택)','placeholder':'예: 라스베이거스 일정 확정'},choices:[{label:'저장하고 종료',value:'save',className:'action-primary'},{label:'계속 편집',value:'continue'},{label:'변경사항 폐기',value:'discard',className:'action-danger'}]});if(choice==='save')await saveAndFinish(noticeInputValue||'편집 완료');else if(choice==='continue'){setEditingUI(true);resetInactivityTimer();}else if(choice==='discard')discardDraft();}
-  async function beginEditing(){if(!OFFLINE_MODE&&!pendingDraft){try{const published=await fetchPublishedState();if(published?.content?.html){const state=normalizeState(migratePublishedState(published.content));applyState(state);setPublishedBaseline(published,state);}}catch(error){console.warn(error);setStatus('최신 저장본 확인 실패 · 현재 화면에서 편집합니다.');}}setEditingUI(true);initializeHistory();resetInactivityTimer();setStatus(pendingDraft?'편집 중 · 저장되지 않음':'편집 모드');}
+  async function beginEditing(){if(!OFFLINE_MODE&&!pendingDraft){try{const published=await fetchPublishedState();if(published?.content?.html){const state=normalizeState(migratePublishedState(published.content));applyState(state);setPublishedBaseline(published,state);}}catch(error){if(blockUnsupportedDocument(error))return;console.warn(error);setStatus('최신 저장본 확인 실패 · 현재 화면에서 편집합니다.');}}setEditingUI(true);initializeHistory();resetInactivityTimer();setStatus(pendingDraft?'편집 중 · 저장되지 않음':'편집 모드');}
   function requestAuthentication(purpose){authPurpose=purpose;$('#authTitle').textContent=purpose==='edit'?'편집자 확인':purpose==='versions'?'버전 관리자 확인':purpose==='import'?'편집본 불러오기 권한 확인':purpose==='ledger-settings'?'가계부 설정 권한 확인':purpose==='checklist'?'체크리스트 편집자 확인':purpose==='ledger'?'가계부 편집자 확인':'저장 권한 확인';$('#authError').textContent='';$('#editorPassword').value='';$('#authDialog').hidden=false;$('#editorPassword').focus();}
   async function runPurpose(purpose){
+    if(documentWriteBlock&&purpose!=='versions'){pendingAuthAction=null;pendingAuthCancel?.();pendingAuthCancel=null;setStatus(documentWriteBlock);return;}
     const cancel=()=>{const action=pendingAuthCancel;pendingAuthAction=null;pendingAuthCancel=null;if(action)action();};
     if(body.classList.contains('previewing')&&purpose!=='versions'){cancel();setStatus('미리보기를 닫은 뒤 편집해 주세요.');return;}
     if(deferredDraftRecovery&&['edit','ledger','ledger-settings','import','save'].includes(purpose)){
@@ -2308,10 +2460,38 @@ input:disabled,select:disabled{opacity:.7}
   async function addCheckRow(){if($('.day-radio:checked')?.id!=='prep')return;await requireEditor('checklist',async()=>{await openChecklistEditor();addChecklistItem();});}
   function moveCheck(id,direction){if(!body.classList.contains('editing'))return;const labels=$$('.prepday .checklist label'),index=labels.findIndex(label=>label.dataset.checkId===id),next=index+direction;if(index<0||next<0||next>=labels.length)return;const label=labels[index],target=labels[next];if(direction<0)target.before(label);else target.after(label);updateChecklistMoveButtons();recordHistory();}
   function finishMutation(){if(body.classList.contains('editing'))recordHistory();else updateDirtyState();resetInactivityTimer();}
-  async function addExpense(){const name=$('#expenseName').value.trim(),amount=Number($('#expenseAmount').value.replace(/,/g,'').trim()),currency=$('#expenseCurrency').value==='USD'?'USD':'KRW',date=$('#expenseDate').value||todayLocal(),categoryId=$('#expenseCategory').value||'misc';if(!name||!Number.isFinite(amount)||amount<=0){setStatus('가계부 항목과 올바른 금액을 입력해 주세요.');return;}await requireEditor('ledger',async()=>{expenses.push({id:uid('expense'),name,amount,currency,date,categoryId});$('#expenseName').value='';$('#expenseAmount').value='';renderLedger();finishMutation();});}
+  async function addExpense(){
+    if(expenseAddPending)return;
+    if(!$('#expenseName').value.trim()){$('#expenseName').focus();setStatus('항목을 입력해 주세요.');return;}
+    if(!drawExpenseInput(false,true))return;
+    expenseAddPending=true;
+    const release=()=>{expenseAddPending=false;};
+    try{await requireEditor('ledger',()=>{
+      try{
+        const money=drawExpenseInput(false,true),name=$('#expenseName').value.trim();if(!money||!name)return;
+        expenses.push({id:uid('expense'),name,date:$('#expenseDate').value||todayLocal(),categoryId:$('#expenseCategory').value||'misc',...money});
+        $('#expenseName').value='';expenseInput=emptyExpenseInput();renderLedger();finishMutation();
+      }finally{release();}
+    },release);}catch(error){release();throw error;}
+  }
   async function requestExpenseEdit(id){if(!expenses.some(item=>item.id===id))return;await requireEditor('ledger',()=>openExpenseDialog(id));}
-  function openExpenseDialog(id){const item=expenses.find(entry=>entry.id===id);if(!item)return;editingExpenseId=id;$('#expenseEditDate').value=item.date||todayLocal();setExpenseCategoryOptions($('#expenseEditCategory'),item.categoryId,item.categoryId===DELETED_CATEGORY_ID);$('#expenseEditName').value=item.name;$('#expenseEditAmount').value=String(item.amount);$('#expenseEditCurrency').value=item.currency;$('#expenseDialog').hidden=false;$('#expenseEditName').focus();}
-  async function saveExpenseChanges(){const item=expenses.find(entry=>entry.id===editingExpenseId);if(!item){$('#expenseDialog').hidden=true;return;}const name=$('#expenseEditName').value.trim(),amount=Number($('#expenseEditAmount').value.replace(/,/g,'').trim()),date=$('#expenseEditDate').value||todayLocal(),categoryId=$('#expenseEditCategory').value||'misc',currency=$('#expenseEditCurrency').value==='USD'?'USD':'KRW';if(!name||!Number.isFinite(amount)||amount<=0){setStatus('가계부 항목과 올바른 금액을 입력해 주세요.');return;}const id=editingExpenseId;$('#expenseDialog').hidden=true;await requireEditor('ledger',()=>{const target=expenses.find(entry=>entry.id===id);if(!target)return;Object.assign(target,{name,amount,date,categoryId,currency});renderLedger();finishMutation();});}
+  function openExpenseDialog(id){
+    const item=expenses.find(entry=>entry.id===id);if(!item)return;editingExpenseId=id;expenseEditSnapshot=JSON.stringify(item);
+    expenseEditInput={krw:item.amountSource==='usd'?'':String(item.amountKrw),usd:item.amountSource==='krw'?'':String(item.amountUsd),original:clone(item),touched:false,composing:false};
+    $('#expenseEditDate').value=item.date||todayLocal();setExpenseCategoryOptions($('#expenseEditCategory'),item.categoryId,item.categoryId===DELETED_CATEGORY_ID);$('#expenseEditName').value=item.name;drawExpenseInput(true);$('#expenseDialog').hidden=false;$('#expenseEditName').focus();
+  }
+  async function saveExpenseChanges(){
+    if(!$('#expenseEditName').value.trim()){$('#expenseEditName').focus();setStatus('항목을 입력해 주세요.');return;}
+    if(!drawExpenseInput(true,true))return;
+    const id=editingExpenseId,snapshot=expenseEditSnapshot;
+    await requireEditor('ledger',()=>{
+      const target=expenses.find(entry=>entry.id===id),remote=pendingRemoteState?.state?.expenses.find(entry=>entry.id===id);
+      if(!target||JSON.stringify(target)!==snapshot||(pendingRemoteState&&JSON.stringify(remote)!==snapshot)){setStatus('내역이 변경되었습니다. 취소 후 최신 내역을 다시 확인해 주세요.');return;}
+      const money=drawExpenseInput(true,true);if(!money)return;
+      Object.assign(target,{name:$('#expenseEditName').value.trim(),date:$('#expenseEditDate').value||todayLocal(),categoryId:$('#expenseEditCategory').value||'misc',...money});
+      $('#expenseDialog').hidden=true;editingExpenseId=null;expenseEditInput=emptyExpenseInput();renderLedger();finishMutation();
+    });
+  }
   async function moveExpense(id,direction){await requireEditor('ledger',()=>{const index=expenses.findIndex(item=>item.id===id),next=index+direction;if(index<0||next<0||next>=expenses.length)return;const [item]=expenses.splice(index,1);expenses.splice(next,0,item);renderLedger();finishMutation();});}
   async function deleteExpense(id){const item=expenses.find(x=>x.id===id);if(!item)return;const choice=await showChoice({title:'가계부 항목을 삭제할까요?',message:item.name+' 항목을 삭제합니다.',choices:[{label:'취소',value:'cancel'},{label:'삭제',value:'delete',className:'action-danger'}]});if(choice!=='delete')return;await requireEditor('ledger',async()=>{expenses=expenses.filter(x=>x.id!==id);renderLedger();finishMutation();});}
   function renderIconPicker(){const picker=$('#categoryIconPicker');picker.innerHTML=ICON_CANDIDATES.map(icon=>'<button class="'+(icon===selectedCategoryIcon?'active':'')+'" data-category-icon="'+icon+'" type="button">'+icon+'</button>').join('');}
@@ -2319,9 +2499,9 @@ input:disabled,select:disabled{opacity:.7}
   function openCategoryDialog(id=null){editingCategoryId=id;const cat=id?getCategory(id):null;selectedCategoryIcon=cat?.icon||'📦';$('#categoryTitle').textContent=id?'카테고리 수정':'카테고리 추가';$('#categoryName').value=cat?.name||'';renderIconPicker();$('#categoryDialog').hidden=false;$('#categoryName').focus();}
   function saveCategory(){const name=$('#categoryName').value.trim();if(!name){setStatus('카테고리 이름을 입력해 주세요.');return;}if(editingCategoryId){const cat=getCategory(editingCategoryId);if(cat.system)return;cat.name=name;cat.icon=selectedCategoryIcon;}else{const deletedIndex=categories.findIndex(item=>item.id===DELETED_CATEGORY_ID);categories.splice(deletedIndex<0?categories.length:deletedIndex,0,{id:uid('category'),name,icon:selectedCategoryIcon,system:false});}$('#categoryDialog').hidden=true;renderLedger();finishMutation();}
   async function deleteCategory(id){const cat=getCategory(id);if(!cat||cat.system)return;const count=expenses.filter(x=>x.categoryId===id).length;const choice=await showChoice({title:'카테고리를 삭제할까요?',message:count?count+'개 내역은 “삭제된 카테고리”로 이동합니다.':'이 카테고리를 삭제합니다.',choices:[{label:'취소',value:'cancel'},{label:'삭제',value:'delete',className:'action-danger'}]});if(choice!=='delete')return;expenses.forEach(x=>{if(x.categoryId===id)x.categoryId=DELETED_CATEGORY_ID;});categories=categories.filter(x=>x.id!==id);renderLedger();finishMutation();}
-  function updateExchangeRate(input=$('#settingsExchangeRate')){const value=Number(String(input?.value||'').replace(/,/g,''));if(!Number.isFinite(value)||value<=0){if(input)input.value=String(exchangeRate);setStatus('올바른 환율을 입력해 주세요.');return;}exchangeRate=value;exchangeRateUpdated=new Date().toISOString();renderLedger();finishMutation();setStatus('환율 변경됨 · 저장되지 않음');}
+  function updateExchangeRate(input=$('#settingsExchangeRate')){let value;try{value=parseLedgerRate(input?.value||'');}catch(_){value=NaN;}if(!Number.isFinite(value)||value<=0){if(input)input.value=String(exchangeRate);setStatus('올바른 환율을 입력해 주세요.');return;}exchangeRate=value;exchangeRateUpdated=new Date().toISOString();renderLedger();finishMutation();setStatus('환율 변경됨 · 저장되지 않음');}
   function csvCell(value){let text=String(value??'');if(/^[=+\-@]/.test(text))text="'"+text;return '"'+text.replace(/"/g,'""')+'"';}
-  function exportExpensesCsv(){const rows=expenses,header=['날짜','내용','카테고리','통화','금액','원화 환산액'],lines=[header,...rows.map(item=>{const category=getCategory(item.categoryId),converted=item.currency==='KRW'?item.amount:item.amount*exchangeRate;return [item.date,item.name,category.name,item.currency,item.amount,Math.round(converted)];})].map(row=>row.map(csvCell).join(',')),blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}),anchor=document.createElement('a');anchor.href=URL.createObjectURL(blob);anchor.download=EXPORT_BASE_NAME+'_EXPENSES_'+todayLocal()+'.csv';anchor.click();setTimeout(()=>URL.revokeObjectURL(anchor.href),2000);setStatus('가계부 '+rows.length+'개 항목을 CSV로 내보냈습니다.');}
+  function exportExpensesCsv(){const rows=expenses,header=['날짜','내용','카테고리','원화 금액','달러 금액','자동 계산 통화','적용 환율'],lines=[header,...rows.map(item=>[item.date,item.name,getCategory(item.categoryId).name,item.amountKrw,item.amountUsd,item.amountSource==='both'?'':item.amountSource==='krw'?'USD':'KRW',item.appliedExchangeRate??''])].map(row=>row.map(csvCell).join(',')),blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}),anchor=document.createElement('a');anchor.href=URL.createObjectURL(blob);anchor.download=EXPORT_BASE_NAME+'_EXPENSES_'+todayLocal()+'.csv';anchor.click();setTimeout(()=>URL.revokeObjectURL(anchor.href),2000);setStatus('가계부 '+rows.length+'개 항목을 CSV로 내보냈습니다.');}
 
   function blobToDataUrl(blob){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=reject;reader.readAsDataURL(blob);});}
   function dataUrlToBlob(dataUrl){const [head,data]=dataUrl.split(','),mime=(head.match(/data:([^;]+)/)||[])[1]||'image/webp',bytes=atob(data),array=new Uint8Array(bytes.length);for(let i=0;i<bytes.length;i++)array[i]=bytes.charCodeAt(i);return new Blob([array],{type:mime});}
@@ -2554,8 +2734,8 @@ input:disabled,select:disabled{opacity:.7}
     addGroup('체크리스트',checkChanges);
     const expenseChanges=[],beforeExpenses=new Map(before.expenses.map(item=>[item.id,item])),afterExpenses=new Map(after.expenses.map(item=>[item.id,item]));
     const expenseCategoryName=(id,list)=>{const category=list.find(item=>item.id===id);return category?category.icon+' '+category.name:id;};
-    before.expenses.forEach(item=>{if(!afterExpenses.has(item.id))expenseChanges.push('내역 삭제: '+value(item.name)+' · '+item.amount+' '+item.currency);});
-    after.expenses.forEach(item=>{const old=beforeExpenses.get(item.id);if(!old){expenseChanges.push('내역 추가: '+value(item.name)+' · '+item.amount+' '+item.currency);return;}const changes=[];if(old.date!==item.date)changes.push('날짜 '+value(old.date)+' → '+value(item.date));if(old.name!==item.name)changes.push('항목 '+value(old.name)+' → '+value(item.name));if(old.categoryId!==item.categoryId)changes.push('카테고리 '+expenseCategoryName(old.categoryId,before.categories)+' → '+expenseCategoryName(item.categoryId,after.categories));if(old.amount!==item.amount)changes.push('금액 '+old.amount+' → '+item.amount);if(old.currency!==item.currency)changes.push('통화 '+old.currency+' → '+item.currency);if(changes.length)expenseChanges.push('내역 변경 · '+value(item.name)+': '+changes.join(', '));});
+    before.expenses.forEach(item=>{if(!afterExpenses.has(item.id))expenseChanges.push('내역 삭제: '+value(item.name)+' · '+item.amountKrw+' KRW · '+item.amountUsd+' USD');});
+    after.expenses.forEach(item=>{const old=beforeExpenses.get(item.id);if(!old){expenseChanges.push('내역 추가: '+value(item.name)+' · '+item.amountKrw+' KRW · '+item.amountUsd+' USD');return;}const changes=[];if(old.date!==item.date)changes.push('날짜 '+value(old.date)+' → '+value(item.date));if(old.name!==item.name)changes.push('항목 '+value(old.name)+' → '+value(item.name));if(old.categoryId!==item.categoryId)changes.push('카테고리 '+expenseCategoryName(old.categoryId,before.categories)+' → '+expenseCategoryName(item.categoryId,after.categories));for(const [key,label] of [['amountKrw','원화'],['amountUsd','달러'],['amountSource','입력 출처'],['appliedExchangeRate','적용 환율']])if(old[key]!==item[key])changes.push(label+' '+value(old[key])+' → '+value(item[key]));if(changes.length)expenseChanges.push('내역 변경 · '+value(item.name)+': '+changes.join(', '));});
     const beforeOrder=before.expenses.map(item=>item.id),afterOrder=after.expenses.map(item=>item.id),sameItems=beforeOrder.length===afterOrder.length&&beforeOrder.every(id=>afterExpenses.has(id));
     if(sameItems&&beforeOrder.join('|')!==afterOrder.join('|'))expenseChanges.push('내역 표시 순서 변경');
     addGroup('가계부 내역',expenseChanges);
@@ -2687,7 +2867,7 @@ input:disabled,select:disabled{opacity:.7}
       if(revision!==publishedRevision||fingerprint(state)!==fingerprint(lastSavedState)){applyStatePreservingInputs(state);setPublishedBaseline(row,state);initializeHistory();setStatus(reason==='reconnect'?'연결 복구 · 최신 저장본 반영':'최신 저장본을 반영했습니다.');}
       else if(reason==='reconnect')setStatus('공유 서버 연결 복구 · 최신 상태');
       return true;
-    }catch(error){console.warn(error);setStatus('공유 서버 확인 실패 · 현재 화면 유지');return false;}
+    }catch(error){if(blockUnsupportedDocument(error))return false;console.warn(error);setStatus('공유 서버 확인 실패 · 현재 화면 유지');return false;}
   }
 
   async function hydrate(){
@@ -2711,6 +2891,7 @@ input:disabled,select:disabled{opacity:.7}
       const published=await fetchPublishedState();
       if(published?.content?.html){const state=normalizeState(migratePublishedState(published.content));applyState(state);setPublishedBaseline(published,state);}
     }catch(error){
+      if(blockUnsupportedDocument(error))return;
       console.warn(error);const cached=await readPublicCache();
       if(cached?.state?.html){const state=normalizeState(migratePublishedState(cached.state));applyState(state);setPublishedBaseline({revision:cached.revision,updatedAt:cached.updatedAt},state,cached);loadedFromCache=true;const cachedLabel=cached.cachedAt?new Date(cached.cachedAt).toLocaleString('ko-KR'):'최근';cacheStatus='오프라인 캐시 표시 · '+cachedLabel+' 기준';}
       else cacheStatus='연결 실패 · 기본 일정 표시 중 · 최신 공유본 미확인';
@@ -2720,7 +2901,7 @@ input:disabled,select:disabled{opacity:.7}
     if(!client)return;
     client.channel('trip-document-'+TRIP_ID).on('postgres_changes',{event:'UPDATE',schema:'public',table:'trip_documents',filter:'trip_id=eq.'+TRIP_ID},payload=>{
       if(!payload.new?.content?.html)return;
-      const remoteState=normalizeState(migratePublishedState(payload.new.content));
+      let remoteState;try{remoteState=normalizeState(migratePublishedState(payload.new.content));}catch(error){blockUnsupportedDocument(error);console.warn(error);return;}
       if(body.classList.contains('editing')||pendingDraft||body.classList.contains('previewing')||checklistSaving||pendingChecks.size||!$('#checklistDialog').hidden){pendingRemoteState={row:payload.new,state:remoteState};setStatus('새 공유 저장본이 있습니다 · 저장 시 비교합니다.');return;}
       applyStatePreservingInputs(remoteState);setPublishedBaseline(payload.new,remoteState);initializeHistory();setStatus('새 저장본을 반영했습니다.');
     }).subscribe(status=>{if(status==='SUBSCRIBED'&&loadedFromCache)void refreshPublishedState('reconnect');});
@@ -2733,8 +2914,8 @@ input:disabled,select:disabled{opacity:.7}
   $('#authCancel').onclick=()=>{$('#authDialog').hidden=true;const cancel=pendingAuthCancel;pendingAuthAction=null;pendingAuthCancel=null;if(cancel)cancel();};
   $('#authForm').onsubmit=async event=>{event.preventDefault();const submit=$('#authSubmit');if(submit.disabled)return;submit.disabled=true;$('#authError').textContent='';try{const {error}=await client.auth.signInWithPassword({email:EDITOR_EMAIL,password:$('#editorPassword').value});if(error){$('#authError').textContent=error.status>=500||error.name==='AuthRetryableFetchError'?'로그인 서버에 연결하지 못했습니다.':'비밀번호를 확인해 주세요.';return;}const session=await getEditorSession();if(!session){$('#authError').textContent='로그인 세션을 확인하지 못했습니다.';return;}$('#authDialog').hidden=true;await runPurpose(authPurpose);}catch(error){console.error(error);$('#authError').textContent='로그인 서버에 연결하지 못했습니다.';}finally{submit.disabled=false;}};
   $('#categoryCancel').onclick=()=>$('#categoryDialog').hidden=true;$('#categorySave').onclick=saveCategory;
-  $('#ledgerSettingsClose').onclick=()=>{const rateInput=$('#settingsExchangeRate'),rate=Number(String(rateInput.value||'').replace(/,/g,''));if(!Number.isFinite(rate)||rate<=0){rateInput.value=String(exchangeRate);setStatus('올바른 환율을 입력해 주세요.');return;}const changed=rate!==exchangeRate;if(changed){exchangeRate=rate;exchangeRateUpdated=new Date().toISOString();}$('#ledgerSettingsDialog').hidden=true;if(changed){renderLedger();finishMutation();setStatus('가계부 설정 변경됨 · 저장되지 않음');}else updateDirtyState();resetInactivityTimer();};
-  $('#expenseEditCancel').onclick=()=>{$('#expenseDialog').hidden=true;editingExpenseId=null;};$('#expenseEditSave').onclick=saveExpenseChanges;$('#mapCancel').onclick=()=>$('#mapDialog').hidden=true;$('#mapSave').onclick=saveMap;$('#photoEditCancel').onclick=()=>{$('#photoEditDialog').hidden=true;activePhotoFigure=null;};$('#photoEditSave').onclick=savePhotoMetadata;$('#importCancel').onclick=()=>{$('#importDialog').hidden=true;pendingImport=null;};$('#importApply').onclick=applyImportedDraft;$('#photoViewerClose').onclick=()=>$('#photoViewer').hidden=true;$('#photoInput').onchange=e=>{void attachPhotos(Array.from(e.target.files||[]));e.target.value='';};$('#cancelOperationBtn').onclick=cancelCurrentOperation;
+  $('#ledgerSettingsClose').onclick=()=>{const rateInput=$('#settingsExchangeRate');let rate;try{rate=parseLedgerRate(rateInput.value);}catch(_){rate=NaN;}if(!Number.isFinite(rate)||rate<=0){rateInput.value=String(exchangeRate);setStatus('올바른 환율을 입력해 주세요.');return;}const changed=rate!==exchangeRate;if(changed){exchangeRate=rate;exchangeRateUpdated=new Date().toISOString();}$('#ledgerSettingsDialog').hidden=true;if(changed){renderLedger();finishMutation();setStatus('가계부 설정 변경됨 · 저장되지 않음');}else updateDirtyState();resetInactivityTimer();};
+  $('#expenseEditCancel').onclick=()=>{$('#expenseDialog').hidden=true;editingExpenseId=null;expenseEditInput=emptyExpenseInput();};$('#expenseEditSave').onclick=saveExpenseChanges;$('#mapCancel').onclick=()=>$('#mapDialog').hidden=true;$('#mapSave').onclick=saveMap;$('#photoEditCancel').onclick=()=>{$('#photoEditDialog').hidden=true;activePhotoFigure=null;};$('#photoEditSave').onclick=savePhotoMetadata;$('#importCancel').onclick=()=>{$('#importDialog').hidden=true;pendingImport=null;};$('#importApply').onclick=applyImportedDraft;$('#photoViewerClose').onclick=()=>$('#photoViewer').hidden=true;$('#photoInput').onchange=e=>{void attachPhotos(Array.from(e.target.files||[]));e.target.value='';};$('#cancelOperationBtn').onclick=cancelCurrentOperation;
   document.addEventListener('click',event=>{
     if(operationBusy&&!event.target.closest('#cancelOperationBtn'))return;
     if(event.target.closest('#expenseCsvExport')){exportExpensesCsv();return;}
@@ -2770,6 +2951,8 @@ input:disabled,select:disabled{opacity:.7}
   function refreshEditablePlaceholder(event){const element=event.target.closest?.('[contenteditable="true"][data-placeholder]');if(element)updateEditableEmpty(element);}
   document.addEventListener('compositionend',refreshEditablePlaceholder);
   document.addEventListener('input',event=>{refreshEditablePlaceholder(event);if(body.classList.contains('editing')&&event.target.closest('main')&&!event.target.closest('.add-expense')&&event.target.id!=='exchangeRate')queueHistory();});
+  document.addEventListener('input',handleExpenseInput);
+  document.addEventListener('compositionend',handleExpenseInput);
   document.addEventListener('change',async event=>{if(event.target.id==='settingsExchangeRate'||event.target.id==='exchangeRate'){const input=event.target,before=String(exchangeRate);await requireEditor('ledger',()=>updateExchangeRate(input),()=>{input.value=before;});return;}if(event.target.matches('.prepday .checklist input[type="checkbox"]')){await requestCheckToggle(event.target);return;}if(body.classList.contains('editing')&&event.target.closest('main')&&!event.target.closest('.add-expense')&&event.target.id!=='exchangeRate')recordHistory();if(event.target.matches('.day-radio')){const tabs=$('.tabs'),keepTabsPinned=Boolean(tabs&&tabsArePinned(tabs));cancelTabScrollRelease();if(keepTabsPinned)holdMainHeight();else releaseMainHeight();updateContextControls();revealSelectedTab();if(keepTabsPinned)requestAnimationFrame(()=>alignPageToTabs(tabs));}});
   $('.bottom-nav').addEventListener('click',event=>{
     const button=event.target.closest('[data-section]');if(!button||operationBusy)return;
@@ -2806,7 +2989,7 @@ input:disabled,select:disabled{opacity:.7}
   $('#checklistEditorRows').addEventListener('input',event=>{const index=Number(event.target.dataset.checkIndex);if(event.target.matches('.checklist-text')&&checklistEditorItems[index])checklistEditorItems[index].text=event.target.value;resetInactivityTimer();});
   $('#checklistEditorRows').addEventListener('click',event=>{const button=event.target.closest('[data-check-action]');if(!button||button.disabled)return;const index=Number(button.dataset.index),action=button.dataset.checkAction;if(action==='delete')checklistEditorItems.splice(index,1);else{const next=index+(action==='up'?-1:1);[checklistEditorItems[index],checklistEditorItems[next]]=[checklistEditorItems[next],checklistEditorItems[index]];}renderChecklistEditor();const rows=$$('#checklistEditorRows .checklist-editor-row');rows[Math.min(index,rows.length-1)]?.querySelector('.checklist-text')?.focus();});
   document.addEventListener('click',event=>{const retry=event.target.closest('[data-retry-check]');if(!retry)return;const item=checkFeedback.get(retry.dataset.retryCheck);if(item)void authorizeCheck(retry.dataset.retryCheck,item.value);});
-  initializeTimetable();initializeDialogAccessibility();selectInitialTab();decorateButtonIcons();decorateDates();decorateChecklist();renderLedger();moneyTemplateHtml=$('.moneyday').outerHTML;decorateScheduleRows();body.classList.add('viewing');setEditable(false);lastSavedState=normalizeState(captureState());updateContextControls();updateTripProgress();updateWorldClocks();setInterval(updateTripProgress,60*60*1000);setInterval(updateWorldClocks,60*1000);revealSelectedTab('auto');void hydrate().catch(error=>{console.error(error);setStatus('일정을 불러오지 못했습니다 · 현재 화면 유지');}).finally(finishHydration);
+  initializeTimetable();initializeDialogAccessibility();selectInitialTab();decorateButtonIcons();decorateDates();decorateChecklist();renderLedger();moneyTemplateHtml=$('.moneyday').outerHTML;decorateScheduleRows();body.classList.add('viewing');setEditable(false);lastSavedState=normalizeState(captureState());updateContextControls();updateTripProgress();updateWorldClocks();setInterval(updateTripProgress,60*60*1000);setInterval(updateWorldClocks,60*1000);revealSelectedTab('auto');void hydrate().catch(error=>{blockUnsupportedDocument(error);console.error(error);setStatus('일정을 불러오지 못했습니다 · 현재 화면 유지');}).finally(finishHydration);
 })();
 </script>
 </body>

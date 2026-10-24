@@ -129,7 +129,7 @@ async function preview(page) {
 }
 async function enterExpense(page,name='New expense') {
   await selectTripTab(page, 'money');
-  await page.locator('#expenseName').fill(name);await page.locator('#expenseAmount').fill('25');
+  await page.locator('#expenseName').fill(name);await page.locator('#expenseUsd').fill('25');
   await page.locator('#addExpense').click();
 }
 
@@ -343,12 +343,12 @@ try {
       reset();const ctx=await context(`shared inputs ${delivery} / ${mobile ? "mobile" : "desktop"}`, options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
       await selectTripTab(page, 'money');
       const category=row.content.categories.findLast(item=>!item.system).id;
-      const values={expenseName:'택시비 Airport',expenseAmount:'37',expenseDate:'2027-03-15',expenseCurrency:'USD',expenseCategory:category};
+      const values={expenseName:'택시비 Airport',expenseUsd:'37',expenseDate:'2027-03-15',expenseCategory:category};
       for(const [id,value] of Object.entries(values)) {
         const field=page.locator('#'+id);
-        if(id==='expenseCurrency'||id==='expenseCategory')await field.selectOption(value);else await field.fill(value);
+        if(id==='expenseCategory')await field.selectOption(value);else await field.fill(value);
       }
-      const remoteExpense={id:'remote-expense',name:'Shared meal',amount:12,currency:'USD',date:'2027-03-14',categoryId:'misc'};
+      const remoteExpense={id:'remote-expense',name:'Shared meal',amountKrw:17400,amountUsd:12,amountSource:'usd',appliedExchangeRate:1450,date:'2027-03-14',categoryId:'misc'};
       for(const removed of [false,true]) {
         await page.locator('#expenseName').focus();await page.locator('#expenseName').evaluate(el=>el.setSelectionRange(1,3));
         row={...row,content:{...row.content,expenses:[remoteExpense],budgetKrw:removed?234567:123456,
@@ -370,7 +370,7 @@ try {
       const fallback=await page.locator('#expenseCategory').inputValue();assert.notEqual(fallback,category);
       await page.locator('#addExpense').click();await page.evaluate(()=>window.__draftTest.flushDraftPersistence());
       const added=(await stored(page)).state.expenses;
-      assert.equal(added.length,2);assert.deepEqual(added[1],{id:added[1].id,name:values.expenseName,amount:37,currency:'USD',date:values.expenseDate,categoryId:fallback});
+      assert.equal(added.length,2);assert.deepEqual(added[1],{id:added[1].id,name:values.expenseName,amountKrw:53650,amountUsd:37,amountSource:'usd',appliedExchangeRate:1450,date:values.expenseDate,categoryId:fallback});
       assert.equal(saveCalls,0);assert.deepEqual(row.content.expenses,[remoteExpense]);
       await diagnostics.close(ctx);console.log(`Shared inputs (${mobile?'mobile':'desktop'}, ${delivery}): fields, focus/caret, category removal and subsequent add passed.`);
     }
@@ -381,12 +381,12 @@ try {
       await enterExpense(page,'First saved expense');saveMode='delayed';
       await page.evaluate(()=>{window.__saveResult=undefined;window.__draftTest.saveAndFinish().then(result=>window.__saveResult=Boolean(result));});
       await page.waitForFunction(()=>window.__draftTest.busy());
-      await page.locator('#expenseName').fill('During save');await page.locator('#expenseAmount').fill('25');
-      await page.locator('#expenseDate').fill('2027-03-15');await page.locator('#expenseCurrency').selectOption('USD');
+      await page.locator('#expenseName').fill('During save');await page.locator('#expenseUsd').fill('25');
+      await page.locator('#expenseDate').fill('2027-03-15');
       await page.locator('#expenseCategory').selectOption('misc');
       await page.locator('#expenseName').focus();await page.locator('#expenseName').evaluate(el=>el.setSelectionRange(3,6));
       await page.waitForFunction(()=>window.__saveResult===true);
-      for(const [id,value] of Object.entries({expenseName:'During save',expenseAmount:'25',expenseDate:'2027-03-15',expenseCurrency:'USD',expenseCategory:'misc'}))assert.equal(await page.locator('#'+id).inputValue(),value);
+      for(const [id,value] of Object.entries({expenseName:'During save',expenseUsd:'25',expenseDate:'2027-03-15',expenseCategory:'misc'}))assert.equal(await page.locator('#'+id).inputValue(),value);
       assert.deepEqual(await page.evaluate(()=>[document.activeElement.id,document.activeElement.selectionStart,document.activeElement.selectionEnd]),['expenseName',3,6]);
       assert.equal(row.content.expenses.length,1);assert.equal(await stored(page),null);
       await page.locator('#addExpense').click();await page.evaluate(()=>window.__draftTest.flushDraftPersistence());

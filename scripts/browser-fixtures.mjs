@@ -2,7 +2,7 @@
 import { readFile } from 'node:fs/promises';
 
 export const fixtureConfig = {
-  schemaVersion: 5, tripId: 'browser-fixture', cacheNamespace: 'browser_fixture',
+  schemaVersion: 6, tripId: 'browser-fixture', cacheNamespace: 'browser_fixture',
   locale: 'ko-KR', pageTitle: 'Browser fixture', title: '테스트 여행', kicker: 'TEST TRIP',
   travelDatesLabel: '2027. 01. 21 - 01. 31', routeLabel: '테스트 도시 A → B',
   tripStart: '2027-01-21T21:00:00+09:00', tripEnd: '2027-01-31T05:10:00+09:00',

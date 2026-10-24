@@ -144,6 +144,8 @@ set search_path = public, pg_temp
 as $$
 declare
   current_revision bigint;
+  current_schema numeric;
+  incoming_schema numeric;
   next_revision bigint;
   saved_version_id bigint;
   saved_at timestamptz;
@@ -166,7 +168,13 @@ begin
     raise exception 'Trip document exceeds 4 MiB' using errcode = '22023';
   end if;
 
-  select revision into current_revision
+  if p_content ? 'schemaVersion' and (jsonb_typeof(p_content->'schemaVersion') <> 'number'
+    or (p_content->>'schemaVersion') !~ '^[0-9]+$') then
+    raise exception 'Invalid document schema' using errcode = '22023';
+  end if;
+  incoming_schema := coalesce((p_content->>'schemaVersion')::numeric, 0);
+
+  select revision, coalesce((content->>'schemaVersion')::numeric, 0) into current_revision, current_schema
   from public.trip_documents
   where trip_id = p_trip_id
   for update;
@@ -178,6 +186,10 @@ begin
   if p_expected_revision is null or p_expected_revision <> current_revision then
     raise exception 'Revision conflict: expected %, current %', p_expected_revision, current_revision
       using errcode = '40001';
+  end if;
+
+  if incoming_schema < current_schema then
+    raise exception 'Document schema downgrade rejected; refresh the app' using errcode = '22023';
   end if;
 
   clean_note := nullif(left(regexp_replace(coalesce(p_version_note, ''), '[[:cntrl:]]+', ' ', 'g'), 120), '');

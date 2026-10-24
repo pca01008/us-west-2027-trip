@@ -1278,7 +1278,17 @@ body>header,.hero-shell{background-image:none;text-shadow:none}
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
   function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function hashText(value) { let hash=2166136261; for (const c of String(value)) { hash^=c.charCodeAt(0); hash=Math.imul(hash,16777619); } return (hash>>>0).toString(36); }
-  function setStatus(message) { if ($('#status')) $('#status').textContent = message; }
+  let documentWriteBlock='';
+  function assertSupportedSchema(raw){
+    const version=raw?.schemaVersion??0;
+    if(!Number.isInteger(Number(version))||Number(version)<0||Number(version)>SCHEMA_VERSION){const error=new Error('앱을 새로고침해 주세요');error.code='DOCUMENT_SCHEMA';throw error;}
+  }
+  function blockUnsupportedDocument(error){
+    if(!['DOCUMENT_SCHEMA','DOCUMENT_LEDGER'].includes(error?.code))return false;
+    documentWriteBlock=error.code==='DOCUMENT_SCHEMA'?'앱을 새로고침해 주세요':'지출 데이터를 읽지 못했습니다. 작업본을 보관하고 최근 저장 버전을 확인해 주세요.';
+    clearTimeout(draftWriteTimer);setStatus(documentWriteBlock);return true;
+  }
+  function setStatus(message) { if ($('#status')) $('#status').textContent = documentWriteBlock||message; }
   function finishHydration() {
     if (!body.classList.contains('hydrating')) return;
     body.classList.remove('hydrating');
@@ -1607,6 +1617,7 @@ body>header,.hero-shell{background-image:none;text-shadow:none}
     return draftStoragePromise;
   }
   async function writeDraftRecord(record) {
+    if(documentWriteBlock)return false;
     if(deferredDraftRecovery)return false;
     const generation=draftWriteGeneration;
     memoryDraftRecord=clone(record);
@@ -1642,6 +1653,7 @@ body>header,.hero-shell{background-image:none;text-shadow:none}
     }catch(error){console.warn('초안을 읽지 못했습니다.',error);showDraftStorageWarning('read');return null;}
   }
   async function clearDraftRecord() {
+    if(documentWriteBlock)return false;
     draftWriteGeneration++;clearTimeout(draftWriteTimer);draftWriteTimer=null;
     let cleared=false;
     try{
@@ -1887,6 +1899,7 @@ body>header,.hero-shell{background-image:none;text-shadow:none}
     return template.innerHTML;
   }
   function normalizeState(raw, imported=false) {
+    assertSupportedSchema(raw);
     const cats=normalizeCategories(raw?.categories);
     const rate=Number(raw?.exchangeRate);
     return {
@@ -1904,6 +1917,7 @@ body>header,.hero-shell{background-image:none;text-shadow:none}
     return (label.querySelector('span')?.textContent || Array.from(label.childNodes).filter(node=>node.nodeType===Node.TEXT_NODE).map(node=>node.textContent).join('')).trim();
   }
   function migratePublishedState(raw) {
+    assertSupportedSchema(raw);
     if (!raw?.html || Number(raw.schemaVersion||0) >= SCHEMA_VERSION) return raw;
     const previous=document.createElement('template');previous.innerHTML=raw.html;
     previous.content.querySelectorAll('.timeline-row').forEach((row,index)=>{
@@ -1976,6 +1990,7 @@ body>header,.hero-shell{background-image:none;text-shadow:none}
     if(focus&&wasInMain&&!focus.disabled){focus.focus({preventScroll:true});if(selection&&selection[0]!==null)focus.setSelectionRange(...selection);}
   }
   async function commitChecklistPatch(transform,note) {
+    if(documentWriteBlock)throw new Error(documentWriteBlock);
     if(saveInFlight||operationBusy)throw new Error('다른 저장이 끝난 뒤 다시 시도해 주세요.');
     checklistSaving=true;syncChecklistControls();
     try {
@@ -2291,6 +2306,7 @@ body>header,.hero-shell{background-image:none;text-shadow:none}
     setStatus('내 초안을 유지했습니다. 저장 전 충돌을 다시 확인합니다.');return false;
   }
   async function persistState(state,{note='수동 저장'}={}){
+    if(documentWriteBlock){setStatus(documentWriteBlock);return false;}
     if(body.classList.contains('previewing')){setStatus('미리보기를 닫은 뒤 저장해 주세요.');return false;}
     if(deferredDraftRecovery){setStatus('보관한 초안을 복구하거나 삭제한 뒤 편집해 주세요.');return false;}
     if(saveInFlight||operationBusy||checklistSaving||pendingChecks.size){setStatus('다른 작업이 끝난 뒤 저장해 주세요.');return false;}
@@ -2339,9 +2355,10 @@ body>header,.hero-shell{background-image:none;text-shadow:none}
 
   async function saveAndFinish(note='수동 저장'){const state=captureState(),wasEditing=body.classList.contains('editing');setEditingUI(false);const saved=await persistState(state,{note});if(!saved){const message=$('#status').textContent;updateDirtyState();if(wasEditing)setEditingUI(true);setStatus(message);return false;}initializeHistory();updateDirtyState();resetInactivityTimer();setStatus(OFFLINE_MODE?'오프라인 작업본 생성 중':'공유 저장 완료');if(OFFLINE_MODE)await exportOfflineHtml(lastSavedState);return true;}
   async function requestFinishEditing(){clearTimeout(historyTimer);recordHistory();if(!isDirty()){setEditingUI(false);resetInactivityTimer();return;}setEditingUI(false);const choice=await showChoice({title:'편집을 완료할까요?',message:OFFLINE_MODE?'저장하면 수정된 오프라인 작업본을 새 파일로 내려받습니다.':'저장해야 공개 링크에 변경 내용이 반영됩니다.',input:OFFLINE_MODE?null:{label:'버전 메모 (선택)','placeholder':'예: 라스베이거스 일정 확정'},choices:[{label:'저장하고 종료',value:'save',className:'action-primary'},{label:'계속 편집',value:'continue'},{label:'변경사항 폐기',value:'discard',className:'action-danger'}]});if(choice==='save')await saveAndFinish(noticeInputValue||'편집 완료');else if(choice==='continue'){setEditingUI(true);resetInactivityTimer();}else if(choice==='discard')discardDraft();}
-  async function beginEditing(){if(!OFFLINE_MODE&&!pendingDraft){try{const published=await fetchPublishedState();if(published?.content?.html){const state=normalizeState(migratePublishedState(published.content));applyState(state);setPublishedBaseline(published,state);}}catch(error){console.warn(error);setStatus('최신 저장본 확인 실패 · 현재 화면에서 편집합니다.');}}setEditingUI(true);initializeHistory();resetInactivityTimer();setStatus(pendingDraft?'편집 중 · 저장되지 않음':'편집 모드');}
+  async function beginEditing(){if(!OFFLINE_MODE&&!pendingDraft){try{const published=await fetchPublishedState();if(published?.content?.html){const state=normalizeState(migratePublishedState(published.content));applyState(state);setPublishedBaseline(published,state);}}catch(error){if(blockUnsupportedDocument(error))return;console.warn(error);setStatus('최신 저장본 확인 실패 · 현재 화면에서 편집합니다.');}}setEditingUI(true);initializeHistory();resetInactivityTimer();setStatus(pendingDraft?'편집 중 · 저장되지 않음':'편집 모드');}
   function requestAuthentication(purpose){authPurpose=purpose;$('#authTitle').textContent=purpose==='edit'?'편집자 확인':purpose==='versions'?'버전 관리자 확인':purpose==='import'?'편집본 불러오기 권한 확인':purpose==='ledger-settings'?'가계부 설정 권한 확인':purpose==='checklist'?'체크리스트 편집자 확인':purpose==='ledger'?'가계부 편집자 확인':'저장 권한 확인';$('#authError').textContent='';$('#editorPassword').value='';$('#authDialog').hidden=false;$('#editorPassword').focus();}
   async function runPurpose(purpose){
+    if(documentWriteBlock&&purpose!=='versions'){pendingAuthAction=null;pendingAuthCancel?.();pendingAuthCancel=null;setStatus(documentWriteBlock);return;}
     const cancel=()=>{const action=pendingAuthCancel;pendingAuthAction=null;pendingAuthCancel=null;if(action)action();};
     if(body.classList.contains('previewing')&&purpose!=='versions'){cancel();setStatus('미리보기를 닫은 뒤 편집해 주세요.');return;}
     if(deferredDraftRecovery&&['edit','ledger','ledger-settings','import','save'].includes(purpose)){
@@ -2826,7 +2843,7 @@ body>header,.hero-shell{background-image:none;text-shadow:none}
       if(revision!==publishedRevision||fingerprint(state)!==fingerprint(lastSavedState)){applyStatePreservingInputs(state);setPublishedBaseline(row,state);initializeHistory();setStatus(reason==='reconnect'?'연결 복구 · 최신 저장본 반영':'최신 저장본을 반영했습니다.');}
       else if(reason==='reconnect')setStatus('공유 서버 연결 복구 · 최신 상태');
       return true;
-    }catch(error){console.warn(error);setStatus('공유 서버 확인 실패 · 현재 화면 유지');return false;}
+    }catch(error){if(blockUnsupportedDocument(error))return false;console.warn(error);setStatus('공유 서버 확인 실패 · 현재 화면 유지');return false;}
   }
 
   async function hydrate(){
@@ -2850,6 +2867,7 @@ body>header,.hero-shell{background-image:none;text-shadow:none}
       const published=await fetchPublishedState();
       if(published?.content?.html){const state=normalizeState(migratePublishedState(published.content));applyState(state);setPublishedBaseline(published,state);}
     }catch(error){
+      if(blockUnsupportedDocument(error))return;
       console.warn(error);const cached=await readPublicCache();
       if(cached?.state?.html){const state=normalizeState(migratePublishedState(cached.state));applyState(state);setPublishedBaseline({revision:cached.revision,updatedAt:cached.updatedAt},state,cached);loadedFromCache=true;const cachedLabel=cached.cachedAt?new Date(cached.cachedAt).toLocaleString('ko-KR'):'최근';cacheStatus='오프라인 캐시 표시 · '+cachedLabel+' 기준';}
       else cacheStatus='연결 실패 · 기본 일정 표시 중 · 최신 공유본 미확인';
@@ -2859,7 +2877,7 @@ body>header,.hero-shell{background-image:none;text-shadow:none}
     if(!client)return;
     client.channel('trip-document-'+TRIP_ID).on('postgres_changes',{event:'UPDATE',schema:'public',table:'trip_documents',filter:'trip_id=eq.'+TRIP_ID},payload=>{
       if(!payload.new?.content?.html)return;
-      const remoteState=normalizeState(migratePublishedState(payload.new.content));
+      let remoteState;try{remoteState=normalizeState(migratePublishedState(payload.new.content));}catch(error){blockUnsupportedDocument(error);console.warn(error);return;}
       if(body.classList.contains('editing')||pendingDraft||body.classList.contains('previewing')||checklistSaving||pendingChecks.size||!$('#checklistDialog').hidden){pendingRemoteState={row:payload.new,state:remoteState};setStatus('새 공유 저장본이 있습니다 · 저장 시 비교합니다.');return;}
       applyStatePreservingInputs(remoteState);setPublishedBaseline(payload.new,remoteState);initializeHistory();setStatus('새 저장본을 반영했습니다.');
     }).subscribe(status=>{if(status==='SUBSCRIBED'&&loadedFromCache)void refreshPublishedState('reconnect');});
@@ -2939,7 +2957,7 @@ body>header,.hero-shell{background-image:none;text-shadow:none}
   $('#checklistEditorRows').addEventListener('input',event=>{const index=Number(event.target.dataset.checkIndex);if(event.target.matches('.checklist-text')&&checklistEditorItems[index])checklistEditorItems[index].text=event.target.value;resetInactivityTimer();});
   $('#checklistEditorRows').addEventListener('click',event=>{const button=event.target.closest('[data-check-action]');if(!button||button.disabled)return;const index=Number(button.dataset.index),action=button.dataset.checkAction;if(action==='important')checklistEditorItems[index].important=!checklistEditorItems[index].important;else if(action==='delete')checklistEditorItems.splice(index,1);else{const next=index+(action==='up'?-1:1);[checklistEditorItems[index],checklistEditorItems[next]]=[checklistEditorItems[next],checklistEditorItems[index]];}renderChecklistEditor();const rows=$$('#checklistEditorRows .checklist-editor-row');rows[Math.min(index,rows.length-1)]?.querySelector('.checklist-text')?.focus();});
   document.addEventListener('click',event=>{const retry=event.target.closest('[data-retry-check]');if(!retry)return;const item=checkFeedback.get(retry.dataset.retryCheck);if(item)void authorizeCheck(retry.dataset.retryCheck,item.value);});
-  initializeDaylight();initializeTimetable();initializeDialogAccessibility();selectInitialTab();decorateButtonIcons();decorateDates();decorateChecklist();renderLedger();moneyTemplateHtml=$('.moneyday').outerHTML;decorateScheduleRows();body.classList.add('viewing');setEditable(false);lastSavedState=normalizeState(captureState());updateContextControls();updateTripProgress();updateWorldClocks();setInterval(updateTripProgress,60*60*1000);setInterval(updateWorldClocks,60*1000);revealSelectedTab('auto');void hydrate().catch(error=>{console.error(error);setStatus('일정을 불러오지 못했습니다 · 현재 화면 유지');}).finally(finishHydration);
+  initializeDaylight();initializeTimetable();initializeDialogAccessibility();selectInitialTab();decorateButtonIcons();decorateDates();decorateChecklist();renderLedger();moneyTemplateHtml=$('.moneyday').outerHTML;decorateScheduleRows();body.classList.add('viewing');setEditable(false);lastSavedState=normalizeState(captureState());updateContextControls();updateTripProgress();updateWorldClocks();setInterval(updateTripProgress,60*60*1000);setInterval(updateWorldClocks,60*1000);revealSelectedTab('auto');void hydrate().catch(error=>{blockUnsupportedDocument(error);console.error(error);setStatus('일정을 불러오지 못했습니다 · 현재 화면 유지');}).finally(finishHydration);
 })();
 </script>
 </body>

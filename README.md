@@ -13,6 +13,7 @@
 | 앱 구조, 데이터·저장·권한·SQL 원리 이해 | [기술 설명서](docs/PROJECT_GUIDE_KO.md) |
 | 초기 구축, 다른 여행 추가, 테스트·배포, DB 점검·장애 대응 | [운영 안내서](docs/OPERATIONS_KO.md) |
 | 여행 조사 자료와 웹사이트 폴더 구분 | [디렉터리 구성 안내](docs/DIRECTORY_PLAN_KO.md) |
+| 가계부 원화·달러 동시 입력과 자동 계산 개선 | [수정 계획](docs/LEDGER_DUAL_CURRENCY_PLAN_KO.md) — 로컬 구현·검증 완료, DB migration 적용 및 배포 대기 |
 | 과거 DB 점검 배포·알림 검증 근거 확인 | [2026-10-05 검증 기록](docs/archive/2026-10-05-db-health-verification.md) |
 | 초안·복원 버그의 발견·수정·검증 경위 확인 | [2026-10-16 검토 기록](docs/archive/2026-10-16-review.md) |
 | 2026-10-18 검토 당시 발견 사항과 인계 기록 | [2026-10-18 검토 및 인계](docs/archive/2026-10-18-review-handoff.md) |

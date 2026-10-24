@@ -25,14 +25,14 @@ const server = createServer(async (req, res) => {
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
       .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/, '')
       .replace('initializeTimetable();initializeDialogAccessibility();',
-        'window.__ledgerTest={captureState,applyState,normalizeState};initializeTimetable();initializeDialogAccessibility();');
+        'window.__ledgerTest={captureState,applyState,applyStatePreservingInputs,normalizeState,buildDiff,migratePublishedState,exportOfflineHtml,exportStaticHtml};initializeTimetable();initializeDialogAccessibility();');
     res.writeHead(200, { 'Content-Type': { html: 'text/html; charset=utf-8', js: 'text/javascript; charset=utf-8', webp: 'image/webp', png: 'image/png', svg: 'image/svg+xml' }[file.split('.').at(-1)], 'Cache-Control': 'no-store' });
     res.end(content);
   } catch (error) { res.writeHead(500).end(error.message); }
 });
 await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
 const origin = `http://127.0.0.1:${server.address().port}`;
-const header = '"날짜","내용","카테고리","통화","금액","원화 환산액"';
+const header = '"날짜","내용","카테고리","원화 금액","달러 금액","자동 계산 통화","적용 환율"';
 const categories = [{ id: 'food', name: '식비', icon: '🍽️' }, { id: 'travel', name: '교통', icon: '🚗' }];
 const expense = (id, name, amount, currency, date, categoryId = 'food') => ({ id, name, amount, currency, date, categoryId });
 const mixed = [
@@ -43,10 +43,10 @@ const mixed = [
 ];
 // Literal expected results: never compute expectations with the app's helpers.
 const mixedCsv = [
-  '"2027-03-02","점심 Cafe","식비","KRW","10000","10000"',
-  '"2027-03-03","저녁 CAFE","식비","USD","12.34","16357"',
-  '"2027-03-04","Cafe 이동","교통","KRW","2000.4","2000"',
-  '"","팁","교통","USD","0.01","13"'
+  '"2027-03-02","점심 Cafe","식비","10000","7.54","USD","1325.5"',
+  '"2027-03-03","저녁 CAFE","식비","16357","12.34","KRW","1325.5"',
+  '"2027-03-04","Cafe 이동","교통","2000.4","1.51","USD","1325.5"',
+  '"","팁","교통","13","0.01","KRW","1325.5"'
 ];
 let browser;
 const errors = [];
@@ -56,7 +56,7 @@ try {
     const mode = mobile ? 'mobile' : 'desktop';
     diagnostics.scenario(`ledger startup / ${mode}`);
     const context = await diagnostics.context(browser, { viewport: { width: mobile ? 390 : 1440, height: 900 }, isMobile: mobile, hasTouch: mobile, locale: 'ko-KR', reducedMotion: 'reduce', acceptDownloads: true, serviceWorkers: 'block' });
-    await context.route('**/*', route => new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
+    await context.route('**/*', route => /^(file:|data:)/.test(route.request().url()) || new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
     const page = await context.newPage();
     page.setDefaultTimeout(10000);
     page.on('pageerror', error => errors.push(`${mode}: ${error.message}`));
@@ -64,11 +64,11 @@ try {
     let downloadIndex = 0;
     const text = selector => page.locator(selector).textContent();
     const activate = locator => mobile ? locator.tap() : locator.click();
-    const totals = async expected => assert.deepEqual(await Promise.all(['#totalKrw', '#totalUsd', '#totalConverted'].map(text)), expected, scenario);
+    const totals = async expected => assert.deepEqual(await Promise.all(['#totalKrw', '#totalUsd'].map(text)), expected, scenario);
     const fixture = async (expenses, options = {}) => {
       await page.evaluate(({ expenses, options, categories }) => {
         const api = window.__ledgerTest;
-        api.applyState(api.normalizeState({ ...api.captureState(), expenses, categories, exchangeRate: 1325.5, exchangeRateUpdated: '', budgetKrw: 0, ...options }));
+        api.applyState(api.normalizeState({ ...api.captureState(), schemaVersion:5, expenses, categories, exchangeRate: 1325.5, exchangeRateUpdated: '', budgetKrw: 0, ...options }));
       }, { expenses, options, categories });
     };
     const csv = async expectedLines => {
@@ -94,25 +94,25 @@ try {
       await selectTripTab(page, 'money', mobile);
       scenario = 'mixed currency and unset budget'; diagnostics.scenario(`${mode} / ${scenario}`);
       await fixture(mixed);
-      await totals(['₩12,000', '$12.35', '₩28,370']);
-      assert.deepEqual(await page.locator('#categorySummary .category-total b').allTextContents(), ['₩10,000 + $12.34', '₩2,000 + $0.01']);
-      assert.deepEqual(await page.locator('#categorySummary small').allTextContents(), ['(원화 환산 ₩26,357)', '(원화 환산 ₩2,014)']);
+      await totals(['₩28,370', '$21.40']);
+      assert.deepEqual(await page.locator('#categorySummary .category-total b').allTextContents(), ['₩26,357 · $19.88', '₩2,013 · $1.52']);
+      assert.deepEqual(await page.locator('#categorySummary small').allTextContents(), []);
       await csv(mixedCsv);
 
       scenario = 'rate and budget changes through settings'; diagnostics.scenario(`${mode} / ${scenario}`);
       await settings(1400);
-      await totals(['₩12,000', '$12.35', '₩29,290']);
-      assert.deepEqual(await page.locator('#categorySummary small').allTextContents(), ['(원화 환산 ₩27,276)', '(원화 환산 ₩2,014)']);
-      await csv([mixedCsv[0], '"2027-03-03","저녁 CAFE","식비","USD","12.34","17276"', mixedCsv[2], '"","팁","교통","USD","0.01","14"']);
+      await totals(['₩28,370', '$21.40']);
+      assert.deepEqual(await page.locator('#categorySummary small').allTextContents(), []);
+      await csv([mixedCsv[0], '"2027-03-03","저녁 CAFE","식비","16357","12.34","KRW","1325.5"', mixedCsv[2], '"","팁","교통","13","0.01","KRW","1325.5"']);
       scenario = 'rounding at half won and aggregate before rounding'; diagnostics.scenario(`${mode} / ${scenario}`);
       await fixture([
         expense('below-half', '소수 원화', 1.49, 'KRW', '2027-03-02'),
         expense('half', '반 원화', 1.5, 'KRW', '2027-03-02'),
         expense('usd-half', '센트', 0.01, 'USD', '2027-03-02')
       ], { exchangeRate: 1350, budgetKrw: 16.49 });
-      await totals(['₩3', '$0.01', '₩16']);
-      assert.deepEqual(await page.locator('.expense-amount').allTextContents(), ['₩1', '₩2', '$0.01']);
-      await csv(['"2027-03-02","소수 원화","식비","KRW","1.49","1"', '"2027-03-02","반 원화","식비","KRW","1.5","2"', '"2027-03-02","센트","식비","USD","0.01","14"']);
+      await totals(['₩17', '$0.01']);
+      assert.deepEqual(await page.locator('.expense-amount').allTextContents(), ['₩1 · $0.00 자동 계산', '₩2 · $0.00 자동 계산', '₩14 자동 계산 · $0.01']);
+      await csv(['"2027-03-02","소수 원화","식비","1.49","0","USD","1350"', '"2027-03-02","반 원화","식비","1.5","0","USD","1350"', '"2027-03-02","센트","식비","14","0.01","KRW","1350"']);
 
       await fixture(mixed, { budgetKrw: 987654 });
       assert.equal(await page.locator('#budgetOverview,#settingsBudgetKrw,.expense-filters,.expense-filter-summary').count(), 0);
@@ -148,8 +148,8 @@ try {
       await activate(page.locator('#ledgerSettingsClose'));
       assert.equal(await page.locator('#expenseCategory option[value="deleted"]').count(), 0);
       assert.deepEqual(await page.locator('#expenses .expense-category-badge').allTextContents(), ['🗑️ 삭제된 카테고리', '🗑️ 삭제된 카테고리', '🚗 교통', '🚗 교통']);
-      await totals(['₩12,000', '$12.35', '₩28,370']);
-      await csv(['"2027-03-02","점심 Cafe","삭제된 카테고리","KRW","10000","10000"', '"2027-03-03","저녁 CAFE","삭제된 카테고리","USD","12.34","16357"', mixedCsv[2], mixedCsv[3]]);
+      await totals(['₩28,370', '$21.40']);
+      await csv(['"2027-03-02","점심 Cafe","삭제된 카테고리","10000","7.54","USD","1325.5"', '"2027-03-03","저녁 CAFE","삭제된 카테고리","16357","12.34","KRW","1325.5"', mixedCsv[2], mixedCsv[3]]);
 
       scenario = 'CSV punctuation, multiline Korean and formula prefixes'; diagnostics.scenario(`${mode} / ${scenario}`);
       await fixture([
@@ -162,21 +162,100 @@ try {
         expense('at', '@SUM(1,2)', 70, 'KRW', '2027-03-02')
       ], { categories: [{ id: 'food', name: '여행, "식비"', icon: '🍽️' }, { id: 'formula', name: '=1+1', icon: '📦' }] });
       await csv([
-        '"2027-03-02","서울, 점심","여행, ""식비""","KRW","10","10"',
-        '"2027-03-02","메모 ""둘""","여행, ""식비""","KRW","20","20"',
-        '"2027-03-02","첫 줄\n둘째 줄\r\n셋째 줄","여행, ""식비""","KRW","30","30"',
-        `"2027-03-02","'=1+1","'=1+1","KRW","40","40"`,
-        `"2027-03-02","'+SUM(1,2)","여행, ""식비""","KRW","50","50"`,
-        `"2027-03-02","'-1+2","여행, ""식비""","KRW","60","60"`,
-        `"2027-03-02","'@SUM(1,2)","여행, ""식비""","KRW","70","70"`
+        '"2027-03-02","서울, 점심","여행, ""식비""","10","0.01","USD","1325.5"',
+        '"2027-03-02","메모 ""둘""","여행, ""식비""","20","0.02","USD","1325.5"',
+        '"2027-03-02","첫 줄\n둘째 줄\r\n셋째 줄","여행, ""식비""","30","0.02","USD","1325.5"',
+        `"2027-03-02","'=1+1","'=1+1","40","0.03","USD","1325.5"`,
+        `"2027-03-02","'+SUM(1,2)","여행, ""식비""","50","0.04","USD","1325.5"`,
+        `"2027-03-02","'-1+2","여행, ""식비""","60","0.05","USD","1325.5"`,
+        `"2027-03-02","'@SUM(1,2)","여행, ""식비""","70","0.05","USD","1325.5"`
       ]);
 
       scenario = 'empty ledger'; diagnostics.scenario(`${mode} / ${scenario}`);
       await fixture([]);
-      await totals(['₩0', '$0.00', '₩0']);
+      await totals(['₩0', '$0.00']);
       assert.equal(await text('#expenses .remark'), '아직 기록된 경비가 없습니다.');
       assert.equal(await text('#categorySummary'), '아직 카테고리별 내역이 없습니다.');
       await csv([]);
+      scenario = 'dual currency input, source transitions and fixed values'; diagnostics.scenario(`${mode} / ${scenario}`);
+      await settings(1400);
+      const krw=page.locator('#expenseKrw'),usd=page.locator('#expenseUsd');
+      const saved=()=>page.evaluate(()=>window.__ledgerTest.captureState().expenses);
+      await page.locator('#expenseName').fill('두 통화');
+      await krw.fill('14000');assert.equal(await usd.inputValue(),'10');
+      assert.equal(await text('#expenseUsdHint'),'수동 환율로 자동 계산');
+      await usd.focus();assert.equal(await text('#expenseUsdHint'),'수동 환율로 자동 계산');
+      // A real input event with the same number promotes it to direct input.
+      await usd.fill('10');assert.equal(await text('#expenseUsdHint'),'');
+      await krw.fill('14500');assert.equal(await usd.inputValue(),'10');
+      await usd.fill('');assert.equal(await usd.inputValue(),'10.36');
+      await krw.fill('');assert.equal(await usd.inputValue(),'');
+      await usd.fill('10');assert.equal(await krw.inputValue(),'14000');
+      await krw.fill('');assert.equal(await krw.inputValue(),'14000');
+      await activate(page.locator('#addExpense'));
+      assert.deepEqual((await saved()).map(({amountKrw,amountUsd,amountSource,appliedExchangeRate})=>({amountKrw,amountUsd,amountSource,appliedExchangeRate})),[{amountKrw:14000,amountUsd:10,amountSource:'usd',appliedExchangeRate:1400}]);
+      assert.equal(await krw.inputValue(),'');assert.equal(await usd.inputValue(),'');
+      await page.locator('#expenseName').fill('실제 결제');await krw.fill('14500');await usd.fill('10');await activate(page.locator('#addExpense'));
+      await totals(['₩28,500','$20.00']);
+      assert.equal((await saved())[1].amountSource,'both');
+      assert.equal(await page.locator('#expenses .expense').nth(1).locator('small').count(),0);
+      await settings(1500);await totals(['₩28,500','$20.00']);
+      await activate(page.locator('[data-edit-expense]').first());
+      assert.equal(await page.locator('#expenseEditKrw').inputValue(),'14000');
+      await page.locator('#expenseEditName').fill('이름만 수정');await activate(page.locator('#expenseEditSave'));
+      assert.equal((await saved())[0].appliedExchangeRate,1400);
+      await activate(page.locator('[data-edit-expense]').first());
+      await page.locator('#expenseEditUsd').fill('11');assert.equal(await page.locator('#expenseEditKrw').inputValue(),'16500');
+      await page.keyboard.press('Escape');assert.equal((await saved())[0].amountUsd,10);
+      await activate(page.locator('[data-edit-expense]').first());
+      await page.locator('#expenseEditUsd').fill('11');await activate(page.locator('#expenseEditSave'));
+      assert.equal((await saved())[0].amountKrw,16500);assert.equal((await saved())[0].appliedExchangeRate,1500);
+      // Actual validation must preserve the string and focus the invalid field.
+      for(const [value,hint] of [['0','0보다'],['1.1','원 단위'],['1e3','올바른'],['1,00','올바른'],['9007199254740992','범위']]){
+        await page.locator('#expenseName').fill('검증');await krw.fill(value);await activate(page.locator('#addExpense'));
+        assert.equal((await saved()).length,2);assert.equal(await krw.inputValue(),value);
+        assert.match(await text('#expenseKrwHint'),new RegExp(hint));assert.equal(await krw.getAttribute('aria-invalid'),'true');
+        assert.equal(await page.evaluate(()=>document.activeElement.id),'expenseKrw');
+      }
+      await krw.fill('1');assert.equal(await usd.inputValue(),'0');await activate(page.locator('#addExpense'));
+      assert.equal((await saved())[2].amountUsd,0);assert.equal((await saved())[2].amountSource,'krw');
+      await page.locator('#expenseName').fill('갱신 중');await usd.fill('10');
+      await usd.focus();await usd.evaluate(el=>el.setSelectionRange(1,2));
+      await page.evaluate(()=>{const api=window.__ledgerTest;api.applyStatePreservingInputs({...api.captureState(),exchangeRate:1600});});
+      assert.equal(await krw.inputValue(),'16000');assert.equal(await usd.inputValue(),'10');
+      assert.deepEqual(await page.evaluate(()=>[document.activeElement.id,document.activeElement.selectionStart,document.activeElement.selectionEnd]),['expenseUsd',1,2]);
+      await krw.fill('17000');
+      await page.evaluate(()=>{const api=window.__ledgerTest;api.applyStatePreservingInputs({...api.captureState(),exchangeRate:1800});});
+      assert.equal(await krw.inputValue(),'17000');assert.equal(await text('#expenseKrwHint'),'');
+      // Comparing only a source change must still produce a real diff.
+      assert.ok(await page.evaluate(()=>{const api=window.__ledgerTest,a=api.captureState(),b=structuredClone(a);b.expenses[0].amountSource='both';b.expenses[0].appliedExchangeRate=null;return api.buildDiff(a,b).some(g=>g.items.some(t=>t.includes('입력 출처')));}));
+      // A changed/deleted expense cannot be overwritten from the open dialog.
+      await activate(page.locator('[data-edit-expense]').first());
+      await page.evaluate(()=>{const api=window.__ledgerTest,state=api.captureState();state.expenses.shift();api.applyStatePreservingInputs(state);});
+      await activate(page.locator('#expenseEditSave'));assert.equal((await saved()).length,2);
+      assert.match(await text('#status'),/내역이 변경/);await page.keyboard.press('Escape');
+      const exportedExpenses=await saved(),renderedAmounts=await page.locator('.expense-amount').allTextContents();
+      for(const kind of ['editable','readonly']){
+        const pending=page.waitForEvent('download');
+        await page.evaluate(kind=>kind==='editable'?window.__ledgerTest.exportOfflineHtml():window.__ledgerTest.exportStaticHtml(),kind);
+        const artifactFile=path.join(output,`${mode}-dual-${kind}.html`);await(await pending).saveAs(artifactFile);
+        const artifact=await context.newPage();await artifact.goto(pathToFileURL(artifactFile).href);
+        if(kind==='editable'){
+          await artifact.waitForFunction(()=>!document.body.classList.contains('hydrating'));await selectTripTab(artifact,'money');
+          assert.deepEqual(await artifact.evaluate(()=>JSON.parse(document.querySelector('#offlineEmbeddedState').textContent).expenses),exportedExpenses);
+          await artifact.reload();await artifact.waitForFunction(()=>!document.body.classList.contains('hydrating'));await selectTripTab(artifact,'money');
+        }
+        assert.deepEqual(await artifact.locator('.expense-amount').allTextContents(),renderedAmounts);
+        await artifact.close();
+      }
+      for(const width of [320,390,1440]){
+        await page.setViewportSize({width,height:900});await krw.fill('9007199254740991');
+        assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+        assert.equal(await page.locator('#addExpense').evaluate(el=>el.getBoundingClientRect().right<=el.closest('.expense-entry').getBoundingClientRect().right),true,'Button stays inside the entry card');
+        await page.screenshot({path:path.join(output,`${mode}-${width}-dual-ledger.png`),fullPage:true});
+        await krw.fill('1.1');await activate(page.locator('#addExpense'));
+        await page.screenshot({path:path.join(output,`${mode}-${width}-dual-error.png`),fullPage:true});
+      }
       console.log(`${mode}: mixed totals, rate changes, rounding, budget compatibility, ordering, deleted categories and ${downloadIndex} CSV downloads passed.`);
     } catch (error) {
       await diagnostics.fail(new Error(`${mode} ledger scenario: ${scenario}`, { cause: error }));

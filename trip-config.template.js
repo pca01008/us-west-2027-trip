@@ -5,7 +5,7 @@
  * tripId는 다른 여행과 겹치지 않는 영문 소문자·숫자·하이픈 조합을 사용합니다.
  */
 window.TRIP_CONFIG = {
-  schemaVersion: 5,
+  schemaVersion: 6,
   tripId: 'sample-trip-2028',
   cacheNamespace: 'sample_trip_2028',
   locale: 'ko-KR',

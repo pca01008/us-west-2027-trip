@@ -48,7 +48,7 @@ const server = createServer(async (req, res) => {
       .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, stub)
       .replace('initializeTimetable();initializeDialogAccessibility();', `window.__prepTest={captureState,applyState,normalizeState,checklistItems,patchChecklist,patchCheck,isDirty,finishMutation,recordHistory,refreshPublishedState,
         pending:()=>pendingChecks.size,base:()=>lastSavedState,revision:()=>publishedRevision,editorItems:()=>clone(checklistEditorItems),
-        draft:()=>{expenses.push({id:'unsaved-expense',name:'Unsaved meal',amount:25,currency:'USD',date:'2027-05-01',categoryId:'misc'});renderLedger();finishMutation();},
+        draft:()=>{expenses.push({id:'unsaved-expense',name:'Unsaved meal',amountKrw:36250,amountUsd:25,amountSource:'usd',appliedExchangeRate:1450,date:'2027-05-01',categoryId:'misc'});renderLedger();finishMutation();},
         storageFailure:()=>{writeDraftRecord=async()=>false;}};initializeTimetable();initializeDialogAccessibility();`)
       .replace('data-offline="false"', url.searchParams.has('offline') ? 'data-offline="true"' : 'data-offline="false"');
     res.setHeader('Content-Type', relative.endsWith('.html') ? 'text/html; charset=utf-8' : relative.endsWith('.js') ? 'text/javascript; charset=utf-8' : 'application/octet-stream');res.end(content);
