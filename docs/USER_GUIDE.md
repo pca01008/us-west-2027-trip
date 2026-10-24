@@ -32,7 +32,7 @@ Before first using both, close browser/installed-app windows and reopen online. 
 
 Viewing requires no login; editing requires a designated Supabase editor account. Login distinguishes password errors from server connection failures. Retry later after connection failures; failed login does not delete drafts.
 
-- On desktop and mobile, choose itinerary, PREP, or ledger in bottom navigation.
+- Choose itinerary, PREP, or ledger in the fixed left sidebar on desktop (1024px and wider), or bottom navigation on smaller screens.
 - The initial screen uses the device date: PREP before travel, that day's itinerary during travel, ledger afterward.
 - Date selection and daily itinerary/timetable controls appear only in itinerary. Selected day/view survive menu changes in the current session. Opening itinerary before/after travel initially selects day one. Date tabs support arrows, Home, and End.
 - Navigation preserves edits and expense inputs. Clock/shared-document updates preserve the selected menu/day.
@@ -114,7 +114,7 @@ Undo is temporary editing history; versions are server history. Restore saves th
 - Wrong-trip, corrupt, and unsupported files are rejected without replacing the current draft. Old copies retain itinerary/checks. Shared changes during comparison require reviewing refreshed differences before applying.
 - Print/share copies are read-only snapshots without editor tools or Supabase. Photos embed when possible; remaining online photos/map links need internet.
 - The existing app preserves Daylight importance flags/stay ranges during save/import but has no dedicated editor for them. Comparisons show missing metadata in old files/versions.
-- Print/share removes bottom navigation, date/theme/CSV controls, and shows PREP, itinerary, and expenses sequentially. Offline copies retain new navigation/theme menus.
+- Print/share removes main navigation and its reserved space, date/theme/CSV controls, and shows PREP, itinerary, and expenses sequentially. Offline copies retain responsive navigation/theme menus.
 
 ## Installation and offline use
 

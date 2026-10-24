@@ -31,3 +31,5 @@ The October 24, 2026 decision **pauses further Daylight development and producti
 Retain the [Daylight plan](docs/DAYLIGHT_IMPLEMENTATION_PLAN.md) and [implementation record](docs/archive/2026-10-23-daylight-implementation.md) as paused candidate history.
 
 The October 25, 2026 palette decision retains the current public site's colors. A/B/C color proposals are not selected. Follow the [current palette roles](docs/PROJECT_GUIDE.md#color-palette) and [maintenance procedure](docs/OPERATIONS.md#palette-maintenance).
+
+The October 25, 2026 navigation decision adapts Daylight's left sidebar to the existing app on desktop while retaining bottom navigation on smaller screens. The [user guide](docs/USER_GUIDE.md#screens-and-navigation) owns current behavior.

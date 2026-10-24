@@ -95,7 +95,7 @@ try {
   diagnostics.scenario('responsive geometry, themes and screenshots');
   for (const theme of ['light','dark']) {
     await selectTheme(page, theme);
-    for (const width of [320,390,519,520,521,620,621,680,681,768,899,900,901,1440]) {
+    for (const width of [320,390,519,520,521,620,621,680,681,768,899,900,901,1023,1024,1100,1280,1440,1920]) {
       await page.setViewportSize({ width, height: 900 });
       await page.locator('#themeToggle').click();
       const geometry=await page.evaluate(() => {
@@ -104,11 +104,26 @@ try {
       });
       assert.equal(geometry.overflow,false,`overflow ${theme} ${width}`);assert.ok(geometry.menu[0]>=0&&geometry.menu[1]<=width,`menu ${width}`);assert.equal(geometry.hit,'themeMenu');
       assert.ok(geometry.add[1]>=44&&geometry.add[2]<=geometry.add[3],`add ${width}`);assert.equal(geometry.nav,900);assert.equal(geometry.overlap,false,`currency/add overlap ${width}`);
+      const navigation=await page.evaluate(() => {
+        const nav=document.querySelector('.bottom-nav').getBoundingClientRect(),buttons=[...document.querySelectorAll('.bottom-nav button')].map(el=>el.getBoundingClientRect());
+        return { left:nav.left,top:nav.top,right:nav.right,buttons:buttons.map(r=>({left:r.left,top:r.top,bottom:r.bottom})),contentLeft:document.querySelector('main').getBoundingClientRect().left };
+      });
+      assert.equal(navigation.left,0);
+      if(width>=1024){
+        assert.equal(navigation.top,0);assert.ok(navigation.right<=navigation.contentLeft,`sidebar/content ${width}`);
+        assert.ok(navigation.buttons.every((r,i)=>i===0||r.top>=navigation.buttons[i-1].bottom),`vertical menu ${width}`);
+      }else{
+        assert.equal(navigation.right,width);assert.ok(navigation.top>800);
+        assert.ok(navigation.buttons.every(r=>r.top===navigation.buttons[0].top),`bottom menu ${width}`);
+      }
       if ([320,390,768,1440].includes(width)) await page.screenshot({ path:path.join(output, `${theme}-${width}-menu.png`) });
       await page.keyboard.press('Escape');
       await page.locator('#expenses .expense').last().scrollIntoViewIfNeeded();
       await page.evaluate(() => window.scrollTo(0,document.documentElement.scrollHeight));
-      assert.ok(await page.locator('#expenses .expense').last().evaluate(el=>el.getBoundingClientRect().bottom<=document.querySelector('.bottom-nav').getBoundingClientRect().top),`last row ${width}`);
+      assert.ok(await page.locator('#expenses .expense').last().evaluate(el=>{
+        const row=el.getBoundingClientRect(),nav=document.querySelector('.bottom-nav').getBoundingClientRect();
+        return innerWidth>=1024?row.left>=nav.right&&row.bottom<=innerHeight:row.bottom<=nav.top;
+      }),`last row ${width}`);
       if ([320,1440].includes(width)) await page.screenshot({ path:path.join(output, `${theme}-${width}-ledger.png`), fullPage:true });
       if ([320,390,768,1440].includes(width)) {
         for (const section of ['d1','prep']) {
@@ -121,6 +136,24 @@ try {
       }
     }
   }
+  diagnostics.scenario('desktop keyboard navigation, resize and print');
+  await page.setViewportSize({width:1280,height:900});
+  await page.locator('#nav-schedule').focus();await page.keyboard.press('Enter');
+  assert.equal(await page.locator('#nav-schedule').getAttribute('aria-current'),'page');
+  await page.keyboard.press('Tab');await page.keyboard.press('Enter');
+  assert.equal(await page.locator('#tab-prep').getAttribute('aria-current'),'page');
+  await page.keyboard.press('Tab');await page.keyboard.press('Space');
+  assert.equal(await page.locator('#tab-money').getAttribute('aria-current'),'page');
+  await page.setViewportSize({width:390,height:844});
+  assert.equal(await page.locator('#tab-money').getAttribute('aria-current'),'page');
+  await page.setViewportSize({width:1280,height:900});
+  await page.emulateMedia({media:'print'});
+  assert.equal(await page.locator('.bottom-nav').isVisible(),false);
+  assert.equal(await page.locator('body').evaluate(el=>getComputedStyle(el).paddingLeft),'0px');
+  await page.emulateMedia({media:'screen'});
+  await page.evaluate(()=>document.documentElement.dataset.artifactType='readonly');
+  assert.equal(await page.locator('body').evaluate(el=>getComputedStyle(el).paddingLeft),'0px');
+  await page.evaluate(()=>delete document.documentElement.dataset.artifactType);
   // Reduced visual viewport approximates the layout available above a keyboard.
   await page.setViewportSize({ width:390,height:360 });await page.locator('#expenseName').focus();await page.locator('#addExpense').scrollIntoViewIfNeeded();
   assert.ok(await page.locator('#addExpense').evaluate(el=>el.getBoundingClientRect().bottom<=document.querySelector('.bottom-nav').getBoundingClientRect().top));

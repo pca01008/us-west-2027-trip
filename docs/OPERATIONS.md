@@ -470,4 +470,4 @@ No DB/folder migration needed. Configuration supplies defaults; active-trip chan
 
 [Plan](LEGACY_UI_REFINEMENT_PLAN.md): branch `codex/legacy-ui-refinement` from deployed `1ff42eb`. [October 24 record](archive/2026-10-24-legacy-ui-refinement.md) owns results/limits. Unit/full browser runners include synthetic navigation tests; captures: `docs/ui-concepts/previews/legacy-refinement-implementation/`. Device keyboards/zoom remain distinct from emulation.
 
-Deploy only reviewed root refinement/tests/docs to main; verify Validate/Pages. Do not merge Daylight wholesale or regenerate its existing public artifacts. No SQL/schema/server changes. Users preserve drafts, close/reopen online, check bottom navigation/theme. Record publication/real-data saving separately from local regression results.
+Deploy only reviewed root refinement/tests/docs to main; verify Validate/Pages. Do not merge Daylight wholesale or regenerate its existing public artifacts. No SQL/schema/server changes. Users preserve drafts, close/reopen online, check desktop sidebar/mobile bottom navigation and theme. Record publication/real-data saving separately from local regression results.

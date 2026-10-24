@@ -146,7 +146,7 @@ Realtime delivers notifications. Editing, drafts, previews, and checklist saves 
 
 One `.bottom-nav` outside `main` selects existing day radios without duplicating itinerary DOM. `lastScheduleDay` remembers only this run's itinerary date and does not override initial-screen logic. `timetableActive` preserves view choice; PREP/ledger hide the timetable, dates, and view controls. Clock/shared-state refreshes do not reset navigation. `applyStatePreservingInputs` retains unadded expense input.
 
-The final `refinement` CSS layer defines fixed navigation/safe-area spacing, ledger controls, and theme menu. Expense entry uses two columns at 1100px or below and one at 480px or below, retaining navy/coral and theme tokens.
+The final `refinement` CSS layer defines fixed navigation/safe-area spacing, ledger controls, and theme menu. The same `.bottom-nav` becomes a 176px left sidebar at screen widths of 1024px or more; body padding reserves its space. Smaller screens keep bottom navigation. Print and read-only exports reserve no navigation space. Expense entry uses two columns at 1100px or below and one at 480px or below, retaining navy/coral and theme tokens.
 
 Independent `tripThemeBootstrap` synchronizes `aria-expanded`, native radios, and effective-brightness icon. Selection/Esc restores button focus; outside click/focusin does not steal it. Storage-failure messages remain outside the menu. Theme is not part of state/drafts/versions.
 
