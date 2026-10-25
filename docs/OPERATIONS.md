@@ -157,7 +157,7 @@ Isolated local APIs block production. [Fixtures](../scripts/browser-fixtures.mjs
 | Full runner | `node scripts/check-browsers.mjs`; fails if any child fails |
 | Diagnostics | `node scripts/check-diagnostics-browser.mjs`: injected failures, exit/scenario, multi-tab PNG/errors/traces, partial capture resilience/startup failure/success cleanup |
 | Drafts | `node scripts/check-drafts-browser.mjs`: tabs/clones/recover/defer/conflict/preview/logout/timeouts; PREP/deferred retention, reauthentication/duplicate sign-out, resume/reconnect/Realtime input/focus/selection/category fallback |
-| Input | `node scripts/check-inputs-browser.mjs`: desktop/mobile IME/noncancelable input/undo/import/export |
+| Input | `node scripts/check-inputs-browser.mjs`: desktop/mobile IME/noncancelable input/undo/import/export; distant-date setup scrolls instantly before real clicks, while app transitions retain the tested motion preference |
 | Ledger | `node scripts/check-ledger-browser.mjs`: dual/category totals/rates/rounding/empty/delete/order, budget compatibility/old HTML/full CSV |
 | Compatibility | `node scripts/check-ledger-compat-browser.mjs`: future schema, Daylight/schema 6, corrupt drafts/write blocking/original retention |
 | Import | `node scripts/check-imports-browser.mjs`: real files, rejection/retention, sanitization/IDs/numbers, legacy content/checks, changing revision/cancel/explicit save |

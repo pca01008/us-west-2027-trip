@@ -66,8 +66,9 @@ try {
     await activate(label('money'));assert.equal(await page.locator('.tabs').isHidden(),true);
     for(const target of ['money','prep','d11']) {
       await deep();
-      // Reveal distant dates by horizontal scrolling before the real pointer click.
-      if(target==='d11')await label(target).evaluate(el=>{el.parentElement.scrollLeft=el.offsetLeft;});
+      // Position the fixture instantly: CSS smooth scrolling can leave the date
+      // under the arrow and make Playwright scroll the page while retrying clicks.
+      if(target==='d11')await label(target).evaluate(el=>{el.parentElement.scrollTo({left:el.offsetLeft,behavior:'instant'});});
       await activate(target==='d11'?label(target).locator('span').last():label(target));
       if(target==='d11')await settled();assert.equal(await page.locator('#'+target).isChecked(),true);
       assert.equal(await label(target).getAttribute(target==='d11'?'aria-selected':'aria-current'),target==='d11'?'true':'page');
