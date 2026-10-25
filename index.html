@@ -1329,6 +1329,8 @@ input:disabled,select:disabled{opacity:.7}
   let memoryDraftRecord = null;
   let draftWriteGeneration = 0;
   let draftStoragePromise = null;
+  let draftStorageReady = false;
+  let draftLockPromise = null;
   let memoryPublicCache = null;
   let saveInFlight = false;
   let signingOut = false;
@@ -1623,6 +1625,11 @@ input:disabled,select:disabled{opacity:.7}
     target.dispatchEvent(inputEvent);
   }
 
+  // A synchronous checkpoint covers navigation before an IndexedDB commit.
+  // It uses the same per-page ownership/claim rules as the durable draft.
+  function draftCheckpointKey(key){return DRAFT_DB_NAME+':checkpoint:'+key;}
+  function readDraftCheckpoint(key){try{return JSON.parse(localStorage.getItem(draftCheckpointKey(key))||'null');}catch(_){return null;}}
+  function removeDraftCheckpoint(key,expected){try{const storageKey=draftCheckpointKey(key);if(expected===undefined||localStorage.getItem(storageKey)===expected)localStorage.removeItem(storageKey);return true;}catch(_){return false;}}
   function openDraftDatabase() {
     if(draftDatabasePromise)return draftDatabasePromise;
     draftDatabasePromise=new Promise(resolve=>{
@@ -1661,9 +1668,9 @@ input:disabled,select:disabled{opacity:.7}
   function prepareDraftStorage() {
     if(draftStoragePromise)return draftStoragePromise;
     draftStoragePromise=(async()=>{
-      const releaseOwn=await acquireDraftLock(DRAFT_RECORD_KEY);
+      const releaseOwn=await (draftLockPromise??=acquireDraftLock(DRAFT_RECORD_KEY));
       const database=await openDraftDatabase();
-      if(!database){releaseOwn?.();return false;}
+      if(!database)return false;
       try{
         let previousKey='';
         try{previousKey=sessionStorage.getItem(DRAFT_SESSION_KEY)||'';}catch(_){}
@@ -1676,6 +1683,16 @@ input:disabled,select:disabled{opacity:.7}
             cursor.continue();};
           transaction.oncomplete=()=>resolve(entries);transaction.onerror=()=>reject(transaction.error);transaction.onabort=()=>reject(transaction.error);
         });
+        try{
+          const prefix=draftCheckpointKey(LEGACY_DRAFT_RECORD_KEY+':');
+          for(let i=0;i<localStorage.length;i++){
+            const storageKey=localStorage.key(i);if(!storageKey?.startsWith(prefix))continue;
+            const key=storageKey.slice(draftCheckpointKey('').length),record=readDraftCheckpoint(key);
+            if(key===DRAFT_RECORD_KEY||record?.tripId!==TRIP_ID||!record?.state?.html)continue;
+            const existing=candidates.find(item=>item.key===key);
+            if(existing)existing.savedAt=record.savedAt||existing.savedAt;else candidates.push({key,savedAt:record.savedAt||''});
+          }
+        }catch(_){}
         candidates.sort((a,b)=>Number(b.key===previousKey)-Number(a.key===previousKey)||b.savedAt.localeCompare(a.savedAt));
         for(const {key} of candidates){
           const release=await acquireDraftLock(key);if(!release)continue;
@@ -1683,23 +1700,26 @@ input:disabled,select:disabled{opacity:.7}
           try{
             claimed=await new Promise((resolve,reject)=>{
               const transaction=database.transaction('records','readwrite'),records=transaction.objectStore('records'),request=records.get(key);let found=false;
-              request.onsuccess=()=>{if(!request.result)return;found=true;try{records.put(request.result,DRAFT_RECORD_KEY);records.delete(key);}catch(error){transaction.abort();reject(error);}};
+              request.onsuccess=()=>{const checkpoint=readDraftCheckpoint(key),record=checkpoint&&(!request.result||checkpoint.savedAt>=request.result.savedAt)?checkpoint:request.result;if(!record)return;found=true;try{records.put(record,DRAFT_RECORD_KEY);records.delete(key);}catch(error){transaction.abort();reject(error);}};
               transaction.oncomplete=()=>resolve(found);transaction.onerror=()=>reject(transaction.error);transaction.onabort=()=>reject(transaction.error);
             });
           }finally{release();}
-          if(claimed)break;
+          if(claimed){removeDraftCheckpoint(key);break;}
         }
         try{sessionStorage.setItem(DRAFT_SESSION_KEY,DRAFT_RECORD_KEY);}catch(_){}
         return true;
-      }catch(error){releaseOwn?.();console.warn('초안 저장소를 준비하지 못했습니다.',error);return false;}
-    })().then(ready=>{if(!ready)draftStoragePromise=null;return ready;});
+      }catch(error){console.warn('초안 저장소를 준비하지 못했습니다.',error);return false;}
+    })().then(ready=>{draftStorageReady=ready;if(!ready)draftStoragePromise=null;return ready;});
     return draftStoragePromise;
   }
   async function writeDraftRecord(record) {
     if(documentWriteBlock)return false;
     if(deferredDraftRecovery)return false;
-    const generation=draftWriteGeneration;
+    const generation=++draftWriteGeneration;
     memoryDraftRecord=clone(record);
+    const checkpoint=JSON.stringify(record);
+    // Wait for ownership/recovery setup before creating this page's checkpoint.
+    if(draftStorageReady)try{localStorage.setItem(draftCheckpointKey(DRAFT_RECORD_KEY),checkpoint);}catch(_){}
     let saved=false;
     try{
       if(!await prepareDraftStorage())throw new Error('Draft storage unavailable');
@@ -1713,6 +1733,7 @@ input:disabled,select:disabled{opacity:.7}
         transaction.objectStore('records').put(record,DRAFT_RECORD_KEY);
       });
     }catch(error){console.warn('초안을 저장하지 못했습니다.',error);}
+    if(saved)removeDraftCheckpoint(DRAFT_RECORD_KEY,checkpoint);
     if(generation===draftWriteGeneration)showDraftStorageWarning(saved?'':'write');
     return saved;
   }
@@ -1733,7 +1754,7 @@ input:disabled,select:disabled{opacity:.7}
   }
   async function clearDraftRecord() {
     if(documentWriteBlock)return false;
-    draftWriteGeneration++;clearTimeout(draftWriteTimer);draftWriteTimer=null;
+    const generation=++draftWriteGeneration;clearTimeout(draftWriteTimer);draftWriteTimer=null;
     let cleared=false;
     try{
       if(!await prepareDraftStorage())throw new Error('Draft storage unavailable');
@@ -1750,6 +1771,8 @@ input:disabled,select:disabled{opacity:.7}
         transaction.onabort=()=>resolve(false);
       });
     }catch(error){console.warn('초안을 삭제하지 못했습니다.',error);}
+    if(generation!==draftWriteGeneration)return false;
+    if(cleared)cleared=removeDraftCheckpoint(DRAFT_RECORD_KEY);
     if(cleared){deferredDraftRecovery=false;memoryDraftRecord=null;}
     showDraftStorageWarning(cleared?'':'delete');
     return cleared;
@@ -1802,7 +1825,7 @@ input:disabled,select:disabled{opacity:.7}
   }
   async function flushDraftPersistence() {
     clearTimeout(draftWriteTimer);
-    if(!pendingDraft||!lastSavedState)return false;
+    if(!lastSavedState||!isDirty())return false;
     return writeDraftRecord(currentDraftRecord());
   }
   function queueDraftPersistence() {
@@ -2430,7 +2453,7 @@ input:disabled,select:disabled{opacity:.7}
   function updateDirtyState({preserveDraft=false}={}){const wasDirty=pendingDraft;pendingDraft=isDirty();$('#saveBtn').disabled=!pendingDraft;setStatus(body.classList.contains('editing')?(pendingDraft?'편집 중 · 저장되지 않음':'편집 모드'):(pendingDraft?'저장 대기 중':(OFFLINE_MODE?'오프라인 작업본':'보기 모드')));if(pendingDraft)queueDraftPersistence();else if(wasDirty&&!preserveDraft&&!body.classList.contains('hydrating'))clearCleanDraft();syncChecklistControls();}
   function setEditable(on){$$('main [contenteditable],.checklist label>span:not(.check-actions),.schedule-warning-text,main .day:not(.prepday):not(.moneyday) .day-head p').forEach(el=>el.contentEditable=on?'true':'false');$('#exchangeRate').disabled=true;$$('.check-actions,.time,.time [contenteditable]').forEach(el=>el.contentEditable='false');$$('.prepday [contenteditable]').forEach(el=>el.contentEditable='false');syncChecklistControls();if(!on)closeScheduleTimeDialog();}
   function recordHistory(){if(!body.classList.contains('editing')||applyingHistory)return;const next=captureState();if(historyIndex>=0&&fingerprint(history[historyIndex])===fingerprint(next))return;history=history.slice(0,historyIndex+1);history.push(clone(next));if(history.length>100)history.shift();historyIndex=history.length-1;updateHistoryControls();updateDirtyState();}
-  function queueHistory(){clearTimeout(historyTimer);historyTimer=setTimeout(recordHistory,400);}
+  function queueHistory(){updateDirtyState();if(pendingDraft)void flushDraftPersistence();clearTimeout(historyTimer);historyTimer=setTimeout(recordHistory,400);}
   function initializeHistory(){history=[clone(captureState())];historyIndex=0;updateHistoryControls();}
   function updateHistoryControls(){$('#undoBtn').disabled=historyIndex<=0;$('#redoBtn').disabled=historyIndex<0||historyIndex>=history.length-1;}
   function moveHistory(offset){const next=historyIndex+offset;if(next<0||next>=history.length)return;historyIndex=next;applyState(history[next]);updateHistoryControls();updateDirtyState();resetInactivityTimer();}
@@ -2463,7 +2486,7 @@ input:disabled,select:disabled{opacity:.7}
   async function signOutEditor({broadcast=true}={}){if(OFFLINE_MODE)return;clearSessionTimers();signingOut=true;try{localStorage.removeItem(SESSION_ACTIVITY_KEY);}catch(_){}if(broadcast)sessionChannel?.postMessage({type:'signout'});try{if(client)await client.auth.signOut({scope:'local'});}catch(error){console.warn('서버 로그아웃 요청에 실패했지만 이 브라우저 세션은 종료합니다.',error);}finally{setEditorSession(null);signingOut=false;}}
   function closeEditorDialogs(){closeScheduleTimeDialog();['checklistDialog','ledgerSettingsDialog','categoryDialog','expenseDialog','mapDialog','photoEditDialog','importDialog','exportDialog','versionDialog','versionCompareDialog','photoViewer'].forEach(id=>{const dialog=$('#'+id);if(dialog)dialog.hidden=true;});editingCategoryId=null;editingExpenseId=null;activeScheduleRow=null;activePhotoFigure=null;selectedVersion=null;pendingImport=null;}
   async function handleExternalSignOut(message='편집 세션이 다른 탭에서 종료되었습니다.') {
-    const hadDraft=pendingDraft||deferredDraftRecovery;
+    const hadDraft=isDirty()||deferredDraftRecovery;
     if(hadDraft){
       await flushDraftPersistence();
       // The shared view no longer contains this draft. Require recovery before
@@ -3198,9 +3221,9 @@ input:disabled,select:disabled{opacity:.7}
   window.addEventListener('storage',event=>{if(event.key!==SESSION_ACTIVITY_KEY)return;if(event.newValue)acceptSharedActivity(Number(event.newValue));else if(editorSession&&!signingOut)void handleExternalSignOut();});
   window.addEventListener('online',()=>void refreshPublishedState('reconnect'));
   window.addEventListener('offline',()=>setStatus(pendingDraft?'오프라인 · 초안은 이 브라우저에 보관 중':'오프라인 · 저장된 화면 표시 중'));
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void refreshPublishedState('visible');else if(pendingDraft)void flushDraftPersistence();});
-  window.addEventListener('pagehide',()=>{if(pendingDraft)void flushDraftPersistence();});
-  window.addEventListener('beforeunload',event=>{if(!pendingDraft&&!saveInFlight&&!pendingChecks.size&&!checklistEditorSaving&&!checklistEditorDirty())return;void flushDraftPersistence();event.preventDefault();event.returnValue='';});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void refreshPublishedState('visible');else void flushDraftPersistence();});
+  window.addEventListener('pagehide',()=>{void flushDraftPersistence();});
+  window.addEventListener('beforeunload',event=>{if(!isDirty()&&!saveInFlight&&!pendingChecks.size&&!checklistEditorSaving&&!checklistEditorDirty())return;void flushDraftPersistence();event.preventDefault();event.returnValue='';});
   if(client)client.auth.onAuthStateChange((_event,session)=>{const wasAuthenticated=Boolean(editorSession),valid=editorEmailMatches(session?.user?.email)?session:null;if(valid){setEditorSession(valid);return;}setEditorSession(null);if(wasAuthenticated&&!signingOut)setTimeout(()=>void handleExternalSignOut('편집 세션이 종료되었습니다.'),0);});
 
   document.addEventListener('click',event=>{if((pendingChecks.size||checklistSaving)&&event.target.closest('.editor-bar')){event.preventDefault();event.stopImmediatePropagation();}},true);

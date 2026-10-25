@@ -115,6 +115,8 @@
   let memoryDraftRecord = null;
   let draftWriteGeneration = 0;
   let draftStoragePromise = null;
+  let draftStorageReady = false;
+  let draftLockPromise = null;
   let memoryPublicCache = null;
   let saveInFlight = false;
   let signingOut = false;

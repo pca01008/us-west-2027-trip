@@ -157,9 +157,9 @@
   window.addEventListener('storage',event=>{if(event.key!==SESSION_ACTIVITY_KEY)return;if(event.newValue)acceptSharedActivity(Number(event.newValue));else if(editorSession&&!signingOut)void handleExternalSignOut();});
   window.addEventListener('online',()=>void refreshPublishedState('reconnect'));
   window.addEventListener('offline',()=>setStatus(pendingDraft?'오프라인 · 초안은 이 브라우저에 보관 중':'오프라인 · 저장된 화면 표시 중'));
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void refreshPublishedState('visible');else if(pendingDraft)void flushDraftPersistence();});
-  window.addEventListener('pagehide',()=>{if(pendingDraft)void flushDraftPersistence();});
-  window.addEventListener('beforeunload',event=>{if(!pendingDraft&&!saveInFlight&&!pendingChecks.size&&!checklistEditorSaving&&!checklistEditorDirty())return;void flushDraftPersistence();event.preventDefault();event.returnValue='';});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void refreshPublishedState('visible');else void flushDraftPersistence();});
+  window.addEventListener('pagehide',()=>{void flushDraftPersistence();});
+  window.addEventListener('beforeunload',event=>{if(!isDirty()&&!saveInFlight&&!pendingChecks.size&&!checklistEditorSaving&&!checklistEditorDirty())return;void flushDraftPersistence();event.preventDefault();event.returnValue='';});
   if(client)client.auth.onAuthStateChange((_event,session)=>{const wasAuthenticated=Boolean(editorSession),valid=editorEmailMatches(session?.user?.email)?session:null;if(valid){setEditorSession(valid);return;}setEditorSession(null);if(wasAuthenticated&&!signingOut)setTimeout(()=>void handleExternalSignOut('편집 세션이 종료되었습니다.'),0);});
 
   document.addEventListener('click',event=>{if((pendingChecks.size||checklistSaving)&&event.target.closest('.editor-bar')){event.preventDefault();event.stopImmediatePropagation();}},true);

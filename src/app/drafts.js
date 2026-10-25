@@ -1,3 +1,8 @@
+  // A synchronous checkpoint covers navigation before an IndexedDB commit.
+  // It uses the same per-page ownership/claim rules as the durable draft.
+  function draftCheckpointKey(key){return DRAFT_DB_NAME+':checkpoint:'+key;}
+  function readDraftCheckpoint(key){try{return JSON.parse(localStorage.getItem(draftCheckpointKey(key))||'null');}catch(_){return null;}}
+  function removeDraftCheckpoint(key,expected){try{const storageKey=draftCheckpointKey(key);if(expected===undefined||localStorage.getItem(storageKey)===expected)localStorage.removeItem(storageKey);return true;}catch(_){return false;}}
   function openDraftDatabase() {
     if(draftDatabasePromise)return draftDatabasePromise;
     draftDatabasePromise=new Promise(resolve=>{
@@ -36,9 +41,9 @@
   function prepareDraftStorage() {
     if(draftStoragePromise)return draftStoragePromise;
     draftStoragePromise=(async()=>{
-      const releaseOwn=await acquireDraftLock(DRAFT_RECORD_KEY);
+      const releaseOwn=await (draftLockPromise??=acquireDraftLock(DRAFT_RECORD_KEY));
       const database=await openDraftDatabase();
-      if(!database){releaseOwn?.();return false;}
+      if(!database)return false;
       try{
         let previousKey='';
         try{previousKey=sessionStorage.getItem(DRAFT_SESSION_KEY)||'';}catch(_){}
@@ -51,6 +56,16 @@
             cursor.continue();};
           transaction.oncomplete=()=>resolve(entries);transaction.onerror=()=>reject(transaction.error);transaction.onabort=()=>reject(transaction.error);
         });
+        try{
+          const prefix=draftCheckpointKey(LEGACY_DRAFT_RECORD_KEY+':');
+          for(let i=0;i<localStorage.length;i++){
+            const storageKey=localStorage.key(i);if(!storageKey?.startsWith(prefix))continue;
+            const key=storageKey.slice(draftCheckpointKey('').length),record=readDraftCheckpoint(key);
+            if(key===DRAFT_RECORD_KEY||record?.tripId!==TRIP_ID||!record?.state?.html)continue;
+            const existing=candidates.find(item=>item.key===key);
+            if(existing)existing.savedAt=record.savedAt||existing.savedAt;else candidates.push({key,savedAt:record.savedAt||''});
+          }
+        }catch(_){}
         candidates.sort((a,b)=>Number(b.key===previousKey)-Number(a.key===previousKey)||b.savedAt.localeCompare(a.savedAt));
         for(const {key} of candidates){
           const release=await acquireDraftLock(key);if(!release)continue;
@@ -58,23 +73,26 @@
           try{
             claimed=await new Promise((resolve,reject)=>{
               const transaction=database.transaction('records','readwrite'),records=transaction.objectStore('records'),request=records.get(key);let found=false;
-              request.onsuccess=()=>{if(!request.result)return;found=true;try{records.put(request.result,DRAFT_RECORD_KEY);records.delete(key);}catch(error){transaction.abort();reject(error);}};
+              request.onsuccess=()=>{const checkpoint=readDraftCheckpoint(key),record=checkpoint&&(!request.result||checkpoint.savedAt>=request.result.savedAt)?checkpoint:request.result;if(!record)return;found=true;try{records.put(record,DRAFT_RECORD_KEY);records.delete(key);}catch(error){transaction.abort();reject(error);}};
               transaction.oncomplete=()=>resolve(found);transaction.onerror=()=>reject(transaction.error);transaction.onabort=()=>reject(transaction.error);
             });
           }finally{release();}
-          if(claimed)break;
+          if(claimed){removeDraftCheckpoint(key);break;}
         }
         try{sessionStorage.setItem(DRAFT_SESSION_KEY,DRAFT_RECORD_KEY);}catch(_){}
         return true;
-      }catch(error){releaseOwn?.();console.warn('초안 저장소를 준비하지 못했습니다.',error);return false;}
-    })().then(ready=>{if(!ready)draftStoragePromise=null;return ready;});
+      }catch(error){console.warn('초안 저장소를 준비하지 못했습니다.',error);return false;}
+    })().then(ready=>{draftStorageReady=ready;if(!ready)draftStoragePromise=null;return ready;});
     return draftStoragePromise;
   }
   async function writeDraftRecord(record) {
     if(documentWriteBlock)return false;
     if(deferredDraftRecovery)return false;
-    const generation=draftWriteGeneration;
+    const generation=++draftWriteGeneration;
     memoryDraftRecord=clone(record);
+    const checkpoint=JSON.stringify(record);
+    // Wait for ownership/recovery setup before creating this page's checkpoint.
+    if(draftStorageReady)try{localStorage.setItem(draftCheckpointKey(DRAFT_RECORD_KEY),checkpoint);}catch(_){}
     let saved=false;
     try{
       if(!await prepareDraftStorage())throw new Error('Draft storage unavailable');
@@ -88,6 +106,7 @@
         transaction.objectStore('records').put(record,DRAFT_RECORD_KEY);
       });
     }catch(error){console.warn('초안을 저장하지 못했습니다.',error);}
+    if(saved)removeDraftCheckpoint(DRAFT_RECORD_KEY,checkpoint);
     if(generation===draftWriteGeneration)showDraftStorageWarning(saved?'':'write');
     return saved;
   }
@@ -108,7 +127,7 @@
   }
   async function clearDraftRecord() {
     if(documentWriteBlock)return false;
-    draftWriteGeneration++;clearTimeout(draftWriteTimer);draftWriteTimer=null;
+    const generation=++draftWriteGeneration;clearTimeout(draftWriteTimer);draftWriteTimer=null;
     let cleared=false;
     try{
       if(!await prepareDraftStorage())throw new Error('Draft storage unavailable');
@@ -125,6 +144,8 @@
         transaction.onabort=()=>resolve(false);
       });
     }catch(error){console.warn('초안을 삭제하지 못했습니다.',error);}
+    if(generation!==draftWriteGeneration)return false;
+    if(cleared)cleared=removeDraftCheckpoint(DRAFT_RECORD_KEY);
     if(cleared){deferredDraftRecovery=false;memoryDraftRecord=null;}
     showDraftStorageWarning(cleared?'':'delete');
     return cleared;
@@ -177,7 +198,7 @@
   }
   async function flushDraftPersistence() {
     clearTimeout(draftWriteTimer);
-    if(!pendingDraft||!lastSavedState)return false;
+    if(!lastSavedState||!isDirty())return false;
     return writeDraftRecord(currentDraftRecord());
   }
   function queueDraftPersistence() {

@@ -22,7 +22,7 @@
   async function signOutEditor({broadcast=true}={}){if(OFFLINE_MODE)return;clearSessionTimers();signingOut=true;try{localStorage.removeItem(SESSION_ACTIVITY_KEY);}catch(_){}if(broadcast)sessionChannel?.postMessage({type:'signout'});try{if(client)await client.auth.signOut({scope:'local'});}catch(error){console.warn('서버 로그아웃 요청에 실패했지만 이 브라우저 세션은 종료합니다.',error);}finally{setEditorSession(null);signingOut=false;}}
   function closeEditorDialogs(){closeScheduleTimeDialog();['checklistDialog','ledgerSettingsDialog','categoryDialog','expenseDialog','mapDialog','photoEditDialog','importDialog','exportDialog','versionDialog','versionCompareDialog','photoViewer'].forEach(id=>{const dialog=$('#'+id);if(dialog)dialog.hidden=true;});editingCategoryId=null;editingExpenseId=null;activeScheduleRow=null;activePhotoFigure=null;selectedVersion=null;pendingImport=null;}
   async function handleExternalSignOut(message='편집 세션이 다른 탭에서 종료되었습니다.') {
-    const hadDraft=pendingDraft||deferredDraftRecovery;
+    const hadDraft=isDirty()||deferredDraftRecovery;
     if(hadDraft){
       await flushDraftPersistence();
       // The shared view no longer contains this draft. Require recovery before

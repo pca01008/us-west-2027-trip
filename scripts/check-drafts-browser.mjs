@@ -21,7 +21,7 @@ reset();
 const stub = `<script>
 window.__signedIn=!window.__startSignedOut;
 const nativeSetTimeout=window.setTimeout.bind(window);
-window.setTimeout=(callback,delay,...args)=>nativeSetTimeout(callback,window.__shortPhotoTimeout&&[10000,60000].includes(delay)?150:window.__shortSaveTimeout&&delay===12000?80:delay,...args);
+window.setTimeout=(callback,delay,...args)=>nativeSetTimeout(callback,window.__holdHistory&&delay===400?60000:window.__shortPhotoTimeout&&[10000,60000].includes(delay)?150:window.__shortSaveTimeout&&delay===12000?80:delay,...args);
 window.supabase={createClient:()=>({
   auth:{getSession:async()=>({data:{session:window.__signedIn?{access_token:'fixture-token',user:{email:window.TRIP_CONFIG.editorEmail}}:null}}),onAuthStateChange:()=>{},signOut:async options=>{window.__signOutOptions=options;window.__signedIn=false;return {};},signInWithPassword:async()=>{window.__signedIn=true;return {};}},
   storage:{from:bucket=>({getPublicUrl:path=>({data:{publicUrl:location.origin+'/storage/v1/object/public/'+bucket+'/'+path}})})},
@@ -81,8 +81,8 @@ const server = createServer(async (req, res) => {
         refreshPublishedState,exportOfflineHtml,exportStaticHtml,busy:()=>saveInFlight||operationBusy,
         stagePhoto:async()=>{const canvas=document.createElement('canvas');canvas.width=8;canvas.height=8;const full=canvas.toDataURL('image/jpeg'),thumb=canvas.toDataURL('image/webp');let row=$('.day1 .timeline-row');activeScheduleRow=row;const card=row.querySelector('.card');let gallery=card.querySelector('.schedule-photos');if(!gallery){gallery=document.createElement('div');gallery.className='schedule-photos';card.appendChild(gallery);}gallery.appendChild(createPhotoFigure({fullUrl:full,thumbUrl:thumb,staged:true},'Network draft'));recordHistory();await flushDraftPersistence();},
         remotePhotoState:()=>{const state=captureState(),template=document.createElement('template');template.innerHTML=state.html;const img=template.content.querySelector('.schedule-photo img');img.src=location.origin+'/storage/v1/object/public/trip-media/download.jpg';img.dataset.fullUrl=img.src;state.html=template.innerHTML;return state;},
-        base:()=>lastSavedState,revision:()=>publishedRevision,pending:()=>pendingChecks.size,
-        legacyDraft:async()=>{const record=await readDraftRecord();delete record.baseState;await writeDraftRecord(record);pendingDraft=false;clearTimeout(draftWriteTimer);},
+        base:()=>lastSavedState,revision:()=>publishedRevision,pending:()=>pendingChecks.size,dirty:()=>pendingDraft,historyIndex:()=>historyIndex,
+        legacyDraft:async()=>{const record=await readDraftRecord();delete record.baseState;await writeDraftRecord(record);deferredDraftRecovery=true;pendingDraft=false;clearTimeout(draftWriteTimer);},
         activityKey:SESSION_ACTIVITY_KEY,key:DRAFT_RECORD_KEY,legacyKey:LEGACY_DRAFT_RECORD_KEY,db:DRAFT_DB_NAME,sessionKey:DRAFT_SESSION_KEY};initializeTimetable();initializeDialogAccessibility();`);
     if(file==='trip-config.js')body=body+`\nwindow.TRIP_CONFIG.supabase={url:'http://127.0.0.1:${server.address().port}',publishableKey:'fixture-key'};`;
     res.setHeader('Content-Type', file.endsWith('.html') ? 'text/html; charset=utf-8' : file.endsWith('.js') ? 'text/javascript; charset=utf-8' : 'image/webp');
@@ -135,6 +135,49 @@ async function enterExpense(page,name='New expense') {
 
 try {
   browser = await chromium.launch({ headless: true, ...(process.env.PWA_BROWSER_CHANNEL ? { channel: process.env.PWA_BROWSER_CHANNEL } : {}) });
+  // Hold only the history debounce: input, storage, lifecycle and recovery run
+  // normally. No helper records history or flushes the draft for these edits.
+  for(const selector of ['.day1 h3','.day1 .remark','.schedule-warning-text'])for(const boundary of ['reload','pagehide','hidden','signout']){
+    reset();const ctx=await context(`first input ${selector} / ${boundary}`),page=await ctx.newPage();
+    await page.goto(origin);await ready(page);
+    if(selector==='.schedule-warning-text'){
+      row.content=await page.evaluate(()=>{const state=window.__draftTest.captureState(),template=document.createElement('template');template.innerHTML=state.html;template.content.querySelector('.day1 .card').insertAdjacentHTML('beforeend','<div class="schedule-warning"><span class="schedule-warning-text">Fixture caution</span></div>');state.html=template.innerHTML;return state;});
+      await page.reload();await ready(page);
+    }
+    await selectTripTab(page,'d1');await page.locator('#editBtn').click();
+    await page.evaluate(()=>{window.__holdHistory=true;});
+    const field=page.locator(selector).first(),text=`First input ${selector} ${boundary}`;
+    // Force reload to depend on the synchronous checkpoint, not a lucky IDB commit.
+    if(boundary==='reload')await page.evaluate(()=>{
+      const put=IDBObjectStore.prototype.put;
+      IDBObjectStore.prototype.put=function(value,key){if(String(key).startsWith('online:'))throw new DOMException('Interrupted draft write','QuotaExceededError');return put.call(this,value,key);};
+    });
+    await field.fill(text);
+    assert.equal(await page.evaluate(()=>window.__draftTest.historyIndex()),0,'History must still be pending');
+    assert.equal(await page.evaluate(()=>window.__draftTest.dirty()),true,'First input is dirty immediately');
+    assert.equal(await page.locator('#saveBtn').isEnabled(),true);
+    if(boundary==='reload')assert.ok(await page.evaluate(text=>{const api=window.__draftTest;return JSON.parse(localStorage.getItem(api.db+':checkpoint:'+api.key))?.state.html.includes(text);},text),'Input checkpoints before any lifecycle event');
+    assert.equal(await page.evaluate(()=>{const event=new Event('beforeunload',{cancelable:true});window.dispatchEvent(event);return event.defaultPrevented;}),true,'Navigation must be protected before history');
+    if(boundary==='signout'){
+      await page.evaluate(()=>window.__draftTest.handleExternalSignOut());
+      assert.notEqual(await page.locator(selector).first().textContent(),text,'Sign-out returns to the saved view');
+      assert.ok((await stored(page)).state.html.includes(text),'Sign-out retains the first input');
+    }else if(boundary==='pagehide')await page.evaluate(()=>window.dispatchEvent(new Event('pagehide')));
+    else if(boundary==='hidden')await page.evaluate(()=>{Object.defineProperty(document,'visibilityState',{configurable:true,value:'hidden'});document.dispatchEvent(new Event('visibilitychange'));});
+    await page.reload();await recover(page);
+    assert.equal(await page.locator(selector).first().textContent(),text,'Recovery must contain the first input');
+    await diagnostics.close(ctx);
+  }
+  {
+    reset();const ctx=await context('continuous input and first input after save'),page=await ctx.newPage();await page.goto(origin);await ready(page);
+    await edit(page,'Saved baseline');assert.equal(await page.evaluate(()=>window.__draftTest.saveAndFinish()),true);
+    await selectTripTab(page,'d1');await page.locator('#editBtn').click();await page.evaluate(()=>{window.__holdHistory=true;});
+    for(const text of ['A','AB','ABC','Continuous first edit after save'])await title(page).fill(text);
+    assert.equal(await page.evaluate(()=>window.__draftTest.historyIndex()),0);
+    await page.reload();await recover(page);assert.equal(await title(page).textContent(),'Continuous first edit after save');
+    await diagnostics.close(ctx);
+  }
+  console.log('First-input protection: title/detail/caution, reload/checkpoint, pagehide, hidden, sign-out, continuous input and saved baseline passed.');
   // Exercise actual fetch aborts, response-body stalls, draft retention and retry.
   for(const mobile of [false,true])for(const mode of ['head','upload','upload-body','download','download-body'])for(const cancel of [false,true]){
     reset();photoMode='normal';photoCalls=[];photoAborts=0;photoObjects.clear();
@@ -577,9 +620,11 @@ try {
   // Separate tabs, duplicated sessionStorage, saves/deletes, and closed-tab recovery.
   {
     reset(); const ctx = await context('independent and duplicated tabs'), a = await ctx.newPage(); await a.goto(origin); await ready(a);
+    await a.evaluate(()=>{const put=IDBObjectStore.prototype.put;IDBObjectStore.prototype.put=function(value,key){if(String(key).startsWith('online:'))throw new DOMException('Interrupted draft write','QuotaExceededError');return put.call(this,value,key);};});
     await edit(a, 'Tab A draft');
     const popup = a.waitForEvent('popup'); await a.evaluate(url => window.open(url, '_blank'), origin);
     const b = await popup; await ready(b); await edit(b, 'Tab B draft');
+    assert.equal(await b.locator('#noticeDialog').isVisible(),false,'A duplicate cannot claim the live tab checkpoint');
     assert.notEqual(await a.evaluate(() => window.__draftTest.key), await b.evaluate(() => window.__draftTest.key));
     assert.ok((await stored(a)).state.html.includes('Tab A draft'));
     assert.ok((await stored(b)).state.html.includes('Tab B draft'));

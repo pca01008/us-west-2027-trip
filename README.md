@@ -8,6 +8,7 @@ Work now focuses on the existing app. Further Daylight development and productio
 
 | Task | Reference |
 |---|---|
+| Functionality, UI, and test findings | [2026-10-25 comprehensive review](docs/archive/2026-10-25-comprehensive-review.md) — reproduced issues, priorities, and proposed regression coverage |
 | Itinerary, timetable, PREP, ledger, draft recovery, installation, exports | [User guide](docs/USER_GUIDE.md) |
 | Architecture, data, saving, permissions, SQL | [Project guide](docs/PROJECT_GUIDE.md) |
 | Modular sources and reusable currencies | [Source map](docs/PROJECT_GUIDE.md#source-modules) · [Plan](docs/MODULARIZATION_PLAN.md) · [New trips](docs/OPERATIONS.md#new-trip) |

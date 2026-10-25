@@ -124,6 +124,16 @@ async function setup(scenario,mobile,offline=false){
 }
 try {
   browser=await chromium.launch({headless:true,...(process.env.PWA_BROWSER_CHANNEL?{channel:process.env.PWA_BROWSER_CHANNEL}:{})});
+  {
+    const {context,page}=await setup('checkpoint and IDB unavailable',false);
+    await edit(page,'Previous committed draft');
+    await page.evaluate(()=>{const setItem=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){if(key.includes(':checkpoint:'))throw new DOMException('Checkpoint quota','QuotaExceededError');return setItem.call(this,key,value);};});
+    await setFault(page,'quota');assert.equal(await edit(page,'Unsaved memory draft'),false);
+    assert.match(await page.locator('#draftStorageWarning').innerText(),/새로고침 전에 공유 저장하거나 내보내세요/);
+    assert.match((await exportedState(page)).html,/Unsaved memory draft/);
+    await page.reload();await recover(page);assert.equal(await title(page).textContent(),'Previous committed draft');
+    await diagnostics.close(context);
+  }
   for(const mobile of [false,true]){
     for(const mode of ['open-error','open-throw','quota','write-abort']){
       const {context,page}=await setup(`write ${mode}`, mobile);
@@ -146,10 +156,10 @@ try {
       assert.equal(saves,0);
       assert.ok(await page.evaluate(()=>window.__idbFault.hits)>0,'Fault must actually be exercised');
       if(mode==='write-abort')assert.ok(await page.evaluate(()=>window.__idbFault.requestSuccesses)>0);
-      // Keep the fault through pagehide; after reload only committed data exists.
+      // Keep the IDB fault through pagehide; the synchronous checkpoint survives.
       await page.evaluate(()=>sessionStorage.removeItem('storage-test-fault'));
       await page.reload();await recover(page);
-      assert.equal(await title(page).textContent(),'Durable draft','Never promise recovery of a failed write');
+      assert.equal(await title(page).textContent(),mode.startsWith('open')?'Durable draft':'Memory-only draft','An initialized store checkpoints failed writes; failed startup preserves the previous draft');
       assert.equal(await edit(page,'Retried durable draft'),true);
       assert.equal(await page.locator('#draftStorageWarning').isVisible(),false);
       assert.match((await durable(page))[0].state.html,/Retried durable draft/);

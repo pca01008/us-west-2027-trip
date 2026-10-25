@@ -42,7 +42,7 @@ Viewing requires no login; editing requires a designated Supabase editor account
 
 Start editing enables itinerary edits. Finishing with changes offers Save and exit, Continue editing, or Discard changes. Reset restores the last saved state.
 
-- Itinerary/ledger edits remain in tab-specific IndexedDB drafts until explicitly saved publicly. Recovery is offered after refresh/tab closure when signed in; otherwise start editing and sign in first. Esc defers recovery and keeps the draft; Delete draft removes it. Deferred drafts must be recovered/deleted before new editing. Other tabs' drafts are not overwritten/deleted. Undoing all changes removes the recovery draft.
+- Itinerary/ledger edits remain in tab-specific browser drafts until explicitly saved publicly. Text edits are protected immediately, including before undo history updates. Recovery is offered after refresh/tab closure when signed in; otherwise start editing and sign in first. Esc defers recovery and keeps the draft; Delete draft removes it. Deferred drafts must be recovered/deleted before new editing. Other tabs' drafts are not overwritten/deleted. Undoing all changes removes the recovery draft.
 - Editing supports undo/redo.
 - Cross-tab sign-out or expired authentication preserves this tab's draft and shows the last saved state. Sign in and recover/delete the draft before editing/importing. Dismissing recovery retains the draft without starting new work.
 - Authentication persists after editing. Manual/automatic sign-out affects the current browser session and synchronizes across its tabs. A warning appears after 29 idle minutes; automatic sign-out occurs at 30. Drafts remain recoverable unless Discard and sign out is explicitly selected.
