@@ -63,6 +63,8 @@ Follow-up: see the [F1 fix and verification record](2026-10-25-first-edit-draft-
 
 ### F2 — P2: PREP does not reconcile uncertain save results
 
+Follow-up: see the [F2 fix and verification record](2026-10-26-prep-save-reconciliation.md). The reproduction below describes the original review baseline.
+
 **Location:** [checklist-schedule.js](../../src/app/checklist-schedule.js), lines 63–105 and 119–133. Compare the existing reconciliation in [saving.js](../../src/app/saving.js), `persistState()`.
 
 **Reproduction:** Check a PREP item. Let the mock server commit, but delay its response past the save timeout without delivering a Realtime notification.

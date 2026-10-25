@@ -161,7 +161,7 @@ Isolated local APIs block production. [Fixtures](../scripts/browser-fixtures.mjs
 | Ledger | `node scripts/check-ledger-browser.mjs`: dual/category totals/rates/rounding/empty/delete/order, budget compatibility/old HTML/full CSV |
 | Compatibility | `node scripts/check-ledger-compat-browser.mjs`: future schema, Daylight/schema 6, corrupt drafts/write blocking/original retention |
 | Import | `node scripts/check-imports-browser.mjs`: real files, rejection/retention, sanitization/IDs/numbers, legacy content/checks, changing revision/cancel/explicit save |
-| PREP | `node scripts/check-prep-browser.mjs`: immediate save, auth cancel/failure/retry, list edits/draft protection |
+| PREP | `node scripts/check-prep-browser.mjs`: immediate save, auth cancel/failure/retry, list edits/draft protection; 24 checkbox/list response-loss cases with/without drafts: timeout before commit, committed timeout/transport/SDK failure, later remote changes, unavailable verification, explicit retry without duplicate versions |
 | Auth SDK | `node scripts/check-auth-browser.mjs`: actual SDK login errors/503/noneditor, refresh/expiry, cross-tab logout, retained/recovered drafts/save |
 | Storage | `node scripts/check-storage-browser.mjs`: open/quota/aborted write/delete, memory/old records, notices/save/export/retry/reload/logout/offline |
 | Photos | `node scripts/check-photos-browser.mjs`: conversion/PNG fallback/staging |

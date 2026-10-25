@@ -188,6 +188,8 @@ Itinerary/checklist markup is already complex DOM. Saving `<main>` as a string p
 
 View-mode checks call `requireEditor('checklist')`; canceled authentication restores the original checkbox. Authenticated saves patch stable IDs onto the latest document using revision checks, excluding other drafts. Offline checks remain local. [Usage](USER_GUIDE.md) is authoritative.
 
+`commitChecklistPatch` verifies ambiguous writes with one bounded public read: checkboxes match stable ID/value; list edits match ordered IDs/text/importance, allowing subsequent completion changes. Verified snapshots retain newer remote content and completion flags. Unverified outcomes retain confirmed local state/list inputs with an uncertain-result message, never automatically resending. Explicit retries skip an unchanged patch. Unrelated drafts/history remain private; differing remote content stays pending under the existing conflict baseline.
+
 <a id="currency-binding"></a>
 
 ### Currency binding for new trips

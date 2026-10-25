@@ -54,10 +54,11 @@ Draft-storage failure means recent edits may exist only in the current tab. Save
 
 ## PREP checklist
 
-- Toggle completion in view mode. Authentication precedes immediate public saving. Completed items move into the completed group; unchecked items move to the top of the incomplete group. Failure restores the original state and offers Retry.
+- Toggle completion in view mode. Authentication precedes immediate public saving. Completed items move into the completed group; unchecked items move to the top of the incomplete group. Rejected saves restore the original state and offer Retry.
 - Edit list adds/edits/deletes items and reorders with up/down buttons. Dialog Save updates the server immediately. New items start incomplete; Cancel/Esc discards list edits. Checklist saves do not publish other itinerary/ledger drafts.
 - Offline completion/list edits save in the current browser. Import the working copy and save online to publish them.
 - Checklist saving remains available with deferred draft recovery. The deferred draft remains recoverable after refresh.
+- After a timeout or lost response, the app checks the latest document. Verified changes show Saved; otherwise Save result needs checking keeps the last confirmed checkbox or entered list edits. Reconnect and Retry; an already reflected operation creates no extra version. Other drafts remain private.
 
 ## Itinerary and time input
 

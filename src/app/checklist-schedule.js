@@ -60,7 +60,7 @@
     const focus=checkId?$$('.prepday [data-check-id]').find(label=>label.dataset.checkId===checkId)?.querySelector('input'):focusId?document.getElementById(focusId):null;
     if(focus&&wasInMain&&!focus.disabled){focus.focus({preventScroll:true});if(selection&&selection[0]!==null)focus.setSelectionRange(...selection);}
   }
-  async function commitChecklistPatch(transform,note) {
+  async function commitChecklistPatch(transform,note,isApplied) {
     if(documentWriteBlock)throw new Error(documentWriteBlock);
     if(saveInFlight||operationBusy)throw new Error('다른 저장이 끝난 뒤 다시 시도해 주세요.');
     checklistSaving=true;syncChecklistControls();
@@ -69,13 +69,32 @@
         const row=OFFLINE_MODE?null:await fetchPublishedState();
         if(!OFFLINE_MODE&&!row)throw new Error('공유 저장본을 확인하지 못했습니다.');
         const remote=row?.content?.html?normalizeState(migratePublishedState(row.content)):clone(lastSavedState);
-        const saved=normalizeState(transform(remote,true));
+        let saved=normalizeState(transform(remote,true));
         let result={revision:publishedRevision,updated_at:publishedUpdatedAt};
-        if(!OFFLINE_MODE){
+        if(!OFFLINE_MODE&&fingerprint(saved)===fingerprint(remote)){
+          transform(remote,'verified');saved=remote;result=row;
+        }else if(!OFFLINE_MODE){
           const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),12000);
-          let response;try{response=await client.rpc('save_trip_document',{p_trip_id:TRIP_ID,p_content:saved,p_expected_revision:Number(row.revision)||0,p_version_note:note}).abortSignal(controller.signal);}finally{clearTimeout(timeout);}
-          if(response.error){if(isRevisionConflict(response.error)&&attempt<2)continue;throw response.error;}
-          result=response.data;
+          let response,failure;
+          try{response=await client.rpc('save_trip_document',{p_trip_id:TRIP_ID,p_content:saved,p_expected_revision:Number(row.revision)||0,p_version_note:note}).abortSignal(controller.signal);}
+          catch(error){failure=error;}finally{clearTimeout(timeout);}
+          if(response?.error&&isRevisionConflict(response.error)){if(attempt<2)continue;throw response.error;}
+          const uncertain=controller.signal.aborted||failure||response?.status>=500||response?.status===408||response?.status===0||(!response?.data&&!response?.error);
+          if(uncertain){
+            // Read once after an ambiguous write; never automatically resend it.
+            let latest;try{latest=await fetchPublishedState();}catch(_){}
+            const latestState=latest?.content?.html?normalizeState(migratePublishedState(latest.content)):null;
+            if(!latestState||!isApplied(latestState)){
+              if(latestState)pendingRemoteState={row:latest,state:latestState};
+              const error=new Error('저장 결과 확인 필요 · 연결 후 재시도해 주세요.');error.uncertain=true;throw error;
+            }
+            // Refresh list completion flags from the verified snapshot, including
+            // changes made after our commit. Keep unrelated local drafts private.
+            transform(latestState,'verified');saved=latestState;result=latest;
+          }else{
+            if(response.error)throw response.error;
+            result=response.data;
+          }
         }
         // Transfer only this operation's result into the local draft and its
         // undo history. Unrelated local changes remain unpublished and dirty.
@@ -121,8 +140,8 @@
     pendingChecks.set(id,{before:input.checked,value});checkFeedback.delete(id);input.checked=value;renderCheckFeedback();
     checklistQueue=checklistQueue.then(async()=>{
       let saved;
-      try{saved=await commitChecklistPatch(state=>patchCheck(state,id,value),'준비 체크 변경');checkFeedback.set(id,{message:OFFLINE_MODE?'이 브라우저에 저장됨':'저장됨'});}
-      catch(error){checkFeedback.set(id,{error:true,value,message:/항목이 삭제/.test(error.message||'')?error.message:'저장 실패'});}
+      try{saved=await commitChecklistPatch(state=>patchCheck(state,id,value),'준비 체크 변경',state=>checklistItems(state).some(item=>item.id===id&&item.checked===value));checkFeedback.set(id,{message:OFFLINE_MODE?'이 브라우저에 저장됨':'저장됨'});}
+      catch(error){checkFeedback.set(id,{error:true,value,message:error.uncertain||/항목이 삭제/.test(error.message||'')?error.message:'저장 실패'});}
       finally{
         const before=pendingChecks.get(id)?.before,restoreFocus=document.activeElement===document.body;pendingChecks.delete(id);
         const current=$$('.prepday .checklist label').find(label=>label.dataset.checkId===id)?.querySelector('input');if(current)current.checked=saved?value:before;
@@ -166,14 +185,14 @@
         if(remotePass){
           const latest=checklistItems(state),shape=checklistShape(latest);
           if(shape!==checklistShape(checklistEditorBase)&&shape!==checklistShape(items))throw new Error('다른 곳에서 목록이 변경되었습니다. 취소 후 다시 열어 주세요.');
-          publishedItems=items.map(item=>({...item,checked:newChecklistItemIds.has(item.id)?false:latest.find(old=>old.id===item.id)?.checked??false}));
+          publishedItems=items.map(item=>({...item,checked:remotePass!=='verified'&&newChecklistItemIds.has(item.id)?false:latest.find(old=>old.id===item.id)?.checked??false}));
         }
         return patchChecklist(state,publishedItems);
-      },'준비 목록 편집');
+      },'준비 목록 편집',state=>checklistShape(checklistItems(state))===checklistShape(items));
       $('#checklistDialog').hidden=true;checkFeedback.clear();renderCheckFeedback();updateDirtyState();
       if(!pendingDraft&&!OFFLINE_MODE&&!deferredDraftRecovery)await clearDraftRecord();
       setStatus(OFFLINE_MODE?'목록을 이 브라우저에 저장했습니다.':'목록 저장됨');
-    }catch(error){$('#checklistEditorError').textContent=/다른 곳|브라우저/.test(error.message||'')?error.message:'저장 실패 · 다시 시도해 주세요.';}
+    }catch(error){$('#checklistEditorError').textContent=error.uncertain||/다른 곳|브라우저/.test(error.message||'')?error.message:'저장 실패 · 다시 시도해 주세요.';}
     finally{checklistEditorSaving=false;$('#checklistSave').textContent='저장';$('#checklistSave').disabled=false;$('#checklistCancel').disabled=false;$('#checklistAdd').disabled=false;renderChecklistEditor();syncChecklistControls();resetInactivityTimer();}
   }
 

@@ -14,29 +14,37 @@ const { chromium } = await import(process.argv[2] ? pathToFileURL(process.argv[2
 const root = new URL('../', import.meta.url);
 const output = await mkdtemp(path.join(tmpdir(), 'westbound-prep-'));
 const original = await readFile(new URL('index.html', root), 'utf8');
-let row, failures, conflict, writes, delay;
-const reset = () => { row = { content: {}, revision: 1, updated_at: new Date().toISOString() }; failures = 0; conflict = null; writes = []; delay = 0; };
+let row, failures, conflict, writes, delay, nextSave, readUnavailable, saveRequests;
+const reset = () => { row = { content: {}, revision: 1, updated_at: new Date().toISOString() }; failures = 0; conflict = null; writes = []; delay = 0; nextSave = null; readUnavailable = false; saveRequests = 0; };
 reset();
 const stub = `<script>
 window.__signedIn=true;
 window.supabase={createClient:()=>({
  auth:{getSession:async()=>({data:{session:window.__signedIn?{user:{email:window.TRIP_CONFIG.editorEmail}}:null}}),signInWithPassword:async()=>{window.__signedIn=true;return {};},signOut:async()=>{window.__signedIn=false;return {};},onAuthStateChange:()=>{}},
- from:()=>{const q={select:()=>q,eq:()=>q,abortSignal:()=>q,maybeSingle:async()=>({data:await (await fetch('/mock/doc')).json()})};return q;},
- rpc:(name,args)=>({abortSignal:async signal=>(await fetch('/mock/save',{method:'POST',body:JSON.stringify(args),signal})).json()}),
+ from:()=>{let signal;const q={select:()=>q,eq:()=>q,abortSignal:s=>{signal=s;return q;},maybeSingle:async()=>{const response=await fetch('/mock/doc',{signal});if(!response.ok)throw new Error('Verification unavailable');return {data:await response.json()};}};return q;},
+ rpc:(name,args)=>({abortSignal:async signal=>{const response=await (await fetch('/mock/save',{method:'POST',body:JSON.stringify(args),signal})).json();if(response.transport)throw new TypeError('Failed to fetch');return response;}}),
  channel:()=>({on:(_type,_filter,callback)=>{window.__emitRemote=callback;return {subscribe:()=>{}};}})
 })};
 </script>`;
 const server = createServer(async (req, res) => {
   try {
-    if (req.url === '/mock/doc') { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(row)); return; }
+    if (req.url === '/mock/doc') { if(readUnavailable){res.writeHead(503).end();return;} res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(row)); return; }
     if (req.url === '/mock/save') {
       let body = ''; for await (const chunk of req) body += chunk;
-      const args = JSON.parse(body); if (delay) await new Promise(resolve => setTimeout(resolve, delay));
+      const args = JSON.parse(body);saveRequests++;const fault=nextSave;nextSave=null;
+      if(fault?.beforeCommit){await new Promise(resolve=>setTimeout(resolve,400));res.destroy();return;}
+      if (delay) await new Promise(resolve => setTimeout(resolve, delay));
       if (conflict) { const change = conflict; conflict = null; change(row); row.revision++; }
       let response;
       if (failures > 0) { failures--; response = {error:{message:'Simulated save failure'}}; }
       else if (row.revision !== args.p_expected_revision) response = {error:{code:'40001',message:'Revision conflict'}};
       else { row={content:args.p_content,revision:row.revision+1,updated_at:new Date().toISOString()};writes.push(structuredClone(args));response={data:{revision:row.revision,updated_at:row.updated_at}}; }
+      if(fault){
+        fault.afterCommit?.(row);readUnavailable=Boolean(fault.unavailable);
+        if(fault.transport){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({transport:true}));return;}
+        if(fault.sdkError){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({status:0,error:{message:'TypeError: Failed to fetch'}}));return;}
+        await new Promise(resolve=>setTimeout(resolve,400));
+      }
       res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(response)); return;
     }
     const url = new URL(req.url, 'http://localhost');
@@ -44,6 +52,7 @@ const server = createServer(async (req, res) => {
     if (!/^(index\.html|trip-config\.js|(?:icons|assets)\/[\w.-]+)$/.test(relative)) { res.writeHead(404).end(); return; }
     let content = await readBrowserFixture(new URL(relative, root));
     if (relative === 'index.html') content = original
+      .replaceAll('setTimeout(()=>controller.abort(),12000)', url.searchParams.has('uncertain')?'setTimeout(()=>controller.abort(),120)':'setTimeout(()=>controller.abort(),12000)')
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
       .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, stub)
       .replace('initializeTimetable();initializeDialogAccessibility();', `window.__prepTest={captureState,applyState,normalizeState,checklistItems,patchChecklist,patchCheck,isDirty,finishMutation,recordHistory,refreshPublishedState,
@@ -218,6 +227,69 @@ try {
     await page.locator('#checklistSave').click();await page.locator('#checklistDialog').waitFor({state:'hidden'});
     assert.equal(row.content.checks.at(-1),false);
     await diagnostics.close(context);console.log(`${mobile?'Mobile':'Desktop'}: new items remain unchecked after reorder, save conflict and reload; existing completion is preserved.`);
+  }
+  // Lost responses must be reconciled by operation, even when later remote
+  // changes make the complete document differ from the submitted snapshot.
+  for(const kind of ['checkbox','list'])for(const draft of [false,true])for(const outcome of ['timeout','transport','sdk-error','newer-remote','before-commit','unavailable']) {
+    reset();diagnostics.scenario(`uncertain ${kind} / ${outcome} / draft=${draft}`);
+    const context=await diagnostics.context(browser,{viewport:{width:draft?390:1440,height:900}});
+    await context.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
+    const page=await context.newPage();page.setDefaultTimeout(10000);page.on('pageerror',error=>errors.push(error.message));
+    await page.goto(origin+'/?uncertain');await page.waitForFunction(()=>!document.body.classList.contains('hydrating'));
+    row.content=await page.evaluate(()=>window.__prepTest.captureState());
+    if(draft)await page.evaluate(()=>window.__prepTest.draft());
+    const originalRevision=row.revision;
+    const localRevision=await page.evaluate(()=>window.__prepTest.revision());
+    const ids=await page.evaluate(()=>window.__prepTest.checklistItems(window.__prepTest.captureState()).map(item=>item.id));
+    const checkbox=()=>page.locator('[data-check-id="'+ids[0]+'"] input');
+    if(kind==='list'){
+      await page.locator('#editBtn').click();await page.locator('.checklist-text').first().fill('응답 유실 목록 수정');
+      await page.locator('#checklistAdd').click();await page.locator('.checklist-text').last().fill('응답 유실 새 항목');
+    }
+    nextSave={
+      transport:outcome==='transport',sdkError:outcome==='sdk-error',beforeCommit:outcome==='before-commit',unavailable:outcome==='unavailable',
+      afterCommit:outcome==='newer-remote'?doc=>{doc.content.budgetKrw=987654;doc.content.checks[1]=true;if(kind==='list')doc.content.checks[doc.content.checks.length-1]=true;doc.revision++;}:null
+    };
+    if(kind==='checkbox')await checkbox().click();else await page.locator('#checklistSave').click();
+    const uncertain=['before-commit','unavailable'].includes(outcome);
+    if(kind==='checkbox'){
+      await page.waitForFunction(()=>window.__prepTest.pending()===0);
+      assert.equal(await checkbox().isChecked(),!uncertain,'Only a verified result changes the confirmed checkbox');
+      assert.match(await page.locator('.check-feedback').innerText(),uncertain?/저장 결과 확인 필요/:/저장됨/);
+      assert.equal(await page.locator('[data-retry-check]').count(),uncertain?1:0);
+    }else if(uncertain){
+      await page.waitForFunction(()=>document.querySelector('#checklistEditorError').textContent.includes('저장 결과 확인 필요'));
+      assert.equal(await page.locator('.checklist-text').first().inputValue(),'응답 유실 목록 수정');
+      assert.equal(await page.locator('.checklist-text').last().inputValue(),'응답 유실 새 항목');
+    }else{
+      await page.locator('#checklistDialog').waitFor({state:'hidden'});
+      assert.match(await page.locator('#status').innerText(),/목록 저장됨/);
+      assert.equal(await page.locator('.prepday label>span').first().textContent(),'응답 유실 목록 수정');
+    }
+    assert.equal(saveRequests,1,'Ambiguous writes are never automatically retried');
+    assert.equal(writes.length,outcome==='before-commit'?0:1);
+    assert.equal(row.revision,originalRevision+(outcome==='before-commit'?0:outcome==='newer-remote'?2:1));
+    const storedItems=await page.evaluate(state=>window.__prepTest.checklistItems(state),row.content);
+    if(kind==='checkbox')assert.equal(storedItems.find(item=>item.id===ids[0]).checked,outcome!=='before-commit');
+    if(kind==='list')assert.equal(storedItems.some(item=>item.text==='응답 유실 새 항목'),outcome!=='before-commit');
+    if(outcome==='newer-remote'){
+      assert.equal(await page.evaluate(()=>window.__prepTest.revision()),draft?localRevision:row.revision,'A draft with older unrelated data keeps its conflict baseline');
+      if(!draft)assert.equal(await page.evaluate(()=>window.__prepTest.captureState().budgetKrw),987654);
+      if(kind==='list')assert.equal(await page.locator('.prepday .checklist input').last().isChecked(),true,'Verified newer completion survives list reconciliation');
+    }
+    assert.equal(row.content.expenses.some(e=>e.id==='unsaved-expense'),false,'Checklist writes never publish the unrelated draft');
+    assert.equal(await page.evaluate(()=>window.__prepTest.captureState().expenses.some(e=>e.id==='unsaved-expense')),draft);
+    assert.equal(await page.evaluate(()=>window.__prepTest.isDirty()),draft);
+    if(uncertain){
+      // A manual retry first reads the latest document. An already committed
+      // operation completes without generating another version.
+      readUnavailable=false;
+      if(kind==='checkbox')await page.locator('[data-retry-check]').click();else await page.locator('#checklistSave').click();
+      if(kind==='checkbox')await page.waitForFunction(()=>window.__prepTest.pending()===0);else await page.locator('#checklistDialog').waitFor({state:'hidden'});
+      assert.equal(writes.length,1);assert.equal(saveRequests,outcome==='unavailable'?1:2);
+      assert.equal(await page.evaluate(()=>window.__prepTest.isDirty()),draft);
+    }
+    await diagnostics.close(context);
   }
   reset();
   diagnostics.scenario('offline checklist persistence');
