@@ -6,8 +6,10 @@ const suites = ['diagnostics', 'drafts', 'storage', 'inputs', 'imports', 'ledger
 const failed = [];
 for (const suite of suites) {
   console.log(`\nBrowser suite: ${suite}`);
+  // Drafts includes lifecycle, storage and photo fault matrices on CI hardware.
+  const timeout = suite === 'drafts' ? 300_000 : 180_000;
   const result = spawnSync(process.execPath, [fileURLToPath(new URL(`./check-${suite}-browser.mjs`, import.meta.url)), ...process.argv.slice(2)], {
-    stdio: 'inherit', timeout: 180_000, env: process.env
+    stdio: 'inherit', timeout, env: process.env
   });
   if (result.status !== 0) {
     failed.push(suite);

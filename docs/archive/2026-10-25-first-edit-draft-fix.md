@@ -32,3 +32,7 @@ Final local verification on Windows with Node 24 and installed Chrome:
 | Local SQL execution / physical devices | Not run; no SQL changes |
 
 Tests use local synthetic data and mock APIs; production trip content is not modified. The initial sandbox-only HTTP tests could not connect to their local server; the permitted-network run passed. Intermediate failures in legacy-fixture handling and failed-storage initialization were corrected before the final run.
+
+## CI runner follow-up
+
+The [first CI run](https://github.com/pca01008/us-west-2027-trip/actions/runs/40188310100) passed unit/static, SQL and the other 14 browser suites. Drafts passed the new first-input cases, then reached the runner's 180-second process limit during its existing save-timeout matrix (`spawnSync ETIMEDOUT`); no application assertion caused that termination. Its process limit is now 300 seconds to accommodate the expanded matrix on CI hardware. Other suites retain 180 seconds and the workflow retains its 15-minute limit. This follow-up changes only the runner/docs; deployed application bytes are unchanged.

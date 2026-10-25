@@ -154,7 +154,7 @@ Isolated local APIs block production. [Fixtures](../scripts/browser-fixtures.mjs
 
 | Check | Command and coverage |
 |---|---|
-| Full runner | `node scripts/check-browsers.mjs`; fails if any child fails |
+| Full runner | `node scripts/check-browsers.mjs`; fails if any child fails; drafts has a five-minute process limit, other suites three minutes |
 | Diagnostics | `node scripts/check-diagnostics-browser.mjs`: injected failures, exit/scenario, multi-tab PNG/errors/traces, partial capture resilience/startup failure/success cleanup |
 | Drafts | `node scripts/check-drafts-browser.mjs`: first title/detail/caution input before history, reload/checkpoint/pagehide/hidden/sign-out, continuous input after saving; tabs/clones/recover/defer/conflict/preview/logout/timeouts; PREP/deferred retention, reauthentication/duplicate sign-out, resume/reconnect/Realtime input/focus/selection/category fallback |
 | Input | `node scripts/check-inputs-browser.mjs`: desktop/mobile IME/noncancelable input/undo/import/export; distant-date setup scrolls instantly before real clicks, while app transitions retain the tested motion preference |
