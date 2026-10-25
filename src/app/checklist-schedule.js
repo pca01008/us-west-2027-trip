@@ -192,7 +192,12 @@
       $('#checklistDialog').hidden=true;checkFeedback.clear();renderCheckFeedback();updateDirtyState();
       if(!pendingDraft&&!OFFLINE_MODE&&!deferredDraftRecovery)await clearDraftRecord();
       setStatus(OFFLINE_MODE?'목록을 이 브라우저에 저장했습니다.':'목록 저장됨');
-    }catch(error){$('#checklistEditorError').textContent=error.uncertain||/다른 곳|브라우저/.test(error.message||'')?error.message:'저장 실패 · 다시 시도해 주세요.';}
+    }catch(error){
+      // Submitted IDs may now exist remotely. A later explicit retry must retain
+      // completion changes made after that uncertain commit.
+      if(error.uncertain)newChecklistItemIds.clear();
+      $('#checklistEditorError').textContent=error.uncertain||/다른 곳|브라우저/.test(error.message||'')?error.message:'저장 실패 · 다시 시도해 주세요.';
+    }
     finally{checklistEditorSaving=false;$('#checklistSave').textContent='저장';$('#checklistSave').disabled=false;$('#checklistCancel').disabled=false;$('#checklistAdd').disabled=false;renderChecklistEditor();syncChecklistControls();resetInactivityTimer();}
   }
 

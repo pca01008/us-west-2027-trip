@@ -283,11 +283,17 @@ try {
     if(uncertain){
       // A manual retry first reads the latest document. An already committed
       // operation completes without generating another version.
+      if(outcome==='unavailable'){
+        row.content.budgetKrw=765432;
+        if(kind==='list')row.content.checks[row.content.checks.length-1]=true;
+        row.revision++;
+      }
       readUnavailable=false;
       if(kind==='checkbox')await page.locator('[data-retry-check]').click();else await page.locator('#checklistSave').click();
       if(kind==='checkbox')await page.waitForFunction(()=>window.__prepTest.pending()===0);else await page.locator('#checklistDialog').waitFor({state:'hidden'});
       assert.equal(writes.length,1);assert.equal(saveRequests,outcome==='unavailable'?1:2);
       assert.equal(await page.evaluate(()=>window.__prepTest.isDirty()),draft);
+      if(kind==='list'&&outcome==='unavailable')assert.equal(await page.locator('.prepday .checklist input').last().isChecked(),true,'Retry preserves completion of a new item after an uncertain commit');
     }
     await diagnostics.close(context);
   }
