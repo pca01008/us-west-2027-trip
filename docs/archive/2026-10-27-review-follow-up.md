@@ -27,3 +27,19 @@ Final integration retains the existing `061584d` rate behavior: Apply and close/
 Ledger checks now measure effective foreground/background colors in the rendered cascade (including ancestor opacity): normal input/label/action, selected navigation and rate errors require 4.5:1 in both themes; disabled move controls record their computed ratio and verify native disabled state/opacity, without claiming a contrast requirement for exempt inactive controls. Results are saved as `computed-contrast.json` beside representative populated/error screenshots. Computed font floors remain enforced at 320/390/1440px. Removed the fixed-literal coral assertion; existing token-derived theme unit coverage remains.
 
 Windows/Chrome ledger suite passed; screenshots and computed colors: `westbound-ledger-fAXDls`. This is scoped rendering evidence, not a complete accessibility audit or pixel-baseline equivalence claim.
+
+## T3 — Shared validation and publication gate
+
+Implemented Ubuntu 24.04 / Node 24.22.1 / npm 11.19.1 baseline, strict full/partial coordinator, pinned browser and disposable PostgreSQL checks, process deadlines/cancellation, timing summaries and a labeled/owned Docker SQL helper. The app runtime support remains >=22. Official Node archive SHA-256 was checked before using a portable Windows npm; no system runtime installation was performed.
+
+Validate now uses the coordinator's three subsets with locked installs, a fail-closed `required` aggregate, same-SHA Jekyll artifact byte/exclusion checks, main-push-only deployment and superseded-SHA protection. Work-branch builds are nonpublishing artifact checks. The legacy Pages source was inspected before activation (`main`, `/`, build_type `legacy`); branch protection was initially disabled. Branch/source activation and remote evidence are recorded below when performed.
+
+Windows development checks: npm build, npm test (**185 passed**), static/output checks and all **16 pinned Chromium suites passed**. First full-run inputs: 50.1s/180s; drafts: 152.3s/300s. Firefox input/dialog/draft/export suite passed after replacing unsupported synthetic ClipboardEvent data construction and accepting CSS attr() serialization while asserting the actual Korean hint. WebKit exposed missing pointer-origin focus; explicit focus on section and Edit controls now preserves navigation and dialog return focus. Its complete input/dialog/export suite passed after correction.
+
+Failed attempts retained: initial Firefox fixture mismatches; initial WebKit navigation/return focus; the first additional boundary run hit the existing 300s draft deadline while unit tests, another full browser run and WebKit overlapped. No retry policy, assertion weakening or deadline increase was added. Serial three-pass recheck follows; do not describe the failed attempt as a pass.
+
+Negative checks: strict full command rejects Windows with every stage not-run; Linux helper rejects a shared /mnt checkout; shell syntax passed. Executable tests reject aggregate failure/cancellation/skipping/missing stages, stale generated output without repair, missing/changed published bytes and leaked authoring paths. The workstation's WSL Ubuntu 26.04/Node 22/no npm/PostgreSQL cannot supply clean Ubuntu 24.04 local parity. Physical phones, real IME/keyboards/uploads and production database writes remain untested. Browser fixtures block production.
+
+Visual detector: only the retained timeline accent and hidden viewer image warnings remain. WebKit error-dialog captures were reviewed with the same current palette; no redesign or PWA cache-policy change was made.
+
+Serial stability recheck: first input/draft pass passed at 46.7s/139.5s; second input passed at 46.1s. Remaining serial runs continue while the committed candidate is checked remotely. Publication remains conditional on the full remote aggregate, artifact check and successful stability checks.

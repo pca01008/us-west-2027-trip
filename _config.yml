@@ -5,3 +5,13 @@ exclude:
   - docs
   - src
   - PRODUCT.md
+  - AGENTS.md
+  - scripts
+  - tests
+  - package.json
+  - package-lock.json
+  - trip-config.template.js
+  - supabase_setup.sql
+  - register_trip.sql
+  - migrations
+  - supabase

@@ -226,7 +226,7 @@ test('문서와 GitHub 검증 설정은 스키마 6 운영 방식과 일치한�
   assert.match(guide, /schemaVersion 6/);
   assert.doesNotMatch(guide, /trip_documents\.editor_id/);
   assert.match(readme, /npm test/);
-  assert.match(workflow, /run: npm test/);
+  assert.match(workflow, /run: npm run test:ci -- --suite=validate/);
   assert.match(ignore, /\/reference\.html/);
   assert.match(pages, /^  - docs\s*$/m);
   for (const [index, content] of contents.entries()) {

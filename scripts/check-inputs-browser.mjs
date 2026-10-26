@@ -12,7 +12,9 @@ import { createBrowserDiagnostics } from './browser-diagnostics.mjs';
 import { readBrowserFixture } from './browser-fixtures.mjs';
 
 const diagnostics = await createBrowserDiagnostics('inputs');
-const { chromium } = await import(process.argv[2] ? pathToFileURL(process.argv[2]).href : 'playwright');
+const playwright = await import(process.argv[2] ? pathToFileURL(process.argv[2]).href : 'playwright');
+const engine=process.env.TRIP_BROWSER_ENGINE||'chromium';
+assert.ok(['chromium','firefox','webkit'].includes(engine),'Unsupported browser engine');
 const root = new URL('../', import.meta.url);
 const output = await mkdtemp(path.join(tmpdir(), 'westbound-inputs-'));
 const source = await readFile(new URL('index.html', root), 'utf8');
@@ -42,12 +44,12 @@ const origin = `http://127.0.0.1:${server.address().port}`;
 let browser;
 const errors = [];
 try {
-  browser = await chromium.launch({ headless: true, ...(process.env.PWA_BROWSER_CHANNEL ? {channel:process.env.PWA_BROWSER_CHANNEL} : {}) });
+  browser = await playwright[engine].launch({ headless: true, ...(engine==='chromium'&&process.env.PWA_BROWSER_CHANNEL ? {channel:process.env.PWA_BROWSER_CHANNEL} : {}) });
   // Use real pointer and keyboard activation: label forwarding used to focus
   // an off-screen radio before change, losing the sticky tab position.
   for(const mobile of [false,true])for(const reducedMotion of ['reduce','no-preference']) {
     diagnostics.scenario(`tab navigation / ${mobile ? "mobile" : "desktop"} / ${reducedMotion}`);
-    const context=await diagnostics.context(browser, {viewport:{width:mobile?390:1440,height:mobile?844:900},isMobile:mobile,hasTouch:mobile,reducedMotion});
+    const context=await diagnostics.context(browser, {viewport:{width:mobile?390:1440,height:mobile?844:900},...(engine==='firefox'?{}:{isMobile:mobile}),hasTouch:mobile,reducedMotion});
     await context.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
     const page=await context.newPage();page.setDefaultTimeout(5000);page.on('pageerror',error=>errors.push(error.message));
     await page.goto(origin);await page.waitForFunction(()=>!document.body.classList.contains('hydrating'));
@@ -71,7 +73,7 @@ try {
       await activate(target==='d11'?label(target).locator('span').last():label(target));
       if(target==='d11')await settled();assert.equal(await page.locator('#'+target).isChecked(),true);
       assert.equal(await label(target).getAttribute(target==='d11'?'aria-selected':'aria-current'),target==='d11'?'true':'page');
-      assert.equal(await label(target).evaluate(el=>document.activeElement===el),true,'Focus remains on the visible tab');
+      assert.equal(await label(target).evaluate(el=>document.activeElement===el),true,`Focus remains on the visible tab (${target})`);
     }
     await deep();await activate(label('d3'));await settled();
     assert.equal(await page.locator('#d3').isChecked(),true,'Reselecting a tab must not jump to the hidden radio');
@@ -212,7 +214,7 @@ try {
   }
   for (const mobile of [false, true]) {
     diagnostics.scenario(`input, import and export / ${mobile ? "mobile" : "desktop"}`);
-    const context = await diagnostics.context(browser, { viewport: { width: mobile ? 390 : 1440, height: 900 }, isMobile: mobile, hasTouch: mobile, reducedMotion: 'reduce', acceptDownloads: true });
+    const context = await diagnostics.context(browser, { viewport: { width: mobile ? 390 : 1440, height: 900 }, ...(engine==='firefox'?{}:{isMobile:mobile}), hasTouch: mobile, reducedMotion: 'reduce', acceptDownloads: true });
     await context.route('**/*', route => /^(file:|data:)/.test(route.request().url()) || route.request().url().startsWith(origin) ? route.continue() : route.abort());
     context.on('page', p => { p.setDefaultTimeout(10000); p.on('pageerror', e => errors.push(e.message)); });
     const page = await context.newPage();
@@ -229,7 +231,7 @@ try {
     await end.press('Control+a'); await end.press('Backspace'); assert.equal(await end.inputValue(), '');
     await end.pressSequentially('1200'); assert.equal(await end.inputValue(), '12:00');
     await start.click(); await start.press('Control+a');
-    await start.evaluate(el => el.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: (() => { const data = new DataTransfer(); data.setData('text/plain', '10:15'); return data; })() })));
+    await start.evaluate(el => { const data=new DataTransfer();data.setData('text/plain','10:15');const event=new Event('paste',{bubbles:true,cancelable:true});Object.defineProperty(event,'clipboardData',{value:data});el.dispatchEvent(event); });
     assert.equal(await start.inputValue(), '10:15');
     await start.press('Control+z'); assert.equal(await start.inputValue(), '09:30');
     await start.press('Control+y'); assert.equal(await start.inputValue(), '10:15');
@@ -249,7 +251,8 @@ try {
     const rowId = await row.getAttribute('data-row-id');
     const title = row.locator('h3'), detail = row.locator('.remark');
     assert.equal(await title.textContent(), ''); assert.equal(await detail.textContent(), '');
-    assert.equal(await detail.evaluate(el => getComputedStyle(el, '::before').content), '"장소 또는 메모"');
+    assert.equal(await detail.getAttribute('data-placeholder'),'장소 또는 메모');
+    assert.ok(['\"장소 또는 메모\"','attr(data-placeholder)'].includes(await detail.evaluate(el => getComputedStyle(el,'::before').content)),'Placeholder content is literal or an attribute reference (engine serialization)');
     await title.pressSequentially('Museum'); await detail.click(); await detail.pressSequentially('Los Angeles');
     assert.equal(await title.textContent(), 'Museum'); assert.equal(await detail.textContent(), 'Los Angeles');
     await detail.press('Control+a'); await detail.press('Backspace');

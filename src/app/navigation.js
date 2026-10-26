@@ -33,6 +33,7 @@ $('#tabsNext').onclick=()=>scrollTabs(1);
 document.addEventListener('change',async event=>{if(event.target.matches('.day-radio')){const tabs=$('.tabs'),keepTabsPinned=Boolean(tabs&&tabsArePinned(tabs));cancelTabScrollRelease();if(keepTabsPinned)holdMainHeight();else releaseMainHeight();updateContextControls();revealSelectedTab();if(keepTabsPinned)requestAnimationFrame(()=>alignPageToTabs(tabs));}});
 $('.bottom-nav').addEventListener('click',event=>{
     const button=event.target.closest('[data-section]');if(!button||isOperationBusy())return;
+    button.focus({preventScroll:true});
     const id=button.dataset.section==='schedule'?lastScheduleDay:button.dataset.section,radio=document.getElementById(id);
     if(!radio||radio.checked)return;
     cancelTabScrollRelease();releaseMainHeight();radio.checked=true;updateContextControls();revealSelectedTab('auto');

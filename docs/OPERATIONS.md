@@ -106,24 +106,32 @@ Before launch check title/dates/route, tab count/order, PREP/day/ledger initial 
 
 ## Local and CI validation
 
-Planned environment alignment, shared verification, and publication gating are tracked in [Validation TODO](VALIDATION_TODO.md). That checklist describes proposed changes, not the current procedure below.
-
-Minimum Node 22; Node 24 matches unit CI. Historical Node 22 HTTP-close observations remain in [October 5 evidence](archive/2026-10-05-db-health-verification.md).
+Required baseline: Ubuntu 24.04, Node from `.node-version` (24.22.1), npm from `packageManager` (11.19.1), locked dependencies, pinned Playwright browsers, PostgreSQL 17. The app still supports Node >=22; the validation baseline is separate. Update the version file and packageManager together only after compatibility checks; run `npm ci` after lockfile changes.
 
 ```sh
 npm ci
-npm test
-npx playwright install chromium
-npm run test:browser
+npx playwright install --with-deps chromium firefox webkit
+# Set TRIP_SQL_TEST_URL to a disposable loopback PostgreSQL 17 instance.
+npm run test:ci
 ```
 
-`npm test` runs unit regressions and `scripts/check-project.mjs` config/image/HTML/SQL checks. Without npm, use installed Node: `node --test tests/*.test.mjs` and `node scripts/check-project.mjs`.
+The full command checks prerequisites before running unit/static/generated, SQL and browser stages. It rejects installed-browser overrides, wrong versions, missing browsers/SQL and incomplete stages. It never builds or repairs committed output. Explicit `--suite=validate|sql|browser` selects a **PARTIAL** check. Browser validation includes all 16 Chromium suites, two further input/draft passes (three total, no retries), and Firefox/WebKit input/dialog/draft/export coverage. Summaries record source SHA, dirty development state, environment, stage status and elapsed time in `westbound-ci-*`; CI uploads them even on failure. No database URLs or passwords are printed.
 
-Without PostgreSQL, dispatch `.github/workflows/validate.yml` on the work branch to run `validate`, `sql`, `browser` without PR/main changes. SQL uses disposable PostgreSQL 17, never production. Verify commit/all jobs before production SQL/deployment.
+For a fresh local Linux run, first install WSL2 Ubuntu 24.04 and Docker Engine/Desktop integration as user-managed prerequisites. In normal WSL under your account, create a separate Linux filesystem checkout (for example `~/src/us-west-2027-trip`), select the declared Node/npm versions, and run:
+
+```sh
+bash scripts/check-linux.sh
+```
+
+Install browser system libraries explicitly during user setup (`npx playwright install --with-deps chromium firefox webkit`). The helper rejects `/mnt/*` checkouts, installs locked packages/browser binaries, starts its own randomly named/labeled PostgreSQL container on a random loopback port, waits up to 30 seconds, runs full verification, and removes only that container on success/failure/INT/TERM. Docker/browser system prerequisites may require explicit OS setup. Missing tools stop the run. Forced kill or host shutdown can leave the printed container ID; inspect its `trip.validation` label before removing that exact container. Failure SQL logs remain in the printed temp directory. Never share Windows `node_modules`, Git writes or a personal/production database.
+
+Ordinary Windows checks remain useful development evidence: `npm run build`, `npm test`, `npm run test:browser` (optionally `PWA_BROWSER_CHANNEL=chrome`). They do not satisfy Linux parity. This workstation currently has Ubuntu 26.04 with Node 22 and no Linux npm/PostgreSQL; the strict full command correctly rejects it. See [remaining validation work](VALIDATION_TODO.md) and [dated evidence](archive/2026-10-27-review-follow-up.md).
+
+Without local prerequisites, push the work branch and dispatch Validate there. Required `validate`, `sql`, `browser` jobs use the same declared environment and coordinator subsets; `required` succeeds only when all three succeed. A work-branch run builds/inspects the Pages artifact but never deploys. Dispatch `gate_probe=true` for an intentional validation failure plus skipped SQL/browser; `required` must fail and Pages jobs must be skipped. Cancellation is also rejected by the aggregate command's executable regression test.
 
 ### Source editing and build
 
-Edit `src/` using the [source map](PROJECT_GUIDE.md#source-modules), then run `npm run build`. Commit source and generated `index.html`/`trip-config.js` together. `npm run build:check`, `npm run check`, and `npm test` reject stale output. Pages serves the committed output directly and excludes `src/`; it does not rebuild it. No watch server or new dependencies are required. Keep include order unless changing initialization intentionally.
+Edit `src/` using the [source map](PROJECT_GUIDE.md#source-modules), then run `npm run build`. Commit source and generated `index.html`/`trip-config.js` together. `npm run build:check`, `npm run check`, and `npm test` reject stale output. Pages packages the committed output through Jekyll and excludes `src/`; it does not regenerate app sources. No watch server or new dependencies are required. Keep include order unless changing initialization intentionally.
 
 `trip-config.template.js` is the reusable template, not the current generated configuration. The historical `styles:consolidate` shortcut was removed because it targets generated HTML. Edit `src/styles/` and rebuild; do not run the old one-time utility.
 
@@ -160,7 +168,7 @@ The paused Daylight artifact and an explicitly supplied pre-marker `VERSIONS_FIX
 
 | Check | Command and coverage |
 |---|---|
-| Full runner | `node scripts/check-browsers.mjs`; fails if any child fails; drafts has a five-minute process limit, other suites three minutes |
+| Full runner | `node scripts/check-browsers.mjs`; per-suite status/timing/deadline JSON; drafts has a five-minute limit, others three minutes. `--only=inputs,drafts` is explicitly partial; warn at 75% of budget |
 | Diagnostics | `node scripts/check-diagnostics-browser.mjs`: injected failures, exit/scenario, multi-tab PNG/errors/traces, partial capture resilience/startup failure/success cleanup |
 | Drafts | `node scripts/check-drafts-browser.mjs`: pending input Undo/Redo and reload, undo-to-clean reload on desktop/mobile; first title/detail/caution input before history, reload/checkpoint/pagehide/hidden/sign-out, continuous input after saving; tabs/clones/recover/defer/conflict/preview/logout/timeouts; PREP/deferred retention, reauthentication/duplicate sign-out, resume/reconnect/Realtime input/focus/selection/category fallback; reversed refresh/Realtime responses, duplicate and old revisions, preview/deferred adoption, dirty reconnect, and public-cache ordering |
 | Input | `node scripts/check-inputs-browser.mjs`: desktop/mobile IME/noncancelable input/undo/import/export; keyboard open/Tab/Shift+Tab/Escape/Cancel/Apply focus for expense/category/time/photo dialogs, nested settings and replaced triggers; blank/whitespace category names and photo description/alt text, repeated submission/correction/reopen in both themes, invalid-photo document retention, local expense/map errors and viewport bounds; distant-date setup scrolls instantly before real clicks, while app transitions retain the tested motion preference |
@@ -196,7 +204,7 @@ Imports use [schema-4 fixture](../tests/fixtures/import-v4.json)/actual file inp
 
 Photo transport tests in `tests/photos.test.mjs`/draft browser tests stall auth/HEAD/upload/download/body, verify duplicate responses, real timeout/cancel disconnection, no public save, retained drafts, busy cleanup/retry, print URL fallback/cancel preventing download. Limits are shortened only in tests; no production calls.
 
-Actions jobs: unit/static Node 24; SQL Node 24/PostgreSQL 17; browser Node 22. SQL uses disposable service/locked dependencies. Browser installs locked packages/Chromium and retains `${runner.temp}/westbound-*/` as `browser-diagnostics` for seven days on failure.
+Actions jobs all use Ubuntu 24.04 and `.node-version` with `npm ci`; SQL uses disposable PostgreSQL 17. Browser installs pinned Chromium/Firefox/WebKit. Failed browser diagnostics and all environment/timing summaries are retained for seven days. Setup/assertion/deadline/cancellation failures remain distinct; do not add blanket retries. Process groups are terminated on coordinator cancellation; forced runner termination may prevent final capture.
 
 [Diagnostics](../scripts/browser-diagnostics.mjs) saves per-tab PNG, per-context trace ZIP, failure.json before browser close in OS temp `westbound-<check>-diagnostics-*`. JSON includes scenario/error/progress/latest 1, 000 console/page/request/HTTP 4xx/5xx events, including deliberately injected failures. Partial capture errors are recorded without losing others; successful traces are discarded; self-tests use `westbound-diagnostics-self-test-*`.
 
@@ -234,7 +242,9 @@ git diff --check
 
 Commit/push only within authorization. Verify tracking state/intended remote before claiming a push. Save trip content in the app.
 
-Pages: `main`, root `/`. `_config.yml` excludes `docs` and authoring `src` from HTML deployment; repository access remains. Deploy manifest/PWA scripts/icons/assets with HTML/config. Keep relative install paths; omit manifest `id` so deployment-specific `start_url` identifies the app. Do not add `id: "./"`. Update names/description/Apple title for another trip.
+Pages publication uses the Validate workflow: `required` → `pages-build` → main-push-only `deploy`. Checkout/build use the validated SHA; the artifact checker verifies asset bytes and excluded authoring/test paths. Workflow concurrency cancels superseded runs and deploy checks that its SHA is still main. Pages source must be `workflow`; inspect actual source before activation. Work-branch/manual runs cannot publish. `_config.yml` excludes `docs`, `src`, scripts/tests, packages and SQL from HTML deployment; repository access remains. Deploy manifest/PWA scripts/icons/assets with HTML/config. Keep relative install paths; omit manifest `id` so deployment-specific `start_url` identifies the app. Do not add `id: "./"`. Update names/description/Apple title for another trip.
+
+Recover by reverting the faulty release on a work branch, validating that candidate, then updating main through the same gate; never bypass validation or roll back live trip data. Branch protection capabilities and local Linux/device gaps remain in the dated evidence.
 
 Bump worker `VERSION` for cache-list/strategy/icon/image/font changes. Retain the bundled font and license when deploying or reusing the app; see [typography](PROJECT_GUIDE.md#typography) for loading/export behavior. SDK updates must synchronize pinned HTML URL/SRI and worker `SDK_URL`/`SDK_INTEGRITY`. Close old windows for activation; avoid forced refresh while editing. `scripts/generate-icons.ps1` generates PNGs matching `icons/icon.svg`.
 
@@ -252,7 +262,7 @@ Responses: `200 {"ok":true}` success; `503 {"ok":false}` read/missing-data/confi
 
 Resume project `xuzhcogshnjqtunkbsuo` if paused. Run [20261005_db_healthcheck.sql](../migrations/20261005_db_healthcheck.sql), separately even for new projects. Reruns avoid duplicates; anonymous access grants only `id` reads with RLS/no writes. Common setup need not rerun.
 
-Node 22+ (24 for unit parity):
+Node 22+ (declared Node 24 baseline for validation):
 
 ```powershell
 node scripts/prepare-db-health.mjs

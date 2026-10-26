@@ -5,24 +5,48 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      gate_probe:
+        description: Nonpublishing failure/skip gate check
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
       - uses: actions/setup-node@v4
         with:
-          # Node 24 matches the verified healthcheck HTTP cancellation runtime.
-          node-version: 24
-      - run: npm test
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - if: inputs.gate_probe
+        run: exit 1
+      - run: npm run test:ci -- --suite=validate
+        env:
+          TRIP_CHECK_OUTPUT: ${{ runner.temp }}/westbound-ci-validate
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: validation-summary
+          path: ${{ runner.temp }}/westbound-ci-validate/
+          if-no-files-found: warn
+          retention-days: 7
 
   sql:
-    runs-on: ubuntu-latest
+    if: ${{ !inputs.gate_probe }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     services:
       postgres:
@@ -38,29 +62,43 @@ jobs:
           --health-retries 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version-file: .node-version
           cache: npm
       - run: npm ci
-      - run: npm run test:sql
+      - run: npm run test:ci -- --suite=sql
         env:
           TRIP_SQL_TEST_URL: postgresql://postgres:trip-sql-local-only@127.0.0.1:5432/postgres
+          TRIP_CHECK_OUTPUT: ${{ runner.temp }}/westbound-ci-sql
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sql-summary
+          path: ${{ runner.temp }}/westbound-ci-sql/
+          if-no-files-found: warn
+          retention-days: 7
 
   browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    if: ${{ !inputs.gate_probe }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .node-version
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:browser
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:ci -- --suite=browser
         env:
           TMPDIR: ${{ runner.temp }}
+          TRIP_CHECK_OUTPUT: ${{ runner.temp }}/westbound-ci-browser
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -68,3 +106,69 @@ jobs:
           path: ${{ runner.temp }}/westbound-*/
           if-no-files-found: warn
           retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-summary
+          path: |
+            ${{ runner.temp }}/westbound-ci-browser/
+            ${{ runner.temp }}/westbound-browser-timing-*/
+          if-no-files-found: warn
+          retention-days: 7
+
+  required:
+    if: always()
+    needs: [validate, sql, browser]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Require every validation job
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: node -e 'const jobs=Object.values(JSON.parse(process.env.RESULTS)); if(jobs.length!==3 || jobs.some(job=>job.result!=="success")) process.exit(1)'
+
+  pages-build:
+    needs: required
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - uses: actions/configure-pages@v5
+      - uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./
+          destination: ./_site
+          build_revision: ${{ github.sha }}
+      - run: node scripts/check-pages-artifact.mjs _site
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [required, pages-build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Reject a superseded release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ github.sha }}
+        run: test "$(gh api repos/${{ github.repository }}/git/ref/heads/main --jq .object.sha)" = "$EXPECTED_SHA"
+      - id: deployment
+        uses: actions/deploy-pages@v4

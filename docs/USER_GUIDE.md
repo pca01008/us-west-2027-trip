@@ -22,6 +22,8 @@ The app is publicly readable. Keep original confirmations and personal informati
 
 ## Screens and navigation
 
+Section and Edit controls retain focus after pointer activation, including Safari/WebKit; closing a dialog returns focus to its opening control.
+
 These instructions describe this branch's existing-app refinement. See the [implementation record](archive/2026-10-24-legacy-ui-refinement.md) for publication status and validation limits. Further Daylight development and production migration are paused.
 
 <a id="shared-daylight"></a>

@@ -2981,7 +2981,7 @@ function isSaveInFlight(){return saveInFlight;}
 
 function bindEditingControls(){
 function refreshEditablePlaceholder(event){const element=event.target.closest?.('[contenteditable="true"][data-placeholder]');if(element)updateEditableEmpty(element);}
-$('#editBtn').onclick=async()=>{if(body.classList.contains('editing')){await requestFinishEditing();return;}if(body.classList.contains('previewing'))closePreview();if($('.day-radio:checked')?.id==='prep'){await requireEditor('checklist',openChecklistEditor);return;}await requireEditor($('.day-radio:checked')?.id==='money'?'ledger-settings':'edit');};
+$('#editBtn').onclick=async()=>{$('#editBtn').focus({preventScroll:true});if(body.classList.contains('editing')){await requestFinishEditing();return;}if(body.classList.contains('previewing'))closePreview();if($('.day-radio:checked')?.id==='prep'){await requireEditor('checklist',openChecklistEditor);return;}await requireEditor($('.day-radio:checked')?.id==='money'?'ledger-settings':'edit');};
 $('#logoutBtn').onclick=requestManualLogout;
 $('#undoBtn').onclick=()=>moveHistory(-1);
 $('#redoBtn').onclick=()=>moveHistory(1);
@@ -3734,6 +3734,7 @@ $('#tabsNext').onclick=()=>scrollTabs(1);
 document.addEventListener('change',async event=>{if(event.target.matches('.day-radio')){const tabs=$('.tabs'),keepTabsPinned=Boolean(tabs&&tabsArePinned(tabs));cancelTabScrollRelease();if(keepTabsPinned)holdMainHeight();else releaseMainHeight();updateContextControls();revealSelectedTab();if(keepTabsPinned)requestAnimationFrame(()=>alignPageToTabs(tabs));}});
 $('.bottom-nav').addEventListener('click',event=>{
     const button=event.target.closest('[data-section]');if(!button||isOperationBusy())return;
+    button.focus({preventScroll:true});
     const id=button.dataset.section==='schedule'?lastScheduleDay:button.dataset.section,radio=document.getElementById(id);
     if(!radio||radio.checked)return;
     cancelTabScrollRelease();releaseMainHeight();radio.checked=true;updateContextControls();revealSelectedTab('auto');

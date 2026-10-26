@@ -77,6 +77,8 @@ Pages serves files; browser JavaScript renders and manages data; Supabase handle
 
 <a id="source-modules"></a>
 
+Validation uses `scripts/check-ci.mjs` for strict environment checks, child-process lifecycle, stage results and full/partial labels. The Validate workflow aggregates three subsets before inspecting a same-SHA Jekyll artifact; only a main push may deploy. Procedures live in [Operations](OPERATIONS.md#validation).
+
 ### Editable source map
 
 | Source | Responsibility |
@@ -119,6 +121,8 @@ The existing app uses self-hosted [Pretendard](https://github.com/orioncactus/pr
 Worker v3 precaches the font as a static asset. Editable/read-only HTML exports embed the font as a data URL and remove its relative preload; re-exporting embedded copies needs no font request. If the font cannot be fetched within eight seconds, export keeps the content and uses the system fallback. Canceling export still cancels the download. Daylight and historical UI previews retain their existing typography.
 
 <a id="color-palette"></a>
+
+Ledger entry values use 16px type and labels 13px, preserving 44px controls at 320px and above. Rate and expense-edit values also use 16px.
 
 ### Color palette
 
@@ -511,5 +515,3 @@ This guide describes repository code. Consult official documentation for service
 - [Realtime](https://supabase.com/docs/guides/realtime/getting_started)
 - [About GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages)
 - [GitHub Pages getting started](https://docs.github.com/en/pages/getting-started-with-github-pages)
-
-Ledger entry values use 16px type and labels 13px, preserving 44px controls at 320px and above. Rate and expense-edit values also use 16px.

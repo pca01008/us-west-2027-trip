@@ -1,0 +1,1002 @@
+{
+  "browser": "155.0.8059.85",
+  "screens": [
+    {
+      "width": 320,
+      "theme": "light",
+      "panel": "d1",
+      "scrollWidth": 320,
+      "innerWidth": 320,
+      "smallControls": []
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "panel": "prep",
+      "scrollWidth": 320,
+      "innerWidth": 320,
+      "smallControls": [
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        }
+      ]
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "panel": "money",
+      "scrollWidth": 320,
+      "innerWidth": 320,
+      "smallControls": []
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "panel": "d1",
+      "scrollWidth": 320,
+      "innerWidth": 320,
+      "smallControls": []
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "panel": "prep",
+      "scrollWidth": 320,
+      "innerWidth": 320,
+      "smallControls": [
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        }
+      ]
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "panel": "money",
+      "scrollWidth": 320,
+      "innerWidth": 320,
+      "smallControls": []
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "panel": "d1",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "smallControls": []
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "panel": "prep",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "smallControls": [
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "panel": "money",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "smallControls": []
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "panel": "d1",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "smallControls": []
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "panel": "prep",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "smallControls": [
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "panel": "money",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "smallControls": []
+    },
+    {
+      "width": 768,
+      "theme": "light",
+      "panel": "d1",
+      "scrollWidth": 768,
+      "innerWidth": 768,
+      "smallControls": [
+        {
+          "id": "tabsPrev",
+          "text": "‹",
+          "w": 34,
+          "h": 48.03125
+        },
+        {
+          "id": "tabsNext",
+          "text": "›",
+          "w": 34,
+          "h": 48.03125
+        },
+        {
+          "id": "listViewBtn",
+          "text": "일별 일정",
+          "w": 72.1875,
+          "h": 40
+        },
+        {
+          "id": "timetableViewBtn",
+          "text": "시간표",
+          "w": 59.125,
+          "h": 40
+        }
+      ]
+    },
+    {
+      "width": 768,
+      "theme": "light",
+      "panel": "prep",
+      "scrollWidth": 768,
+      "innerWidth": 768,
+      "smallControls": [
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        }
+      ]
+    },
+    {
+      "width": 768,
+      "theme": "light",
+      "panel": "money",
+      "scrollWidth": 768,
+      "innerWidth": 768,
+      "smallControls": []
+    },
+    {
+      "width": 768,
+      "theme": "dark",
+      "panel": "d1",
+      "scrollWidth": 768,
+      "innerWidth": 768,
+      "smallControls": [
+        {
+          "id": "tabsPrev",
+          "text": "‹",
+          "w": 34,
+          "h": 48.03125
+        },
+        {
+          "id": "tabsNext",
+          "text": "›",
+          "w": 34,
+          "h": 48.03125
+        },
+        {
+          "id": "listViewBtn",
+          "text": "일별 일정",
+          "w": 72.1875,
+          "h": 40
+        },
+        {
+          "id": "timetableViewBtn",
+          "text": "시간표",
+          "w": 59.125,
+          "h": 40
+        }
+      ]
+    },
+    {
+      "width": 768,
+      "theme": "dark",
+      "panel": "prep",
+      "scrollWidth": 768,
+      "innerWidth": 768,
+      "smallControls": [
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        }
+      ]
+    },
+    {
+      "width": 768,
+      "theme": "dark",
+      "panel": "money",
+      "scrollWidth": 768,
+      "innerWidth": 768,
+      "smallControls": []
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "panel": "d1",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "smallControls": [
+        {
+          "id": "tabsPrev",
+          "text": "‹",
+          "w": 34,
+          "h": 48.03125
+        },
+        {
+          "id": "tabsNext",
+          "text": "›",
+          "w": 34,
+          "h": 48.03125
+        },
+        {
+          "id": "editBtn",
+          "text": "편집 시작",
+          "w": 88.796875,
+          "h": 36
+        },
+        {
+          "id": "exportMenuBtn",
+          "text": "내보내기",
+          "w": 86.03125,
+          "h": 36
+        },
+        {
+          "id": "listViewBtn",
+          "text": "일별 일정",
+          "w": 72.1875,
+          "h": 40
+        },
+        {
+          "id": "timetableViewBtn",
+          "text": "시간표",
+          "w": 59.125,
+          "h": 40
+        }
+      ]
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "panel": "prep",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "smallControls": [
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        }
+      ]
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "panel": "money",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "smallControls": []
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "panel": "d1",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "smallControls": [
+        {
+          "id": "tabsPrev",
+          "text": "‹",
+          "w": 34,
+          "h": 48.03125
+        },
+        {
+          "id": "tabsNext",
+          "text": "›",
+          "w": 34,
+          "h": 48.03125
+        },
+        {
+          "id": "editBtn",
+          "text": "편집 시작",
+          "w": 88.796875,
+          "h": 36
+        },
+        {
+          "id": "exportMenuBtn",
+          "text": "내보내기",
+          "w": 86.03125,
+          "h": 36
+        },
+        {
+          "id": "listViewBtn",
+          "text": "일별 일정",
+          "w": 72.1875,
+          "h": 40
+        },
+        {
+          "id": "timetableViewBtn",
+          "text": "시간표",
+          "w": 59.125,
+          "h": 40
+        }
+      ]
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "panel": "prep",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "smallControls": [
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        },
+        {
+          "id": "",
+          "text": "",
+          "w": 22,
+          "h": 22
+        }
+      ]
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "panel": "money",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "smallControls": []
+    }
+  ],
+  "probes": {
+    "textMetrics": [
+      {
+        "selector": "#expenseDate",
+        "fontSize": "10px",
+        "lineHeight": "normal"
+      },
+      {
+        "selector": "#expenseName",
+        "fontSize": "10px",
+        "lineHeight": "normal"
+      },
+      {
+        "selector": "#expenseKrw",
+        "fontSize": "10px",
+        "lineHeight": "normal"
+      },
+      {
+        "selector": "#expenseUsd",
+        "fontSize": "10px",
+        "lineHeight": "normal"
+      },
+      {
+        "selector": ".add-expense label",
+        "fontSize": "10px",
+        "lineHeight": "normal"
+      },
+      {
+        "selector": ".category-summary .diff-empty",
+        "fontSize": "12px",
+        "lineHeight": "normal"
+      }
+    ],
+    "photoValidation": {
+      "dialogOpen": true,
+      "dialogText": "사진 정보 편집\n사진 설명\n대체 텍스트\n취소\n적용",
+      "status": "사진 설명과 대체 텍스트를 모두 입력해 주세요.",
+      "invalid": null,
+      "focus": "photoEditSave"
+    },
+    "rateValidation": {
+      "dialogOpen": false,
+      "value": "1450",
+      "status": "오프라인 작업본",
+      "invalid": null,
+      "dialogText": "가계부 설정수동 환율 · 새 자동 계산에 적용1 USD =  KRW카테고리카테고리 추가🍽️식비수정삭제🚗교통수정삭제📦기타🗑️삭제된 카테고리설정 닫기"
+    },
+    "refreshRace": [
+      {
+        "revision": 12,
+        "title": "NEW 12"
+      },
+      {
+        "revision": 11,
+        "title": "OLD 11"
+      }
+    ],
+    "importCancel": {
+      "dialogHidden": true,
+      "error": "Cannot read properties of null (reading 'baselineRevision')",
+      "status": "편집본 적용 실패",
+      "title": "일정 1-1"
+    },
+    "undoBeforeDebounce": {
+      "undoElapsedMs": 76,
+      "afterUndo": "일정 1-1",
+      "afterRedo": "RECORDED EDIT"
+    },
+    "photoComparison": {
+      "markupChanged": true,
+      "diff": []
+    },
+    "malformedImport": {
+      "offered": true,
+      "error": "Cannot set properties of null (setting 'textContent')",
+      "main": "<p>Incomplete document</p>",
+      "dayCount": 0
+    }
+  },
+  "provenance": {
+    "date": "2026-10-26",
+    "commit": "2e7e846",
+    "scope": "Synthetic local audit; production blocked; current app unchanged",
+    "node": "v24.22.1",
+    "unit": {
+      "passed": 131,
+      "failed": 0,
+      "skipped": 0
+    },
+    "browserSuites": {
+      "passed": 16,
+      "failed": 0,
+      "channel": "chrome"
+    },
+    "sql": "Not run: no disposable TRIP_SQL_TEST_URL",
+    "probeMethod": "Current app plus unchanged controller factories; deferred mock reads for refresh/import; real fill/click for undo and form validation"
+  }
+}

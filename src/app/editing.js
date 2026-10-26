@@ -138,7 +138,7 @@ function isSaveInFlight(){return saveInFlight;}
 
 function bindEditingControls(){
 function refreshEditablePlaceholder(event){const element=event.target.closest?.('[contenteditable="true"][data-placeholder]');if(element)updateEditableEmpty(element);}
-$('#editBtn').onclick=async()=>{if(body.classList.contains('editing')){await requestFinishEditing();return;}if(body.classList.contains('previewing'))closePreview();if($('.day-radio:checked')?.id==='prep'){await requireEditor('checklist',openChecklistEditor);return;}await requireEditor($('.day-radio:checked')?.id==='money'?'ledger-settings':'edit');};
+$('#editBtn').onclick=async()=>{$('#editBtn').focus({preventScroll:true});if(body.classList.contains('editing')){await requestFinishEditing();return;}if(body.classList.contains('previewing'))closePreview();if($('.day-radio:checked')?.id==='prep'){await requireEditor('checklist',openChecklistEditor);return;}await requireEditor($('.day-radio:checked')?.id==='money'?'ledger-settings':'edit');};
 $('#logoutBtn').onclick=requestManualLogout;
 $('#undoBtn').onclick=()=>moveHistory(-1);
 $('#redoBtn').onclick=()=>moveHistory(1);

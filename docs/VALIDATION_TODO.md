@@ -1,6 +1,6 @@
 # Local / GitHub Validation TODO
 
-Created: 2026-10-26 (Asia/Seoul). Status: proposed; implementation has not started.
+Created: 2026-10-26 (Asia/Seoul). Status: implementation in progress; see the [October 27 evidence](archive/2026-10-27-review-follow-up.md).
 
 ## Objective
 
@@ -9,6 +9,12 @@ Run the same required checks against the same committed files in a reproducible 
 Local success reduces surprises; it cannot reproduce GitHub runner load, hardware, or every external failure. A successful GitHub run for the release commit remains required.
 
 This file owns outstanding work and acceptance criteria. [Operations](OPERATIONS.md#validation) remains the source for implemented procedures. Store actual run evidence in dated files under `docs/archive/`.
+
+## October 27 implementation
+
+The version file, strict full/partial coordinator, process cancellation/deadlines, owned disposable SQL helper, shared three CI jobs, aggregate gate, timing summaries, repeated boundaries, extra-engine input coverage, and Jekyll artifact/deployment gate are implemented. [Operations](OPERATIONS.md#validation) owns their commands. The observations below are the October 26 baseline, not current settings.
+
+Still requires evidence: clean local Ubuntu 24.04 full run (this workstation has Ubuntu 26.04), Linux/CI repeated boundary headroom, remote gate probe, exact-SHA artifact and deployment confirmation, available branch-rule enforcement, and the travelers' physical phones. Do not equate CI or emulation with physical-device verification.
 
 ## Observed baseline
 
@@ -41,19 +47,19 @@ Historical incidents:
 - Preserve schema 6, KRW/USD, trip IDs, production data, draft behavior, and existing application output.
 - Keep SQL tests on a disposable local PostgreSQL instance. Preserve loopback URL validation and outbound production blocking in browser fixtures.
 - Preserve Git metadata and ownership. Follow [AGENTS.md](../AGENTS.md); do not initialize/clone repositories from the elevated Windows sandbox or broadly change ACLs.
-- This task plans validation and publication changes. It does not install software, modify repository settings, publish, or change runtime code.
+- This checklist originally planned validation/publication changes. The October 27 follow-up is authorized to implement and deploy; privileged local OS setup remains a separate prerequisite.
 
 ## P0 — Agree on one validation environment
 
 - [ ] Select Ubuntu 24.04 for the initial local/CI baseline after confirming it supports the pinned dependencies. Replace `ubuntu-latest` with the explicit release in required jobs.
 - [ ] Select one exact Node 24 patch version after running the existing unit, SQL, and browser suites with it. Move browser CI from Node 22 only after that compatibility check passes.
-- [ ] Store the Node version in one checked-in version file supported by `actions/setup-node`; make local setup and all CI jobs read it. Document the expected npm version and dependency update procedure.
-- [ ] Keep `package.json` runtime support separate from the validation baseline. Do not raise `engines.node` merely to pin the test environment; decide any supported-runtime change explicitly.
+- [x] Store the Node version in one checked-in version file supported by `actions/setup-node`; make local setup and all CI jobs read it. Document the expected npm version and dependency update procedure.
+- [x] Keep `package.json` runtime support separate from the validation baseline. Do not raise `engines.node` merely to pin the test environment; decide any supported-runtime change explicitly.
 - [ ] Keep Playwright pinned through `package-lock.json`. Install its Chromium with `npx playwright install --with-deps chromium` inside Linux.
-- [ ] Reject `PWA_BROWSER_CHANNEL` overrides in the required full-check mode. Keep installed Chrome runs available as optional compatibility checks.
+- [x] Reject `PWA_BROWSER_CHANNEL` overrides in the required full-check mode. Keep installed Chrome runs available as optional compatibility checks.
 - [ ] Use PostgreSQL 17 for local and CI SQL tests. Record its actual version; evaluate exact image pinning only if minor-version drift causes meaningful differences.
 - [ ] Run `npm ci` for every clean verification environment, including the GitHub unit job. Do not reuse Windows `node_modules` inside Linux.
-- [ ] Record OS release, architecture, Node/npm/Playwright/browser/PostgreSQL versions at the start of verification. Never print database passwords or full connection URLs.
+- [x] Record OS release, architecture, Node/npm/Playwright/browser/PostgreSQL versions at the start of verification. Never print database passwords or full connection URLs.
 
 Acceptance: local Linux and CI use the agreed versions, and a mismatch produces an actionable failure instead of a misleading full pass.
 
@@ -79,28 +85,28 @@ Proposed interface, not an existing command:
 npm run test:ci
 ```
 
-- [ ] Add a small `scripts/check-ci.mjs` coordinator and the package script. Reuse existing suites rather than duplicating assertions.
-- [ ] Default to the complete sequence: environment checks → `npm test` → `npm run test:sql` → `npm run test:browser`.
-- [ ] Keep generated-output verification read-only. Do not run a build that silently repairs stale committed files during verification; build deliberately before the final check.
-- [ ] Allow explicit `--suite=validate`, `--suite=sql`, and `--suite=browser` selection for existing CI jobs. A selected subset must be labeled partial, never full verification.
-- [ ] Make missing PostgreSQL, browser binaries, package installation, wrong versions, and invalid overrides fail with nonzero status. Never turn a missing prerequisite into a skipped successful check.
-- [ ] Preserve existing test exit codes and distinguish assertion failure, process deadline, browser crash, and setup failure.
-- [ ] Use bounded execution and terminate child processes on cancellation. Keep failure diagnostics before cleanup when possible.
-- [ ] Print per-stage elapsed time and a final passed/failed/not-run summary. Stop early on invalid setup; avoid launching expensive checks after a prerequisite failure.
-- [ ] Include the commit SHA and working-tree state. Mark results from modified files as local development evidence, not certification of the committed release.
-- [ ] Add focused coordinator tests for failure propagation, omitted prerequisites, subset labeling, cancellation, and stale generated output. Avoid retesting every underlying suite.
+- [x] Add a small `scripts/check-ci.mjs` coordinator and the package script. Reuse existing suites rather than duplicating assertions.
+- [x] Default to the complete sequence: environment checks → `npm test` → `npm run test:sql` → `npm run test:browser`.
+- [x] Keep generated-output verification read-only. Do not run a build that silently repairs stale committed files during verification; build deliberately before the final check.
+- [x] Allow explicit `--suite=validate`, `--suite=sql`, and `--suite=browser` selection for existing CI jobs. A selected subset must be labeled partial, never full verification.
+- [x] Make missing PostgreSQL, browser binaries, package installation, wrong versions, and invalid overrides fail with nonzero status. Never turn a missing prerequisite into a skipped successful check.
+- [x] Preserve existing test exit codes and distinguish assertion failure, process deadline, browser crash, and setup failure.
+- [x] Use bounded execution and terminate child processes on cancellation. Keep failure diagnostics before cleanup when possible.
+- [x] Print per-stage elapsed time and a final passed/failed/not-run summary. Stop early on invalid setup; avoid launching expensive checks after a prerequisite failure.
+- [x] Include the commit SHA and working-tree state. Mark results from modified files as local development evidence, not certification of the committed release.
+- [x] Add focused coordinator tests for failure propagation, omitted prerequisites, subset labeling, cancellation, and stale generated output. Avoid retesting every underlying suite.
 
 Acceptance: the default command cannot report success unless every required stage completed successfully. Full local and CI results identify the source commit and environment.
 
 ## P0 — Use the shared entry point in GitHub
 
-- [ ] Keep the existing three jobs initially; call the shared coordinator with each job's explicit suite to preserve parallel execution and SQL service isolation.
-- [ ] Ensure their combined coverage equals the default local command. Do not run the entire browser suite in every job.
-- [ ] Read the agreed Node version file, use the explicit Ubuntu release, and install locked packages consistently.
-- [ ] Keep PostgreSQL readiness checks and loopback `TRIP_SQL_TEST_URL` in the SQL job. Supply only disposable test credentials.
-- [ ] Keep browser diagnostics on failure and upload environment/timing summaries even when a stage fails. Report upload failures separately from the original test failure.
-- [ ] Add one stable aggregate validation result requiring all three jobs. Failure, cancellation, unexpected skipping, or incomplete checks must prevent aggregate success.
-- [ ] Preserve PR and manual work-branch execution so GitHub can verify release candidates before they reach `main`.
+- [x] Keep the existing three jobs initially; call the shared coordinator with each job's explicit suite to preserve parallel execution and SQL service isolation.
+- [x] Ensure their combined coverage equals the default local command. Do not run the entire browser suite in every job.
+- [x] Read the agreed Node version file, use the explicit Ubuntu release, and install locked packages consistently.
+- [x] Keep PostgreSQL readiness checks and loopback `TRIP_SQL_TEST_URL` in the SQL job. Supply only disposable test credentials.
+- [x] Keep browser diagnostics on failure and upload environment/timing summaries even when a stage fails. Report upload failures separately from the original test failure.
+- [x] Add one stable aggregate validation result requiring all three jobs. Failure, cancellation, unexpected skipping, or incomplete checks must prevent aggregate success.
+- [x] Preserve PR and manual work-branch execution so GitHub can verify release candidates before they reach `main`.
 - [ ] Set job budgets from measurements, retaining adequate room for dependency/browser setup and diagnostic capture.
 
 Acceptance: one work-branch commit passes all three jobs and the aggregate check; a deliberately failing candidate cannot produce an aggregate pass.
@@ -110,11 +116,11 @@ Acceptance: one work-branch commit passes all three jobs and the aggregate check
 - [ ] Preserve the instant date-strip fixture positioning introduced by `d9c6971`. Continue testing real app motion in both reduced-motion and normal-motion modes.
 - [ ] Review tab-position waits and min-height release conditions. Wait for observable state and geometry; avoid arbitrary sleeps or disabling the behavior under test.
 - [ ] Repeat the previously failing input and draft suites at least three consecutive times in local Linux and in a temporary work-branch CI check. Retain every failure; do not accept only the last successful attempt.
-- [ ] Capture each suite's elapsed time and deadline. Warn at a documented threshold, initially 75% of its process budget, without weakening assertions.
+- [x] Capture each suite's elapsed time and deadline. Warn at a documented threshold, initially 75% of its process budget, without weakening assertions.
 - [ ] Confirm the draft suite completes with useful headroom under its existing 300-second limit. Investigate slow scenarios before increasing that limit again.
 - [ ] If a suite approaches its budget repeatedly, reduce redundant fixture work or split it at existing scenario boundaries. Preserve all fault cases and avoid a general test framework rewrite.
 - [ ] Preserve screenshots/traces/scenario data before process teardown where possible. For forced termination, identify the current scenario and original timeout explicitly.
-- [ ] Do not use blanket retries, swallowed errors, or unconditional timeout increases to make the workflow green. Any targeted retry needs an identified external transient cause and visible attempt history.
+- [x] Do not use blanket retries, swallowed errors, or unconditional timeout increases to make the workflow green. Any targeted retry needs an identified external transient cause and visible attempt history.
 
 Acceptance: repeated targeted runs are stable, current full-suite timings are recorded, and test failures remain visible and diagnosable.
 
@@ -129,11 +135,11 @@ Immediate operating rule:
 Enforced publication target:
 
 - [ ] Change Pages publication to a controlled Actions deployment that depends on successful validation of the same commit. A manual work-branch Validate run must never publish production.
-- [ ] Prefer one workflow containing validation and dependent Pages build/deploy jobs. Gate publication to the intended `main` event/ref, with Pages permissions scoped to deployment jobs.
-- [ ] Check out and package the validated commit, never a moving `main` reference. Avoid downloading an artifact whose source SHA is unverified.
+- [x] Prefer one workflow containing validation and dependent Pages build/deploy jobs. Gate publication to the intended `main` event/ref, with Pages permissions scoped to deployment jobs.
+- [x] Check out and package the validated commit, never a moving `main` reference. Avoid downloading an artifact whose source SHA is unverified.
 - [ ] Preserve current Jekyll/Pages behavior and `_config.yml` exclusions. Do not upload the raw repository: `docs`, `src`, dependency directories, test artifacts, and private/local exports must remain outside the published site as appropriate.
 - [ ] Preserve relative paths, PWA assets, `.nojekyll` behavior if applicable, and existing public preview directories. Verify the built publication artifact before switching Pages source settings.
-- [ ] Define deployment concurrency so an older validation run cannot overwrite a newer release. Handle cancellation without publishing incomplete output.
+- [x] Define deployment concurrency so an older validation run cannot overwrite a newer release. Handle cancellation without publishing incomplete output.
 - [ ] Test failure/cancellation/skip behavior on a work branch or nonpublishing dry run. Confirm deployment is unreachable when a required job fails.
 - [ ] Switch Pages source only after the replacement artifact and dependency graph are verified; avoid simultaneous independent publication paths.
 - [ ] Document recovery to a known compatible release. Rollback must preserve trip data and follow the same validation gate; do not restore an uncontrolled publication bypass.
@@ -152,12 +158,12 @@ Acceptance: a failing candidate cannot publish. A successful release identifies 
 
 ## P1 — Maintain documentation and evidence
 
-- [ ] Update [Operations](OPERATIONS.md#validation) with the implemented environment, full/partial commands, PostgreSQL lifecycle, diagnostics, timeout policy, and troubleshooting.
-- [ ] Update [deployment procedures](OPERATIONS.md#deployment) with the actual validation gate, commit identity rules, Pages settings, and recovery path.
-- [ ] Update [README](../README.md) setup/navigation links and runtime notes. Link to Operations rather than copying setup instructions.
-- [ ] Update [Project guide](PROJECT_GUIDE.md) only if shared-runner/workflow architecture needs explanation. No user-guide changes are expected unless app behavior changes.
-- [ ] Add dated evidence under `docs/archive/`: exact SHAs, environments, commands, results, timing, failed attempts, gate tests, and remaining limits. Do not rewrite historical passes as current evidence.
-- [ ] Keep this checklist current; link completed items to implementation/evidence instead of turning it into another operations manual.
+- [x] Update [Operations](OPERATIONS.md#validation) with the implemented environment, full/partial commands, PostgreSQL lifecycle, diagnostics, timeout policy, and troubleshooting.
+- [x] Update [deployment procedures](OPERATIONS.md#deployment) with the actual validation gate, commit identity rules, Pages settings, and recovery path.
+- [x] Update [README](../README.md) setup/navigation links and runtime notes. Link to Operations rather than copying setup instructions.
+- [x] Update [Project guide](PROJECT_GUIDE.md) only if shared-runner/workflow architecture needs explanation. No user-guide changes are expected unless app behavior changes.
+- [x] Add dated evidence under `docs/archive/`: exact SHAs, environments, commands, results, timing, failed attempts, gate tests, and remaining limits. Do not rewrite historical passes as current evidence.
+- [x] Keep this checklist current; link completed items to implementation/evidence instead of turning it into another operations manual.
 - [ ] Run relevant documentation/link tests and `git diff --check`. Confirm `docs/` remains excluded from Pages; update exclusions only for newly introduced publishable paths that require it.
 
 ## Suggested implementation order
