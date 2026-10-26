@@ -1,0 +1,1226 @@
+[
+  {
+    "label": "desktop/light/rate error",
+    "foreground": [
+      189,
+      64,
+      56
+    ],
+    "background": [
+      244,
+      247,
+      251
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 4.942542393338584,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/light/primary action",
+    "foreground": [
+      255,
+      255,
+      255
+    ],
+    "background": [
+      145,
+      52,
+      44
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 7.688041628417734,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/dark/rate error",
+    "foreground": [
+      255,
+      179,
+      171
+    ],
+    "background": [
+      36,
+      51,
+      68
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 7.529399608534285,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/dark/primary action",
+    "foreground": [
+      41,
+      29,
+      28
+    ],
+    "background": [
+      255,
+      179,
+      164
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 9.508961812504685,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/light/320/input",
+    "foreground": [
+      24,
+      36,
+      58
+    ],
+    "background": [
+      255,
+      255,
+      255
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 15.529256913802888,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/light/320/label",
+    "foreground": [
+      95,
+      110,
+      130
+    ],
+    "background": [
+      244,
+      247,
+      251
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 4.838454232419867,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/light/320/primary",
+    "foreground": [
+      255,
+      255,
+      255
+    ],
+    "background": [
+      169,
+      63,
+      53
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 6.08799013971359,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/light/320/selected navigation",
+    "foreground": [
+      169,
+      63,
+      53
+    ],
+    "background": [
+      244,
+      247,
+      251
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 5.6658697689025415,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/light/320/disabled move",
+    "foreground": [
+      185.7,
+      189.3,
+      195.9
+    ],
+    "background": [
+      255,
+      255,
+      255
+    ],
+    "opacity": 0.3,
+    "disabled": true,
+    "visible": true,
+    "ratio": 1.8781212957252595,
+    "minimum": null
+  },
+  {
+    "label": "desktop/light/390/input",
+    "foreground": [
+      24,
+      36,
+      58
+    ],
+    "background": [
+      255,
+      255,
+      255
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 15.529256913802888,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/light/390/label",
+    "foreground": [
+      95,
+      110,
+      130
+    ],
+    "background": [
+      244,
+      247,
+      251
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 4.838454232419867,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/light/390/primary",
+    "foreground": [
+      255,
+      255,
+      255
+    ],
+    "background": [
+      169,
+      63,
+      53
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 6.08799013971359,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/light/390/selected navigation",
+    "foreground": [
+      169,
+      63,
+      53
+    ],
+    "background": [
+      244,
+      247,
+      251
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 5.6658697689025415,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/light/390/disabled move",
+    "foreground": [
+      185.7,
+      189.3,
+      195.9
+    ],
+    "background": [
+      255,
+      255,
+      255
+    ],
+    "opacity": 0.3,
+    "disabled": true,
+    "visible": true,
+    "ratio": 1.8781212957252595,
+    "minimum": null
+  },
+  {
+    "label": "desktop/light/1440/input",
+    "foreground": [
+      24,
+      36,
+      58
+    ],
+    "background": [
+      255,
+      255,
+      255
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 15.529256913802888,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/light/1440/label",
+    "foreground": [
+      95,
+      110,
+      130
+    ],
+    "background": [
+      244,
+      247,
+      251
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 4.838454232419867,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/light/1440/primary",
+    "foreground": [
+      255,
+      255,
+      255
+    ],
+    "background": [
+      169,
+      63,
+      53
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 6.08799013971359,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/light/1440/selected navigation",
+    "foreground": [
+      169,
+      63,
+      53
+    ],
+    "background": [
+      244,
+      247,
+      251
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 5.6658697689025415,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/light/1440/disabled move",
+    "foreground": [
+      185.7,
+      189.3,
+      195.9
+    ],
+    "background": [
+      255,
+      255,
+      255
+    ],
+    "opacity": 0.3,
+    "disabled": true,
+    "visible": true,
+    "ratio": 1.8781212957252595,
+    "minimum": null
+  },
+  {
+    "label": "desktop/dark/320/input",
+    "foreground": [
+      230,
+      237,
+      245
+    ],
+    "background": [
+      25,
+      37,
+      50
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 13.163113551232346,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/dark/320/label",
+    "foreground": [
+      176,
+      191,
+      208
+    ],
+    "background": [
+      36,
+      51,
+      68
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 6.868290906674696,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/dark/320/primary",
+    "foreground": [
+      41,
+      29,
+      28
+    ],
+    "background": [
+      243,
+      152,
+      135
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 7.5008591214532325,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/dark/320/selected navigation",
+    "foreground": [
+      243,
+      152,
+      135
+    ],
+    "background": [
+      36,
+      51,
+      68
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 5.914213122734149,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/dark/320/disabled move",
+    "foreground": [
+      86.5,
+      97,
+      108.5
+    ],
+    "background": [
+      25,
+      37,
+      50
+    ],
+    "opacity": 0.3,
+    "disabled": true,
+    "visible": true,
+    "ratio": 2.4622464803526154,
+    "minimum": null
+  },
+  {
+    "label": "desktop/dark/390/input",
+    "foreground": [
+      230,
+      237,
+      245
+    ],
+    "background": [
+      25,
+      37,
+      50
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 13.163113551232346,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/dark/390/label",
+    "foreground": [
+      176,
+      191,
+      208
+    ],
+    "background": [
+      36,
+      51,
+      68
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 6.868290906674696,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/dark/390/primary",
+    "foreground": [
+      41,
+      29,
+      28
+    ],
+    "background": [
+      243,
+      152,
+      135
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 7.5008591214532325,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/dark/390/selected navigation",
+    "foreground": [
+      243,
+      152,
+      135
+    ],
+    "background": [
+      36,
+      51,
+      68
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 5.914213122734149,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/dark/390/disabled move",
+    "foreground": [
+      86.5,
+      97,
+      108.5
+    ],
+    "background": [
+      25,
+      37,
+      50
+    ],
+    "opacity": 0.3,
+    "disabled": true,
+    "visible": true,
+    "ratio": 2.4622464803526154,
+    "minimum": null
+  },
+  {
+    "label": "desktop/dark/1440/input",
+    "foreground": [
+      230,
+      237,
+      245
+    ],
+    "background": [
+      25,
+      37,
+      50
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 13.163113551232346,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/dark/1440/label",
+    "foreground": [
+      176,
+      191,
+      208
+    ],
+    "background": [
+      36,
+      51,
+      68
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 6.868290906674696,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/dark/1440/primary",
+    "foreground": [
+      41,
+      29,
+      28
+    ],
+    "background": [
+      243,
+      152,
+      135
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 7.5008591214532325,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/dark/1440/selected navigation",
+    "foreground": [
+      243,
+      152,
+      135
+    ],
+    "background": [
+      36,
+      51,
+      68
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 5.914213122734149,
+    "minimum": 4.5
+  },
+  {
+    "label": "desktop/dark/1440/disabled move",
+    "foreground": [
+      86.5,
+      97,
+      108.5
+    ],
+    "background": [
+      25,
+      37,
+      50
+    ],
+    "opacity": 0.3,
+    "disabled": true,
+    "visible": true,
+    "ratio": 2.4622464803526154,
+    "minimum": null
+  },
+  {
+    "label": "mobile/light/rate error",
+    "foreground": [
+      189,
+      64,
+      56
+    ],
+    "background": [
+      244,
+      247,
+      251
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 4.942542393338584,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/light/primary action",
+    "foreground": [
+      255,
+      255,
+      255
+    ],
+    "background": [
+      169,
+      63,
+      53
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 6.08799013971359,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/dark/rate error",
+    "foreground": [
+      255,
+      179,
+      171
+    ],
+    "background": [
+      36,
+      51,
+      68
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 7.529399608534285,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/dark/primary action",
+    "foreground": [
+      41,
+      29,
+      28
+    ],
+    "background": [
+      243,
+      152,
+      135
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 7.5008591214532325,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/light/320/input",
+    "foreground": [
+      24,
+      36,
+      58
+    ],
+    "background": [
+      255,
+      255,
+      255
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 15.529256913802888,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/light/320/label",
+    "foreground": [
+      95,
+      110,
+      130
+    ],
+    "background": [
+      244,
+      247,
+      251
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 4.838454232419867,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/light/320/primary",
+    "foreground": [
+      255,
+      255,
+      255
+    ],
+    "background": [
+      169,
+      63,
+      53
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 6.08799013971359,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/light/320/selected navigation",
+    "foreground": [
+      169,
+      63,
+      53
+    ],
+    "background": [
+      244,
+      247,
+      251
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 5.6658697689025415,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/light/320/disabled move",
+    "foreground": [
+      185.7,
+      189.3,
+      195.9
+    ],
+    "background": [
+      255,
+      255,
+      255
+    ],
+    "opacity": 0.3,
+    "disabled": true,
+    "visible": true,
+    "ratio": 1.8781212957252595,
+    "minimum": null
+  },
+  {
+    "label": "mobile/light/390/input",
+    "foreground": [
+      24,
+      36,
+      58
+    ],
+    "background": [
+      255,
+      255,
+      255
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 15.529256913802888,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/light/390/label",
+    "foreground": [
+      95,
+      110,
+      130
+    ],
+    "background": [
+      244,
+      247,
+      251
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 4.838454232419867,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/light/390/primary",
+    "foreground": [
+      255,
+      255,
+      255
+    ],
+    "background": [
+      169,
+      63,
+      53
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 6.08799013971359,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/light/390/selected navigation",
+    "foreground": [
+      169,
+      63,
+      53
+    ],
+    "background": [
+      244,
+      247,
+      251
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 5.6658697689025415,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/light/390/disabled move",
+    "foreground": [
+      185.7,
+      189.3,
+      195.9
+    ],
+    "background": [
+      255,
+      255,
+      255
+    ],
+    "opacity": 0.3,
+    "disabled": true,
+    "visible": true,
+    "ratio": 1.8781212957252595,
+    "minimum": null
+  },
+  {
+    "label": "mobile/light/1440/input",
+    "foreground": [
+      24,
+      36,
+      58
+    ],
+    "background": [
+      255,
+      255,
+      255
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 15.529256913802888,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/light/1440/label",
+    "foreground": [
+      95,
+      110,
+      130
+    ],
+    "background": [
+      244,
+      247,
+      251
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 4.838454232419867,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/light/1440/primary",
+    "foreground": [
+      255,
+      255,
+      255
+    ],
+    "background": [
+      169,
+      63,
+      53
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 6.08799013971359,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/light/1440/selected navigation",
+    "foreground": [
+      169,
+      63,
+      53
+    ],
+    "background": [
+      244,
+      247,
+      251
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 5.6658697689025415,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/light/1440/disabled move",
+    "foreground": [
+      185.7,
+      189.3,
+      195.9
+    ],
+    "background": [
+      255,
+      255,
+      255
+    ],
+    "opacity": 0.3,
+    "disabled": true,
+    "visible": true,
+    "ratio": 1.8781212957252595,
+    "minimum": null
+  },
+  {
+    "label": "mobile/dark/320/input",
+    "foreground": [
+      230,
+      237,
+      245
+    ],
+    "background": [
+      25,
+      37,
+      50
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 13.163113551232346,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/dark/320/label",
+    "foreground": [
+      176,
+      191,
+      208
+    ],
+    "background": [
+      36,
+      51,
+      68
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 6.868290906674696,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/dark/320/primary",
+    "foreground": [
+      41,
+      29,
+      28
+    ],
+    "background": [
+      243,
+      152,
+      135
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 7.5008591214532325,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/dark/320/selected navigation",
+    "foreground": [
+      243,
+      152,
+      135
+    ],
+    "background": [
+      36,
+      51,
+      68
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 5.914213122734149,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/dark/320/disabled move",
+    "foreground": [
+      86.5,
+      97,
+      108.5
+    ],
+    "background": [
+      25,
+      37,
+      50
+    ],
+    "opacity": 0.3,
+    "disabled": true,
+    "visible": true,
+    "ratio": 2.4622464803526154,
+    "minimum": null
+  },
+  {
+    "label": "mobile/dark/390/input",
+    "foreground": [
+      230,
+      237,
+      245
+    ],
+    "background": [
+      25,
+      37,
+      50
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 13.163113551232346,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/dark/390/label",
+    "foreground": [
+      176,
+      191,
+      208
+    ],
+    "background": [
+      36,
+      51,
+      68
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 6.868290906674696,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/dark/390/primary",
+    "foreground": [
+      41,
+      29,
+      28
+    ],
+    "background": [
+      243,
+      152,
+      135
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 7.5008591214532325,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/dark/390/selected navigation",
+    "foreground": [
+      243,
+      152,
+      135
+    ],
+    "background": [
+      36,
+      51,
+      68
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 5.914213122734149,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/dark/390/disabled move",
+    "foreground": [
+      86.5,
+      97,
+      108.5
+    ],
+    "background": [
+      25,
+      37,
+      50
+    ],
+    "opacity": 0.3,
+    "disabled": true,
+    "visible": true,
+    "ratio": 2.4622464803526154,
+    "minimum": null
+  },
+  {
+    "label": "mobile/dark/1440/input",
+    "foreground": [
+      230,
+      237,
+      245
+    ],
+    "background": [
+      25,
+      37,
+      50
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 13.163113551232346,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/dark/1440/label",
+    "foreground": [
+      176,
+      191,
+      208
+    ],
+    "background": [
+      36,
+      51,
+      68
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 6.868290906674696,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/dark/1440/primary",
+    "foreground": [
+      41,
+      29,
+      28
+    ],
+    "background": [
+      243,
+      152,
+      135
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 7.5008591214532325,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/dark/1440/selected navigation",
+    "foreground": [
+      243,
+      152,
+      135
+    ],
+    "background": [
+      36,
+      51,
+      68
+    ],
+    "opacity": 1,
+    "disabled": false,
+    "visible": true,
+    "ratio": 5.914213122734149,
+    "minimum": 4.5
+  },
+  {
+    "label": "mobile/dark/1440/disabled move",
+    "foreground": [
+      86.5,
+      97,
+      108.5
+    ],
+    "background": [
+      25,
+      37,
+      50
+    ],
+    "opacity": 0.3,
+    "disabled": true,
+    "visible": true,
+    "ratio": 2.4622464803526154,
+    "minimum": null
+  }
+]

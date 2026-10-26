@@ -12,6 +12,10 @@ import { createBrowserDiagnostics } from './browser-diagnostics.mjs';
 import { readBrowserFixture } from './browser-fixtures.mjs';
 
 const diagnostics = await createBrowserDiagnostics('inputs');
+async function waitForFixtureFonts(page){
+  await page.evaluate(()=>{window.__fixtureFontsReady=false;document.fonts.load('700 16px "Pretendard Variable"','여행 ABC 0123').then(faces=>{window.__fixtureFontsReady=faces.length>0;});});
+  await page.waitForFunction(()=>window.__fixtureFontsReady&&document.fonts.status==='loaded',null,{timeout:10000});
+}
 const playwright = await import(process.argv[2] ? pathToFileURL(process.argv[2]).href : 'playwright');
 const engine=process.env.TRIP_BROWSER_ENGINE||'chromium';
 assert.ok(['chromium','firefox','webkit'].includes(engine),'Unsupported browser engine');
@@ -52,7 +56,7 @@ try {
     const context=await diagnostics.context(browser, {viewport:{width:mobile?390:1440,height:mobile?844:900},...(engine==='firefox'?{}:{isMobile:mobile}),hasTouch:mobile,reducedMotion});
     await context.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
     const page=await context.newPage();page.setDefaultTimeout(5000);page.on('pageerror',error=>errors.push(error.message));
-    await page.goto(origin);await page.waitForFunction(()=>!document.body.classList.contains('hydrating'));
+    await page.goto(origin);await page.waitForFunction(()=>!document.body.classList.contains('hydrating'));await waitForFixtureFonts(page);
     const snapshot=await page.evaluate(()=>{const api=window.__inputsTest;return api.normalizeState(api.captureState());});
     const label=id=>page.locator(id==='money'||id==='prep'?'[data-section="'+id+'"]':'.tabs label[for="'+id+'"]');
     const activate=locator=>mobile?locator.tap():locator.click();
@@ -102,7 +106,7 @@ try {
     const context=await diagnostics.context(browser,{viewport:{width:mobile?390:1440,height:900},reducedMotion:'reduce'});
     await context.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
     const page=await context.newPage();page.setDefaultTimeout(5000);page.on('pageerror',error=>errors.push(error.message));
-    await page.goto(origin);await page.waitForFunction(()=>!document.body.classList.contains('hydrating'));
+    await page.goto(origin);await page.waitForFunction(()=>!document.body.classList.contains('hydrating'));await waitForFixtureFonts(page);
     const focused=async locator=>assert.equal(await locator.evaluate(el=>el===document.activeElement),true,'Focus returns to the current trigger');
     const fieldError=async(id,dialog)=>{
       const input=page.locator('#'+id),error=page.locator('#'+id+'Error');
@@ -218,7 +222,7 @@ try {
     await context.route('**/*', route => /^(file:|data:)/.test(route.request().url()) || route.request().url().startsWith(origin) ? route.continue() : route.abort());
     context.on('page', p => { p.setDefaultTimeout(10000); p.on('pageerror', e => errors.push(e.message)); });
     const page = await context.newPage();
-    const ready = p => p.waitForFunction(() => !document.body.classList.contains('hydrating'));
+    const ready = async p => {await p.waitForFunction(() => !document.body.classList.contains('hydrating'));await waitForFixtureFonts(p);};
     const tab = p => selectTripTab(p, 'd1');
     await page.goto(origin); await ready(page); await tab(page); await page.locator('#editBtn').click();
     const oldRows = await page.locator('.day1 .timeline-row').count();

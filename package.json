@@ -6,7 +6,7 @@
     "build": "node scripts/build-app.mjs",
     "build:check": "node scripts/build-app.mjs --check",
     "check": "node scripts/build-app.mjs --check && node scripts/check-project.mjs",
-    "test": "node scripts/build-app.mjs --check && node --test tests/*.test.mjs && node scripts/check-project.mjs",
+    "test": "node scripts/build-app.mjs --check && node --test --test-concurrency=1 tests/*.test.mjs && node scripts/check-project.mjs",
     "test:browser": "node scripts/check-browsers.mjs",
     "test:sql": "node --test scripts/check-trip-sql.mjs",
     "test:ci": "node scripts/check-ci.mjs",

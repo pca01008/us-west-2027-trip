@@ -100,7 +100,7 @@ Acceptance: the default command cannot report success unless every required stag
 
 ## P0 — Use the shared entry point in GitHub
 
-- [x] Keep the existing three jobs initially; call the shared coordinator with each job's explicit suite to preserve parallel execution and SQL service isolation.
+- [x] Keep three jobs and SQL service isolation; call each explicit coordinator subset. SQL/validate run in parallel; browser waits for validate after the observed October 27 runner interruption wasted a complete browser run.
 - [x] Ensure their combined coverage equals the default local command. Do not run the entire browser suite in every job.
 - [x] Read the agreed Node version file, use the explicit Ubuntu release, and install locked packages consistently.
 - [x] Keep PostgreSQL readiness checks and loopback `TRIP_SQL_TEST_URL` in the SQL job. Supply only disposable test credentials.

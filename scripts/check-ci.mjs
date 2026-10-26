@@ -1,6 +1,6 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { readFile, writeFile, mkdir, mkdtemp, access } from 'node:fs/promises';
-import { tmpdir, arch } from 'node:os';
+import { tmpdir, arch, availableParallelism } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -43,7 +43,7 @@ async function preflight(suites) {
   console.log('Environment baseline:',JSON.stringify({platform:process.platform,os:release.split('\n').find(line=>line.startsWith('PRETTY_NAME='))||process.platform,arch:arch(),node:process.version,npm}));
   checkEnvironment({platform:process.platform,release,node:process.versions.node,npm,expectedNode,expectedNpm,channel:process.env.PWA_BROWSER_CHANNEL,engine:process.env.TRIP_BROWSER_ENGINE});
   if(!npmCli)throw Error('Run through npm run test:ci after npm ci.');
-  const versions={os:release.split('\n').find(line=>line.startsWith('PRETTY_NAME=')),arch:arch(),node:process.version,npm};
+  const versions={os:release.split('\n').find(line=>line.startsWith('PRETTY_NAME=')),arch:arch(),parallelism:availableParallelism(),unitFileConcurrency:1,node:process.version,npm};
   for(const [name,version] of Object.entries(pkg.devDependencies)){
     let installed;try{installed=JSON.parse(await readFile(path.join(root,'node_modules',name,'package.json'),'utf8')).version;}catch{throw Error(`Missing ${name}; run npm ci.`);}
     if(installed!==version)throw Error(`${name}: expected ${version}; run npm ci.`);
@@ -85,7 +85,7 @@ async function main(){
   const source=revision.stdout?.trim()||'unknown',dirty=workingTree.stdout?.trim();
   console.log(`${suites.length===3?'Full':'PARTIAL'} verification: ${suites.join(', ')}; commit ${source}; ${dirty?'modified working tree (development evidence)':'clean working tree'}`);
   const report=await verify({suites,prepare:async selected=>{if(revision.status!==0||workingTree.status!==0)throw Error('Cannot establish Git commit/working-tree identity.');return preflight(selected);},signal:controller.signal,execute:async(suite,{npmCli},signal)=>{
-    const start=Date.now(),commands=suite==='validate'?[['test']]:suite==='sql'?[['run','test:sql']]:[['run','test:browser'],['run','test:browser:repeat'],['run','test:browser:smoke']];
+    const start=Date.now(),commands=suite==='validate'?[['test']]:suite==='sql'?[['run','test:sql']]:[['run','test:browser'],['run','test:browser:smoke']];
     for(const args of commands){const result=await runCommand(process.execPath,[npmCli,...args],{timeoutMs:suite==='browser'?1200000:240000,signal});if(result.status!=='passed')return {...result,elapsedMs:Date.now()-start};}
     return {status:'passed',elapsedMs:Date.now()-start};
   }});

@@ -1,0 +1,225 @@
+{
+  "candidate": "abc3003507ac14468025ec0b6eef47347b604469",
+  "environment": "Windows / Node 24.22.1 / npm 11.19.1 / Playwright 1.62.1 pinned Chromium",
+  "unitTests": 185,
+  "fullBrowser": {
+    "scope": "full Chromium",
+    "results": [
+      {
+        "suite": "diagnostics",
+        "deadlineMs": 180000,
+        "status": "passed",
+        "code": 0,
+        "signal": null,
+        "elapsedMs": 3445
+      },
+      {
+        "suite": "drafts",
+        "deadlineMs": 300000,
+        "status": "passed",
+        "code": 0,
+        "signal": null,
+        "elapsedMs": 152344
+      },
+      {
+        "suite": "storage",
+        "deadlineMs": 180000,
+        "status": "passed",
+        "code": 0,
+        "signal": null,
+        "elapsedMs": 43049
+      },
+      {
+        "suite": "inputs",
+        "deadlineMs": 180000,
+        "status": "passed",
+        "code": 0,
+        "signal": null,
+        "elapsedMs": 50112
+      },
+      {
+        "suite": "imports",
+        "deadlineMs": 180000,
+        "status": "passed",
+        "code": 0,
+        "signal": null,
+        "elapsedMs": 26987
+      },
+      {
+        "suite": "versions",
+        "deadlineMs": 180000,
+        "status": "passed",
+        "code": 0,
+        "signal": null,
+        "elapsedMs": 38753
+      },
+      {
+        "suite": "ledger",
+        "deadlineMs": 180000,
+        "status": "passed",
+        "code": 0,
+        "signal": null,
+        "elapsedMs": 34598
+      },
+      {
+        "suite": "currency",
+        "deadlineMs": 180000,
+        "status": "passed",
+        "code": 0,
+        "signal": null,
+        "elapsedMs": 6864
+      },
+      {
+        "suite": "ledger-compat",
+        "deadlineMs": 180000,
+        "status": "passed",
+        "code": 0,
+        "signal": null,
+        "elapsedMs": 1582
+      },
+      {
+        "suite": "prep",
+        "deadlineMs": 180000,
+        "status": "passed",
+        "code": 0,
+        "signal": null,
+        "elapsedMs": 40217
+      },
+      {
+        "suite": "auth",
+        "deadlineMs": 180000,
+        "status": "passed",
+        "code": 0,
+        "signal": null,
+        "elapsedMs": 6898
+      },
+      {
+        "suite": "photos",
+        "deadlineMs": 180000,
+        "status": "passed",
+        "code": 0,
+        "signal": null,
+        "elapsedMs": 1050
+      },
+      {
+        "suite": "theme",
+        "deadlineMs": 180000,
+        "status": "passed",
+        "code": 0,
+        "signal": null,
+        "elapsedMs": 7404
+      },
+      {
+        "suite": "palette",
+        "deadlineMs": 180000,
+        "status": "passed",
+        "code": 0,
+        "signal": null,
+        "elapsedMs": 21629
+      },
+      {
+        "suite": "navigation",
+        "deadlineMs": 180000,
+        "status": "passed",
+        "code": 0,
+        "signal": null,
+        "elapsedMs": 20731
+      },
+      {
+        "suite": "pwa",
+        "deadlineMs": 180000,
+        "status": "passed",
+        "code": 0,
+        "signal": null,
+        "elapsedMs": 18566
+      }
+    ]
+  },
+  "failedConcurrentBoundary": {
+    "scope": "PARTIAL",
+    "results": [
+      {
+        "suite": "inputs",
+        "deadlineMs": 180000,
+        "status": "passed",
+        "code": 0,
+        "signal": null,
+        "elapsedMs": 54324
+      },
+      {
+        "suite": "drafts",
+        "deadlineMs": 300000,
+        "status": "deadline",
+        "code": 1,
+        "signal": null,
+        "elapsedMs": 300471
+      }
+    ]
+  },
+  "serialBoundaries": [
+    {
+      "scope": "PARTIAL",
+      "results": [
+        {
+          "suite": "inputs",
+          "deadlineMs": 180000,
+          "status": "passed",
+          "code": 0,
+          "signal": null,
+          "elapsedMs": 46741
+        },
+        {
+          "suite": "drafts",
+          "deadlineMs": 300000,
+          "status": "passed",
+          "code": 0,
+          "signal": null,
+          "elapsedMs": 139541
+        }
+      ]
+    },
+    {
+      "scope": "PARTIAL",
+      "results": [
+        {
+          "suite": "inputs",
+          "deadlineMs": 180000,
+          "status": "passed",
+          "code": 0,
+          "signal": null,
+          "elapsedMs": 46076
+        },
+        {
+          "suite": "drafts",
+          "deadlineMs": 300000,
+          "status": "passed",
+          "code": 0,
+          "signal": null,
+          "elapsedMs": 141152
+        }
+      ]
+    },
+    {
+      "scope": "PARTIAL",
+      "results": [
+        {
+          "suite": "inputs",
+          "deadlineMs": 180000,
+          "status": "passed",
+          "code": 0,
+          "signal": null,
+          "elapsedMs": 52628
+        },
+        {
+          "suite": "drafts",
+          "deadlineMs": 300000,
+          "status": "passed",
+          "code": 0,
+          "signal": null,
+          "elapsedMs": 141818
+        }
+      ]
+    }
+  ],
+  "scope": "Development observations: the first full browser run preceded the final focus fixes. Serial boundaries and the clean unit checkout verified the candidate; release certification requires the remote same-SHA gate."
+}

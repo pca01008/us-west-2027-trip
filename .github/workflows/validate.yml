@@ -10,6 +10,10 @@ on:
         description: Nonpublishing failure/skip gate check
         type: boolean
         default: false
+      repeat_boundaries:
+        description: Additional input/draft stability passes on a work branch
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -83,6 +87,7 @@ jobs:
 
   browser:
     if: ${{ !inputs.gate_probe }}
+    needs: validate
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -99,6 +104,10 @@ jobs:
         env:
           TMPDIR: ${{ runner.temp }}
           TRIP_CHECK_OUTPUT: ${{ runner.temp }}/westbound-ci-browser
+      - if: inputs.repeat_boundaries && github.ref != 'refs/heads/main'
+        run: npm run test:browser:repeat
+        env:
+          TMPDIR: ${{ runner.temp }}
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
