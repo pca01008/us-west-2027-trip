@@ -76,7 +76,7 @@ const server = createServer(async (req, res) => {
     if (file === 'trip-config.js') content += `\nObject.assign(window.TRIP_CONFIG,{editorEmail:'${email}',cacheNamespace:'auth_fixture',supabase:{url:location.origin,publishableKey:'sb_publishable_test'}});`;
     if (file === 'index.html') content = injectBrowserFixture(source
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
-      .replace(sdkURL, '/fixture-supabase.js').replace(/integrity="sha384-[^"]+"/, `integrity="${integrity}"`), `window.__authTest={captureState,readDraftRecord,flushDraftPersistence,session:()=>editorSession};window.__authEvents=[];client.auth.onAuthStateChange(event=>window.__authEvents.push(event));`);
+      .replace(sdkURL, '/fixture-supabase.js').replace(/integrity="sha384-[^"]+"/, `integrity="${integrity}"`), `window.__authTest={captureState,readDraftRecord,flushDraftPersistence,session:()=>sessionService.current()};window.__authEvents=[];client.auth.onAuthStateChange(event=>window.__authEvents.push(event));`);
     res.writeHead(200, { 'Content-Type': file.endsWith('.html') ? 'text/html; charset=utf-8' : file.endsWith('.js') ? 'text/javascript' : 'application/octet-stream' }).end(content);
   } catch (error) { fixtureErrors.push(error.message); json(res, 500, { message: error.message }); }
 });

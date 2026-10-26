@@ -53,7 +53,7 @@ test('브라우저 초안은 IndexedDB에 보존되고 저장 시 revision을 �
   assert.match(html, /indexedDB\.open\(DRAFT_DB_NAME/);
   assert.match(html, /recoverOnlineDraft/);
   assert.match(html, /beginEditing\(\)\{if\(!OFFLINE_MODE&&!pendingDraft\)/);
-  assert.match(html, /p_expected_revision:publishedRevision/);
+  assert.match(html, /tripRepository\.saveDocument\(normalized,publishedRevision/);
   assert.match(html, /pendingRemoteState=\{row:payload\.new,state:remoteState\}/);
   assert.match(html, /PUBLIC_CACHE_RECORD_KEY/);
   assert.match(html, /transaction\.objectStore\('records'\)\.put\(record,PUBLIC_CACHE_RECORD_KEY\)/);
@@ -92,7 +92,7 @@ test('current trip preserves schema 6; new trips use currency-aware schema 7', a
 
 test('편집 세션은 탭 간에 동기화되고 재연결 시 최신본을 확인한다', async () => {
   const html = await readFile(path.join(root, 'index.html'), 'utf8');
-  assert.match(html, /new BroadcastChannel\(SESSION_CHANNEL_NAME\)/);
+  assert.match(html, /new BroadcastChannel\(channelName\)/);
   assert.match(html, /requestManualLogout/);
   assert.match(html, /handleExternalSignOut/);
   assert.match(html, /window\.addEventListener\('online'.*refreshPublishedState/);
@@ -102,7 +102,7 @@ test('편집 세션은 탭 간에 동기화되고 재연결 시 최신본을 확
   const warning = html.match(/async function showInactivityWarning\(\)\{([\s\S]*?)\n  \}/)?.[1] || '';
   assert.match(warning, /clearSessionTimers\(\);if\(choice==='save'\)/);
   assert.match(warning, /else resetInactivityTimer\(\)/);
-  assert.match(html, /finally\{setEditorSession\(null\);signingOut=false;\}/);
+  assert.match(html, /finally\s*\{setEditorSession\(null\);signingOut=false;\}/);
   assert.match(html, /if\(submit\.disabled\)return;submit\.disabled=true/);
 });
 
@@ -151,11 +151,11 @@ test('버전 목록은 메타데이터만 받고 본문은 선택 시 지연 로
   const html = await readFile(path.join(root, 'index.html'), 'utf8');
   const versions = html.match(/async function openVersions\(\)\{([\s\S]*?)\n  \}/)?.[1] || '';
   assert.ok(versions);
-  assert.match(versions, /select\('id,note,content_size,created_at'\)/);
+  assert.match(versions, /tripRepository\.readVersionMetadata\(signal\)/);
   assert.doesNotMatch(versions, /select\('id,content/);
   assert.match(html, /async function loadVersionContent/);
   assert.match(html, /id="versionCompareDialog"/);
-  assert.match(html, /p_version_note:note/);
+  assert.match(html, /p_version_note:\s*note/);
   assert.match(html, /현재 저장하지 않은 초안은 복원본으로 대체/);
   const restore = html.match(/async function restoreSelectedVersion\(\)\{([\s\S]*?)\n  \}/)?.[1] || '';
   assert.doesNotMatch(restore, /applyState\(restored\)/);

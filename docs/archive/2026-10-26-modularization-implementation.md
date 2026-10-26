@@ -27,3 +27,11 @@ Exit: 14 fixed-expectation unit tests, inputs/navigation browser suites, build/p
 `createTripRepository()` owns published reads, revision-checked save transport, version metadata/content queries and Realtime subscription disposal. Callers retain timeout reconciliation, retries, normalization and conflict choices. SDK error objects/status and abort signals remain intact.
 
 Exit: repository/PWA unit checks, versions and PREP browser suites (including response-loss matrix) passed. Build/project/whitespace checks passed. No SQL or permission change.
+
+## Stage 2b and Stop A — dialogs/session
+
+`createDialogs()` privately owns the choice resolver, input, countdown and focus stack. `createSession()` privately owns editor identity, activity/broadcast, auth subscription and timers; workflow callbacks decide expiry/recovery. `editing.js` owns logout/discard decisions and login bindings. Both services dispose the resources they start. The former `auth-dialogs.js` is removed.
+
+Exit: all 127 unit tests and all 16 browser suites passed, including real-SDK auth, nested/replaced focus origins, storage/drafts, version races and root/subpath PWA. Static assertions were redirected to the new owners; repository tests verify metadata-only lazy reads behavior directly. Build/project/whitespace checks passed.
+
+Stop A review: calculations can be changed with complete-file tests; dialog fixes no longer involve authentication or published queries. These concrete boundaries justify continuing with the requested document/storage ownership work.

@@ -71,7 +71,6 @@
   let exchangeRateUpdated = '';
   let budgetKrw = DEFAULT_BUDGET_KRW;
   let lastScheduleDay = 'd1';
-  let editorSession = null;
   let lastSavedState = null;
   let pendingDraft = false;
   const pendingChecks = new Map();
@@ -87,11 +86,6 @@
   let historyIndex = -1;
   let applyingHistory = false;
   let historyTimer = null;
-  let warningTimer = null;
-  let logoutTimer = null;
-  let countdownTimer = null;
-  let noticeResolver = null;
-  let noticeInputValue = '';
   let authPurpose = 'edit';
   let pendingAuthAction = null;
   let pendingAuthCancel = null;
@@ -119,8 +113,6 @@
   let draftLockPromise = null;
   let memoryPublicCache = null;
   let saveInFlight = false;
-  let signingOut = false;
-  let lastActivityBroadcast = 0;
   let activePhotoFigure = null;
   let operationBusy = false;
   let operationCancelled = false;
@@ -134,8 +126,5 @@
   let timetableOverviewResizeFrame = 0;
   let timetableDayScrollTop = 0;
   const versionContentCache = new Map();
-  const dialogFocusOrigins = new WeakMap();
-  const openDialogStack = [];
-  const sessionChannel = !OFFLINE_MODE&&'BroadcastChannel' in window ? new BroadcastChannel(SESSION_CHANNEL_NAME) : null;
 
   const runtimeOptions = {saveMs:12000, publishedReadMs:8000, versionReadMs:8000};

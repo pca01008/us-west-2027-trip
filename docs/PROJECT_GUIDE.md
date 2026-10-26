@@ -90,7 +90,8 @@ Pages serves files; browser JavaScript renders and manages data; Supabase handle
 | `src/app/ledger.js`, `ledger-view.js`, `ledger-editor.js`, `categories.js` | Ledger form buffers, display, currency labels and editing |
 | `src/app/timetable-core.js` | Complete pure factory for time parsing, masked clock editing, classification and interval layout |
 | `src/app/timetable.js`, `trip-clock.js`, `navigation.js`, `schedule-editor.js` | Trip times, views and navigation |
-| `src/app/state*.js`, `drafts.js`, `saving.js`, `auth-dialogs.js` | Normalization, recovery, persistence and authorization |
+| `src/app/state*.js`, `drafts.js`, `saving.js`, `editing.js` | Normalization, recovery, persistence and editing/logout policy |
+| `src/app/dialogs.js`, `session.js` | Private dialog/focus/choice state and editor identity/activity state; explicit initialization and disposal |
 | `src/app/trip-repository.js` | Raw published reads, revision RPC, version transport and owned Realtime cleanup; callers retain workflow policy |
 | `src/app/checklist-schedule.js`, `photos.js`, `exports.js`, `versions.js` | Checklist/row behavior, media, standalone files and history |
 | `src/app/startup.js`, `utilities.js`, `ui-helpers.js` | Wiring and small shared helpers |

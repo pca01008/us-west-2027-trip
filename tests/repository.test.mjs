@@ -28,3 +28,20 @@ test('published read throws original SDK error and clears its timeout', async ()
   await assert.rejects(api.fetchPublishedState(),caught=>caught===error);
   assert.equal(cleared,true);
 });
+
+test('version list reads only metadata; selected content has an ID and the same signal', async () => {
+  const calls=[],signal=new AbortController().signal;
+  const query={
+    select(columns){calls.push(['select',columns]);return this;},
+    eq(key,value){calls.push(['eq',key,value]);return this;},
+    abortSignal(value){assert.equal(value,signal);return this;},
+    order(key,options){assert.equal(key,'created_at');assert.equal(options.ascending,false);return this;},
+    limit(count){assert.equal(count,50);return {data:[]};},single(){return {data:{content:{html:'selected'}}};}
+  };
+  const api=loadFactory('repository',{tripId:'fixture',client:{from(table){assert.equal(table,'trip_document_versions');return query;}}});
+  await api.readVersionMetadata(signal);
+  assert.deepEqual(calls,[['select','id,note,content_size,created_at'],['eq','trip_id','fixture']]);
+  calls.length=0;
+  await api.readVersionContent(17,signal);
+  assert.deepEqual(calls,[['select','content'],['eq','trip_id','fixture'],['eq','id',17]]);
+});
