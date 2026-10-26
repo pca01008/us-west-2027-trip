@@ -277,7 +277,7 @@ try {
         await artifact.close();
       }
       for(const width of [320,390,1440]){
-        await page.setViewportSize({width,height:900});await krw.fill('9007199254740991');
+        await page.setViewportSize({width,height:900});await krw.fill('9007199254740991');await page.locator('#expenseName').fill('긴 한국어 여행 경비 이름 '.repeat(5));
         assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
         assert.equal(await page.locator('#addExpense').evaluate(el=>el.getBoundingClientRect().right<=el.closest('.expense-entry').getBoundingClientRect().right),true,'Button stays inside the entry card');
         await page.screenshot({path:path.join(output,`${mode}-${width}-dual-ledger.png`),fullPage:true});
@@ -293,9 +293,11 @@ try {
           await page.setViewportSize({width,height:900});
           const geometry=await page.evaluate(()=>{
             const rect=el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
-            return {overflow:document.documentElement.scrollWidth>innerWidth,inputs:Array.from(document.querySelectorAll('.expense-entry input,.expense-entry select'),rect),rows:Array.from(document.querySelectorAll('.expense'),row=>({row:rect(row),controls:Array.from(row.querySelectorAll('.expense-action:not(:disabled)'),rect)}))};
+            return {overflow:document.documentElement.scrollWidth>innerWidth,inputs:Array.from(document.querySelectorAll('.expense-entry input,.expense-entry select'),el=>({...rect(el),fontSize:parseFloat(getComputedStyle(el).fontSize)})),labels:Array.from(document.querySelectorAll('.add-expense label'),el=>parseFloat(getComputedStyle(el).fontSize)),rows:Array.from(document.querySelectorAll('.expense'),row=>({row:rect(row),controls:Array.from(row.querySelectorAll('.expense-action:not(:disabled)'),rect)}))};
           });
           assert.equal(geometry.overflow,false,`${theme}/${width}: no document overflow`);
+          assert.ok(geometry.inputs.every(r=>r.fontSize>=16),`${theme}/${width}: editable values >=16px`);
+          assert.ok(geometry.labels.length>=5&&geometry.labels.every(size=>size>=13),`${theme}/${width}: labels >=13px`);
           assert.ok(geometry.inputs.length>=5);assert.ok(geometry.inputs.every(r=>r.height>=44&&r.width>=44),`${theme}/${width}: input targets >=44px`);
           for(const {row,controls} of geometry.rows)for(const [i,r] of controls.entries()){
             assert.ok(r.width>=44&&r.height>=44,`${theme}/${width}: enabled row targets >=44x44px`);

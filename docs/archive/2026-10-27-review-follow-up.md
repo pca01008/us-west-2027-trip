@@ -9,3 +9,7 @@ Settings rate input is buffered until Apply/Enter. Invalid text stays visible wi
 Verified on Windows, Node 24.22.1, installed Chrome, synthetic offline desktop/mobile fixtures: empty/zero/negative/nonnumeric/excess precision × pointer/Enter × both themes; Escape, correction, category rendering and explicit cancel. Ledger suite passed; 176 unit tests and static/generated checks passed. First restricted browser attempt failed at loopback navigation (`ERR_NETWORK_ACCESS_DENIED`); permitted rerun passed. npm is absent from the bundled Windows runtime; build/unit/static entry points were invoked with Node directly.
 
 Visual review: mobile dark rate-error capture in `C:/Users/이승종/AppData/Local/Temp/westbound-ledger-SyeQ8W/`; input, correction message and both actions fit. No physical-device claim.
+
+## U3 — Ledger typography
+
+Entry values now compute to 16px; labels to 13px. Settings/expense-edit values use 16px. Existing Pretendard, palette, layout and touch areas are retained. Ledger suite passed at 320/390/1440px in light/dark with long Korean descriptions and large amounts: computed sizes, 44px geometry, containment, navigation clearance and data retention. Build/static/diff checks passed. Visual review of the 320px ledger confirms readable values and contained controls (`westbound-ledger-Wuo4Pj`). Detector warnings refer to the existing timeline stripe and initially hidden viewer image; neither is a new ledger defect.

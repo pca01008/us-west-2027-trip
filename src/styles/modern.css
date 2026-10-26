@@ -302,8 +302,10 @@ main{max-width:860px;min-height:calc(100dvh - 120px);padding:16px 0}
   border-radius:16px;
   background:#f7f9fc;
 }
-.add-expense label{color:#718095;font-size:10px;font-weight:850}
+.add-expense label{color:#718095;font-size:13px;font-weight:850;line-height:1.5;min-width:0}
 .add-expense input,.add-expense select,.amount-with-currency select{
+  min-width:0;
+  font-size:16px;
   min-height:42px;
   border:1px solid #d7e0ea;
   border-radius:10px;

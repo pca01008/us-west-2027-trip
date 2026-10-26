@@ -509,3 +509,5 @@ This guide describes repository code. Consult official documentation for service
 - [Realtime](https://supabase.com/docs/guides/realtime/getting_started)
 - [About GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages)
 - [GitHub Pages getting started](https://docs.github.com/en/pages/getting-started-with-github-pages)
+
+Ledger entry values use 16px type and labels 13px, preserving 44px controls at 320px and above. Rate and expense-edit values also use 16px.
