@@ -21,3 +21,9 @@ Entry values now compute to 16px; labels to 13px. Settings/expense-edit values u
 Remote inspection found `main` had advanced to `061584d` (U1/U2) while this older work branch remained at F5. Reconcile that implementation before final validation; do not replace its established rate semantics with the initial local approach above. The chronological U2 notes describe that preliminary commit, not the eventual merged behavior.
 
 Final integration retains the existing `061584d` rate behavior: Apply and close/Enter/Escape validate; Revert restores the current rate without closing. Decimal validation rejects precision that cannot round-trip through Number, rather than imposing a six-place limit. Existing U1 photo errors and its broader tests are retained. Earlier local duplicate implementations are superseded by this reconciliation. U3 computed-size assertions remain.
+
+## T2 — Rendered assertions
+
+Ledger checks now measure effective foreground/background colors in the rendered cascade (including ancestor opacity): normal input/label/action, selected navigation and rate errors require 4.5:1 in both themes; disabled move controls record their computed ratio and verify native disabled state/opacity, without claiming a contrast requirement for exempt inactive controls. Results are saved as `computed-contrast.json` beside representative populated/error screenshots. Computed font floors remain enforced at 320/390/1440px. Removed the fixed-literal coral assertion; existing token-derived theme unit coverage remains.
+
+Windows/Chrome ledger suite passed; screenshots and computed colors: `westbound-ledger-fAXDls`. This is scoped rendering evidence, not a complete accessibility audit or pixel-baseline equivalence claim.

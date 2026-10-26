@@ -4,7 +4,7 @@ import { selectTripTab, selectTheme } from './browser-fixtures.mjs';
 // Only fixture setup uses an app hook; calculations and exports are not mocked.
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { readFile, mkdtemp } from 'node:fs/promises';
+import { readFile, mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -49,6 +49,22 @@ const mixedCsv = [
 ];
 let browser;
 const errors = [];
+const contrastResults = [];
+async function textContrast(locator, label, disabled=false) {
+  const rendered=await locator.evaluate(el=>{
+    const rgb=text=>text.match(/[\d.]+/g).map(Number),over=(fg,bg)=>fg.slice(0,3).map((v,i)=>v*(fg[3]??1)+bg[i]*(1-(fg[3]??1)));
+    function background(node){if(!node)return [255,255,255];const s=getComputedStyle(node);if(s.backgroundImage!=='none')throw Error('Choose a flat contrast surface');const c=rgb(s.backgroundColor);return c[3]===1||c.length===3?c.slice(0,3):over(c,background(node.parentElement));}
+    const s=getComputedStyle(el),bg=background(el);let opacity=1;for(let node=el;node;node=node.parentElement)opacity*=Number(getComputedStyle(node).opacity);
+    const fg=over([...over(rgb(s.color),bg),opacity],bg);
+    return {foreground:fg,background:bg,opacity,disabled:el.matches(':disabled'),visible:el.getClientRects().length>0};
+  });
+  const luminance=rgb=>rgb.map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4).reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0);
+  const a=luminance(rendered.foreground),b=luminance(rendered.background),ratio=(Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+  assert.ok(rendered.visible,label+': visible');
+  if(disabled){assert.ok(rendered.disabled&&rendered.opacity<1,label+': visibly disabled (contrast exemption)');}
+  else assert.ok(ratio>=4.5,`${label}: computed text contrast ${ratio.toFixed(2)} < 4.5`);
+  contrastResults.push({label,...rendered,ratio,minimum:disabled?null:4.5});
+}
 try {
   browser = await chromium.launch({ headless: true, ...(process.env.PWA_BROWSER_CHANNEL ? { channel: process.env.PWA_BROWSER_CHANNEL } : {}) });
   for (const mobile of [false, true]) {
@@ -125,6 +141,8 @@ try {
           }
         }
         await page.screenshot({path:path.join(output,`${mode}-${theme}-rate-validation.png`)});
+        await textContrast(page.locator('#settingsExchangeRateError'),`${mode}/${theme}/rate error`);
+        await textContrast(page.locator('#ledgerSettingsClose'),`${mode}/${theme}/primary action`);
         // Category rendering must not overwrite a pending rate or dismiss its error.
         await activate(page.locator('#settingsAddCategory'));
         await page.locator('#categoryName').fill('환율 입력 보존');
@@ -326,6 +344,8 @@ try {
             return {overflow:document.documentElement.scrollWidth>innerWidth,inputs:Array.from(document.querySelectorAll('.expense-entry input,.expense-entry select'),el=>({...rect(el),fontSize:parseFloat(getComputedStyle(el).fontSize)})),labels:Array.from(document.querySelectorAll('.add-expense label'),el=>parseFloat(getComputedStyle(el).fontSize)),rows:Array.from(document.querySelectorAll('.expense'),row=>({row:rect(row),controls:Array.from(row.querySelectorAll('.expense-action:not(:disabled)'),rect)}))};
           });
           assert.equal(geometry.overflow,false,`${theme}/${width}: no document overflow`);
+          for(const [selector,label] of [['#expenseName','input'],['.expense-name>span','label'],['#addExpense','primary'],['.bottom-nav [aria-current="page"]','selected navigation']])await textContrast(page.locator(selector),`${mode}/${theme}/${width}/${label}`);
+          await textContrast(page.locator('.expense-action:disabled').first(),`${mode}/${theme}/${width}/disabled move`,true);
           assert.ok(geometry.inputs.every(r=>r.fontSize>=16),`${theme}/${width}: editable values >=16px`);
           assert.ok(geometry.labels.length>=5&&geometry.labels.every(size=>size>=13),`${theme}/${width}: labels >=13px`);
           assert.ok(geometry.inputs.length>=5);assert.ok(geometry.inputs.every(r=>r.height>=44&&r.width>=44),`${theme}/${width}: input targets >=44px`);
@@ -350,6 +370,7 @@ try {
     } finally { await diagnostics.close(context); }
   }
   assert.deepEqual(errors, []);
+  await writeFile(path.join(output,'computed-contrast.json'),JSON.stringify(contrastResults,null,2));
 } catch (error) {
   await diagnostics.fail(error);
   throw error;
