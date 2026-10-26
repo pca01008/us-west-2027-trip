@@ -133,6 +133,46 @@ async function enterExpense(page,name='New expense') {
 
 try {
   browser = await chromium.launch({ headless: true, ...(process.env.PWA_BROWSER_CHANNEL ? { channel: process.env.PWA_BROWSER_CHANNEL } : {}) });
+  for(const mobile of [false,true]){
+    reset();const ctx=await context(`pending input Undo/Redo and reload / ${mobile?'mobile':'desktop'}`,mobile?{viewport:{width:390,height:844},isMobile:true,hasTouch:true}:{}),page=await ctx.newPage();
+    await page.goto(origin);await ready(page);
+    const baseline=await title(page).textContent();
+    await selectTripTab(page,'d1');await page.locator('#editBtn').click();
+    await title(page).fill('RECORDED EDIT');
+    await page.waitForFunction(()=>!document.querySelector('#undoBtn').disabled);
+    // Hold only the history timer so real typing/clicks reliably occur before it.
+    // Exact 0..399ms and post-Undo timer behavior are covered by the unit clock.
+    await page.evaluate(()=>{window.__holdHistory=true;});
+    for(const text of ['FAST','FAST SECOND','FAST SECOND EDIT'])await title(page).fill(text);
+    assert.equal(await page.evaluate(()=>window.__draftTest.historyIndex()),1);
+    await page.locator('#undoBtn').click();
+    assert.equal(await title(page).textContent(),'RECORDED EDIT');
+    assert.equal(await page.evaluate(()=>window.__draftTest.isDirty()),true);
+    await page.locator('#redoBtn').click();
+    assert.equal(await title(page).textContent(),'FAST SECOND EDIT');
+    await page.reload();await recover(page);
+    assert.equal(await title(page).textContent(),'FAST SECOND EDIT','Redo persists the newest text for recovery');
+    await diagnostics.close(ctx);
+    // A clean Undo clears recovery storage; Redo remains available until reload.
+    reset();const cleanCtx=await context(`Undo to clean baseline and reload / ${mobile?'mobile':'desktop'}`,mobile?{viewport:{width:390,height:844},isMobile:true,hasTouch:true}:{}),cleanPage=await cleanCtx.newPage();
+    await cleanPage.goto(origin);await ready(cleanPage);
+    await selectTripTab(cleanPage,'d1');await cleanPage.locator('#editBtn').click();
+    await title(cleanPage).fill('RECORDED EDIT');
+    await cleanPage.waitForFunction(()=>!document.querySelector('#undoBtn').disabled);
+    await cleanPage.evaluate(()=>{window.__holdHistory=true;});
+    await title(cleanPage).fill('TEMPORARY EDIT');
+    await cleanPage.locator('#undoBtn').click();
+    assert.equal(await title(cleanPage).textContent(),'RECORDED EDIT');
+    await cleanPage.locator('#undoBtn').click();
+    assert.equal(await title(cleanPage).textContent(),baseline);
+    await cleanPage.waitForFunction(async()=>!(await window.__draftTest.readDraftRecord()));
+    assert.equal(await cleanPage.locator('#redoBtn').isEnabled(),true);
+    await cleanPage.reload();await ready(cleanPage);
+    assert.equal(await title(cleanPage).textContent(),baseline);
+    assert.equal(await cleanPage.locator('#noticeDialog').isHidden(),true,'Clean Undo must not offer a stale draft');
+    await diagnostics.close(cleanCtx);
+  }
+  console.log('Pending input Undo/Redo: exact text, continuous edits, redo recovery and clean Undo reload passed on desktop/mobile.');
   // Hold only the history debounce: input, storage, lifecycle and recovery run
   // normally. No helper records history or flushes the draft for these edits.
   for(const selector of ['.day1 h3','.day1 .remark','.schedule-warning-text'])for(const boundary of ['reload','pagehide','hidden','signout']){

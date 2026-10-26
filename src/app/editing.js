@@ -126,7 +126,7 @@ function bindAuthentication(){
   function queueHistory(){updateDirtyState();if(documentSession.snapshot().pendingDraft)void flushDraftPersistence();documentSession.queueHistory(recordHistory);}
   function initializeHistory(){documentSession.initializeHistory(captureState());updateHistoryControls();}
   function updateHistoryControls(){const {historyIndex,historyLength}=documentSession.snapshot();$('#undoBtn').disabled=historyIndex<=0;$('#redoBtn').disabled=historyIndex<0||historyIndex>=historyLength-1;}
-  function moveHistory(offset){const next=documentSession.moveHistory(offset);if(!next)return;applyState(next);updateHistoryControls();updateDirtyState();resetInactivityTimer();}
+  function moveHistory(offset){documentSession.cancelHistory();recordHistory();const next=documentSession.moveHistory(offset);if(!next)return;applyState(next);updateHistoryControls();updateDirtyState();resetInactivityTimer();}
 
 
 

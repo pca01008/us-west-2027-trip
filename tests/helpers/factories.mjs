@@ -6,6 +6,7 @@ const modules = {
   photoService: ['photo-service.js', 'createPhotoService'],
   comparison: ['comparison.js', 'createComparison'],
   documentSession: ['document-session.js', 'createDocumentSession'],
+  editing: ['editing.js', 'createEditingController'],
   timetable: ['timetable-core.js', 'createTimetableCore'],
   repository: ['trip-repository.js', 'createTripRepository'],
   currency: ['currency.js', 'createCurrencyPolicy'],
