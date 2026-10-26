@@ -95,3 +95,15 @@ Application SHA-256:
 | `trip-config.js` | `162f7aeb1f04675672b3463b5b58ca74168c6375c30ac938351dd174803386ca` |
 
 Stage commits: 0 `9530c19`; 1a `7b6fe20`; 1b `a260d9c`; 2a `799ec79`; 2b/Stop A `097810f`; 3a `8a20dae`; 3b storage `ddb5f36`, recovery `164b3dc`; 4 `1f36441`; 5/Stop B `188f030`; 6 `28c9342`; archived-fixture compatibility `d1acc63`.
+
+## Production delivery
+
+Release: `3d75e298a2c71b09d81544841c3171e7ffa68620`, atomically pushed to `origin/codex/modularize-travel-app` and `origin/main` on October 26, 2026.
+
+- [Pages build/deployment](https://github.com/pca01008/us-west-2027-trip/actions/runs/40268848351) succeeded for this exact release.
+- [Validate](https://github.com/pca01008/us-west-2027-trip/actions/runs/40268848870) succeeded for the same release: unit/static `validate`, disposable PostgreSQL 17 `sql`, and all-suite `browser` jobs passed. Browser CI completed at 04:33:40 UTC.
+- [Public site](https://pca01008.github.io/us-west-2027-trip/): `index.html`, `trip-config.js`, `pwa.js`, `sw.js` and `manifest.webmanifest` returned HTTP 200 with SHA-256 identical to local files.
+- Fresh anonymous mobile browser: published-document GET 200, hydration completed, 11 day tabs and ledger/schedule/timetable navigation passed, no page errors or non-read requests.
+- Current work branch and both intended remote heads were synchronized, with no uncommitted or untracked files after temporary helpers were removed.
+
+This delivery receipt changes excluded documentation only; application bytes remain those of the verified release.
