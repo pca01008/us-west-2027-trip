@@ -28,7 +28,7 @@ function parseLedgerInput(raw,currency) {
 
 function parseLedgerRate(raw){
     const text=String(raw).trim();
-    if(!/^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?$/.test(text))throw new Error('올바른 환율을 입력해 주세요.');
+    if(!/^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d{1,6})?$/.test(text))throw new Error('올바른 환율을 입력해 주세요.');
     const value=Number(text.replace(/,/g,''));
     if(!Number.isFinite(value)||value<=0)throw new Error('올바른 환율을 입력해 주세요.');
     return value;

@@ -103,6 +103,35 @@ try {
       await totals(['₩28,370', '$21.40']);
       assert.deepEqual(await page.locator('#categorySummary small').allTextContents(), []);
       await csv([mixedCsv[0], '"2027-03-03","저녁 CAFE","식비","16357","12.34","KRW","1325.5"', mixedCsv[2], '"","팁","교통","13","0.01","KRW","1325.5"']);
+      scenario = 'rate validation retains invalid input until correction or explicit cancel'; diagnostics.scenario(`${mode} / ${scenario}`);
+      for(const theme of ['light','dark']){
+        await selectTheme(page,theme);
+        for(const invalid of ['', '0', '-1', 'bad', '1.1234567'])for(const submit of ['pointer','Enter']){
+          await activate(page.locator('#editBtn'));
+          const rate=page.locator('#settingsExchangeRate');await rate.fill(invalid);
+          if(submit==='Enter')await rate.press('Enter');else await activate(page.locator('#ledgerSettingsClose'));
+          assert.equal(await page.locator('#ledgerSettingsDialog').isVisible(),true);
+          assert.equal(await rate.inputValue(),invalid);assert.equal(await rate.getAttribute('aria-invalid'),'true');
+          assert.equal(await rate.evaluate(el=>document.activeElement===el),true);
+          assert.equal(await page.locator('#settingsExchangeRateError').isVisible(),true);
+          assert.equal(await page.evaluate(()=>window.__ledgerTest.captureState().exchangeRate),1400);
+          if(invalid==='bad'&&submit==='pointer')await page.screenshot({path:path.join(output,`${mode}-${theme}-rate-error.png`)});
+          await rate.press('Escape');await page.locator('#ledgerSettingsDialog').waitFor({state:'hidden'});
+          assert.equal(await page.evaluate(()=>window.__ledgerTest.captureState().exchangeRate),1400);
+        }
+        await activate(page.locator('#editBtn'));await page.locator('#settingsExchangeRate').fill('1500');
+        await page.locator('#settingsExchangeRate').press('Escape');
+        assert.equal(await page.evaluate(()=>window.__ledgerTest.captureState().exchangeRate),1400,'Escape cancels valid pending input too');
+        await activate(page.locator('#editBtn'));assert.equal(await page.locator('#settingsExchangeRate').inputValue(),'1400');
+        await page.locator('#settingsExchangeRate').fill('bad');await activate(page.locator('#ledgerSettingsClose'));
+        await page.locator('#settingsExchangeRate').fill('1,400.000000');
+        assert.equal(await page.locator('#settingsExchangeRateError').isHidden(),true);
+        await page.locator('#settingsExchangeRate').press('Enter');await page.locator('#ledgerSettingsDialog').waitFor({state:'hidden'});
+        await activate(page.locator('#editBtn'));await page.locator('#settingsExchangeRate').fill('bad');
+        await activate(page.locator('#settingsAddCategory'));await page.locator('#categoryName').fill('환율 입력 보존');await activate(page.locator('#categorySave'));
+        assert.equal(await page.locator('#settingsExchangeRate').inputValue(),'bad','Nested category rendering preserves rate buffer');
+        await activate(page.locator('#ledgerSettingsCancel'));
+      }
       scenario = 'rounding at half won and aggregate before rounding'; diagnostics.scenario(`${mode} / ${scenario}`);
       await fixture([
         expense('below-half', '소수 원화', 1.49, 'KRW', '2027-03-02'),
