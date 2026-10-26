@@ -29,3 +29,23 @@ test('date moves, within-day order and metadata are independent comparison dimen
   assert.ok(changes.some(text=>text.includes('표시 순서 변경')));
   assert.equal(api.compareSummaries(before,structuredClone(before)).length,0);
 });
+
+test('same-ID photo resource changes produce concise entries without image data',()=>{
+  const before=summary([{...event('a'),photos:[{id:'photo',caption:'same',alt:'same',full:'sha256:old',thumb:'sha256:thumb'}]}]);
+  for(const slot of ['full','thumb']){
+    const after=structuredClone(before);after.schedules[0].photos[0][slot]='data:image/webp;base64,'+'a'.repeat(10000);
+    const changes=api.compareSummaries(before,after).flatMap(group=>group.items);
+    assert.deepEqual(Array.from(changes),['a 사진 이미지 변경']);
+  }
+  assert.equal(api.compareSummaries(before,structuredClone(before)).length,0);
+});
+
+test('photo captions, alt text, order, additions and deletions remain visible',()=>{
+  const photo=id=>({id,caption:id,alt:id,full:'sha256:'+id,thumb:'sha256:thumb'});
+  const before=summary([{...event('a'),photos:[photo('one'),photo('two')]}]);
+  const variants=[photos=>{photos[0].caption='changed';},photos=>{photos[0].alt='changed';},photos=>photos.reverse(),photos=>photos.pop(),photos=>photos.push(photo('three'))];
+  for(const mutate of variants){
+    const after=structuredClone(before);mutate(after.schedules[0].photos);
+    assert.deepEqual(Array.from(api.compareSummaries(before,after)[0].items),['a 사진 구성·순서·설명 변경']);
+  }
+});

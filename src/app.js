@@ -23,6 +23,7 @@
 
 // @include app/ledger.js
 // @include app/document-session.js
+// @include app/photo-resources.js
 
 // @include app/document.js
 

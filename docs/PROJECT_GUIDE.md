@@ -100,6 +100,7 @@ Pages serves files; browser JavaScript renders and manages data; Supabase handle
 | `src/app/trip-repository.js` | Raw published reads, revision RPC, version transport and owned Realtime cleanup; callers retain workflow policy |
 | `src/app/checklist.js` | Private PREP queue/editor/optimistic state, stable-ID patch saving and delegated controls |
 | `src/app/comparison.js` | Plain-summary comparison; document adapter owns DOM-to-summary projection |
+| `src/app/photo-resources.js` | Local photo identities across immutable Storage paths, URLs and embedded bytes |
 | `src/app/imports.js`, `versions.js` | Separate private import and version request/selection/cache lifecycles; preview/apply route through document actions |
 | `src/app/photo-service.js`, `photos.js` | Encoding/hash/immutable transport and private photo/map selection/rendering, respectively |
 | `src/app/exports.js` | Complete editable/read-only artifact pipeline with explicit operation/photo collaborators |
@@ -275,6 +276,8 @@ Deferred drafts may have `pendingDraft=false` because they are not applied. Chec
 Versions load metadata first, content on demand. Preview preserves the original draft before entry; autosave/pagehide/refresh during preview retain original work. Editing/normal saves are blocked. Restore confirms publication and creates a new version. Undo holds up to 100 in-memory states; the server retains 50 versions.
 
 `buildDiff()` matches events by stable ID and compares their day index as well as content and flattened order. Across-day moves show the configured old date → new date, even when overall order is unchanged. Within-day reordering remains an order change. Versions, imports and save conflicts share this comparison.
+
+Photo summaries compare full-image and thumbnail resources separately from IDs, captions, alt text and order. Decoded embedded bytes use synchronous SHA-256 to match immutable Storage filenames without network reads. Public Storage URL query/fragment changes are ignored. Asset and legacy-path exports record their source plus embedded digest; the source remains equivalent only while the bytes match. Replaced bytes invalidate that link. Old asset-only exports without this link may show an image change because their original bytes cannot be inferred locally. See the [F5 verification record](archive/2026-10-26-photo-comparison.md).
 
 Version list/content reads share one interaction request identity and AbortController. Close, comparison dismissal, a newer selection/open, and sign-out invalidate pending work. Check identity, session and dialog visibility after content loading and draft persistence before opening comparisons or applying previews. Reads race cancellation with an eight-second deadline, even if transport ignores abort; only current results enter the five-item content cache. Loading/errors appear inside the version dialog, with explicit retry through selection or list reopening.
 

@@ -5,6 +5,7 @@ const modules = {
   imports: ['imports.js', 'createImportsController'],
   documentWorkflow: ['document-workflow.js', 'createDocumentController'],
   photoService: ['photo-service.js', 'createPhotoService'],
+  photoResources: ['photo-resources.js', 'createPhotoResources'],
   comparison: ['comparison.js', 'createComparison'],
   documentSession: ['document-session.js', 'createDocumentSession'],
   editing: ['editing.js', 'createEditingController'],

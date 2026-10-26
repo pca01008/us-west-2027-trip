@@ -1,4 +1,4 @@
-function createExportsController({$,$$,CONFIG,EXPORT_BASE_NAME,blobToDataUrl,captureState,currentOperationSignal,fetchAsDataUrl,isOperationBusy,isOperationCancelled,normalizeState,setOperationBusy,setStatus,showChoice,showDialog,todayLocal}) {
+function createExportsController({$,$$,CONFIG,EXPORT_BASE_NAME,blobToDataUrl,captureState,currentOperationSignal,fetchAsDataUrl,isOperationBusy,isOperationCancelled,normalizeState,photoResources,setOperationBusy,setStatus,showChoice,showDialog,todayLocal}) {
   function stripTransient(root){root.querySelectorAll('#draftStorageWarning,.schedule-media-tools,.photo-actions,.row-actions,.photo-delete,.schedule-map-delete,.row-delete,.check-delete,.check-actions,.check-feedback,.warning-delete').forEach(el=>el.remove());root.querySelectorAll('[contenteditable]').forEach(el=>el.setAttribute('contenteditable','false'));}
 
   async function embedPhotos(state,{strict=true}={}){
@@ -10,6 +10,7 @@ function createExportsController({$,$$,CONFIG,EXPORT_BASE_NAME,blobToDataUrl,cap
       try{
         const fullData=await fetchAsDataUrl(full);if(isOperationCancelled())throw new Error('내보내기가 취소되었습니다.');
         const thumbData=!thumb||thumb===full?fullData:await fetchAsDataUrl(thumb);if(isOperationCancelled())throw new Error('내보내기가 취소되었습니다.');
+        photoResources.embedResource(img,'full',full,fullData);photoResources.embedResource(img,'thumb',thumb,thumbData);
         img.src=thumbData;img.dataset.fullUrl=fullData;figure.dataset.staged='true';delete figure.dataset.fullPath;delete figure.dataset.thumbPath;
       }catch(error){
         if(isOperationCancelled())throw error;

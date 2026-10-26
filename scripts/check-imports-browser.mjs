@@ -47,7 +47,7 @@ const server = createServer(async (req, res) => {
     let body=await readBrowserFixture(new URL(file,root));
     if(file==='index.html') body=injectBrowserFixture(source
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/,'')
-      .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/,stub), 'window.__importTest={captureState,normalizeState,stateSummary,migratePublishedState,applyImportSnapshot,applyImportedDraft,recordHistory,moveHistory,flushDraftPersistence,readDraftRecord,handleExternalSignOut,setEditorSession,snapshot:()=>documentSession.snapshot(),isApplying:()=>documentAdapter.isApplying(),pending:()=>pendingImportSnapshot()};');
+      .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/,stub), 'window.__importTest={captureState,normalizeState,stateSummary,buildDiff,embedPhotos,migratePublishedState,applyImportSnapshot,applyImportedDraft,recordHistory,moveHistory,flushDraftPersistence,readDraftRecord,handleExternalSignOut,setEditorSession,snapshot:()=>documentSession.snapshot(),isApplying:()=>documentAdapter.isApplying(),pending:()=>pendingImportSnapshot()};');
     if(file==='trip-config.js') body+=`\nwindow.TRIP_CONFIG.supabase={url:'http://127.0.0.1:${server.address().port}',publishableKey:'fixture'};`;
     res.setHeader('Content-Type',file.endsWith('.html')?'text/html; charset=utf-8':file.endsWith('.js')?'text/javascript; charset=utf-8':'image/webp');res.end(body);
   } catch(error) { res.writeHead(500).end(error.message); }
@@ -76,6 +76,55 @@ async function finishRead(page,plan){
 }
 try {
   browser=await chromium.launch({headless:true,...(process.env.PWA_BROWSER_CHANNEL?{channel:process.env.PWA_BROWSER_CHANNEL}:{})});
+  for(const mobile of [false,true]){
+    row={content:{},revision:0,updated_at:'2026-10-26T00:00:00Z'};saves=0;reads=0;
+    diagnostics.scenario(`photo resource comparison and import / ${mobile?'mobile':'desktop'}`);
+    const context=await diagnostics.context(browser,{viewport:{width:mobile?390:1280,height:900},isMobile:mobile,hasTouch:mobile,reducedMotion:'reduce'});
+    await context.route('**/*',route=>route.request().url().startsWith(origin+'/')?route.continue():route.abort());
+    const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
+    await page.goto(origin);await ready(page);
+    row={...row,content:await state(page),revision:3};
+    const baseline=structuredClone(row),initial=await state(page);
+    const embedded=await page.evaluate(async snapshot=>(await window.__importTest.embedPhotos(snapshot)).state,initial);
+    await upload(page,embedded);await page.locator('#importDialog').waitFor();
+    assert.deepEqual(await page.locator('#importDiff li').allTextContents(),[],'Unchanged asset photos survive actual offline embedding');
+    assert.equal(await page.locator('#importApply').isEnabled(),false);
+    await page.locator('#importCancel').click();
+    const incoming=await page.evaluate(async snapshot=>{
+      const api=window.__importTest;
+      const canvas=document.createElement('canvas');canvas.width=2;canvas.height=2;
+      const ctx=canvas.getContext('2d');ctx.fillStyle='red';ctx.fillRect(0,0,2,2);const original=canvas.toDataURL('image/png');
+      ctx.fillStyle='blue';ctx.fillRect(0,0,2,2);const replacement=canvas.toDataURL('image/png');
+      const hash=async value=>{const bytes=Uint8Array.from(atob(value.split(',')[1]),c=>c.charCodeAt(0));return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');};
+      const path=TRIP_CONFIG.tripId+'/photos/'+await hash(original)+'.png';
+      const url=TRIP_CONFIG.supabase.url+'/storage/v1/object/public/trip-media/'+path;
+      const change=(base,full,thumb=full)=>{const template=document.createElement('template');template.innerHTML=base.html;const img=template.content.querySelector('.schedule-photo img');img.src=thumb;img.dataset.fullUrl=full;return {...base,html:template.innerHTML};};
+      const remote=change(snapshot,url),offline=change(snapshot,original);
+      if(api.buildDiff(remote,offline).length)throw Error('Same bytes in Storage and old embedded exports must compare equal');
+      if(api.buildDiff(remote,change(snapshot,url+'?download=1#image')).length)throw Error('Equivalent Storage URLs must compare equal');
+      const withPath=(base,path)=>{const template=document.createElement('template');template.innerHTML=base.html;template.content.querySelector('.schedule-photo').dataset.fullPath=path;return {...base,html:template.innerHTML};};
+      if(api.buildDiff(remote,withPath(remote,path)).length)throw Error('Matching stored paths and image URLs must compare equal');
+      if(!api.buildDiff(remote,withPath(remote,TRIP_CONFIG.tripId+'/photos/'+await hash(replacement)+'.png')).length)throw Error('A changed stored path must remain visible');
+      if(api.buildDiff(offline,change(snapshot,original.replace('base64,','base64,\n'))).length)throw Error('Equivalent base64 embedding must compare equal');
+      for(const changed of [change(snapshot,replacement,original),change(snapshot,original,replacement)]){
+        const changes=api.buildDiff(offline,changed).flatMap(group=>group.items);
+        if(changes.length!==1||!changes[0].endsWith('사진 이미지 변경')||changes[0].includes('data:'))throw Error('Full/thumbnail replacement must have a concise image change');
+      }
+      return change(snapshot,replacement);
+    },initial);
+    await upload(page,incoming);await page.locator('#importDialog').waitFor();
+    assert.deepEqual(await page.locator('#importDiff li').allTextContents(),['DAY 1 일정 3 사진 이미지 변경']);
+    assert.equal(await page.locator('#importApply').isEnabled(),true,'Image-only replacement must enable Apply');
+    await apply(page);
+    const applied=await state(page),draft=await stored(page);
+    assert.deepEqual(await page.evaluate(({a,b})=>window.__importTest.buildDiff(a,b),{a:incoming,b:applied}),[]);
+    assert.ok(draft?.state.html.includes('data:image/png;base64,'),'The changed photo is retained in the durable draft');
+    assert.equal(saves,0);assert.deepEqual(row,baseline,'Import never writes the shared document');
+    assert.equal(await page.locator('.schedule-photo').first().getAttribute('data-photo-id'),'fixture-photo');
+    assert.equal(await page.locator('.schedule-photo figcaption').first().textContent(),'테스트 사진');
+    console.log(`Photo comparison (${mobile?'mobile':'desktop'}): replacement applied; unchanged embedded photos and URL variants remain equal.`);
+    await diagnostics.close(context);
+  }
   for(const mobile of [false,true]) {
     row={content:{},revision:0,updated_at:'2026-10-19T00:00:00Z'};saves=0;reads=0;
     diagnostics.scenario(`import rejection, sanitization, migration and conflict / ${mobile ? "mobile" : "desktop"}`);

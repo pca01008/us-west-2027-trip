@@ -23,7 +23,8 @@ setStatus:(...args)=>setStatus(...args),
 showChoice:(...args)=>showChoice(...args),
 updateDirtyState:(...args)=>updateDirtyState(...args)});
 let {writeDraftRecord,clearDraftRecord,currentDraftRecord,flushDraftPersistence,queueDraftPersistence,clearCleanDraft,recoverOnlineDraft,deferRecovery,isRecoveryDeferred,cancelPendingWrites}=draftWorkflow;
-const documentAdapter=createDocumentAdapter({TIMETABLE_KINDS,$:$,
+const photoResources=createPhotoResources({SUPABASE_URL,MEDIA_BUCKET,baseUrl:location.href});
+const documentAdapter=createDocumentAdapter({photoResources,TIMETABLE_KINDS,$:$,
 $$:$$,
 DEFAULT_BUDGET_KRW:DEFAULT_BUDGET_KRW,
 DEFAULT_EXCHANGE_RATE:DEFAULT_EXCHANGE_RATE,
@@ -394,6 +395,7 @@ uploadPhotoBlobs:(...args)=>uploadPhotoBlobs(...args)});
 let {materializeStagedPhotos,photoLabelFromName,createPhotoFigure,attachPhotos,movePhoto,openPhotoEditDialog,savePhotoMetadata,openMapDialog,saveMap,selectActiveScheduleRow,resetPhotoSelection,bindPhotosControls}=photosController;
 
 const exportsController=createExportsController({$:$,
+photoResources,
 $$:$$,
 CONFIG:CONFIG,
 EXPORT_BASE_NAME:EXPORT_BASE_NAME,

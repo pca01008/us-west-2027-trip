@@ -14,7 +14,10 @@ function compareSummaries(before,after){
       if(!old){scheduleChanges.push(item.key+' 추가: '+value(item.time)+' · '+value(item.title));return;}
       if(old.dayIndex!==item.dayIndex){const date=event=>TRIP_DAYS[event.dayIndex]?.date||'DAY '+(event.dayIndex+1);scheduleChanges.push(item.key+' 날짜: '+date(old)+' → '+date(item));}
       [['숙박 종료일','stay'],['시간','time'],['제목','title'],['분류','kind'],['상세','detail'],['주의사항','warning'],['지도 장소','mapName'],['지도 링크','map']].forEach(([label,key])=>{if(old[key]!==item[key])scheduleChanges.push(item.key+' '+label+': '+value(old[key])+' → '+value(item[key]));});
-      if(JSON.stringify(old.photos)!==JSON.stringify(item.photos))scheduleChanges.push(item.key+' 사진 구성·순서·설명 변경');
+      const photoMetadata=photos=>photos.map(({id,caption,alt})=>({id,caption,alt}));
+      if(JSON.stringify(photoMetadata(old.photos))!==JSON.stringify(photoMetadata(item.photos)))scheduleChanges.push(item.key+' 사진 구성·순서·설명 변경');
+      const oldPhotos=new Map(old.photos.map(photo=>[photo.id,photo]));
+      if(item.photos.some(photo=>{const previous=oldPhotos.get(photo.id);return previous&&(previous.full!==photo.full||previous.thumb!==photo.thumb);}))scheduleChanges.push(item.key+' 사진 이미지 변경');
     });
     const beforeScheduleOrder=before.schedules.map(item=>item.id),afterScheduleOrder=after.schedules.map(item=>item.id),sameSchedules=beforeScheduleOrder.length===afterScheduleOrder.length&&beforeScheduleOrder.every(id=>afterSchedules.has(id));
     if(sameSchedules&&beforeScheduleOrder.join('|')!==afterScheduleOrder.join('|'))scheduleChanges.push('일정 표시 순서 변경');

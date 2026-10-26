@@ -107,6 +107,8 @@ Up to 50 saved versions retain notes. Version management fetches metadata first 
 
 Version, import and save-conflict comparisons show an event's old date → new date when it moves between days, including moves that preserve overall order.
 
+Photo replacements appear as an image change even when the ID and description stay the same. Unchanged photos embedded by the current offline exporter compare equal to their online originals.
+
 Closing version management or signing out cancels pending loads; selecting another version supersedes the previous selection. Failed or timed-out loads show a message in the version dialog. Select the version again to retry; for a failed list, close and reopen version management.
 
 Undo is temporary editing history; versions are server history. Restore saves the selected past content as a new version.
