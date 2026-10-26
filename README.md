@@ -16,6 +16,7 @@ Work now focuses on the existing app. Further Daylight development and productio
 | Current color palette and change workflow | [Color roles](docs/PROJECT_GUIDE.md#color-palette) · [Maintenance](docs/OPERATIONS.md#palette-maintenance) |
 | Pretendard font loading, offline copies, validation limits | [Typography](docs/PROJECT_GUIDE.md#typography) · [October 24 checks](docs/archive/2026-10-24-pretendard.md) |
 | Setup, new trips, testing, deployment, DB checks, troubleshooting | [Operations guide](docs/OPERATIONS.md) |
+| Planned local/CI parity and deployment validation gate | [Validation TODO](docs/VALIDATION_TODO.md) — proposed work and acceptance criteria |
 | Separate research from website files | [Directory guide](docs/DIRECTORY_PLAN.md) |
 | Dual KRW/USD entry and automatic conversion | [Plan](docs/LEDGER_DUAL_CURRENCY_PLAN.md) — deployed; see the [implementation record](docs/archive/2026-10-24-ledger-dual-currency.md) |
 | Historical DB health deployment and notification evidence | [2026-10-05 verification](docs/archive/2026-10-05-db-health-verification.md) |

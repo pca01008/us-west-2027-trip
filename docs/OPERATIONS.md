@@ -106,6 +106,8 @@ Before launch check title/dates/route, tab count/order, PREP/day/ledger initial 
 
 ## Local and CI validation
 
+Planned environment alignment, shared verification, and publication gating are tracked in [Validation TODO](VALIDATION_TODO.md). That checklist describes proposed changes, not the current procedure below.
+
 Minimum Node 22; Node 24 matches unit CI. Historical Node 22 HTTP-close observations remain in [October 5 evidence](archive/2026-10-05-db-health-verification.md).
 
 ```sh
