@@ -79,6 +79,7 @@ Draft-storage failure means recent edits may exist only in the current tab. Save
 
 - Maps store a place name and HTTPS URL. Missing names or invalid links show an error beside the input and focus the field. Links remain visible offline; opening them needs internet.
 - Photo count is unlimited. New photos stay in drafts until final save. Uploads use WebP at up to 1600px full size/480px thumbnails, with JPEG fallback if WebP encoding is unsupported. Compressed files must be at most 5MB; thumbnails load lazily. Select original files up to 20MB each.
+- Photo description and alt text cannot be blank. Apply shows errors beside each invalid field and focuses the first; correcting a field clears its error.
 - Existence checks time out after 10 seconds; uploads/export downloads after 60 seconds per request. Cancel operation aborts photo requests. Failure/cancellation preserves the draft. Offline export fails if required photos cannot download; print/share falls back to their online URLs.
 - Document deletion does not immediately delete stored photo files, allowing earlier-version restoration.
 

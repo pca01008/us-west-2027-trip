@@ -155,6 +155,55 @@ try {
       if(close==='Escape')await page.keyboard.press(close);else await page.locator(close).press('Enter');
       await page.locator(dialog).waitFor({state:'hidden'});await focused(trigger);
     }
+    for(const theme of ['light','dark']){
+      diagnostics.scenario(`photo metadata validation / ${mobile?'mobile':'desktop'} / ${theme}`);
+      await selectTheme(page,theme);
+      const trigger=page.locator('.day1 [data-edit-photo]').first(),dialog='#photoEditDialog';
+      const caption=page.locator('#photoCaption'),alt=page.locator('#photoAlt');
+      const snapshot=await page.evaluate(()=>window.__inputsTest.normalizeState(window.__inputsTest.captureState()));
+      await open(trigger,dialog,'#photoCaption');
+      for(const [captionValue,altValue] of [['','Valid alt'],['   ','Valid alt'],['Valid caption',''],['Valid caption','   '],['',''],['   ','   ']]){
+        await caption.fill(captionValue);await alt.fill(altValue);
+        for(let attempt=0;attempt<2;attempt++){
+          await page.locator('#photoEditSave').click();
+          await fieldError(captionValue.trim()?'photoAlt':'photoCaption',dialog);
+          for(const [id,value] of [['photoCaption',captionValue],['photoAlt',altValue]]){
+            assert.equal(await page.locator('#'+id).inputValue(),value,'Rejected submission preserves input');
+            assert.equal(await page.locator('#'+id).getAttribute('aria-invalid'),String(!value.trim()));
+            assert.equal(await page.locator('#'+id+'Error').isVisible(),!value.trim());
+          }
+          assert.deepEqual(await page.evaluate(()=>window.__inputsTest.normalizeState(window.__inputsTest.captureState())),snapshot,'Invalid metadata must not change the document');
+        }
+      }
+      await page.screenshot({path:path.join(output,`${mobile?'mobile':'desktop'}-${theme}-photo-error.png`)});
+      await caption.fill('  Corrected '+theme+' caption  ');
+      assert.equal(await caption.getAttribute('aria-invalid'),'false');assert.equal(await page.locator('#photoCaptionError').isHidden(),true);
+      assert.equal(await alt.getAttribute('aria-invalid'),'true','Correcting caption preserves the alt error');
+      await page.locator('#photoEditSave').click();await fieldError('photoAlt',dialog);
+      await alt.fill('  Corrected '+theme+' alt  ');
+      assert.equal(await alt.getAttribute('aria-invalid'),'false');assert.equal(await page.locator('#photoAltError').isHidden(),true);
+      await page.locator('#photoEditSave').click();await page.locator(dialog).waitFor({state:'hidden'});await focused(trigger);
+      const figure=page.locator('.day1 .schedule-photo').first();
+      assert.equal(await figure.locator('figcaption').textContent(),'Corrected '+theme+' caption');
+      assert.equal(await figure.locator('img').getAttribute('alt'),'Corrected '+theme+' alt');
+      assert.equal(await figure.locator('img').getAttribute('aria-label'),'Corrected '+theme+' caption 크게 보기');
+      for(const close of ['Escape','#photoEditCancel']){
+        await open(trigger,dialog,'#photoCaption');
+        for(const id of ['photoCaption','photoAlt']){
+          assert.equal(await page.locator('#'+id+'Error').isHidden(),true);
+          assert.equal(await page.locator('#'+id).getAttribute('aria-invalid'),'false');
+        }
+        assert.equal(await caption.inputValue(),'Corrected '+theme+' caption');
+        assert.equal(await alt.inputValue(),'Corrected '+theme+' alt');
+        await caption.fill('');await alt.fill('');await page.locator('#photoEditSave').click();await fieldError('photoCaption',dialog);
+        if(close==='Escape')await page.keyboard.press(close);else await page.locator(close).click();
+        await page.locator(dialog).waitFor({state:'hidden'});await focused(trigger);
+      }
+      await open(trigger,dialog,'#photoCaption');
+      assert.equal(await page.locator('#photoCaptionError').isHidden(),true);assert.equal(await page.locator('#photoAltError').isHidden(),true);
+      assert.equal(await caption.inputValue(),'Corrected '+theme+' caption');assert.equal(await alt.inputValue(),'Corrected '+theme+' alt');
+      await page.keyboard.press('Escape');await focused(trigger);
+    }
     const map=page.locator('.day1 [data-media="map"]').first();await open(map,'#mapDialog','#mapName');
     await page.locator('#mapName').fill(' ');await page.locator('#mapUrl').fill('http://example.test');await page.locator('#mapSave').click();await fieldError('mapName','#mapDialog');
     await page.locator('#mapName').fill('Test place');await page.locator('#mapSave').click();await fieldError('mapUrl','#mapDialog');
