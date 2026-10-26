@@ -4,6 +4,7 @@ let categories = DEFAULT_CATEGORIES.map(item => ({...item}));
 let exchangeRate = DEFAULT_EXCHANGE_RATE;
 let exchangeRateUpdated = '';
 let budgetKrw = DEFAULT_BUDGET_KRW;
+let settingsRateTouched = false;
 let editingCategoryId = null;
 let editingExpenseId = null;
 let selectedCategoryIcon = '📦';
@@ -60,6 +61,7 @@ function configureCurrencyLabels(){
     const select=$('#expenseCategory'),previous=select.value;setExpenseCategoryOptions(select,previous);
     $('#categorySummary').innerHTML=categories.map(category=>{const items=expenses.filter(item=>item.categoryId===category.id);if(!items.length)return '';return '<div class="category-total"><span>'+escapeHtml(category.icon+' '+category.name)+'</span><b class="ledger-amount">'+renderLedgerAmounts(formatLedgerSum(items,'krw'),formatLedgerSum(items,'usd'))+'</b></div>';}).join('')||'<div class="diff-empty">아직 카테고리별 내역이 없습니다.</div>';
     const categoryChips=categories.map(category=>'<span class="category-chip'+(category.system?' system':'')+'"><b>'+escapeHtml(category.icon)+'</b>'+escapeHtml(category.name)+(category.system?'':'<button data-category-edit="'+escapeHtml(category.id)+'" type="button">수정</button><button data-category-delete="'+escapeHtml(category.id)+'" type="button">삭제</button>')+'</span>').join('');$('#categoryManagerList').innerHTML=categoryChips;if($('#settingsCategoryList'))$('#settingsCategoryList').innerHTML=categoryChips;
+    if($('#ledgerSettingsDialog')&&!$('#ledgerSettingsDialog').hidden&&!settingsRateTouched){$('#settingsExchangeRate').value=String(exchangeRate);}
     $('#expenses').innerHTML=expenses.length?expenses.map(item=>{const category=getCategory(item.categoryId),id=escapeHtml(item.id),name=escapeHtml(item.name),index=expenses.findIndex(entry=>entry.id===item.id);return '<div class="expense" data-expense-id="'+id+'"><div class="expense-copy"><div class="expense-primary"><time class="expense-date" datetime="'+escapeHtml(item.date||'')+'">'+escapeHtml(formatExpenseDate(item.date))+'</time><b>'+name+'</b></div><span class="expense-category-badge">'+escapeHtml(category.icon+' '+category.name)+'</span></div><div class="expense-side"><strong class="expense-amount ledger-amount">'+renderLedgerAmounts(formatKrw(item.amountKrw),formatUsd(item.amountUsd),item.amountSource)+'</strong><div class="expense-actions"><button class="expense-action" data-icon="up" data-move-expense="'+id+'" data-move-direction="-1" type="button" aria-label="'+name+' 위로 이동" title="위로 이동"'+(index===0?' disabled':'')+'></button><button class="expense-action" data-icon="down" data-move-expense="'+id+'" data-move-direction="1" type="button" aria-label="'+name+' 아래로 이동" title="아래로 이동"'+(index===expenses.length-1?' disabled':'')+'></button><button class="expense-action" data-edit-expense="'+id+'" data-icon="edit" type="button">수정</button><button class="expense-action delete" data-remove-expense="'+id+'" type="button">삭제</button></div></div></div>';}).join(''):'<div class="remark">'+'아직 기록된 경비가 없습니다.'+'</div>';
     if(documentAdapter.migrationNotice()){let notice=$('#ledgerMigrationNotice');if(!notice){notice=document.createElement('p');notice.id='ledgerMigrationNotice';notice.className='remark';$('.expense-entry').before(notice);}notice.textContent=documentAdapter.migrationNotice();}
     drawExpenseInput();
@@ -101,14 +103,17 @@ function configureCurrencyLabels(){
   async function moveExpense(id,direction){await requireEditor('ledger',()=>{const index=expenses.findIndex(item=>item.id===id),next=index+direction;if(index<0||next<0||next>=expenses.length)return;const [item]=expenses.splice(index,1);expenses.splice(next,0,item);renderLedger();finishMutation();});}
   async function deleteExpense(id){const item=expenses.find(x=>x.id===id);if(!item)return;const choice=await showChoice({title:'가계부 항목을 삭제할까요?',message:item.name+' 항목을 삭제합니다.',choices:[{label:'취소',value:'cancel'},{label:'삭제',value:'delete',className:'action-danger'}]});if(choice!=='delete')return;await requireEditor('ledger',async()=>{expenses=expenses.filter(x=>x.id!==id);renderLedger();finishMutation();});}
   function renderIconPicker(){const picker=$('#categoryIconPicker');picker.innerHTML=ICON_CANDIDATES.map(icon=>'<button class="'+(icon===selectedCategoryIcon?'active':'')+'" data-category-icon="'+icon+'" type="button">'+icon+'</button>').join('');}
-  function openLedgerSettings(){renderLedger();$('#settingsExchangeRate').value=String(exchangeRate);setFieldError('settingsExchangeRate');showDialog($('#ledgerSettingsDialog'));setStatus(documentSession.snapshot().pendingDraft?'가계부 설정 중 · 저장되지 않음':'가계부 설정');}
+  function revertSettingsRate(){settingsRateTouched=false;$('#settingsExchangeRate').value=String(exchangeRate);setFieldError('settingsExchangeRate');}
+  function openLedgerSettings(){renderLedger();revertSettingsRate();showDialog($('#ledgerSettingsDialog'));setStatus(documentSession.snapshot().pendingDraft?'가계부 설정 중 · 저장되지 않음':'가계부 설정');}
   function openCategoryDialog(id=null){editingCategoryId=id;const cat=id?getCategory(id):null;selectedCategoryIcon=cat?.icon||'📦';$('#categoryTitle').textContent=id?'카테고리 수정':'카테고리 추가';$('#categoryName').value=cat?.name||'';setFieldError('categoryName');renderIconPicker();showDialog($('#categoryDialog'));$('#categoryName').focus();}
   function saveCategory(){const name=$('#categoryName').value.trim();if(!name){setFieldError('categoryName','카테고리 이름을 입력해 주세요.');$('#categoryName').focus();return;}if(editingCategoryId){const cat=getCategory(editingCategoryId);if(cat.system)return;cat.name=name;cat.icon=selectedCategoryIcon;}else{const deletedIndex=categories.findIndex(item=>item.id===DELETED_CATEGORY_ID);categories.splice(deletedIndex<0?categories.length:deletedIndex,0,{id:uid('category'),name,icon:selectedCategoryIcon,system:false});}$('#categoryDialog').hidden=true;renderLedger();finishMutation();}
   async function deleteCategory(id){const cat=getCategory(id);if(!cat||cat.system)return;const count=expenses.filter(x=>x.categoryId===id).length;const choice=await showChoice({title:'카테고리를 삭제할까요?',message:count?count+'개 내역은 “삭제된 카테고리”로 이동합니다.':'이 카테고리를 삭제합니다.',choices:[{label:'취소',value:'cancel'},{label:'삭제',value:'delete',className:'action-danger'}]});if(choice!=='delete')return;expenses.forEach(x=>{if(x.categoryId===id)x.categoryId=DELETED_CATEGORY_ID;});categories=categories.filter(x=>x.id!==id);renderLedger();finishMutation();}
+  function validateExchangeRate(input,focus=false){
+    try{const value=parseLedgerRate(input.value);if(input.id==='settingsExchangeRate')setFieldError(input.id);return value;}
+    catch(error){if(input.id==='settingsExchangeRate')setFieldError(input.id,error.message);else setStatus(error.message);if(focus)input.focus();return null;}
+  }
   function updateExchangeRate(input=$('#settingsExchangeRate')){
-    let value;try{value=parseLedgerRate(input?.value||'');}catch(_) {value=NaN;}
-    if(!Number.isFinite(value)||value<=0){if(input?.id==='settingsExchangeRate')setFieldError(input.id,'0보다 큰 환율을 소수점 6자리 이내로 입력해 주세요.');else setStatus('올바른 환율을 입력해 주세요.');input?.focus();return false;}
-    if(input?.id==='settingsExchangeRate')setFieldError(input.id);
+    const value=validateExchangeRate(input,true);if(value===null)return false;
     if(value!==exchangeRate){exchangeRate=value;exchangeRateUpdated=new Date().toISOString();renderLedger();finishMutation();setStatus('환율 변경됨 · 저장되지 않음');}
     return true;
   }
@@ -126,10 +131,10 @@ function bindLedgerControls(){
 $('#categoryCancel').onclick=()=>$('#categoryDialog').hidden=true;
 $('#categorySave').onclick=saveCategory;
 ['categoryName','expenseEditName'].forEach(id=>$('#'+id).addEventListener('input',()=>setFieldError(id)));
-$('#ledgerSettingsClose').onclick=async()=>{await requireEditor('ledger',()=>{if(!updateExchangeRate())return;$('#ledgerSettingsDialog').hidden=true;updateDirtyState();resetInactivityTimer();});};
-$('#ledgerSettingsCancel').onclick=()=>{$('#settingsExchangeRate').value=String(exchangeRate);setFieldError('settingsExchangeRate');$('#ledgerSettingsDialog').hidden=true;updateDirtyState();resetInactivityTimer();};
-$('#settingsExchangeRate').addEventListener('input',()=>setFieldError('settingsExchangeRate'));
+$('#settingsExchangeRate').addEventListener('input',()=>{settingsRateTouched=true;setFieldError('settingsExchangeRate');});
 $('#settingsExchangeRate').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing){event.preventDefault();$('#ledgerSettingsClose').click();}});
+$('#ledgerSettingsRateRevert').onclick=()=>{revertSettingsRate();$('#settingsExchangeRate').focus();};
+$('#ledgerSettingsClose').onclick=()=>{if(isOperationBusy())return;requireEditor('ledger',()=>{const before=exchangeRate;if(!updateExchangeRate())return;$('#ledgerSettingsDialog').hidden=true;if(before===exchangeRate)updateDirtyState();resetInactivityTimer();});};
 $('#expenseEditCancel').onclick=()=>{$('#expenseDialog').hidden=true;editingExpenseId=null;expenseEditInput=emptyExpenseInput();};
 $('#expenseEditSave').onclick=saveExpenseChanges;
 document.addEventListener('click',event=>{if(isOperationBusy())return;
@@ -145,7 +150,7 @@ const icon=event.target.dataset.categoryIcon;if(icon){selectedCategoryIcon=icon;
 });
 document.addEventListener('input',handleExpenseInput);
 document.addEventListener('compositionend',handleExpenseInput);
-document.addEventListener('change',async event=>{if(event.target.id==='exchangeRate'){const input=event.target,before=String(exchangeRate);await requireEditor('ledger',()=>updateExchangeRate(input),()=>{input.value=before;});return;}});
+document.addEventListener('change',async event=>{if(event.target.id==='settingsExchangeRate'){validateExchangeRate(event.target);return;}if(event.target.id==='exchangeRate'){const input=event.target,before=String(exchangeRate);await requireEditor('ledger',()=>updateExchangeRate(input),()=>{input.value=before;});return;}});
 }
 
 return Object.freeze({drawExpenseInput,handleExpenseInput,configureCurrencyLabels,getCategory,setExpenseCategoryOptions,formatExpenseDate,renderLedgerAmounts,renderLedger,addExpense,requestExpenseEdit,openExpenseDialog,saveExpenseChanges,moveExpense,deleteExpense,renderIconPicker,openLedgerSettings,openCategoryDialog,saveCategory,deleteCategory,updateExchangeRate,csvCell,exportExpensesCsv,readLedgerState,restoreLedgerState,captureExpenseBuffer,restoreExpenseBuffer,expenseEntryPending,resetLedgerSelection,bindLedgerControls});

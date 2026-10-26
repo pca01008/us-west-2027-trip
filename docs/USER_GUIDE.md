@@ -79,6 +79,7 @@ Draft-storage failure means recent edits may exist only in the current tab. Save
 
 - Maps store a place name and HTTPS URL. Missing names or invalid links show an error beside the input and focus the field. Links remain visible offline; opening them needs internet.
 - Photo count is unlimited. New photos stay in drafts until final save. Uploads use WebP at up to 1600px full size/480px thumbnails, with JPEG fallback if WebP encoding is unsupported. Compressed files must be at most 5MB; thumbnails load lazily. Select original files up to 20MB each.
+- Photo description and alt text cannot be blank. Apply shows errors beside each invalid field and focuses the first; correcting a field clears its error.
 - Existence checks time out after 10 seconds; uploads/export downloads after 60 seconds per request. Cancel operation aborts photo requests. Failure/cancellation preserves the draft. Offline export fails if required photos cannot download; print/share falls back to their online URLs.
 - Document deletion does not immediately delete stored photo files, allowing earlier-version restoration.
 
@@ -91,11 +92,10 @@ The current trip uses KRW/USD. Other trips may show a different configured pair;
 - Clear one manual amount to calculate from the remaining value. Clearing an automatic pair's source clears both; clearing only its result restores the calculation.
 - Manual amounts must be positive. Calculated results may round to zero. Correct invalid input before adding.
 - Remote saving, app resume, and reconnection preserve unadded input/cursor position. Deleted categories fall back to available ones. Input has no draft protection until Add.
-- Ledger settings manages the manual rate and categories. Category deletion moves its expenses to Deleted category. Empty category names or expense descriptions in editing dialogs show an error beside the input; correct the field and apply again.
+- Ledger settings manages the manual rate and categories. Rate edits apply only with Apply and close (also Enter/Esc). Invalid input keeps the dialog open with a field error; correct it or use Revert rate to restore the current rate. Category deletion moves its expenses to Deleted category. Empty category names or expense descriptions in editing dialogs show an error beside the input; correct the field and apply again.
 - KRW totals sum every expense's KRW amount; USD totals sum every USD amount. These express the same spending; do not add them together. Category totals follow the same rule. KRW totals no longer count only original KRW entries. Budget controls and expense filters are absent.
 - Expense rows and category totals display KRW (USD), with the second amount in teal. Currency symbols and parentheses distinguish the amounts in both themes and print; automatic-calculation labels remain beside the relevant amount.
 - CSV exports all entries, including unsaved changes, in screen order. Columns: date, description, category, KRW amount, USD amount, calculated currency, applied exchange rate. The last two are empty for manual pairs. Empty ledgers export headers only.
-- Apply rate (or Enter) validates the settings input; invalid text stays visible with an inline error and does not change the rate. Rate cancel or Escape discards only the pending rate input; category edits are already applied. Rates accept positive values with at most six decimal places.
 - Rates affect **new calculations only**. Added amounts stay fixed. Editing name/date/category preserves amounts and the applied rate; amount edits recalculate with the current rate. If the entry changes remotely during editing, cancel and inspect the latest entry.
 - Remote rate changes update only automatic results in unadded input; manual pairs remain unchanged.
 - Legacy entries receive the opposite amount once using the document rate as the **conversion baseline**. An initial notice explains differences from the previous KRW-equivalent total. Historical transaction rates are not reconstructed. Missing/invalid rates produce a default-rate notice.
@@ -153,5 +153,3 @@ Reopen online after deployment to update. Closing all app windows and reopening 
 ## Troubleshooting
 
 See [troubleshooting](OPERATIONS.md#troubleshooting) for saving, upload, and refresh issues. If save status is uncertain, retain the draft and follow the screen message.
-
-Photo metadata requires a description and alternative text. Blank or whitespace-only fields show an inline error in the dialog; correct them and apply again.

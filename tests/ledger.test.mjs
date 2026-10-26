@@ -17,6 +17,13 @@ test('ledger decimal validation rejects precision, malformed commas, nonpositive
   assert.throws(() => api.parseLedgerInput('90071992547409.91', 'usd'), /범위/);
 });
 
+test('exchange rates reject numeric round-trip precision loss without restricting exact fractions', () => {
+  for (const raw of ['', ' ', '0', '-1', 'bad', '1,45', 'Infinity', '1e3', '1450.1234567890123456789', '9007199254740993', '0.'+'0'.repeat(324)+'1', '1'.repeat(401)])
+    assert.throws(() => api.parseLedgerRate(raw), undefined, raw);
+  for (const [raw, expected] of [[' 1,450.125 ', 1450.125], ['1450.0000000000000000', 1450], ['0001450.1250', 1450.125], ['0.0000001', .0000001], ['9007199254740991', Number.MAX_SAFE_INTEGER]])
+    assert.equal(api.parseLedgerRate(raw), expected, raw);
+});
+
 test('ledger exact half-up conversions, zero calculated cents and rate errors', () => {
   assert.equal(api.convertLedgerAmount(14000, 'krw', 1400), 10);
   assert.equal(api.convertLedgerAmount(10, 'usd', 1400), 14000);
