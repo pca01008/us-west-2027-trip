@@ -35,3 +35,9 @@ Exit: repository/PWA unit checks, versions and PREP browser suites (including re
 Exit: all 127 unit tests and all 16 browser suites passed, including real-SDK auth, nested/replaced focus origins, storage/drafts, version races and root/subpath PWA. Static assertions were redirected to the new owners; repository tests verify metadata-only lazy reads behavior directly. Build/project/whitespace checks passed.
 
 Stop A review: calculations can be changed with complete-file tests; dialog fixes no longer involve authentication or published queries. These concrete boundaries justify continuing with the requested document/storage ownership work.
+
+## Stage 3a — document adapter/session
+
+`document.js` owns serialization, sanitization, legacy repair, normalization and apply/input preservation. Normalization takes a supplied fallback; the workflow supplies current DOM only when needed. `document-session.js` privately owns baseline/revision/remote candidates, dirty/preview/write-block state and undo history. Named published/draft/import/PREP transitions replace external field assignments. Snapshot reads cannot mutate the owner's baseline.
+
+Exit: focused unit checks (including independent PREP divergence and preview preservation), imports, drafts, PREP, versions and ledger-compat browser suites passed; build/project/whitespace checks passed. Ledger form/data callbacks temporarily target their existing state; stage 4 removes that bridge when its controller becomes private.

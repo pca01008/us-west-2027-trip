@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
 const modules = {
+  documentSession: ['document-session.js', 'createDocumentSession'],
   timetable: ['timetable-core.js', 'createTimetableCore'],
   repository: ['trip-repository.js', 'createTripRepository'],
   currency: ['currency.js', 'createCurrencyPolicy'],

@@ -1,3 +1,6 @@
+/** DOM serialization/repair boundary. Normalization needs an explicit fallback. */
+function createDocumentAdapter({$,$$,DEFAULT_BUDGET_KRW,DEFAULT_EXCHANGE_RATE,IMPORT_ALLOWED_MONEY_IDS,MEDIA_PATH_PATTERN,SCHEMA_VERSION,SUPABASE_URL,TRIP_ID,afterApply,assertCurrencyPair,assertSupportedSchema,beforeApply,clone,currencyMetadata,drawExpenseInput,entryPending,hashText,normalizeCategories,normalizeExpenses,pendingCheckBefore,readEntryBuffer,readLedger,renderCheckFeedback,renderDocument,replaceLedger,restoreEntryBuffer,scheduleKindMode,sumLedgerAmounts}) {
+let applyingHistory=false,moneyTemplateHtml="";
   function sanitizeMarkup(markup, imported=false) {
     const template=document.createElement('template'); template.innerHTML=markup||'';
     template.content.querySelectorAll('script,style,iframe,object,embed,link,meta,form,.memo,.map,.schedule-media-tools,.photo-actions,.row-actions,.photo-delete,.row-delete,.check-delete,.check-actions,.check-feedback,.warning-delete').forEach(el=>el.remove());
@@ -61,7 +64,8 @@
     template.content.querySelectorAll('input[type="checkbox"]').forEach(input=>{input.removeAttribute('checked');input.removeAttribute('disabled');});
     return template.innerHTML;
   }
-  function normalizeState(raw, imported=false) {
+  function normalizeState(raw, {imported=false,fallback=null}={}) {
+    if(!raw?.html&&!fallback?.html)throw new TypeError('A document snapshot or explicit fallback is required.');
     assertSupportedSchema(raw);
     assertCurrencyPair(raw);
     const cats=normalizeCategories(raw?.categories);
@@ -69,7 +73,7 @@
     return {
       schemaVersion:SCHEMA_VERSION,
       ...currencyMetadata(),
-      html:sanitizeMarkup(raw?.html || $('main').innerHTML, imported),
+      html:sanitizeMarkup(raw?.html || fallback?.html || '', imported),
       expenses:(()=>{try{return normalizeExpenses(raw?.expenses,cats,Number.isFinite(rate)&&rate>0?rate:DEFAULT_EXCHANGE_RATE,Number(raw?.schemaVersion)||0);}catch(error){error.code='DOCUMENT_LEDGER';throw error;}})(),
       categories:cats,
       exchangeRate:Number.isFinite(rate)&&rate>0 ? rate : DEFAULT_EXCHANGE_RATE,
@@ -108,3 +112,47 @@
     });
     return {...raw,html:previous.innerHTML,checks:Array.isArray(raw.checks)?raw.checks.map(Boolean):null};
   }
+
+function captureState() {
+    const {expenses,categories,exchangeRate,exchangeRateUpdated,budgetKrw}=readLedger();
+    const main=$('main').cloneNode(true);
+    main.querySelectorAll('[contenteditable]').forEach(el=>el.setAttribute('contenteditable','false'));
+    main.querySelectorAll('.schedule-media-tools,.photo-actions,.row-actions,.photo-delete,.schedule-map-delete,.row-delete,.check-delete,.check-actions,.check-feedback,.warning-delete').forEach(el=>el.remove());
+    main.querySelector('#ledgerMigrationNotice')?.remove();
+    main.querySelectorAll('.add-expense .amount-hint').forEach(el=>{el.textContent='';el.classList.remove('amount-error');});
+    main.querySelectorAll('.add-expense input').forEach(el=>{el.removeAttribute('value');el.removeAttribute('aria-invalid');});
+    const rendered=main.querySelector('#expenses');if(rendered)rendered.innerHTML='';
+    const manager=main.querySelector('#categoryManagerList');if(manager)manager.innerHTML='';
+    const summary=main.querySelector('#categorySummary');if(summary)summary.innerHTML='';
+    main.querySelectorAll('input[type="checkbox"]').forEach(input=>{input.removeAttribute('checked');input.removeAttribute('disabled');});
+    return {schemaVersion:SCHEMA_VERSION,...currencyMetadata(),html:main.innerHTML,expenses:clone(expenses),categories:clone(categories),exchangeRate,exchangeRateUpdated,budgetKrw,checks:$$('main input[type="checkbox"]').map(input=>pendingCheckBefore(input.closest('[data-check-id]')?.dataset.checkId)??input.checked)};
+  }
+
+function applyState(raw) {
+    if(!raw?.html)return; const state=normalizeState(raw); applyingHistory=true;
+    const pendingEntry=entryPending()?$$('.add-expense input,.add-expense select').map(input=>({id:input.id,value:input.value})):[];
+    beforeApply();
+    $('main').innerHTML=state.html; replaceLedger(state);
+    renderDocument();
+    pendingEntry.forEach(({id,value})=>{const input=$('#'+id);if(input&&(input.tagName!=='SELECT'||Array.from(input.options).some(option=>option.value===value)))input.value=value;});drawExpenseInput();
+    if(Array.isArray(state.checks))$$('main input[type="checkbox"]').forEach((input,index)=>input.checked=Boolean(state.checks[index]));
+    afterApply();applyingHistory=false;renderCheckFeedback();
+  }
+function applyStatePreservingInputs(state) {
+    // Preserve unsubmitted expense entry and keyboard focus across rendering.
+    const preservedExpenseInput=readEntryBuffer();
+    const fields=$$('.add-expense input,.add-expense select').map(input=>({id:input.id,value:input.value}));
+    const active=document.activeElement,wasInMain=Boolean(active?.closest('main')),focusId=active?.id,checkId=active?.closest('.prepday [data-check-id]')?.dataset.checkId;
+    const selection=active instanceof HTMLInputElement?[active.selectionStart,active.selectionEnd]:null;
+    applyState(state);
+    fields.forEach(({id,value})=>{const input=document.getElementById(id);if(input&&(input.tagName!=='SELECT'||Array.from(input.options).some(option=>option.value===value)))input.value=value;});
+    restoreEntryBuffer(preservedExpenseInput);drawExpenseInput();
+    const focus=checkId?$$('.prepday [data-check-id]').find(label=>label.dataset.checkId===checkId)?.querySelector('input'):focusId?document.getElementById(focusId):null;
+    if(focus&&wasInMain&&!focus.disabled){focus.focus({preventScroll:true});if(selection&&selection[0]!==null)focus.setSelectionRange(...selection);}
+  }
+function setMoneyTemplate(html){moneyTemplateHtml=html;}
+function isApplying(){return applyingHistory;}
+function migrationNotice(){return ledgerMigrationNotice;}
+
+return Object.freeze({sanitizeMarkup,normalizeState,checkLabelText,preserveLegacyLedger,migratePublishedState,captureState,applyState,applyStatePreservingInputs,setMoneyTemplate,isApplying,migrationNotice});
+}

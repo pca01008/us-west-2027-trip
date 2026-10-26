@@ -1273,8 +1273,6 @@ const {createLedgerCurrencies,currencyMetadata,assertCurrencyPair,currencyLabel,
   let exchangeRateUpdated = '';
   let budgetKrw = DEFAULT_BUDGET_KRW;
   let lastScheduleDay = 'd1';
-  let lastSavedState = null;
-  let pendingDraft = false;
   const pendingChecks = new Map();
   const checkFeedback = new Map();
   let checklistQueue = Promise.resolve();
@@ -1284,15 +1282,9 @@ const {createLedgerCurrencies,currencyMetadata,assertCurrencyPair,currencyLabel,
   let checklistEditorItems = [];
   const newChecklistItemIds = new Set();
   let checklistEditorSaving = false;
-  let history = [];
-  let historyIndex = -1;
-  let applyingHistory = false;
-  let historyTimer = null;
   let authPurpose = 'edit';
   let pendingAuthAction = null;
   let pendingAuthCancel = null;
-  let previewReturnState = null;
-  let moneyTemplateHtml = '';
   let activeScheduleRow = null;
   let scheduleTimeTarget = null;
   let editingCategoryId = null;
@@ -1301,10 +1293,6 @@ const {createLedgerCurrencies,currencyMetadata,assertCurrencyPair,currencyLabel,
   let pendingImport = null;
   let tabScrollReleaseTimer = null;
   let tabScrollReleaseHandler = null;
-  let publishedRevision = 0;
-  let publishedUpdatedAt = '';
-  let pendingRemoteState = null;
-  let draftBaselineUnknown = false;
   let deferredDraftRecovery = false;
   let draftWriteTimer = null;
   let draftDatabasePromise = null;
@@ -1337,24 +1325,23 @@ const {createLedgerCurrencies,currencyMetadata,assertCurrencyPair,currencyLabel,
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
   function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function hashText(value) { let hash=2166136261; for (const c of String(value)) { hash^=c.charCodeAt(0); hash=Math.imul(hash,16777619); } return (hash>>>0).toString(36); }
-  let documentWriteBlock='';
   function assertSupportedSchema(raw){
     const version=raw?.schemaVersion??0;
     if(!Number.isInteger(Number(version))||Number(version)<0||Number(version)>SCHEMA_VERSION){const error=new Error('앱을 새로고침해 주세요');error.code='DOCUMENT_SCHEMA';throw error;}
   }
   function blockUnsupportedDocument(error){
     if(!['DOCUMENT_SCHEMA','DOCUMENT_LEDGER','DOCUMENT_CURRENCY'].includes(error?.code))return false;
-    documentWriteBlock=error.code==='DOCUMENT_CURRENCY'?error.message:error.code==='DOCUMENT_SCHEMA'?'앱을 새로고침해 주세요':'지출 데이터를 읽지 못했습니다. 작업본을 보관하고 최근 저장 버전을 확인해 주세요.';
-    clearTimeout(draftWriteTimer);setStatus(documentWriteBlock);return true;
+    documentSession.blockWrites(error.code==='DOCUMENT_CURRENCY'?error.message:error.code==='DOCUMENT_SCHEMA'?'앱을 새로고침해 주세요':'지출 데이터를 읽지 못했습니다. 작업본을 보관하고 최근 저장 버전을 확인해 주세요.');
+    clearTimeout(draftWriteTimer);setStatus(documentSession.snapshot().documentWriteBlock);return true;
   }
-  function setStatus(message) { if ($('#status')) $('#status').textContent = documentWriteBlock||message; }
+  function setStatus(message) { if ($('#status')) $('#status').textContent = documentSession.snapshot().documentWriteBlock||message; }
   function finishHydration() {
     if (!body.classList.contains('hydrating')) return;
     body.classList.remove('hydrating');
     const loading=$('#appLoading'),main=$('main');
     if(loading){loading.hidden=true;loading.setAttribute('aria-hidden','true');}
     if(main)main.removeAttribute('aria-busy');
-    if(pendingDraft)queueDraftPersistence();
+    if(documentSession.snapshot().pendingDraft)queueDraftPersistence();
   }
 /** Time parsing, clock edits, classification and interval layout; no browser state. */
 function createTimetableCore() {
@@ -1702,7 +1689,7 @@ const TIMETABLE_KINDS={activity:'관광',food:'식사',transit:'이동',stay:'�
     return draftStoragePromise;
   }
   async function writeDraftRecord(record) {
-    if(documentWriteBlock)return false;
+    if(documentSession.snapshot().documentWriteBlock)return false;
     if(deferredDraftRecovery)return false;
     const generation=++draftWriteGeneration;
     memoryDraftRecord=clone(record);
@@ -1742,7 +1729,7 @@ const TIMETABLE_KINDS={activity:'관광',food:'식사',transit:'이동',stay:'�
     }catch(error){console.warn('초안을 읽지 못했습니다.',error);showDraftStorageWarning('read');return null;}
   }
   async function clearDraftRecord() {
-    if(documentWriteBlock)return false;
+    if(documentSession.snapshot().documentWriteBlock)return false;
     const generation=++draftWriteGeneration;clearTimeout(draftWriteTimer);draftWriteTimer=null;
     let cleared=false;
     try{
@@ -1769,8 +1756,8 @@ const TIMETABLE_KINDS={activity:'관광',food:'식사',transit:'이동',stay:'�
   async function writePublicCache(state,metadata={}) {
     const record={
       state:clone(state),
-      revision:Math.max(0,Number(metadata.revision??publishedRevision)||0),
-      updatedAt:String(metadata.updatedAt??publishedUpdatedAt??''),
+      revision:Math.max(0,Number(metadata.revision??documentSession.snapshot().publishedRevision)||0),
+      updatedAt:String(metadata.updatedAt??documentSession.snapshot().publishedUpdatedAt??''),
       cachedAt:String(metadata.cachedAt||new Date().toISOString())
     };
     memoryPublicCache=clone(record);
@@ -1803,25 +1790,22 @@ const TIMETABLE_KINDS={activity:'관광',food:'식사',transit:'이동',stay:'�
   }
   function setPublishedBaseline(row,state,cacheMetadata={}) {
     const normalized=normalizeState(state),current=normalizeState(captureState());
-    lastSavedState=clone(fingerprint(current)===fingerprint(normalized)?normalized:current);
-    publishedRevision=Math.max(0,Number(row?.revision)||0);
-    publishedUpdatedAt=String(row?.updated_at||row?.updatedAt||'');
-    pendingRemoteState=null;draftBaselineUnknown=false;
-    void writePublicCache(lastSavedState,cacheMetadata);
+    documentSession.acceptPublished(row,fingerprint(current)===fingerprint(normalized)?normalized:current);
+    void writePublicCache(documentSession.snapshot().lastSavedState,cacheMetadata);
   }
   function currentDraftRecord() {
-    return {tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:previewReturnState?clone(previewReturnState):captureState(),baseState:draftBaselineUnknown?null:clone(lastSavedState),baseRevision:publishedRevision,baseUpdatedAt:publishedUpdatedAt,savedAt:new Date().toISOString(),dirty:true};
+    return {tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:documentSession.snapshot().previewReturnState?clone(documentSession.snapshot().previewReturnState):captureState(),baseState:documentSession.snapshot().draftBaselineUnknown?null:clone(documentSession.snapshot().lastSavedState),baseRevision:documentSession.snapshot().publishedRevision,baseUpdatedAt:documentSession.snapshot().publishedUpdatedAt,savedAt:new Date().toISOString(),dirty:true};
   }
   async function flushDraftPersistence() {
     clearTimeout(draftWriteTimer);
-    if(!lastSavedState||!isDirty())return false;
+    if(!documentSession.snapshot().lastSavedState||!isDirty())return false;
     return writeDraftRecord(currentDraftRecord());
   }
   function queueDraftPersistence() {
     clearTimeout(draftWriteTimer);
-    if(!pendingDraft||!lastSavedState||body.classList.contains('hydrating'))return;
+    if(!documentSession.snapshot().pendingDraft||!documentSession.snapshot().lastSavedState||body.classList.contains('hydrating'))return;
     draftWriteTimer=setTimeout(()=>{
-      if(pendingDraft)void writeDraftRecord(currentDraftRecord());
+      if(documentSession.snapshot().pendingDraft)void writeDraftRecord(currentDraftRecord());
     },700);
   }
 
@@ -2049,6 +2033,70 @@ let expenseInput=emptyExpenseInput(),expenseEditInput=emptyExpenseInput(),expens
     form[currency]=event.target.value;form.touched=true;form.composing=Boolean(event.isComposing);
     drawExpenseInput(edit);
   }
+/** Single owner of publication, preview, dirty and undo transitions. */
+function createDocumentSession({clone, normalize, fingerprint}) {
+  let lastSavedState=null, publishedRevision=0, publishedUpdatedAt='';
+  let pendingRemoteState=null, draftBaselineUnknown=false, previewReturnState=null;
+  let pendingDraft=false, documentWriteBlock='', history=[], historyIndex=-1, historyTimer=null;
+
+  function snapshot() {
+    return Object.freeze({lastSavedState:clone(lastSavedState),publishedRevision,publishedUpdatedAt,
+      pendingRemoteState:clone(pendingRemoteState),draftBaselineUnknown,previewReturnState:clone(previewReturnState),
+      pendingDraft,documentWriteBlock,historyIndex,historyLength:history.length});
+  }
+  function establishBaseline(state){lastSavedState=clone(state);}
+  function acceptPublished(row,state){
+    lastSavedState=clone(state);publishedRevision=Math.max(0,Number(row?.revision)||0);
+    publishedUpdatedAt=String(row?.updated_at||row?.updatedAt||'');
+    pendingRemoteState=null;draftBaselineUnknown=false;
+  }
+  function prepareOverwrite(row,state){acceptPublished(row,state);}
+  function adoptImportBaseline(state,revision,updatedAt){
+    lastSavedState=clone(state);draftBaselineUnknown=false;publishedRevision=revision;publishedUpdatedAt=updatedAt;
+  }
+  function restoreDraftBaseline({baseline,revision,updatedAt,unknown,remote}){
+    lastSavedState=clone(baseline);publishedRevision=Math.max(0,Number(revision)||0);
+    publishedUpdatedAt=String(updatedAt||'');draftBaselineUnknown=unknown;pendingRemoteState=clone(remote);
+  }
+  function rememberRemote(row,state){pendingRemoteState={row:clone(row),state:clone(state)};}
+  function markClean(){pendingDraft=false;}
+  function acceptOfflineSave(state){lastSavedState=clone(state);pendingDraft=false;}
+  function dirty(current){return Boolean(lastSavedState&&fingerprint(previewReturnState||current)!==fingerprint(lastSavedState));}
+  function updateDirty(current){const wasDirty=pendingDraft;pendingDraft=dirty(current);return {wasDirty,pendingDraft};}
+  function enterPreview(current){if(!previewReturnState)previewReturnState=clone(current);}
+  function leavePreview(){const state=previewReturnState;previewReturnState=null;return clone(state);}
+  function blockWrites(message){documentWriteBlock=message;}
+
+  // PREP may adopt only its own changes while unrelated edits keep their old revision.
+  function acceptPrepResult({nextBase,saved,result,noOtherDraft,offline,localBaseline}){
+    if(noOtherDraft&&!offline){
+      lastSavedState=normalize(localBaseline);publishedRevision=Number(result.revision);
+      publishedUpdatedAt=result.updated_at;pendingRemoteState=null;draftBaselineUnknown=false;
+    }else{
+      lastSavedState=clone(nextBase);
+      if(offline||(!draftBaselineUnknown&&fingerprint(nextBase)===fingerprint(saved))){
+        publishedRevision=Number(result.revision);publishedUpdatedAt=result.updated_at;pendingRemoteState=null;
+      }else pendingRemoteState={row:{...result,content:clone(saved)},state:clone(saved)};
+    }
+  }
+  function initializeHistory(current){history=[clone(current)];historyIndex=0;}
+  function recordLocalChange(next){
+    if(historyIndex>=0&&fingerprint(history[historyIndex])===fingerprint(next))return false;
+    history=history.slice(0,historyIndex+1);history.push(clone(next));if(history.length>100)history.shift();
+    historyIndex=history.length-1;return true;
+  }
+  function moveHistory(offset){const next=historyIndex+offset;if(next<0||next>=history.length)return null;historyIndex=next;return clone(history[next]);}
+  function reconcileHistory(transform){history=history.map(state=>{try{return transform(clone(state));}catch(_){return state;}});}
+  function cancelHistory(){clearTimeout(historyTimer);historyTimer=null;}
+  function queueHistory(record){cancelHistory();historyTimer=setTimeout(record,400);}
+  return Object.freeze({snapshot,establishBaseline,acceptPublished,prepareOverwrite,adoptImportBaseline,
+    restoreDraftBaseline,rememberRemote,markClean,acceptOfflineSave,dirty,updateDirty,enterPreview,leavePreview,blockWrites,
+    acceptPrepResult,initializeHistory,recordLocalChange,moveHistory,reconcileHistory,cancelHistory,queueHistory});
+}
+const documentSession=createDocumentSession({clone,normalize:(...args)=>normalizeState(...args),fingerprint:(...args)=>fingerprint(...args)});
+/** DOM serialization/repair boundary. Normalization needs an explicit fallback. */
+function createDocumentAdapter({$,$$,DEFAULT_BUDGET_KRW,DEFAULT_EXCHANGE_RATE,IMPORT_ALLOWED_MONEY_IDS,MEDIA_PATH_PATTERN,SCHEMA_VERSION,SUPABASE_URL,TRIP_ID,afterApply,assertCurrencyPair,assertSupportedSchema,beforeApply,clone,currencyMetadata,drawExpenseInput,entryPending,hashText,normalizeCategories,normalizeExpenses,pendingCheckBefore,readEntryBuffer,readLedger,renderCheckFeedback,renderDocument,replaceLedger,restoreEntryBuffer,scheduleKindMode,sumLedgerAmounts}) {
+let applyingHistory=false,moneyTemplateHtml="";
   function sanitizeMarkup(markup, imported=false) {
     const template=document.createElement('template'); template.innerHTML=markup||'';
     template.content.querySelectorAll('script,style,iframe,object,embed,link,meta,form,.memo,.map,.schedule-media-tools,.photo-actions,.row-actions,.photo-delete,.row-delete,.check-delete,.check-actions,.check-feedback,.warning-delete').forEach(el=>el.remove());
@@ -2112,7 +2160,8 @@ let expenseInput=emptyExpenseInput(),expenseEditInput=emptyExpenseInput(),expens
     template.content.querySelectorAll('input[type="checkbox"]').forEach(input=>{input.removeAttribute('checked');input.removeAttribute('disabled');});
     return template.innerHTML;
   }
-  function normalizeState(raw, imported=false) {
+  function normalizeState(raw, {imported=false,fallback=null}={}) {
+    if(!raw?.html&&!fallback?.html)throw new TypeError('A document snapshot or explicit fallback is required.');
     assertSupportedSchema(raw);
     assertCurrencyPair(raw);
     const cats=normalizeCategories(raw?.categories);
@@ -2120,7 +2169,7 @@ let expenseInput=emptyExpenseInput(),expenseEditInput=emptyExpenseInput(),expens
     return {
       schemaVersion:SCHEMA_VERSION,
       ...currencyMetadata(),
-      html:sanitizeMarkup(raw?.html || $('main').innerHTML, imported),
+      html:sanitizeMarkup(raw?.html || fallback?.html || '', imported),
       expenses:(()=>{try{return normalizeExpenses(raw?.expenses,cats,Number.isFinite(rate)&&rate>0?rate:DEFAULT_EXCHANGE_RATE,Number(raw?.schemaVersion)||0);}catch(error){error.code='DOCUMENT_LEDGER';throw error;}})(),
       categories:cats,
       exchangeRate:Number.isFinite(rate)&&rate>0 ? rate : DEFAULT_EXCHANGE_RATE,
@@ -2159,6 +2208,81 @@ let expenseInput=emptyExpenseInput(),expenseEditInput=emptyExpenseInput(),expens
     });
     return {...raw,html:previous.innerHTML,checks:Array.isArray(raw.checks)?raw.checks.map(Boolean):null};
   }
+
+function captureState() {
+    const {expenses,categories,exchangeRate,exchangeRateUpdated,budgetKrw}=readLedger();
+    const main=$('main').cloneNode(true);
+    main.querySelectorAll('[contenteditable]').forEach(el=>el.setAttribute('contenteditable','false'));
+    main.querySelectorAll('.schedule-media-tools,.photo-actions,.row-actions,.photo-delete,.schedule-map-delete,.row-delete,.check-delete,.check-actions,.check-feedback,.warning-delete').forEach(el=>el.remove());
+    main.querySelector('#ledgerMigrationNotice')?.remove();
+    main.querySelectorAll('.add-expense .amount-hint').forEach(el=>{el.textContent='';el.classList.remove('amount-error');});
+    main.querySelectorAll('.add-expense input').forEach(el=>{el.removeAttribute('value');el.removeAttribute('aria-invalid');});
+    const rendered=main.querySelector('#expenses');if(rendered)rendered.innerHTML='';
+    const manager=main.querySelector('#categoryManagerList');if(manager)manager.innerHTML='';
+    const summary=main.querySelector('#categorySummary');if(summary)summary.innerHTML='';
+    main.querySelectorAll('input[type="checkbox"]').forEach(input=>{input.removeAttribute('checked');input.removeAttribute('disabled');});
+    return {schemaVersion:SCHEMA_VERSION,...currencyMetadata(),html:main.innerHTML,expenses:clone(expenses),categories:clone(categories),exchangeRate,exchangeRateUpdated,budgetKrw,checks:$$('main input[type="checkbox"]').map(input=>pendingCheckBefore(input.closest('[data-check-id]')?.dataset.checkId)??input.checked)};
+  }
+
+function applyState(raw) {
+    if(!raw?.html)return; const state=normalizeState(raw); applyingHistory=true;
+    const pendingEntry=entryPending()?$$('.add-expense input,.add-expense select').map(input=>({id:input.id,value:input.value})):[];
+    beforeApply();
+    $('main').innerHTML=state.html; replaceLedger(state);
+    renderDocument();
+    pendingEntry.forEach(({id,value})=>{const input=$('#'+id);if(input&&(input.tagName!=='SELECT'||Array.from(input.options).some(option=>option.value===value)))input.value=value;});drawExpenseInput();
+    if(Array.isArray(state.checks))$$('main input[type="checkbox"]').forEach((input,index)=>input.checked=Boolean(state.checks[index]));
+    afterApply();applyingHistory=false;renderCheckFeedback();
+  }
+function applyStatePreservingInputs(state) {
+    // Preserve unsubmitted expense entry and keyboard focus across rendering.
+    const preservedExpenseInput=readEntryBuffer();
+    const fields=$$('.add-expense input,.add-expense select').map(input=>({id:input.id,value:input.value}));
+    const active=document.activeElement,wasInMain=Boolean(active?.closest('main')),focusId=active?.id,checkId=active?.closest('.prepday [data-check-id]')?.dataset.checkId;
+    const selection=active instanceof HTMLInputElement?[active.selectionStart,active.selectionEnd]:null;
+    applyState(state);
+    fields.forEach(({id,value})=>{const input=document.getElementById(id);if(input&&(input.tagName!=='SELECT'||Array.from(input.options).some(option=>option.value===value)))input.value=value;});
+    restoreEntryBuffer(preservedExpenseInput);drawExpenseInput();
+    const focus=checkId?$$('.prepday [data-check-id]').find(label=>label.dataset.checkId===checkId)?.querySelector('input'):focusId?document.getElementById(focusId):null;
+    if(focus&&wasInMain&&!focus.disabled){focus.focus({preventScroll:true});if(selection&&selection[0]!==null)focus.setSelectionRange(...selection);}
+  }
+function setMoneyTemplate(html){moneyTemplateHtml=html;}
+function isApplying(){return applyingHistory;}
+function migrationNotice(){return ledgerMigrationNotice;}
+
+return Object.freeze({sanitizeMarkup,normalizeState,checkLabelText,preserveLegacyLedger,migratePublishedState,captureState,applyState,applyStatePreservingInputs,setMoneyTemplate,isApplying,migrationNotice});
+}
+const documentAdapter=createDocumentAdapter({$:$,
+$$:$$,
+DEFAULT_BUDGET_KRW:DEFAULT_BUDGET_KRW,
+DEFAULT_EXCHANGE_RATE:DEFAULT_EXCHANGE_RATE,
+IMPORT_ALLOWED_MONEY_IDS:IMPORT_ALLOWED_MONEY_IDS,
+MEDIA_PATH_PATTERN:MEDIA_PATH_PATTERN,
+SCHEMA_VERSION:SCHEMA_VERSION,
+SUPABASE_URL:SUPABASE_URL,
+TRIP_ID:TRIP_ID,
+afterApply:()=>{setEditable(body.classList.contains('editing'));updateContextControls();},
+assertCurrencyPair:(...args)=>assertCurrencyPair(...args),
+assertSupportedSchema:(...args)=>assertSupportedSchema(...args),
+beforeApply:()=>{$('#timetableDetail').hidden=true;closeScheduleTimeDialog();},
+clone:(...args)=>clone(...args),
+currencyMetadata:(...args)=>currencyMetadata(...args),
+drawExpenseInput:(...args)=>drawExpenseInput(...args),
+entryPending:()=>expenseAddPending,
+hashText:(...args)=>hashText(...args),
+normalizeCategories:(...args)=>normalizeCategories(...args),
+normalizeExpenses:(...args)=>normalizeExpenses(...args),
+pendingCheckBefore:id=>pendingChecks.get(id)?.before,
+readEntryBuffer:()=>clone(expenseInput),
+readLedger:()=>({expenses,categories,exchangeRate,exchangeRateUpdated,budgetKrw}),
+renderCheckFeedback:(...args)=>renderCheckFeedback(...args),
+renderDocument:()=>{decorateDates();decorateChecklist();decorateScheduleRows();renderLedger();},
+replaceLedger:state=>{expenses=clone(state.expenses);categories=clone(state.categories);exchangeRate=state.exchangeRate;exchangeRateUpdated=state.exchangeRateUpdated;budgetKrw=state.budgetKrw;},
+restoreEntryBuffer:value=>{expenseInput=value;},
+scheduleKindMode:(...args)=>scheduleKindMode(...args),
+sumLedgerAmounts:(...args)=>sumLedgerAmounts(...args)});
+const {sanitizeMarkup,checkLabelText,preserveLegacyLedger,migratePublishedState,captureState,applyState,applyStatePreservingInputs,setMoneyTemplate,isApplying,migrationNotice}=documentAdapter;
+const normalizeState=(raw,imported=false)=>documentAdapter.normalizeState(raw,{imported,fallback:raw?.html?null:captureState()});
 
   function decorateDates() {
     TRIP_DAYS.forEach((day,index)=>{
@@ -2210,29 +2334,18 @@ let expenseInput=emptyExpenseInput(),expenseEditInput=emptyExpenseInput(),expens
     });
     syncChecklistControls();
   }
-  function applyStatePreservingInputs(state) {
-    // Preserve unsubmitted expense entry and keyboard focus across rendering.
-    const preservedExpenseInput=clone(expenseInput);
-    const fields=$$('.add-expense input,.add-expense select').map(input=>({id:input.id,value:input.value}));
-    const active=document.activeElement,wasInMain=Boolean(active?.closest('main')),focusId=active?.id,checkId=active?.closest('.prepday [data-check-id]')?.dataset.checkId;
-    const selection=active instanceof HTMLInputElement?[active.selectionStart,active.selectionEnd]:null;
-    applyState(state);
-    fields.forEach(({id,value})=>{const input=document.getElementById(id);if(input&&(input.tagName!=='SELECT'||Array.from(input.options).some(option=>option.value===value)))input.value=value;});
-    expenseInput=preservedExpenseInput;drawExpenseInput();
-    const focus=checkId?$$('.prepday [data-check-id]').find(label=>label.dataset.checkId===checkId)?.querySelector('input'):focusId?document.getElementById(focusId):null;
-    if(focus&&wasInMain&&!focus.disabled){focus.focus({preventScroll:true});if(selection&&selection[0]!==null)focus.setSelectionRange(...selection);}
-  }
+
   async function commitChecklistPatch(transform,note,isApplied) {
-    if(documentWriteBlock)throw new Error(documentWriteBlock);
+    if(documentSession.snapshot().documentWriteBlock)throw new Error(documentSession.snapshot().documentWriteBlock);
     if(saveInFlight||operationBusy)throw new Error('다른 저장이 끝난 뒤 다시 시도해 주세요.');
     checklistSaving=true;syncChecklistControls();
     try {
       for(let attempt=0;attempt<3;attempt++) {
         const row=OFFLINE_MODE?null:await fetchPublishedState();
         if(!OFFLINE_MODE&&!row)throw new Error('공유 저장본을 확인하지 못했습니다.');
-        const remote=row?.content?.html?normalizeState(migratePublishedState(row.content)):clone(lastSavedState);
+        const remote=row?.content?.html?normalizeState(migratePublishedState(row.content)):clone(documentSession.snapshot().lastSavedState);
         let saved=normalizeState(transform(remote,true));
-        let result={revision:publishedRevision,updated_at:publishedUpdatedAt};
+        let result={revision:documentSession.snapshot().publishedRevision,updated_at:documentSession.snapshot().publishedUpdatedAt};
         if(!OFFLINE_MODE&&fingerprint(saved)===fingerprint(remote)){
           transform(remote,'verified');saved=remote;result=row;
         }else if(!OFFLINE_MODE){
@@ -2247,7 +2360,7 @@ let expenseInput=emptyExpenseInput(),expenseEditInput=emptyExpenseInput(),expens
             let latest;try{latest=await fetchPublishedState();}catch(_){}
             const latestState=latest?.content?.html?normalizeState(migratePublishedState(latest.content)):null;
             if(!latestState||!isApplied(latestState)){
-              if(latestState)pendingRemoteState={row:latest,state:latestState};
+              if(latestState)documentSession.rememberRemote(latest,latestState);
               const error=new Error('저장 결과 확인 필요 · 연결 후 재시도해 주세요.');error.uncertain=true;throw error;
             }
             // Refresh list completion flags from the verified snapshot, including
@@ -2260,12 +2373,12 @@ let expenseInput=emptyExpenseInput(),expenseEditInput=emptyExpenseInput(),expens
         }
         // Transfer only this operation's result into the local draft and its
         // undo history. Unrelated local changes remain unpublished and dirty.
-        const localBefore=captureState(),baseBefore=clone(lastSavedState);
+        const localBefore=captureState(),baseBefore=clone(documentSession.snapshot().lastSavedState);
         const nextLocal=transform(localBefore),nextBase=normalizeState(transform(baseBefore));
         if(OFFLINE_MODE){
           clearTimeout(draftWriteTimer);
           const dirty=fingerprint(nextLocal)!==fingerprint(nextBase);
-          const ok=await writeDraftRecord({tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:nextLocal,baseState:nextBase,baseRevision:publishedRevision,baseUpdatedAt:publishedUpdatedAt,savedAt:new Date().toISOString(),dirty});
+          const ok=await writeDraftRecord({tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:nextLocal,baseState:nextBase,baseRevision:documentSession.snapshot().publishedRevision,baseUpdatedAt:documentSession.snapshot().publishedUpdatedAt,savedAt:new Date().toISOString(),dirty});
           if(!ok)throw new Error('브라우저에 저장하지 못했습니다. 다시 시도해 주세요.');
         }
         const persistedItems=checklistItems(nextLocal);pendingChecks.forEach((pending,id)=>{const item=persistedItems.find(item=>item.id===id);if(item)pending.before=item.checked;});
@@ -2273,13 +2386,11 @@ let expenseInput=emptyExpenseInput(),expenseEditInput=emptyExpenseInput(),expens
         if(noOtherDraft&&!OFFLINE_MODE){
           applyStatePreservingInputs(saved);
           // captureState deliberately excludes optimistic values still in flight.
-          lastSavedState=normalizeState(captureState());publishedRevision=Number(result.revision);publishedUpdatedAt=result.updated_at;pendingRemoteState=null;draftBaselineUnknown=false;
+          documentSession.acceptPrepResult({nextBase,saved,result,noOtherDraft,offline:OFFLINE_MODE,localBaseline:captureState()});
         }else{
-          applyStatePreservingInputs(nextLocal);lastSavedState=nextBase;
-          if(OFFLINE_MODE||(!draftBaselineUnknown&&fingerprint(nextBase)===fingerprint(saved))){publishedRevision=Number(result.revision);publishedUpdatedAt=result.updated_at;pendingRemoteState=null;}
-          else pendingRemoteState={row:{...result,content:saved},state:saved};
+          applyStatePreservingInputs(nextLocal);documentSession.acceptPrepResult({nextBase,saved,result,noOtherDraft,offline:OFFLINE_MODE});
         }
-        history=history.map(state=>{try{return transform(state);}catch(_){return state;}});
+        documentSession.reconcileHistory(transform);
         if(!OFFLINE_MODE)void writePublicCache(saved,{revision:Number(result.revision),updatedAt:result.updated_at});
         return saved;
       }
@@ -2308,7 +2419,7 @@ let expenseInput=emptyExpenseInput(),expenseEditInput=emptyExpenseInput(),expens
         const before=pendingChecks.get(id)?.before,restoreFocus=document.activeElement===document.body;pendingChecks.delete(id);
         const current=$$('.prepday .checklist label').find(label=>label.dataset.checkId===id)?.querySelector('input');if(current)current.checked=saved?value:before;
         updateDirtyState();renderCheckFeedback();if(restoreFocus&&current&&$('.day-radio:checked')?.id==='prep'&&$('#authDialog').hidden)current.focus({preventScroll:true});resetInactivityTimer();
-        if(saved&&!pendingDraft&&!OFFLINE_MODE&&!deferredDraftRecovery)await clearDraftRecord();
+        if(saved&&!documentSession.snapshot().pendingDraft&&!OFFLINE_MODE&&!deferredDraftRecovery)await clearDraftRecord();
         if(saved){const feedback=checkFeedback.get(id);setTimeout(()=>{if(checkFeedback.get(id)===feedback){checkFeedback.delete(id);renderCheckFeedback();}},3500);}
       }
     });
@@ -2317,7 +2428,7 @@ let expenseInput=emptyExpenseInput(),expenseEditInput=emptyExpenseInput(),expens
   async function openChecklistEditor() {
     if(pendingChecks.size||checklistSaving)return;
     checklistEditorBase=checklistItems(captureState());
-    if(!OFFLINE_MODE&&checklistShape(checklistEditorBase)===checklistShape(checklistItems(lastSavedState))){
+    if(!OFFLINE_MODE&&checklistShape(checklistEditorBase)===checklistShape(checklistItems(documentSession.snapshot().lastSavedState))){
       try{const latest=await fetchPublishedState();if(latest?.content?.html)checklistEditorBase=checklistItems(normalizeState(migratePublishedState(latest.content)));}catch(_){}
     }
     checklistEditorItems=clone(checklistEditorBase);newChecklistItemIds.clear();
@@ -2352,7 +2463,7 @@ let expenseInput=emptyExpenseInput(),expenseEditInput=emptyExpenseInput(),expens
         return patchChecklist(state,publishedItems);
       },'준비 목록 편집',state=>checklistShape(checklistItems(state))===checklistShape(items));
       $('#checklistDialog').hidden=true;checkFeedback.clear();renderCheckFeedback();updateDirtyState();
-      if(!pendingDraft&&!OFFLINE_MODE&&!deferredDraftRecovery)await clearDraftRecord();
+      if(!documentSession.snapshot().pendingDraft&&!OFFLINE_MODE&&!deferredDraftRecovery)await clearDraftRecord();
       setStatus(OFFLINE_MODE?'목록을 이 브라우저에 저장했습니다.':'목록 저장됨');
     }catch(error){
       // Submitted IDs may now exist remotely. A later explicit retry must retain
@@ -2409,7 +2520,7 @@ let expenseInput=emptyExpenseInput(),expenseEditInput=emptyExpenseInput(),expens
   function changeScheduleKind(select){
     const row=select.closest('.timeline-row');if(!row)return;
     if(!body.classList.contains('editing')){updateScheduleKindControl(row);return;}
-    clearTimeout(historyTimer);recordHistory();
+    documentSession.cancelHistory();recordHistory();
     const mode=scheduleKindMode(select.value);if(mode==='auto')delete row.dataset.scheduleKind;else row.dataset.scheduleKind=mode;
     updateScheduleKindControl(row);recordHistory();resetInactivityTimer();
   }
@@ -2473,42 +2584,19 @@ function configureCurrencyLabels(){
     const categoryChips=categories.map(category=>'<span class="category-chip'+(category.system?' system':'')+'"><b>'+escapeHtml(category.icon)+'</b>'+escapeHtml(category.name)+(category.system?'':'<button data-category-edit="'+escapeHtml(category.id)+'" type="button">수정</button><button data-category-delete="'+escapeHtml(category.id)+'" type="button">삭제</button>')+'</span>').join('');$('#categoryManagerList').innerHTML=categoryChips;if($('#settingsCategoryList'))$('#settingsCategoryList').innerHTML=categoryChips;
     if($('#ledgerSettingsDialog')&&!$('#ledgerSettingsDialog').hidden){$('#settingsExchangeRate').value=String(exchangeRate);}
     $('#expenses').innerHTML=expenses.length?expenses.map(item=>{const category=getCategory(item.categoryId),id=escapeHtml(item.id),name=escapeHtml(item.name),index=expenses.findIndex(entry=>entry.id===item.id);return '<div class="expense" data-expense-id="'+id+'"><div class="expense-copy"><div class="expense-primary"><time class="expense-date" datetime="'+escapeHtml(item.date||'')+'">'+escapeHtml(formatExpenseDate(item.date))+'</time><b>'+name+'</b></div><span class="expense-category-badge">'+escapeHtml(category.icon+' '+category.name)+'</span></div><div class="expense-side"><strong class="expense-amount ledger-amount">'+renderLedgerAmounts(formatKrw(item.amountKrw),formatUsd(item.amountUsd),item.amountSource)+'</strong><div class="expense-actions"><button class="expense-action" data-icon="up" data-move-expense="'+id+'" data-move-direction="-1" type="button" aria-label="'+name+' 위로 이동" title="위로 이동"'+(index===0?' disabled':'')+'></button><button class="expense-action" data-icon="down" data-move-expense="'+id+'" data-move-direction="1" type="button" aria-label="'+name+' 아래로 이동" title="아래로 이동"'+(index===expenses.length-1?' disabled':'')+'></button><button class="expense-action" data-edit-expense="'+id+'" data-icon="edit" type="button">수정</button><button class="expense-action delete" data-remove-expense="'+id+'" type="button">삭제</button></div></div></div>';}).join(''):'<div class="remark">'+'아직 기록된 경비가 없습니다.'+'</div>';
-    if(ledgerMigrationNotice){let notice=$('#ledgerMigrationNotice');if(!notice){notice=document.createElement('p');notice.id='ledgerMigrationNotice';notice.className='remark';$('.expense-entry').before(notice);}notice.textContent=ledgerMigrationNotice;}
+    if(documentAdapter.migrationNotice()){let notice=$('#ledgerMigrationNotice');if(!notice){notice=document.createElement('p');notice.id='ledgerMigrationNotice';notice.className='remark';$('.expense-entry').before(notice);}notice.textContent=documentAdapter.migrationNotice();}
     drawExpenseInput();
     decorateButtonIcons($('#expenses'));decorateButtonIcons($('.expenses-head'));if(!$('#expenseDate').value)$('#expenseDate').value=todayLocal();
   }
-  function captureState() {
-    const main=$('main').cloneNode(true);
-    main.querySelectorAll('[contenteditable]').forEach(el=>el.setAttribute('contenteditable','false'));
-    main.querySelectorAll('.schedule-media-tools,.photo-actions,.row-actions,.photo-delete,.schedule-map-delete,.row-delete,.check-delete,.check-actions,.check-feedback,.warning-delete').forEach(el=>el.remove());
-    main.querySelector('#ledgerMigrationNotice')?.remove();
-    main.querySelectorAll('.add-expense .amount-hint').forEach(el=>{el.textContent='';el.classList.remove('amount-error');});
-    main.querySelectorAll('.add-expense input').forEach(el=>{el.removeAttribute('value');el.removeAttribute('aria-invalid');});
-    const rendered=main.querySelector('#expenses');if(rendered)rendered.innerHTML='';
-    const manager=main.querySelector('#categoryManagerList');if(manager)manager.innerHTML='';
-    const summary=main.querySelector('#categorySummary');if(summary)summary.innerHTML='';
-    main.querySelectorAll('input[type="checkbox"]').forEach(input=>{input.removeAttribute('checked');input.removeAttribute('disabled');});
-    return {schemaVersion:SCHEMA_VERSION,...currencyMetadata(),html:main.innerHTML,expenses:clone(expenses),categories:clone(categories),exchangeRate,exchangeRateUpdated,budgetKrw,checks:$$('main input[type="checkbox"]').map(input=>pendingChecks.get(input.closest('[data-check-id]')?.dataset.checkId)?.before??input.checked)};
-  }
-  function applyState(raw) {
-    if(!raw?.html)return; const state=normalizeState(raw); applyingHistory=true;
-    const pendingEntry=expenseAddPending?$$('.add-expense input,.add-expense select').map(input=>({id:input.id,value:input.value})):[];
-    $('#timetableDetail').hidden=true;closeScheduleTimeDialog();
-    $('main').innerHTML=state.html; expenses=clone(state.expenses);categories=clone(state.categories);exchangeRate=state.exchangeRate;exchangeRateUpdated=state.exchangeRateUpdated;budgetKrw=state.budgetKrw;
-    decorateDates();decorateChecklist();decorateScheduleRows();renderLedger();
-    pendingEntry.forEach(({id,value})=>{const input=$('#'+id);if(input&&(input.tagName!=='SELECT'||Array.from(input.options).some(option=>option.value===value)))input.value=value;});drawExpenseInput();
-    if(Array.isArray(state.checks))$$('main input[type="checkbox"]').forEach((input,index)=>input.checked=Boolean(state.checks[index]));
-    setEditable(body.classList.contains('editing'));updateContextControls();applyingHistory=false;renderCheckFeedback();
-  }
-  function fingerprint(state){return JSON.stringify(normalizeState(state||{}));}
-  function isDirty(){return Boolean(lastSavedState&&fingerprint(previewReturnState||captureState())!==fingerprint(lastSavedState));}
-  function updateDirtyState({preserveDraft=false}={}){const wasDirty=pendingDraft;pendingDraft=isDirty();$('#saveBtn').disabled=!pendingDraft;setStatus(body.classList.contains('editing')?(pendingDraft?'편집 중 · 저장되지 않음':'편집 모드'):(pendingDraft?'저장 대기 중':(OFFLINE_MODE?'오프라인 작업본':'보기 모드')));if(pendingDraft)queueDraftPersistence();else if(wasDirty&&!preserveDraft&&!body.classList.contains('hydrating'))clearCleanDraft();syncChecklistControls();}
+function fingerprint(state){return JSON.stringify(normalizeState(state||{}));}
+  function isDirty(){return documentSession.dirty(captureState());}
+  function updateDirtyState({preserveDraft=false}={}){const {wasDirty,pendingDraft}=documentSession.updateDirty(captureState());$('#saveBtn').disabled=!pendingDraft;setStatus(body.classList.contains('editing')?(pendingDraft?'편집 중 · 저장되지 않음':'편집 모드'):(pendingDraft?'저장 대기 중':(OFFLINE_MODE?'오프라인 작업본':'보기 모드')));if(pendingDraft)queueDraftPersistence();else if(wasDirty&&!preserveDraft&&!body.classList.contains('hydrating'))clearCleanDraft();syncChecklistControls();}
   function setEditable(on){$$('main [contenteditable],.checklist label>span:not(.check-actions),.schedule-warning-text,main .day:not(.prepday):not(.moneyday) .day-head p').forEach(el=>el.contentEditable=on?'true':'false');$('#exchangeRate').disabled=true;$$('.check-actions,.time,.time [contenteditable]').forEach(el=>el.contentEditable='false');$$('.prepday [contenteditable]').forEach(el=>el.contentEditable='false');syncChecklistControls();if(!on)closeScheduleTimeDialog();}
-  function recordHistory(){if(!body.classList.contains('editing')||applyingHistory)return;const next=captureState();if(historyIndex>=0&&fingerprint(history[historyIndex])===fingerprint(next))return;history=history.slice(0,historyIndex+1);history.push(clone(next));if(history.length>100)history.shift();historyIndex=history.length-1;updateHistoryControls();updateDirtyState();}
-  function queueHistory(){updateDirtyState();if(pendingDraft)void flushDraftPersistence();clearTimeout(historyTimer);historyTimer=setTimeout(recordHistory,400);}
-  function initializeHistory(){history=[clone(captureState())];historyIndex=0;updateHistoryControls();}
-  function updateHistoryControls(){$('#undoBtn').disabled=historyIndex<=0;$('#redoBtn').disabled=historyIndex<0||historyIndex>=history.length-1;}
-  function moveHistory(offset){const next=historyIndex+offset;if(next<0||next>=history.length)return;historyIndex=next;applyState(history[next]);updateHistoryControls();updateDirtyState();resetInactivityTimer();}
+  function recordHistory(){if(!body.classList.contains('editing')||documentAdapter.isApplying())return;if(!documentSession.recordLocalChange(captureState()))return;updateHistoryControls();updateDirtyState();}
+  function queueHistory(){updateDirtyState();if(documentSession.snapshot().pendingDraft)void flushDraftPersistence();documentSession.queueHistory(recordHistory);}
+  function initializeHistory(){documentSession.initializeHistory(captureState());updateHistoryControls();}
+  function updateHistoryControls(){const {historyIndex,historyLength}=documentSession.snapshot();$('#undoBtn').disabled=historyIndex<=0;$('#redoBtn').disabled=historyIndex<0||historyIndex>=historyLength-1;}
+  function moveHistory(offset){const next=documentSession.moveHistory(offset);if(!next)return;applyState(next);updateHistoryControls();updateDirtyState();resetInactivityTimer();}
   function updateEditButton(){const button=$('#editBtn'),money=$('.day-radio:checked')?.id==='money',editing=body.classList.contains('editing'),icon=editing?'check':money?'settings':'edit',label=editing?'편집 완료':money?'가계부 설정':$('.day-radio:checked')?.id==='prep'?'목록 편집':'편집 시작';button.dataset.icon=icon;button.innerHTML=iconSvg(icon)+label;}
   function syncSelectedPanel(){const id=$('.day-radio:checked')?.id||'prep',selector=id==='prep'?'.prepday':id==='money'?'.moneyday':/^d\d+$/.test(id)?'.day'+id.slice(1):'.prepday';$$('main .panel.day').forEach(panel=>{const active=panel.matches(selector),panelId=panel.classList.contains('prepday')?'prep':panel.classList.contains('moneyday')?'money':'d'+(Array.from(panel.classList).find(name=>/^day\d+$/.test(name))||'day1').slice(3);panel.id='panel-'+panelId;panel.setAttribute('role','tabpanel');panel.setAttribute('aria-labelledby','tab-'+panelId);panel.setAttribute('aria-hidden',String(!active));panel.classList.toggle('is-active',active);});$$('.tabs label[for]').forEach(label=>{const active=label.htmlFor===id;label.id='tab-'+label.htmlFor;label.setAttribute('role','tab');label.setAttribute('aria-controls','panel-'+label.htmlFor);label.setAttribute('aria-selected',String(active));label.tabIndex=active?0:-1;label.classList.toggle('is-active',active);});}
   function updateContextControls(){const id=$('.day-radio:checked')?.id||'';if(/^d\d+$/.test(id))lastScheduleDay=id;syncSelectedPanel();$$('.bottom-nav button').forEach(button=>{const active=button.dataset.section===(/^d\d+$/.test(id)?'schedule':id);if(active)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');});$('#addTimeBtn').classList.toggle('hidden',!/^d\d+$/.test(id));$('#addCheckBtn').classList.add('hidden');updateEditButton();syncScheduleView();}
@@ -2711,8 +2799,8 @@ async function showInactivityWarning(){dialogs.startNoticeCountdown();const dirt
       // another edit, and retain the guard across duplicate sign-out events.
       deferredDraftRecovery=true;
     }
-    if(previewReturnState)closePreview();
-    if(lastSavedState)applyState(lastSavedState);
+    if(documentSession.snapshot().previewReturnState)closePreview();
+    if(documentSession.snapshot().lastSavedState)applyState(documentSession.snapshot().lastSavedState);
     initializeHistory();setEditingUI(false,{preserveDraft:true});closeEditorDialogs();closeNotice('signed-out');setEditorSession(null);
     setStatus(hadDraft?message+($('#draftStorageWarning')&&!$('#draftStorageWarning').hidden?' 초안 보관에 실패했습니다. 새로고침 전에 로그인해 저장하거나 내보내세요.':' 초안은 이 브라우저에 보관했습니다.'):message);
   }
@@ -2721,8 +2809,8 @@ async function showInactivityWarning(){dialogs.startNoticeCountdown();const dirt
     await handleExternalSignOut(message);
     await signOutEditor();
   }
-  async function requestManualLogout(){if(!sessionService.current()||OFFLINE_MODE)return;if(previewReturnState)closePreview();if(isDirty()){const choice=await showChoice({title:'로그아웃할까요?',message:'저장하지 않은 변경사항이 있습니다.',choices:[{label:'계속 사용',value:'continue'},{label:'폐기 후 로그아웃',value:'discard',className:'action-danger'},{label:'저장 후 로그아웃',value:'save',className:'action-primary'}]});if(choice!=='save'&&choice!=='discard')return;if(choice==='save'){if(!await saveAndFinish('로그아웃 전 저장'))return;}else{if(!await clearDraftRecord())return;if(lastSavedState)applyState(lastSavedState);}}setEditingUI(false);closeEditorDialogs();await signOutEditor();setStatus('편집자 로그아웃 완료');}
-  async function discardDraft(message='수정 내용을 폐기했습니다.'){if(!await clearDraftRecord())return false;if(previewReturnState)closePreview();if(lastSavedState)applyState(lastSavedState);initializeHistory();setEditingUI(false);closeEditorDialogs();resetInactivityTimer();setStatus(message);return true;}
+  async function requestManualLogout(){if(!sessionService.current()||OFFLINE_MODE)return;if(documentSession.snapshot().previewReturnState)closePreview();if(isDirty()){const choice=await showChoice({title:'로그아웃할까요?',message:'저장하지 않은 변경사항이 있습니다.',choices:[{label:'계속 사용',value:'continue'},{label:'폐기 후 로그아웃',value:'discard',className:'action-danger'},{label:'저장 후 로그아웃',value:'save',className:'action-primary'}]});if(choice!=='save'&&choice!=='discard')return;if(choice==='save'){if(!await saveAndFinish('로그아웃 전 저장'))return;}else{if(!await clearDraftRecord())return;if(documentSession.snapshot().lastSavedState)applyState(documentSession.snapshot().lastSavedState);}}setEditingUI(false);closeEditorDialogs();await signOutEditor();setStatus('편집자 로그아웃 완료');}
+  async function discardDraft(message='수정 내용을 폐기했습니다.'){if(!await clearDraftRecord())return false;if(documentSession.snapshot().previewReturnState)closePreview();if(documentSession.snapshot().lastSavedState)applyState(documentSession.snapshot().lastSavedState);initializeHistory();setEditingUI(false);closeEditorDialogs();resetInactivityTimer();setStatus(message);return true;}
   async function discardAndLogout(message='수정 내용을 폐기하고 로그아웃했습니다.'){if(!await discardDraft(message)){resetInactivityTimer();return false;}closeNotice('timeout');await signOutEditor();setStatus(message);return true;}
 
 function bindAuthentication(){
@@ -2736,7 +2824,7 @@ function bindAuthentication(){
     try{remoteRow=await fetchPublishedState();}catch(error){console.error(error);setStatus('충돌 확인 실패 · 연결을 확인해 주세요.');return false;}
     if(!remoteRow?.content?.html){setStatus('최신 저장본을 확인하지 못했습니다.');return false;}
     const remoteState=normalizeState(migratePublishedState(remoteRow.content));
-    pendingRemoteState={row:remoteRow,state:remoteState};
+    documentSession.rememberRemote(remoteRow,remoteState);
     const groups=buildDiff(remoteState,localState);
     const choice=await showChoice({title:'다른 저장본이 먼저 반영되었습니다.',message:'자동 저장을 중단했습니다.\n\n'+compactDiffMessage(groups),choices:[{label:'계속 편집',value:'continue'},{label:'최신본으로 전환',value:'remote',className:'action-danger'},{label:'내 초안으로 덮어쓰기',value:'overwrite',className:'action-primary'}]});
     if(choice==='remote'){
@@ -2744,22 +2832,21 @@ function bindAuthentication(){
       applyState(remoteState);setPublishedBaseline(remoteRow,remoteState);initializeHistory();updateDirtyState();setStatus('최신 저장본으로 전환했습니다.');return false;
     }
     if(choice==='overwrite'){
-      lastSavedState=clone(remoteState);draftBaselineUnknown=false;
-      publishedRevision=Math.max(0,Number(remoteRow.revision)||0);publishedUpdatedAt=String(remoteRow.updated_at||'');pendingRemoteState=null;
+      documentSession.prepareOverwrite(remoteRow,remoteState);
       return persistState(localState,{note:'충돌 확인 후 저장'+(note?' · '+note:'')});
     }
     setStatus('내 초안을 유지했습니다. 저장 전 충돌을 다시 확인합니다.');return false;
   }
   async function persistState(state,{note='수동 저장'}={}){
-    if(documentWriteBlock){setStatus(documentWriteBlock);return false;}
+    if(documentSession.snapshot().documentWriteBlock){setStatus(documentSession.snapshot().documentWriteBlock);return false;}
     if(body.classList.contains('previewing')){setStatus('미리보기를 닫은 뒤 저장해 주세요.');return false;}
     if(deferredDraftRecovery){setStatus('보관한 초안을 복구하거나 삭제한 뒤 편집해 주세요.');return false;}
     if(saveInFlight||operationBusy||checklistSaving||pendingChecks.size){setStatus('다른 작업이 끝난 뒤 저장해 주세요.');return false;}
     let normalized=normalizeState(state);
     if(OFFLINE_MODE){
-      const saved=await writeDraftRecord({tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:normalized,baseState:normalized,baseRevision:publishedRevision,baseUpdatedAt:publishedUpdatedAt,savedAt:new Date().toISOString(),dirty:false});
+      const saved=await writeDraftRecord({tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:normalized,baseState:normalized,baseRevision:documentSession.snapshot().publishedRevision,baseUpdatedAt:documentSession.snapshot().publishedUpdatedAt,savedAt:new Date().toISOString(),dirty:false});
       if(!saved){memoryDraftRecord=currentDraftRecord();return false;}
-      lastSavedState=clone(normalized);pendingDraft=false;
+      documentSession.acceptOfflineSave(normalized);
       return {offline:true};
     }
     if(!client){setStatus('저장할 수 없습니다.');return false;}
@@ -2772,7 +2859,7 @@ function bindAuthentication(){
       const controller=new AbortController();timeout=setTimeout(()=>controller.abort(),runtimeOptions.saveMs);
       let response;
       try{
-        response=await tripRepository.saveDocument(normalized,publishedRevision,note,controller.signal);
+        response=await tripRepository.saveDocument(normalized,documentSession.snapshot().publishedRevision,note,controller.signal);
       }catch(error){if(!controller.signal.aborted)throw error;}
       finally{clearTimeout(timeout);}
       if(controller.signal.aborted){
@@ -2784,13 +2871,13 @@ function bindAuthentication(){
         if(remoteState&&fingerprint(remoteState)===fingerprint(normalized)){
           response={data:{revision:remoteRow.revision,updated_at:remoteRow.updated_at}};
         }else{
-          if(remoteState)pendingRemoteState={row:remoteRow,state:remoteState};
+          if(remoteState)documentSession.rememberRemote(remoteRow,remoteState);
           throw new Error('저장 시간이 초과되었습니다. 초안은 유지됩니다. 연결을 확인한 뒤 다시 저장해 주세요.');
         }
       }
       const {data,error}=response;
       if(error)throw error;
-      applyStatePreservingInputs(normalized);setPublishedBaseline({revision:Number(data?.revision)||publishedRevision+1,updated_at:data?.updated_at||new Date().toISOString()},normalized);pendingDraft=false;await clearDraftRecord();updateDirtyState();return data||{saved:true};
+      applyStatePreservingInputs(normalized);setPublishedBaseline({revision:Number(data?.revision)||documentSession.snapshot().publishedRevision+1,updated_at:data?.updated_at||new Date().toISOString()},normalized);documentSession.markClean();await clearDraftRecord();updateDirtyState();return data||{saved:true};
     }catch(error){failure=error;}
     finally{clearTimeout(timeout);saveInFlight=false;setOperationBusy(false);}
     if(isRevisionConflict(failure))return resolveSaveConflict(normalized,note);
@@ -2798,12 +2885,12 @@ function bindAuthentication(){
     setStatus(failure?.message||'저장할 수 없습니다. 초안은 유지됩니다.');return false;
   }
 
-  async function saveAndFinish(note='수동 저장'){const state=captureState(),wasEditing=body.classList.contains('editing');setEditingUI(false);const saved=await persistState(state,{note});if(!saved){const message=$('#status').textContent;updateDirtyState();if(wasEditing)setEditingUI(true);setStatus(message);return false;}initializeHistory();updateDirtyState();resetInactivityTimer();setStatus(OFFLINE_MODE?'오프라인 작업본 생성 중':'공유 저장 완료');if(OFFLINE_MODE)await exportOfflineHtml(lastSavedState);return true;}
-  async function requestFinishEditing(){clearTimeout(historyTimer);recordHistory();if(!isDirty()){setEditingUI(false);resetInactivityTimer();return;}setEditingUI(false);const choice=await showChoice({title:'편집을 완료할까요?',message:OFFLINE_MODE?'저장하면 수정된 오프라인 작업본을 새 파일로 내려받습니다.':'저장해야 공개 링크에 변경 내용이 반영됩니다.',input:OFFLINE_MODE?null:{label:'버전 메모 (선택)','placeholder':'예: 라스베이거스 일정 확정'},choices:[{label:'저장하고 종료',value:'save',className:'action-primary'},{label:'계속 편집',value:'continue'},{label:'변경사항 폐기',value:'discard',className:'action-danger'}]});if(choice==='save')await saveAndFinish(dialogs.inputValue()||'편집 완료');else if(choice==='continue'){setEditingUI(true);resetInactivityTimer();}else if(choice==='discard')discardDraft();}
-  async function beginEditing(){if(!OFFLINE_MODE&&!pendingDraft){try{const published=await fetchPublishedState();if(published?.content?.html){const state=normalizeState(migratePublishedState(published.content));applyState(state);setPublishedBaseline(published,state);}}catch(error){if(blockUnsupportedDocument(error))return;console.warn(error);setStatus('최신 저장본 확인 실패 · 현재 화면에서 편집합니다.');}}setEditingUI(true);initializeHistory();resetInactivityTimer();setStatus(pendingDraft?'편집 중 · 저장되지 않음':'편집 모드');}
+  async function saveAndFinish(note='수동 저장'){const state=captureState(),wasEditing=body.classList.contains('editing');setEditingUI(false);const saved=await persistState(state,{note});if(!saved){const message=$('#status').textContent;updateDirtyState();if(wasEditing)setEditingUI(true);setStatus(message);return false;}initializeHistory();updateDirtyState();resetInactivityTimer();setStatus(OFFLINE_MODE?'오프라인 작업본 생성 중':'공유 저장 완료');if(OFFLINE_MODE)await exportOfflineHtml(documentSession.snapshot().lastSavedState);return true;}
+  async function requestFinishEditing(){documentSession.cancelHistory();recordHistory();if(!isDirty()){setEditingUI(false);resetInactivityTimer();return;}setEditingUI(false);const choice=await showChoice({title:'편집을 완료할까요?',message:OFFLINE_MODE?'저장하면 수정된 오프라인 작업본을 새 파일로 내려받습니다.':'저장해야 공개 링크에 변경 내용이 반영됩니다.',input:OFFLINE_MODE?null:{label:'버전 메모 (선택)','placeholder':'예: 라스베이거스 일정 확정'},choices:[{label:'저장하고 종료',value:'save',className:'action-primary'},{label:'계속 편집',value:'continue'},{label:'변경사항 폐기',value:'discard',className:'action-danger'}]});if(choice==='save')await saveAndFinish(dialogs.inputValue()||'편집 완료');else if(choice==='continue'){setEditingUI(true);resetInactivityTimer();}else if(choice==='discard')discardDraft();}
+  async function beginEditing(){if(!OFFLINE_MODE&&!documentSession.snapshot().pendingDraft){try{const published=await fetchPublishedState();if(published?.content?.html){const state=normalizeState(migratePublishedState(published.content));applyState(state);setPublishedBaseline(published,state);}}catch(error){if(blockUnsupportedDocument(error))return;console.warn(error);setStatus('최신 저장본 확인 실패 · 현재 화면에서 편집합니다.');}}setEditingUI(true);initializeHistory();resetInactivityTimer();setStatus(documentSession.snapshot().pendingDraft?'편집 중 · 저장되지 않음':'편집 모드');}
   function requestAuthentication(purpose){authPurpose=purpose;$('#authTitle').textContent=purpose==='edit'?'편집자 확인':purpose==='versions'?'버전 관리자 확인':purpose==='import'?'편집본 불러오기 권한 확인':purpose==='ledger-settings'?'가계부 설정 권한 확인':purpose==='checklist'?'체크리스트 편집자 확인':purpose==='ledger'?'가계부 편집자 확인':'저장 권한 확인';$('#authError').textContent='';$('#editorPassword').value='';showDialog($('#authDialog'));$('#editorPassword').focus();}
   async function runPurpose(purpose){
-    if(documentWriteBlock&&purpose!=='versions'){pendingAuthAction=null;pendingAuthCancel?.();pendingAuthCancel=null;setStatus(documentWriteBlock);return;}
+    if(documentSession.snapshot().documentWriteBlock&&purpose!=='versions'){pendingAuthAction=null;pendingAuthCancel?.();pendingAuthCancel=null;setStatus(documentSession.snapshot().documentWriteBlock);return;}
     const cancel=()=>{const action=pendingAuthCancel;pendingAuthAction=null;pendingAuthCancel=null;if(action)action();};
     if(body.classList.contains('previewing')&&purpose!=='versions'){cancel();setStatus('미리보기를 닫은 뒤 편집해 주세요.');return;}
     if(deferredDraftRecovery&&['edit','ledger','ledger-settings','import','save'].includes(purpose)){
@@ -2818,7 +2905,7 @@ function bindAuthentication(){
   function closeScheduleTimeDialog(){$('#scheduleTimeDialog').hidden=true;scheduleTimeTarget=null;}
   function openScheduleTimeDialog(row,panel=row?.closest('.day')) {
     if(!body.classList.contains('editing')||!panel)return;
-    clearTimeout(historyTimer);recordHistory();
+    documentSession.cancelHistory();recordHistory();
     scheduleTimeTarget={row,panel};
     const {time,zone}=readScheduleTime(row),parsed=parseTimetableTime(time);
     $('#scheduleTimeTitle').textContent=row?'일정 시간 설정':'새 일정 시간';
@@ -2927,8 +3014,8 @@ function bindAuthentication(){
     if(!drawExpenseInput(true,true))return;
     const id=editingExpenseId,snapshot=expenseEditSnapshot;
     await requireEditor('ledger',()=>{
-      const target=expenses.find(entry=>entry.id===id),remote=pendingRemoteState?.state?.expenses.find(entry=>entry.id===id);
-      if(!target||JSON.stringify(target)!==snapshot||(pendingRemoteState&&JSON.stringify(remote)!==snapshot)){setStatus('내역이 변경되었습니다. 취소 후 최신 내역을 다시 확인해 주세요.');return;}
+      const target=expenses.find(entry=>entry.id===id),remote=documentSession.snapshot().pendingRemoteState?.state?.expenses.find(entry=>entry.id===id);
+      if(!target||JSON.stringify(target)!==snapshot||(documentSession.snapshot().pendingRemoteState&&JSON.stringify(remote)!==snapshot)){setStatus('내역이 변경되었습니다. 취소 후 최신 내역을 다시 확인해 주세요.');return;}
       const money=drawExpenseInput(true,true);if(!money)return;
       Object.assign(target,{name:$('#expenseEditName').value.trim(),date:$('#expenseEditDate').value||todayLocal(),categoryId:$('#expenseEditCategory').value||'misc',...money});
       $('#expenseDialog').hidden=true;editingExpenseId=null;expenseEditInput=emptyExpenseInput();renderLedger();finishMutation();
@@ -2937,7 +3024,7 @@ function bindAuthentication(){
   async function moveExpense(id,direction){await requireEditor('ledger',()=>{const index=expenses.findIndex(item=>item.id===id),next=index+direction;if(index<0||next<0||next>=expenses.length)return;const [item]=expenses.splice(index,1);expenses.splice(next,0,item);renderLedger();finishMutation();});}
   async function deleteExpense(id){const item=expenses.find(x=>x.id===id);if(!item)return;const choice=await showChoice({title:'가계부 항목을 삭제할까요?',message:item.name+' 항목을 삭제합니다.',choices:[{label:'취소',value:'cancel'},{label:'삭제',value:'delete',className:'action-danger'}]});if(choice!=='delete')return;await requireEditor('ledger',async()=>{expenses=expenses.filter(x=>x.id!==id);renderLedger();finishMutation();});}
   function renderIconPicker(){const picker=$('#categoryIconPicker');picker.innerHTML=ICON_CANDIDATES.map(icon=>'<button class="'+(icon===selectedCategoryIcon?'active':'')+'" data-category-icon="'+icon+'" type="button">'+icon+'</button>').join('');}
-  function openLedgerSettings(){renderLedger();$('#settingsExchangeRate').value=String(exchangeRate);showDialog($('#ledgerSettingsDialog'));setStatus(pendingDraft?'가계부 설정 중 · 저장되지 않음':'가계부 설정');}
+  function openLedgerSettings(){renderLedger();$('#settingsExchangeRate').value=String(exchangeRate);showDialog($('#ledgerSettingsDialog'));setStatus(documentSession.snapshot().pendingDraft?'가계부 설정 중 · 저장되지 않음':'가계부 설정');}
   function openCategoryDialog(id=null){editingCategoryId=id;const cat=id?getCategory(id):null;selectedCategoryIcon=cat?.icon||'📦';$('#categoryTitle').textContent=id?'카테고리 수정':'카테고리 추가';$('#categoryName').value=cat?.name||'';setFieldError('categoryName');renderIconPicker();showDialog($('#categoryDialog'));$('#categoryName').focus();}
   function saveCategory(){const name=$('#categoryName').value.trim();if(!name){setFieldError('categoryName','카테고리 이름을 입력해 주세요.');$('#categoryName').focus();return;}if(editingCategoryId){const cat=getCategory(editingCategoryId);if(cat.system)return;cat.name=name;cat.icon=selectedCategoryIcon;}else{const deletedIndex=categories.findIndex(item=>item.id===DELETED_CATEGORY_ID);categories.splice(deletedIndex<0?categories.length:deletedIndex,0,{id:uid('category'),name,icon:selectedCategoryIcon,system:false});}$('#categoryDialog').hidden=true;renderLedger();finishMutation();}
   async function deleteCategory(id){const cat=getCategory(id);if(!cat||cat.system)return;const count=expenses.filter(x=>x.categoryId===id).length;const choice=await showChoice({title:'카테고리를 삭제할까요?',message:count?count+'개 내역은 “삭제된 카테고리”로 이동합니다.':'이 카테고리를 삭제합니다.',choices:[{label:'취소',value:'cancel'},{label:'삭제',value:'delete',className:'action-danger'}]});if(choice!=='delete')return;expenses.forEach(x=>{if(x.categoryId===id)x.categoryId=DELETED_CATEGORY_ID;});categories=categories.filter(x=>x.id!==id);renderLedger();finishMutation();}
@@ -3222,16 +3309,16 @@ function bindAuthentication(){
       if(!raw||typeof raw!=='object'||Array.isArray(raw)||typeof raw.html!=='string'||!raw.html.trim())throw new Error('편집 데이터가 없습니다.');
       const schemaVersion=raw.schemaVersion===undefined?fileVersion:validateVersion(raw.schemaVersion);
       const incoming=normalizeState(migratePublishedState({...raw,schemaVersion}),true),published=await fetchPublishedState();
-      const current=normalizeState(published?.content?.html?migratePublishedState(published.content):lastSavedState),groups=buildDiff(current,incoming);
+      const current=normalizeState(published?.content?.html?migratePublishedState(published.content):documentSession.snapshot().lastSavedState),groups=buildDiff(current,incoming);
       pendingImport={state:incoming,baselineRevision:Math.max(0,Number(published?.revision)||0),baselineUpdatedAt:published?.updated_at||'',current};renderImportDiff(groups);showDialog($('#importDialog'));
     }catch(error){console.error(error);await showChoice({title:'작업본을 불러올 수 없습니다.',message:error.message,choices:[{label:'확인',value:'ok',className:'action-primary'}]});}
     finally{$('#importFileInput').value='';}
   }
   async function materializeImportedPhotos(state){const normalized=normalizeState(state,true),template=document.createElement('template');template.innerHTML=normalized.html;for(const figure of template.content.querySelectorAll('.schedule-photo')){const img=figure.querySelector('img'),fullPath=figure.dataset.fullPath,thumbPath=figure.dataset.thumbPath;if(fullPath&&thumbPath){img.src=publicMediaUrl(thumbPath);img.dataset.fullUrl=publicMediaUrl(fullPath);continue;}if(!img.src.startsWith('data:image/'))continue;img.dataset.fullUrl=img.dataset.fullUrl||img.src;figure.dataset.staged='true';delete figure.dataset.fullPath;delete figure.dataset.thumbPath;}normalized.html=template.innerHTML;return normalized;}
-  async function applyImportedDraft(){if(!pendingImport)return;try{const published=await fetchPublishedState(),remoteRevision=Math.max(0,Number(published?.revision)||0);if(remoteRevision!==pendingImport.baselineRevision){if(!published?.content?.html)throw new Error('최신 저장본을 다시 확인하지 못했습니다.');const current=normalizeState(migratePublishedState(published.content)),groups=buildDiff(current,pendingImport.state);pendingImport.current=current;pendingImport.baselineRevision=remoteRevision;pendingImport.baselineUpdatedAt=published.updated_at||'';renderImportDiff(groups,'비교 중 최신 저장본이 변경되어 차이를 다시 계산했습니다. 내용을 확인하고 한 번 더 불러오세요.');return;}setStatus('편집본 사진을 준비 중입니다.');const incoming=await materializeImportedPhotos(pendingImport.state);lastSavedState=clone(pendingImport.current);draftBaselineUnknown=false;publishedRevision=pendingImport.baselineRevision;publishedUpdatedAt=pendingImport.baselineUpdatedAt;applyState(incoming);initializeHistory();updateDirtyState();$('#importDialog').hidden=true;pendingImport=null;setStatus('편집본 불러옴 · 저장되지 않음');}catch(error){console.error(error);setStatus('편집본 적용 실패');await showChoice({title:'편집본 적용 실패',message:error.message,choices:[{label:'확인',value:'ok',className:'action-primary'}]});}}
+  async function applyImportedDraft(){if(!pendingImport)return;try{const published=await fetchPublishedState(),remoteRevision=Math.max(0,Number(published?.revision)||0);if(remoteRevision!==pendingImport.baselineRevision){if(!published?.content?.html)throw new Error('최신 저장본을 다시 확인하지 못했습니다.');const current=normalizeState(migratePublishedState(published.content)),groups=buildDiff(current,pendingImport.state);pendingImport.current=current;pendingImport.baselineRevision=remoteRevision;pendingImport.baselineUpdatedAt=published.updated_at||'';renderImportDiff(groups,'비교 중 최신 저장본이 변경되어 차이를 다시 계산했습니다. 내용을 확인하고 한 번 더 불러오세요.');return;}setStatus('편집본 사진을 준비 중입니다.');const incoming=await materializeImportedPhotos(pendingImport.state);documentSession.adoptImportBaseline(pendingImport.current,pendingImport.baselineRevision,pendingImport.baselineUpdatedAt);applyState(incoming);initializeHistory();updateDirtyState();$('#importDialog').hidden=true;pendingImport=null;setStatus('편집본 불러옴 · 저장되지 않음');}catch(error){console.error(error);setStatus('편집본 적용 실패');await showChoice({title:'편집본 적용 실패',message:error.message,choices:[{label:'확인',value:'ok',className:'action-primary'}]});}}
 
   async function resetDraft(){const choice=await showChoice({title:'마지막 저장본으로 초기화',message:'현재 변경을 삭제하고 마지막 저장본으로 되돌립니다.',choices:[{label:'취소',value:'cancel'},{label:'초기화',value:'reset',className:'action-danger'}]});if(choice==='reset')discardDraft('마지막 저장본으로 초기화했습니다.');}
-  async function confirmSave(){if(!pendingDraft){setStatus('저장할 변경이 없습니다.');return;}const choice=await showChoice({title:OFFLINE_MODE?'오프라인 작업본 저장':'공유 일정에 저장',message:OFFLINE_MODE?'수정된 내용을 포함한 새 작업본을 내려받습니다.':'저장하면 공개 링크에 변경 내용이 반영됩니다.',input:OFFLINE_MODE?null:{label:'버전 메모 (선택)','placeholder':'예: 항공편 시간 수정'},choices:[{label:'취소',value:'cancel'},{label:'저장',value:'save',className:'action-primary'}]});if(choice==='save')await saveAndFinish(dialogs.inputValue()||'수동 저장');}
+  async function confirmSave(){if(!documentSession.snapshot().pendingDraft){setStatus('저장할 변경이 없습니다.');return;}const choice=await showChoice({title:OFFLINE_MODE?'오프라인 작업본 저장':'공유 일정에 저장',message:OFFLINE_MODE?'수정된 내용을 포함한 새 작업본을 내려받습니다.':'저장하면 공개 링크에 변경 내용이 반영됩니다.',input:OFFLINE_MODE?null:{label:'버전 메모 (선택)','placeholder':'예: 항공편 시간 수정'},choices:[{label:'취소',value:'cancel'},{label:'저장',value:'save',className:'action-primary'}]});if(choice==='save')await saveAndFinish(dialogs.inputValue()||'수동 저장');}
   function formatBytes(value){const size=Number(value)||0;if(size<1024)return size+' B';if(size<1024*1024)return (size/1024).toFixed(1)+' KB';return (size/1024/1024).toFixed(1)+' MB';}
   function invalidateVersionRequest(){const request=versionRequest;versionRequest=null;request?.controller.abort();}
   function beginVersionRequest(){invalidateVersionRequest();return versionRequest={controller:new AbortController()};}
@@ -3260,10 +3347,10 @@ function bindAuthentication(){
     try{
       const state=await loadVersionContent(version,request);
       if(!isCurrentVersionRequest(request)||saveInFlight||operationBusy||checklistSaving||pendingChecks.size)return;
-      clearTimeout(historyTimer);recordHistory();await flushDraftPersistence();
+      documentSession.cancelHistory();recordHistory();await flushDraftPersistence();
       if(!isCurrentVersionRequest(request)||saveInFlight||operationBusy||checklistSaving||pendingChecks.size)return;
       // Keep the original working copy even when switching between previews.
-      if(!previewReturnState)previewReturnState=captureState();
+      documentSession.enterPreview(captureState());
       body.classList.add('previewing');setEditingUI(false);applyState(state);
       $('#previewLabel').textContent='버전 #'+version.id+' · '+new Date(version.created_at).toLocaleString('ko-KR')+' 미리보기';
       closeVersions();setStatus('과거 저장본 미리보기 · 편집하려면 미리보기를 닫아 주세요.');
@@ -3276,7 +3363,7 @@ function bindAuthentication(){
   }
   async function restoreSelectedVersion(){
     if(!selectedVersion)return;
-    if(deferredDraftRecovery){if(previewReturnState)closePreview();await recoverOnlineDraft();if(deferredDraftRecovery)return;}
+    if(deferredDraftRecovery){if(documentSession.snapshot().previewReturnState)closePreview();await recoverOnlineDraft();if(deferredDraftRecovery)return;}
     const hasDraft=isDirty(),choice=await showChoice({title:'버전 #'+selectedVersion.id+'을 복원할까요?',message:hasDraft?'현재 저장하지 않은 초안은 복원본으로 대체됩니다. 복원본은 새 버전으로 저장되어 공개됩니다.':'복원본은 새 버전으로 저장되어 공개됩니다.',choices:[{label:'취소',value:'cancel'},{label:'복원',value:'restore',className:'action-primary'}]});
     if(choice!=='restore')return;
     const restored=clone(selectedVersion.state),id=selectedVersion.id;
@@ -3293,7 +3380,7 @@ function bindAuthentication(){
       data.forEach(version=>{const item=document.createElement('div');item.className='version-item';item.innerHTML='<div><strong>'+escapeHtml(version.note||'버전 #'+version.id)+'</strong><small>#'+version.id+' · '+escapeHtml(new Date(version.created_at).toLocaleString('ko-KR'))+' · '+escapeHtml(formatBytes(version.content_size))+'</small></div><button class="action-muted" type="button">비교</button><button class="action-muted" type="button">미리보기</button><button class="action-primary" type="button">복원</button>';const buttons=item.querySelectorAll('button');buttons[0].onclick=()=>compareVersion(version);buttons[1].onclick=()=>previewVersion(version);buttons[2].onclick=()=>compareVersion(version);list.appendChild(item);});
     }catch(error){if(!isCurrentVersionRequest(request))return;list.innerHTML='<div class="version-empty">닫고 다시 열어 주세요.</div>';showVersionLoadError(error,request);}
   }
-  function closePreview(){if(previewReturnState)applyState(previewReturnState);previewReturnState=null;body.classList.remove('previewing');updateDirtyState();setStatus(pendingDraft?'저장 대기 중':'보기 모드');resetInactivityTimer();}
+  function closePreview(){const previous=documentSession.snapshot().previewReturnState;if(previous)applyState(previous);documentSession.leavePreview();body.classList.remove('previewing');updateDirtyState();setStatus(documentSession.snapshot().pendingDraft?'저장 대기 중':'보기 모드');resetInactivityTimer();}
   function prefersReducedMotion(){return window.matchMedia('(prefers-reduced-motion: reduce)').matches;}
   function tabAnchorTop(tabs){const header=$('header'),headerBottom=header?header.getBoundingClientRect().bottom+window.scrollY:0,marginTop=Number.parseFloat(getComputedStyle(tabs).marginTop)||0;return Math.max(0,Math.round(headerBottom+marginTop));}
   function tabsArePinned(tabs){const stickyTop=Number.parseFloat(getComputedStyle(tabs).top)||0;return tabs.getBoundingClientRect().top<=stickyTop+1;}
@@ -3318,18 +3405,18 @@ function bindAuthentication(){
     const record=await readDraftRecord();
     if(!record?.dirty||record.tripId!==TRIP_ID||!record.state?.html){deferredDraftRecovery=false;return;}
     const incoming=normalizeState(migratePublishedState(record.state));
-    if(lastSavedState&&fingerprint(incoming)===fingerprint(lastSavedState)){pendingDraft=false;await clearDraftRecord();return;}
+    if(documentSession.snapshot().lastSavedState&&fingerprint(incoming)===fingerprint(documentSession.snapshot().lastSavedState)){documentSession.markClean();await clearDraftRecord();return;}
     if(!await getEditorSession()){
       deferredDraftRecovery=true;
       setStatus('초안을 보관했습니다 · 로그인 후 복구할 수 있습니다.');
       return;
     }
-    const serverChanged=Number(record.baseRevision||0)!==publishedRevision;
+    const serverChanged=Number(record.baseRevision||0)!==documentSession.snapshot().publishedRevision;
     const savedAt=record.savedAt?new Date(record.savedAt).toLocaleString('ko-KR'):'이전 접속';
     const choice=await showChoice({title:'저장하지 않은 초안을 찾았습니다.',message:savedAt+'에 이 브라우저에 보관한 초안입니다.'+(serverChanged?' 그 뒤 공유 저장본이 변경되어 저장할 때 차이를 다시 확인합니다.':''),choices:[{label:'초안 삭제',value:'discard',className:'action-danger'},{label:'초안 복구',value:'restore',className:'action-primary'}]});
     if(choice==='discard'){
-      pendingDraft=false;
-      if(lastSavedState){applyState(lastSavedState);lastSavedState=clone(normalizeState(captureState()));}
+      documentSession.markClean();
+      if(documentSession.snapshot().lastSavedState){applyState(documentSession.snapshot().lastSavedState);documentSession.establishBaseline(clone(normalizeState(captureState())));}
       initializeHistory();
       const cleared=await clearDraftRecord();
       if(!cleared)deferredDraftRecovery=true;
@@ -3341,13 +3428,10 @@ function bindAuthentication(){
     // Dismissing recovery keeps the stored draft and the current shared view.
     if(choice!=='restore'){deferredDraftRecovery=true;setStatus('초안을 이 브라우저에 보관했습니다.');return;}
     deferredDraftRecovery=false;
-    const latestState=clone(lastSavedState),latestRow={revision:publishedRevision,updated_at:publishedUpdatedAt,content:latestState};
+    const latestState=clone(documentSession.snapshot().lastSavedState),latestRow={revision:documentSession.snapshot().publishedRevision,updated_at:documentSession.snapshot().publishedUpdatedAt,content:latestState};
     // A legacy draft without a baseline must not adopt a newer revision through
     // a checklist patch. Keep that uncertainty across subsequent draft writes.
-    draftBaselineUnknown=serverChanged&&!record.baseState?.html;
-    lastSavedState=record.baseState?.html?normalizeState(migratePublishedState(record.baseState)):latestState;
-    publishedRevision=Math.max(0,Number(record.baseRevision)||0);publishedUpdatedAt=String(record.baseUpdatedAt||'');
-    pendingRemoteState=serverChanged?{row:latestRow,state:latestState}:null;
+    documentSession.restoreDraftBaseline({baseline:record.baseState?.html?normalizeState(migratePublishedState(record.baseState)):latestState,revision:record.baseRevision,updatedAt:record.baseUpdatedAt,unknown:serverChanged&&!record.baseState?.html,remote:serverChanged?{row:latestRow,state:latestState}:null});
     applyState(incoming);initializeHistory();updateDirtyState();setStatus('초안 복구됨 · 저장되지 않음');
   }
 
@@ -3356,11 +3440,11 @@ function bindAuthentication(){
     try{
       const row=await fetchPublishedState();if(!row?.content?.html)return false;
       const revision=Math.max(0,Number(row.revision)||0),state=normalizeState(migratePublishedState(row.content));
-      if(body.classList.contains('editing')||pendingDraft||body.classList.contains('previewing')||checklistSaving||pendingChecks.size||!$('#checklistDialog').hidden){
-        if(revision!==publishedRevision){pendingRemoteState={row,state};setStatus('새 공유 저장본이 있습니다 · 저장 시 비교합니다.');}
+      if(body.classList.contains('editing')||documentSession.snapshot().pendingDraft||body.classList.contains('previewing')||checklistSaving||pendingChecks.size||!$('#checklistDialog').hidden){
+        if(revision!==documentSession.snapshot().publishedRevision){documentSession.rememberRemote(row,state);setStatus('새 공유 저장본이 있습니다 · 저장 시 비교합니다.');}
         return true;
       }
-      if(revision!==publishedRevision||fingerprint(state)!==fingerprint(lastSavedState)){applyStatePreservingInputs(state);setPublishedBaseline(row,state);initializeHistory();setStatus(reason==='reconnect'?'연결 복구 · 최신 저장본 반영':'최신 저장본을 반영했습니다.');}
+      if(revision!==documentSession.snapshot().publishedRevision||fingerprint(state)!==fingerprint(documentSession.snapshot().lastSavedState)){applyStatePreservingInputs(state);setPublishedBaseline(row,state);initializeHistory();setStatus(reason==='reconnect'?'연결 복구 · 최신 저장본 반영':'최신 저장본을 반영했습니다.');}
       else if(reason==='reconnect')setStatus('공유 서버 연결 복구 · 최신 상태');
       return true;
     }catch(error){if(blockUnsupportedDocument(error))return false;console.warn(error);setStatus('공유 서버 확인 실패 · 현재 화면 유지');return false;}
@@ -3374,10 +3458,10 @@ function bindAuthentication(){
       const embeddedState=normalizeState(embedded?.html?migratePublishedState(embedded):captureState());
       if(record?.state?.html){
         const restored=normalizeState(migratePublishedState(record.state));
-        lastSavedState=normalizeState(record.dirty&&record.baseState?.html?migratePublishedState(record.baseState):restored);
+        documentSession.establishBaseline(normalizeState(record.dirty&&record.baseState?.html?migratePublishedState(record.baseState):restored));
         applyState(restored);
         setStatus(record.dirty?'저장하지 않은 오프라인 초안을 복구했습니다.':'오프라인 작업본');
-      }else{applyState(embeddedState);lastSavedState=clone(embeddedState);}
+      }else{applyState(embeddedState);documentSession.establishBaseline(clone(embeddedState));}
       initializeHistory();updateDirtyState();finishHydration();return;
     }
 
@@ -3392,13 +3476,13 @@ function bindAuthentication(){
       if(cached?.state?.html){const state=normalizeState(migratePublishedState(cached.state));applyState(state);setPublishedBaseline({revision:cached.revision,updatedAt:cached.updatedAt},state,cached);loadedFromCache=true;const cachedLabel=cached.cachedAt?new Date(cached.cachedAt).toLocaleString('ko-KR'):'최근';cacheStatus='오프라인 캐시 표시 · '+cachedLabel+' 기준';}
       else cacheStatus='연결 실패 · 기본 일정 표시 중 · 최신 공유본 미확인';
     }
-    if(!lastSavedState)lastSavedState=normalizeState(captureState());
+    if(!documentSession.snapshot().lastSavedState)documentSession.establishBaseline(normalizeState(captureState()));
     initializeHistory();updateDirtyState();if(cacheStatus)setStatus(cacheStatus);await recoverOnlineDraft();finishHydration();
     if(!client)return;
     tripRepository.subscribe(payload=>{
       if(!payload.new?.content?.html)return;
       let remoteState;try{remoteState=normalizeState(migratePublishedState(payload.new.content));}catch(error){blockUnsupportedDocument(error);console.warn(error);return;}
-      if(body.classList.contains('editing')||pendingDraft||body.classList.contains('previewing')||checklistSaving||pendingChecks.size||!$('#checklistDialog').hidden){pendingRemoteState={row:payload.new,state:remoteState};setStatus('새 공유 저장본이 있습니다 · 저장 시 비교합니다.');return;}
+      if(body.classList.contains('editing')||documentSession.snapshot().pendingDraft||body.classList.contains('previewing')||checklistSaving||pendingChecks.size||!$('#checklistDialog').hidden){documentSession.rememberRemote(payload.new,remoteState);setStatus('새 공유 저장본이 있습니다 · 저장 시 비교합니다.');return;}
       applyStatePreservingInputs(remoteState);setPublishedBaseline(payload.new,remoteState);initializeHistory();setStatus('새 저장본을 반영했습니다.');
     },status=>{if(status==='SUBSCRIBED'&&loadedFromCache)void refreshPublishedState('reconnect');});
     await getEditorSession();
@@ -3468,7 +3552,7 @@ function bindAuthentication(){
   $('.tabs').addEventListener('keydown',event=>{const current=event.target.closest('[role="tab"]');if(!current)return;const tabs=$$('.tabs [role="tab"]'),index=tabs.indexOf(current);let next=index;if(event.key==='ArrowRight')next=(index+1)%tabs.length;else if(event.key==='ArrowLeft')next=(index-1+tabs.length)%tabs.length;else if(event.key==='Home')next=0;else if(event.key==='End')next=tabs.length-1;else if(event.key==='Enter'||event.key===' '){event.preventDefault();current.click();return;}else return;event.preventDefault();tabs[next].click();tabs[next].focus({preventScroll:true});});
   $('.tabs').addEventListener('wheel',event=>{const tabs=event.currentTarget;if(tabs.scrollWidth<=tabs.clientWidth||Math.abs(event.deltaX)>Math.abs(event.deltaY))return;event.preventDefault();tabs.scrollLeft+=event.deltaY;},{passive:false});
   window.addEventListener('online',()=>void refreshPublishedState('reconnect'));
-  window.addEventListener('offline',()=>setStatus(pendingDraft?'오프라인 · 초안은 이 브라우저에 보관 중':'오프라인 · 저장된 화면 표시 중'));
+  window.addEventListener('offline',()=>setStatus(documentSession.snapshot().pendingDraft?'오프라인 · 초안은 이 브라우저에 보관 중':'오프라인 · 저장된 화면 표시 중'));
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void refreshPublishedState('visible');else void flushDraftPersistence();});
   window.addEventListener('pagehide',event=>{void flushDraftPersistence();if(!event.persisted){tripRepository.dispose();sessionService.dispose();dialogs.dispose();}});
   window.addEventListener('beforeunload',event=>{if(!isDirty()&&!saveInFlight&&!pendingChecks.size&&!checklistEditorSaving&&!checklistEditorDirty())return;void flushDraftPersistence();event.preventDefault();event.returnValue='';});
@@ -3482,7 +3566,7 @@ function bindAuthentication(){
   document.addEventListener('click',event=>{const retry=event.target.closest('[data-retry-check]');if(!retry)return;const item=checkFeedback.get(retry.dataset.retryCheck);if(item)void authorizeCheck(retry.dataset.retryCheck,item.value);});
   sessionService.initialize();bindAuthentication();
   // @browser-fixture
-  initializeTimetable();initializeDialogAccessibility();selectInitialTab();decorateButtonIcons();decorateDates();decorateChecklist();renderLedger();moneyTemplateHtml=$('.moneyday').outerHTML;decorateScheduleRows();body.classList.add('viewing');setEditable(false);lastSavedState=normalizeState(captureState());updateContextControls();updateTripProgress();updateWorldClocks();setInterval(updateTripProgress,60*60*1000);setInterval(updateWorldClocks,60*1000);revealSelectedTab('auto');void hydrate().catch(error=>{blockUnsupportedDocument(error);console.error(error);setStatus('일정을 불러오지 못했습니다 · 현재 화면 유지');}).finally(finishHydration);
+  initializeTimetable();initializeDialogAccessibility();selectInitialTab();decorateButtonIcons();decorateDates();decorateChecklist();renderLedger();documentAdapter.setMoneyTemplate($('.moneyday').outerHTML);decorateScheduleRows();body.classList.add('viewing');setEditable(false);documentSession.establishBaseline(normalizeState(captureState()));updateContextControls();updateTripProgress();updateWorldClocks();setInterval(updateTripProgress,60*60*1000);setInterval(updateWorldClocks,60*1000);revealSelectedTab('auto');void hydrate().catch(error=>{blockUnsupportedDocument(error);console.error(error);setStatus('일정을 불러오지 못했습니다 · 현재 화면 유지');}).finally(finishHydration);
 })();
 </script>
 </body>

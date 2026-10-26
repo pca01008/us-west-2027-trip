@@ -2,18 +2,18 @@
     const record=await readDraftRecord();
     if(!record?.dirty||record.tripId!==TRIP_ID||!record.state?.html){deferredDraftRecovery=false;return;}
     const incoming=normalizeState(migratePublishedState(record.state));
-    if(lastSavedState&&fingerprint(incoming)===fingerprint(lastSavedState)){pendingDraft=false;await clearDraftRecord();return;}
+    if(documentSession.snapshot().lastSavedState&&fingerprint(incoming)===fingerprint(documentSession.snapshot().lastSavedState)){documentSession.markClean();await clearDraftRecord();return;}
     if(!await getEditorSession()){
       deferredDraftRecovery=true;
       setStatus('초안을 보관했습니다 · 로그인 후 복구할 수 있습니다.');
       return;
     }
-    const serverChanged=Number(record.baseRevision||0)!==publishedRevision;
+    const serverChanged=Number(record.baseRevision||0)!==documentSession.snapshot().publishedRevision;
     const savedAt=record.savedAt?new Date(record.savedAt).toLocaleString('ko-KR'):'이전 접속';
     const choice=await showChoice({title:'저장하지 않은 초안을 찾았습니다.',message:savedAt+'에 이 브라우저에 보관한 초안입니다.'+(serverChanged?' 그 뒤 공유 저장본이 변경되어 저장할 때 차이를 다시 확인합니다.':''),choices:[{label:'초안 삭제',value:'discard',className:'action-danger'},{label:'초안 복구',value:'restore',className:'action-primary'}]});
     if(choice==='discard'){
-      pendingDraft=false;
-      if(lastSavedState){applyState(lastSavedState);lastSavedState=clone(normalizeState(captureState()));}
+      documentSession.markClean();
+      if(documentSession.snapshot().lastSavedState){applyState(documentSession.snapshot().lastSavedState);documentSession.establishBaseline(clone(normalizeState(captureState())));}
       initializeHistory();
       const cleared=await clearDraftRecord();
       if(!cleared)deferredDraftRecovery=true;
@@ -25,13 +25,10 @@
     // Dismissing recovery keeps the stored draft and the current shared view.
     if(choice!=='restore'){deferredDraftRecovery=true;setStatus('초안을 이 브라우저에 보관했습니다.');return;}
     deferredDraftRecovery=false;
-    const latestState=clone(lastSavedState),latestRow={revision:publishedRevision,updated_at:publishedUpdatedAt,content:latestState};
+    const latestState=clone(documentSession.snapshot().lastSavedState),latestRow={revision:documentSession.snapshot().publishedRevision,updated_at:documentSession.snapshot().publishedUpdatedAt,content:latestState};
     // A legacy draft without a baseline must not adopt a newer revision through
     // a checklist patch. Keep that uncertainty across subsequent draft writes.
-    draftBaselineUnknown=serverChanged&&!record.baseState?.html;
-    lastSavedState=record.baseState?.html?normalizeState(migratePublishedState(record.baseState)):latestState;
-    publishedRevision=Math.max(0,Number(record.baseRevision)||0);publishedUpdatedAt=String(record.baseUpdatedAt||'');
-    pendingRemoteState=serverChanged?{row:latestRow,state:latestState}:null;
+    documentSession.restoreDraftBaseline({baseline:record.baseState?.html?normalizeState(migratePublishedState(record.baseState)):latestState,revision:record.baseRevision,updatedAt:record.baseUpdatedAt,unknown:serverChanged&&!record.baseState?.html,remote:serverChanged?{row:latestRow,state:latestState}:null});
     applyState(incoming);initializeHistory();updateDirtyState();setStatus('초안 복구됨 · 저장되지 않음');
   }
 
@@ -40,11 +37,11 @@
     try{
       const row=await fetchPublishedState();if(!row?.content?.html)return false;
       const revision=Math.max(0,Number(row.revision)||0),state=normalizeState(migratePublishedState(row.content));
-      if(body.classList.contains('editing')||pendingDraft||body.classList.contains('previewing')||checklistSaving||pendingChecks.size||!$('#checklistDialog').hidden){
-        if(revision!==publishedRevision){pendingRemoteState={row,state};setStatus('새 공유 저장본이 있습니다 · 저장 시 비교합니다.');}
+      if(body.classList.contains('editing')||documentSession.snapshot().pendingDraft||body.classList.contains('previewing')||checklistSaving||pendingChecks.size||!$('#checklistDialog').hidden){
+        if(revision!==documentSession.snapshot().publishedRevision){documentSession.rememberRemote(row,state);setStatus('새 공유 저장본이 있습니다 · 저장 시 비교합니다.');}
         return true;
       }
-      if(revision!==publishedRevision||fingerprint(state)!==fingerprint(lastSavedState)){applyStatePreservingInputs(state);setPublishedBaseline(row,state);initializeHistory();setStatus(reason==='reconnect'?'연결 복구 · 최신 저장본 반영':'최신 저장본을 반영했습니다.');}
+      if(revision!==documentSession.snapshot().publishedRevision||fingerprint(state)!==fingerprint(documentSession.snapshot().lastSavedState)){applyStatePreservingInputs(state);setPublishedBaseline(row,state);initializeHistory();setStatus(reason==='reconnect'?'연결 복구 · 최신 저장본 반영':'최신 저장본을 반영했습니다.');}
       else if(reason==='reconnect')setStatus('공유 서버 연결 복구 · 최신 상태');
       return true;
     }catch(error){if(blockUnsupportedDocument(error))return false;console.warn(error);setStatus('공유 서버 확인 실패 · 현재 화면 유지');return false;}
@@ -58,10 +55,10 @@
       const embeddedState=normalizeState(embedded?.html?migratePublishedState(embedded):captureState());
       if(record?.state?.html){
         const restored=normalizeState(migratePublishedState(record.state));
-        lastSavedState=normalizeState(record.dirty&&record.baseState?.html?migratePublishedState(record.baseState):restored);
+        documentSession.establishBaseline(normalizeState(record.dirty&&record.baseState?.html?migratePublishedState(record.baseState):restored));
         applyState(restored);
         setStatus(record.dirty?'저장하지 않은 오프라인 초안을 복구했습니다.':'오프라인 작업본');
-      }else{applyState(embeddedState);lastSavedState=clone(embeddedState);}
+      }else{applyState(embeddedState);documentSession.establishBaseline(clone(embeddedState));}
       initializeHistory();updateDirtyState();finishHydration();return;
     }
 
@@ -76,13 +73,13 @@
       if(cached?.state?.html){const state=normalizeState(migratePublishedState(cached.state));applyState(state);setPublishedBaseline({revision:cached.revision,updatedAt:cached.updatedAt},state,cached);loadedFromCache=true;const cachedLabel=cached.cachedAt?new Date(cached.cachedAt).toLocaleString('ko-KR'):'최근';cacheStatus='오프라인 캐시 표시 · '+cachedLabel+' 기준';}
       else cacheStatus='연결 실패 · 기본 일정 표시 중 · 최신 공유본 미확인';
     }
-    if(!lastSavedState)lastSavedState=normalizeState(captureState());
+    if(!documentSession.snapshot().lastSavedState)documentSession.establishBaseline(normalizeState(captureState()));
     initializeHistory();updateDirtyState();if(cacheStatus)setStatus(cacheStatus);await recoverOnlineDraft();finishHydration();
     if(!client)return;
     tripRepository.subscribe(payload=>{
       if(!payload.new?.content?.html)return;
       let remoteState;try{remoteState=normalizeState(migratePublishedState(payload.new.content));}catch(error){blockUnsupportedDocument(error);console.warn(error);return;}
-      if(body.classList.contains('editing')||pendingDraft||body.classList.contains('previewing')||checklistSaving||pendingChecks.size||!$('#checklistDialog').hidden){pendingRemoteState={row:payload.new,state:remoteState};setStatus('새 공유 저장본이 있습니다 · 저장 시 비교합니다.');return;}
+      if(body.classList.contains('editing')||documentSession.snapshot().pendingDraft||body.classList.contains('previewing')||checklistSaving||pendingChecks.size||!$('#checklistDialog').hidden){documentSession.rememberRemote(payload.new,remoteState);setStatus('새 공유 저장본이 있습니다 · 저장 시 비교합니다.');return;}
       applyStatePreservingInputs(remoteState);setPublishedBaseline(payload.new,remoteState);initializeHistory();setStatus('새 저장본을 반영했습니다.');
     },status=>{if(status==='SUBSCRIBED'&&loadedFromCache)void refreshPublishedState('reconnect');});
     await getEditorSession();
@@ -152,7 +149,7 @@
   $('.tabs').addEventListener('keydown',event=>{const current=event.target.closest('[role="tab"]');if(!current)return;const tabs=$$('.tabs [role="tab"]'),index=tabs.indexOf(current);let next=index;if(event.key==='ArrowRight')next=(index+1)%tabs.length;else if(event.key==='ArrowLeft')next=(index-1+tabs.length)%tabs.length;else if(event.key==='Home')next=0;else if(event.key==='End')next=tabs.length-1;else if(event.key==='Enter'||event.key===' '){event.preventDefault();current.click();return;}else return;event.preventDefault();tabs[next].click();tabs[next].focus({preventScroll:true});});
   $('.tabs').addEventListener('wheel',event=>{const tabs=event.currentTarget;if(tabs.scrollWidth<=tabs.clientWidth||Math.abs(event.deltaX)>Math.abs(event.deltaY))return;event.preventDefault();tabs.scrollLeft+=event.deltaY;},{passive:false});
   window.addEventListener('online',()=>void refreshPublishedState('reconnect'));
-  window.addEventListener('offline',()=>setStatus(pendingDraft?'오프라인 · 초안은 이 브라우저에 보관 중':'오프라인 · 저장된 화면 표시 중'));
+  window.addEventListener('offline',()=>setStatus(documentSession.snapshot().pendingDraft?'오프라인 · 초안은 이 브라우저에 보관 중':'오프라인 · 저장된 화면 표시 중'));
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void refreshPublishedState('visible');else void flushDraftPersistence();});
   window.addEventListener('pagehide',event=>{void flushDraftPersistence();if(!event.persisted){tripRepository.dispose();sessionService.dispose();dialogs.dispose();}});
   window.addEventListener('beforeunload',event=>{if(!isDirty()&&!saveInFlight&&!pendingChecks.size&&!checklistEditorSaving&&!checklistEditorDirty())return;void flushDraftPersistence();event.preventDefault();event.returnValue='';});
@@ -166,4 +163,4 @@
   document.addEventListener('click',event=>{const retry=event.target.closest('[data-retry-check]');if(!retry)return;const item=checkFeedback.get(retry.dataset.retryCheck);if(item)void authorizeCheck(retry.dataset.retryCheck,item.value);});
   sessionService.initialize();bindAuthentication();
   // @browser-fixture
-  initializeTimetable();initializeDialogAccessibility();selectInitialTab();decorateButtonIcons();decorateDates();decorateChecklist();renderLedger();moneyTemplateHtml=$('.moneyday').outerHTML;decorateScheduleRows();body.classList.add('viewing');setEditable(false);lastSavedState=normalizeState(captureState());updateContextControls();updateTripProgress();updateWorldClocks();setInterval(updateTripProgress,60*60*1000);setInterval(updateWorldClocks,60*1000);revealSelectedTab('auto');void hydrate().catch(error=>{blockUnsupportedDocument(error);console.error(error);setStatus('일정을 불러오지 못했습니다 · 현재 화면 유지');}).finally(finishHydration);
+  initializeTimetable();initializeDialogAccessibility();selectInitialTab();decorateButtonIcons();decorateDates();decorateChecklist();renderLedger();documentAdapter.setMoneyTemplate($('.moneyday').outerHTML);decorateScheduleRows();body.classList.add('viewing');setEditable(false);documentSession.establishBaseline(normalizeState(captureState()));updateContextControls();updateTripProgress();updateWorldClocks();setInterval(updateTripProgress,60*60*1000);setInterval(updateWorldClocks,60*1000);revealSelectedTab('auto');void hydrate().catch(error=>{blockUnsupportedDocument(error);console.error(error);setStatus('일정을 불러오지 못했습니다 · 현재 화면 유지');}).finally(finishHydration);

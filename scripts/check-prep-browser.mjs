@@ -55,7 +55,7 @@ const server = createServer(async (req, res) => {
     if (relative === 'index.html') content = injectBrowserFixture(original
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
       .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, stub), `runtimeOptions.saveMs=${url.searchParams.has('uncertain')?120:12000};window.__prepTest={captureState,applyState,normalizeState,checklistItems,patchChecklist,patchCheck,isDirty,finishMutation,recordHistory,refreshPublishedState,
-        pending:()=>pendingChecks.size,base:()=>lastSavedState,revision:()=>publishedRevision,editorItems:()=>clone(checklistEditorItems),
+        pending:()=>pendingChecks.size,base:()=>documentSession.snapshot().lastSavedState,revision:()=>documentSession.snapshot().publishedRevision,editorItems:()=>clone(checklistEditorItems),
         draft:()=>{expenses.push({id:'unsaved-expense',name:'Unsaved meal',amountKrw:36250,amountUsd:25,amountSource:'usd',appliedExchangeRate:1450,date:'2027-05-01',categoryId:'misc'});renderLedger();finishMutation();},
         storageFailure:()=>{writeDraftRecord=async()=>false;}};`)
       .replace('data-offline="false"', url.searchParams.has('offline') ? 'data-offline="true"' : 'data-offline="false"');

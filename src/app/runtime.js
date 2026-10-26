@@ -71,8 +71,6 @@
   let exchangeRateUpdated = '';
   let budgetKrw = DEFAULT_BUDGET_KRW;
   let lastScheduleDay = 'd1';
-  let lastSavedState = null;
-  let pendingDraft = false;
   const pendingChecks = new Map();
   const checkFeedback = new Map();
   let checklistQueue = Promise.resolve();
@@ -82,15 +80,9 @@
   let checklistEditorItems = [];
   const newChecklistItemIds = new Set();
   let checklistEditorSaving = false;
-  let history = [];
-  let historyIndex = -1;
-  let applyingHistory = false;
-  let historyTimer = null;
   let authPurpose = 'edit';
   let pendingAuthAction = null;
   let pendingAuthCancel = null;
-  let previewReturnState = null;
-  let moneyTemplateHtml = '';
   let activeScheduleRow = null;
   let scheduleTimeTarget = null;
   let editingCategoryId = null;
@@ -99,10 +91,6 @@
   let pendingImport = null;
   let tabScrollReleaseTimer = null;
   let tabScrollReleaseHandler = null;
-  let publishedRevision = 0;
-  let publishedUpdatedAt = '';
-  let pendingRemoteState = null;
-  let draftBaselineUnknown = false;
   let deferredDraftRecovery = false;
   let draftWriteTimer = null;
   let draftDatabasePromise = null;

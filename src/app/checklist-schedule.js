@@ -48,29 +48,18 @@
     });
     syncChecklistControls();
   }
-  function applyStatePreservingInputs(state) {
-    // Preserve unsubmitted expense entry and keyboard focus across rendering.
-    const preservedExpenseInput=clone(expenseInput);
-    const fields=$$('.add-expense input,.add-expense select').map(input=>({id:input.id,value:input.value}));
-    const active=document.activeElement,wasInMain=Boolean(active?.closest('main')),focusId=active?.id,checkId=active?.closest('.prepday [data-check-id]')?.dataset.checkId;
-    const selection=active instanceof HTMLInputElement?[active.selectionStart,active.selectionEnd]:null;
-    applyState(state);
-    fields.forEach(({id,value})=>{const input=document.getElementById(id);if(input&&(input.tagName!=='SELECT'||Array.from(input.options).some(option=>option.value===value)))input.value=value;});
-    expenseInput=preservedExpenseInput;drawExpenseInput();
-    const focus=checkId?$$('.prepday [data-check-id]').find(label=>label.dataset.checkId===checkId)?.querySelector('input'):focusId?document.getElementById(focusId):null;
-    if(focus&&wasInMain&&!focus.disabled){focus.focus({preventScroll:true});if(selection&&selection[0]!==null)focus.setSelectionRange(...selection);}
-  }
+
   async function commitChecklistPatch(transform,note,isApplied) {
-    if(documentWriteBlock)throw new Error(documentWriteBlock);
+    if(documentSession.snapshot().documentWriteBlock)throw new Error(documentSession.snapshot().documentWriteBlock);
     if(saveInFlight||operationBusy)throw new Error('다른 저장이 끝난 뒤 다시 시도해 주세요.');
     checklistSaving=true;syncChecklistControls();
     try {
       for(let attempt=0;attempt<3;attempt++) {
         const row=OFFLINE_MODE?null:await fetchPublishedState();
         if(!OFFLINE_MODE&&!row)throw new Error('공유 저장본을 확인하지 못했습니다.');
-        const remote=row?.content?.html?normalizeState(migratePublishedState(row.content)):clone(lastSavedState);
+        const remote=row?.content?.html?normalizeState(migratePublishedState(row.content)):clone(documentSession.snapshot().lastSavedState);
         let saved=normalizeState(transform(remote,true));
-        let result={revision:publishedRevision,updated_at:publishedUpdatedAt};
+        let result={revision:documentSession.snapshot().publishedRevision,updated_at:documentSession.snapshot().publishedUpdatedAt};
         if(!OFFLINE_MODE&&fingerprint(saved)===fingerprint(remote)){
           transform(remote,'verified');saved=remote;result=row;
         }else if(!OFFLINE_MODE){
@@ -85,7 +74,7 @@
             let latest;try{latest=await fetchPublishedState();}catch(_){}
             const latestState=latest?.content?.html?normalizeState(migratePublishedState(latest.content)):null;
             if(!latestState||!isApplied(latestState)){
-              if(latestState)pendingRemoteState={row:latest,state:latestState};
+              if(latestState)documentSession.rememberRemote(latest,latestState);
               const error=new Error('저장 결과 확인 필요 · 연결 후 재시도해 주세요.');error.uncertain=true;throw error;
             }
             // Refresh list completion flags from the verified snapshot, including
@@ -98,12 +87,12 @@
         }
         // Transfer only this operation's result into the local draft and its
         // undo history. Unrelated local changes remain unpublished and dirty.
-        const localBefore=captureState(),baseBefore=clone(lastSavedState);
+        const localBefore=captureState(),baseBefore=clone(documentSession.snapshot().lastSavedState);
         const nextLocal=transform(localBefore),nextBase=normalizeState(transform(baseBefore));
         if(OFFLINE_MODE){
           clearTimeout(draftWriteTimer);
           const dirty=fingerprint(nextLocal)!==fingerprint(nextBase);
-          const ok=await writeDraftRecord({tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:nextLocal,baseState:nextBase,baseRevision:publishedRevision,baseUpdatedAt:publishedUpdatedAt,savedAt:new Date().toISOString(),dirty});
+          const ok=await writeDraftRecord({tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:nextLocal,baseState:nextBase,baseRevision:documentSession.snapshot().publishedRevision,baseUpdatedAt:documentSession.snapshot().publishedUpdatedAt,savedAt:new Date().toISOString(),dirty});
           if(!ok)throw new Error('브라우저에 저장하지 못했습니다. 다시 시도해 주세요.');
         }
         const persistedItems=checklistItems(nextLocal);pendingChecks.forEach((pending,id)=>{const item=persistedItems.find(item=>item.id===id);if(item)pending.before=item.checked;});
@@ -111,13 +100,11 @@
         if(noOtherDraft&&!OFFLINE_MODE){
           applyStatePreservingInputs(saved);
           // captureState deliberately excludes optimistic values still in flight.
-          lastSavedState=normalizeState(captureState());publishedRevision=Number(result.revision);publishedUpdatedAt=result.updated_at;pendingRemoteState=null;draftBaselineUnknown=false;
+          documentSession.acceptPrepResult({nextBase,saved,result,noOtherDraft,offline:OFFLINE_MODE,localBaseline:captureState()});
         }else{
-          applyStatePreservingInputs(nextLocal);lastSavedState=nextBase;
-          if(OFFLINE_MODE||(!draftBaselineUnknown&&fingerprint(nextBase)===fingerprint(saved))){publishedRevision=Number(result.revision);publishedUpdatedAt=result.updated_at;pendingRemoteState=null;}
-          else pendingRemoteState={row:{...result,content:saved},state:saved};
+          applyStatePreservingInputs(nextLocal);documentSession.acceptPrepResult({nextBase,saved,result,noOtherDraft,offline:OFFLINE_MODE});
         }
-        history=history.map(state=>{try{return transform(state);}catch(_){return state;}});
+        documentSession.reconcileHistory(transform);
         if(!OFFLINE_MODE)void writePublicCache(saved,{revision:Number(result.revision),updatedAt:result.updated_at});
         return saved;
       }
@@ -146,7 +133,7 @@
         const before=pendingChecks.get(id)?.before,restoreFocus=document.activeElement===document.body;pendingChecks.delete(id);
         const current=$$('.prepday .checklist label').find(label=>label.dataset.checkId===id)?.querySelector('input');if(current)current.checked=saved?value:before;
         updateDirtyState();renderCheckFeedback();if(restoreFocus&&current&&$('.day-radio:checked')?.id==='prep'&&$('#authDialog').hidden)current.focus({preventScroll:true});resetInactivityTimer();
-        if(saved&&!pendingDraft&&!OFFLINE_MODE&&!deferredDraftRecovery)await clearDraftRecord();
+        if(saved&&!documentSession.snapshot().pendingDraft&&!OFFLINE_MODE&&!deferredDraftRecovery)await clearDraftRecord();
         if(saved){const feedback=checkFeedback.get(id);setTimeout(()=>{if(checkFeedback.get(id)===feedback){checkFeedback.delete(id);renderCheckFeedback();}},3500);}
       }
     });
@@ -155,7 +142,7 @@
   async function openChecklistEditor() {
     if(pendingChecks.size||checklistSaving)return;
     checklistEditorBase=checklistItems(captureState());
-    if(!OFFLINE_MODE&&checklistShape(checklistEditorBase)===checklistShape(checklistItems(lastSavedState))){
+    if(!OFFLINE_MODE&&checklistShape(checklistEditorBase)===checklistShape(checklistItems(documentSession.snapshot().lastSavedState))){
       try{const latest=await fetchPublishedState();if(latest?.content?.html)checklistEditorBase=checklistItems(normalizeState(migratePublishedState(latest.content)));}catch(_){}
     }
     checklistEditorItems=clone(checklistEditorBase);newChecklistItemIds.clear();
@@ -190,7 +177,7 @@
         return patchChecklist(state,publishedItems);
       },'준비 목록 편집',state=>checklistShape(checklistItems(state))===checklistShape(items));
       $('#checklistDialog').hidden=true;checkFeedback.clear();renderCheckFeedback();updateDirtyState();
-      if(!pendingDraft&&!OFFLINE_MODE&&!deferredDraftRecovery)await clearDraftRecord();
+      if(!documentSession.snapshot().pendingDraft&&!OFFLINE_MODE&&!deferredDraftRecovery)await clearDraftRecord();
       setStatus(OFFLINE_MODE?'목록을 이 브라우저에 저장했습니다.':'목록 저장됨');
     }catch(error){
       // Submitted IDs may now exist remotely. A later explicit retry must retain
@@ -247,7 +234,7 @@
   function changeScheduleKind(select){
     const row=select.closest('.timeline-row');if(!row)return;
     if(!body.classList.contains('editing')){updateScheduleKindControl(row);return;}
-    clearTimeout(historyTimer);recordHistory();
+    documentSession.cancelHistory();recordHistory();
     const mode=scheduleKindMode(select.value);if(mode==='auto')delete row.dataset.scheduleKind;else row.dataset.scheduleKind=mode;
     updateScheduleKindControl(row);recordHistory();resetInactivityTimer();
   }

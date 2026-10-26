@@ -86,7 +86,7 @@
     return draftStoragePromise;
   }
   async function writeDraftRecord(record) {
-    if(documentWriteBlock)return false;
+    if(documentSession.snapshot().documentWriteBlock)return false;
     if(deferredDraftRecovery)return false;
     const generation=++draftWriteGeneration;
     memoryDraftRecord=clone(record);
@@ -126,7 +126,7 @@
     }catch(error){console.warn('초안을 읽지 못했습니다.',error);showDraftStorageWarning('read');return null;}
   }
   async function clearDraftRecord() {
-    if(documentWriteBlock)return false;
+    if(documentSession.snapshot().documentWriteBlock)return false;
     const generation=++draftWriteGeneration;clearTimeout(draftWriteTimer);draftWriteTimer=null;
     let cleared=false;
     try{
@@ -153,8 +153,8 @@
   async function writePublicCache(state,metadata={}) {
     const record={
       state:clone(state),
-      revision:Math.max(0,Number(metadata.revision??publishedRevision)||0),
-      updatedAt:String(metadata.updatedAt??publishedUpdatedAt??''),
+      revision:Math.max(0,Number(metadata.revision??documentSession.snapshot().publishedRevision)||0),
+      updatedAt:String(metadata.updatedAt??documentSession.snapshot().publishedUpdatedAt??''),
       cachedAt:String(metadata.cachedAt||new Date().toISOString())
     };
     memoryPublicCache=clone(record);
@@ -187,25 +187,22 @@
   }
   function setPublishedBaseline(row,state,cacheMetadata={}) {
     const normalized=normalizeState(state),current=normalizeState(captureState());
-    lastSavedState=clone(fingerprint(current)===fingerprint(normalized)?normalized:current);
-    publishedRevision=Math.max(0,Number(row?.revision)||0);
-    publishedUpdatedAt=String(row?.updated_at||row?.updatedAt||'');
-    pendingRemoteState=null;draftBaselineUnknown=false;
-    void writePublicCache(lastSavedState,cacheMetadata);
+    documentSession.acceptPublished(row,fingerprint(current)===fingerprint(normalized)?normalized:current);
+    void writePublicCache(documentSession.snapshot().lastSavedState,cacheMetadata);
   }
   function currentDraftRecord() {
-    return {tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:previewReturnState?clone(previewReturnState):captureState(),baseState:draftBaselineUnknown?null:clone(lastSavedState),baseRevision:publishedRevision,baseUpdatedAt:publishedUpdatedAt,savedAt:new Date().toISOString(),dirty:true};
+    return {tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:documentSession.snapshot().previewReturnState?clone(documentSession.snapshot().previewReturnState):captureState(),baseState:documentSession.snapshot().draftBaselineUnknown?null:clone(documentSession.snapshot().lastSavedState),baseRevision:documentSession.snapshot().publishedRevision,baseUpdatedAt:documentSession.snapshot().publishedUpdatedAt,savedAt:new Date().toISOString(),dirty:true};
   }
   async function flushDraftPersistence() {
     clearTimeout(draftWriteTimer);
-    if(!lastSavedState||!isDirty())return false;
+    if(!documentSession.snapshot().lastSavedState||!isDirty())return false;
     return writeDraftRecord(currentDraftRecord());
   }
   function queueDraftPersistence() {
     clearTimeout(draftWriteTimer);
-    if(!pendingDraft||!lastSavedState||body.classList.contains('hydrating'))return;
+    if(!documentSession.snapshot().pendingDraft||!documentSession.snapshot().lastSavedState||body.classList.contains('hydrating'))return;
     draftWriteTimer=setTimeout(()=>{
-      if(pendingDraft)void writeDraftRecord(currentDraftRecord());
+      if(documentSession.snapshot().pendingDraft)void writeDraftRecord(currentDraftRecord());
     },700);
   }
 

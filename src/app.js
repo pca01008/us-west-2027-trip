@@ -19,7 +19,40 @@ const {parseTimetableTime,scheduleTimeValue,scheduleClockMask,scheduleClockValue
 // @include app/ledger-domain.js
 const {decimalParts,roundRatio,safeMinor,parseLedgerInput,parseLedgerRate,convertLedgerAmount,ledgerSumParts,sumLedgerAmounts,formatLedgerSum,expenseMoney,emptyExpenseInput,calculateExpenseInput,normalizeExpense,normalizeExpenses,formatCurrencyAmount} = createLedgerDomain({LEDGER_CURRENCIES,currencyLabel,formatCurrencyMinor,safeDataId,hashText,findCategoryId});
 // @include app/ledger.js
-// @include app/state.js
+// @include app/document-session.js
+const documentSession=createDocumentSession({clone,normalize:(...args)=>normalizeState(...args),fingerprint:(...args)=>fingerprint(...args)});
+// @include app/document.js
+const documentAdapter=createDocumentAdapter({$:$,
+$$:$$,
+DEFAULT_BUDGET_KRW:DEFAULT_BUDGET_KRW,
+DEFAULT_EXCHANGE_RATE:DEFAULT_EXCHANGE_RATE,
+IMPORT_ALLOWED_MONEY_IDS:IMPORT_ALLOWED_MONEY_IDS,
+MEDIA_PATH_PATTERN:MEDIA_PATH_PATTERN,
+SCHEMA_VERSION:SCHEMA_VERSION,
+SUPABASE_URL:SUPABASE_URL,
+TRIP_ID:TRIP_ID,
+afterApply:()=>{setEditable(body.classList.contains('editing'));updateContextControls();},
+assertCurrencyPair:(...args)=>assertCurrencyPair(...args),
+assertSupportedSchema:(...args)=>assertSupportedSchema(...args),
+beforeApply:()=>{$('#timetableDetail').hidden=true;closeScheduleTimeDialog();},
+clone:(...args)=>clone(...args),
+currencyMetadata:(...args)=>currencyMetadata(...args),
+drawExpenseInput:(...args)=>drawExpenseInput(...args),
+entryPending:()=>expenseAddPending,
+hashText:(...args)=>hashText(...args),
+normalizeCategories:(...args)=>normalizeCategories(...args),
+normalizeExpenses:(...args)=>normalizeExpenses(...args),
+pendingCheckBefore:id=>pendingChecks.get(id)?.before,
+readEntryBuffer:()=>clone(expenseInput),
+readLedger:()=>({expenses,categories,exchangeRate,exchangeRateUpdated,budgetKrw}),
+renderCheckFeedback:(...args)=>renderCheckFeedback(...args),
+renderDocument:()=>{decorateDates();decorateChecklist();decorateScheduleRows();renderLedger();},
+replaceLedger:state=>{expenses=clone(state.expenses);categories=clone(state.categories);exchangeRate=state.exchangeRate;exchangeRateUpdated=state.exchangeRateUpdated;budgetKrw=state.budgetKrw;},
+restoreEntryBuffer:value=>{expenseInput=value;},
+scheduleKindMode:(...args)=>scheduleKindMode(...args),
+sumLedgerAmounts:(...args)=>sumLedgerAmounts(...args)});
+const {sanitizeMarkup,checkLabelText,preserveLegacyLedger,migratePublishedState,captureState,applyState,applyStatePreservingInputs,setMoneyTemplate,isApplying,migrationNotice}=documentAdapter;
+const normalizeState=(raw,imported=false)=>documentAdapter.normalizeState(raw,{imported,fallback:raw?.html?null:captureState()});
 
 // @include app/checklist-schedule.js
 // @include app/ledger-view.js

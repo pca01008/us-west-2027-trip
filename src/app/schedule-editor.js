@@ -2,7 +2,7 @@
   function closeScheduleTimeDialog(){$('#scheduleTimeDialog').hidden=true;scheduleTimeTarget=null;}
   function openScheduleTimeDialog(row,panel=row?.closest('.day')) {
     if(!body.classList.contains('editing')||!panel)return;
-    clearTimeout(historyTimer);recordHistory();
+    documentSession.cancelHistory();recordHistory();
     scheduleTimeTarget={row,panel};
     const {time,zone}=readScheduleTime(row),parsed=parseTimetableTime(time);
     $('#scheduleTimeTitle').textContent=row?'일정 시간 설정':'새 일정 시간';

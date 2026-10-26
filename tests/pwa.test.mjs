@@ -138,6 +138,7 @@ test('SDK 미연결 또는 오프라인 시작에서도 기존 공개본을 읽�
       TRIP_ID: 'test', getEditorSession: async () => {}
     });
     context.tripRepository={subscribe(){}};
+    context.documentSession={snapshot:()=>({lastSavedState:record.state})};
     vm.runInContext(hydrate, context);
     await context.hydrate();
     assert.equal(displayed.html, 'saved itinerary');
