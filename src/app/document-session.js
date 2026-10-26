@@ -1,5 +1,5 @@
 /** Single owner of publication, preview, dirty and undo transitions. */
-function createDocumentSession({clone, normalize, fingerprint}) {
+function createDocumentSession({clone, normalize, fingerprint, historyDelay=()=>400}) {
   let lastSavedState=null, publishedRevision=0, publishedUpdatedAt='';
   let pendingRemoteState=null, draftBaselineUnknown=false, previewReturnState=null;
   let pendingDraft=false, documentWriteBlock='', history=[], historyIndex=-1, historyTimer=null;
@@ -53,7 +53,7 @@ function createDocumentSession({clone, normalize, fingerprint}) {
   function moveHistory(offset){const next=historyIndex+offset;if(next<0||next>=history.length)return null;historyIndex=next;return clone(history[next]);}
   function reconcileHistory(transform){history=history.map(state=>{try{return transform(clone(state));}catch(_){return state;}});}
   function cancelHistory(){clearTimeout(historyTimer);historyTimer=null;}
-  function queueHistory(record){cancelHistory();historyTimer=setTimeout(record,400);}
+  function queueHistory(record){cancelHistory();historyTimer=setTimeout(record,historyDelay());}
   return Object.freeze({snapshot,establishBaseline,acceptPublished,prepareOverwrite,adoptImportBaseline,
     restoreDraftBaseline,rememberRemote,markClean,acceptOfflineSave,dirty,updateDirty,enterPreview,leavePreview,blockWrites,
     acceptPrepResult,initializeHistory,recordLocalChange,moveHistory,reconcileHistory,cancelHistory,queueHistory});

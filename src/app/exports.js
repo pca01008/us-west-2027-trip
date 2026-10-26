@@ -1,24 +1,18 @@
+function createExportsController({$,$$,CONFIG,EXPORT_BASE_NAME,blobToDataUrl,captureState,currentOperationSignal,fetchAsDataUrl,isOperationBusy,isOperationCancelled,normalizeState,setOperationBusy,setStatus,showChoice,showDialog,todayLocal}) {
   function stripTransient(root){root.querySelectorAll('#draftStorageWarning,.schedule-media-tools,.photo-actions,.row-actions,.photo-delete,.schedule-map-delete,.row-delete,.check-delete,.check-actions,.check-feedback,.warning-delete').forEach(el=>el.remove());root.querySelectorAll('[contenteditable]').forEach(el=>el.setAttribute('contenteditable','false'));}
-  async function fetchAsDataUrl(url){
-    if(url.startsWith('data:image/'))return url;
-    return withPhotoRequest(async signal=>{
-      const absolute=new URL(url,location.href).href,response=await fetch(absolute,{cache:'force-cache',signal});
-      if(!response.ok)throw new Error('사진 다운로드 실패 · HTTP '+response.status);
-      return blobToDataUrl(await response.blob());
-    },60000,'사진 다운로드');
-  }
+
   async function embedPhotos(state,{strict=true}={}){
     const normalized=normalizeState(state),template=document.createElement('template');template.innerHTML=normalized.html;const failures=[],photos=Array.from(template.content.querySelectorAll('.schedule-photo'));
     for(let i=0;i<photos.length;i++){
-      if(operationCancelled)throw new Error('내보내기가 취소되었습니다.');
+      if(isOperationCancelled())throw new Error('내보내기가 취소되었습니다.');
       const figure=photos[i],img=figure.querySelector('img'),thumb=img?.src,full=img?.dataset.fullUrl||thumb;if(!img||!full)continue;
       setStatus('사진 포함 '+(i+1)+'/'+photos.length);
       try{
-        const fullData=await fetchAsDataUrl(full);if(operationCancelled)throw new Error('내보내기가 취소되었습니다.');
-        const thumbData=!thumb||thumb===full?fullData:await fetchAsDataUrl(thumb);if(operationCancelled)throw new Error('내보내기가 취소되었습니다.');
+        const fullData=await fetchAsDataUrl(full);if(isOperationCancelled())throw new Error('내보내기가 취소되었습니다.');
+        const thumbData=!thumb||thumb===full?fullData:await fetchAsDataUrl(thumb);if(isOperationCancelled())throw new Error('내보내기가 취소되었습니다.');
         img.src=thumbData;img.dataset.fullUrl=fullData;figure.dataset.staged='true';delete figure.dataset.fullPath;delete figure.dataset.thumbPath;
       }catch(error){
-        if(operationCancelled)throw error;
+        if(isOperationCancelled())throw error;
         failures.push((img.alt||'사진')+' · '+error.message);if(strict)throw error;
         if(img.src)img.src=new URL(img.src,location.href).href;if(img.dataset.fullUrl)img.dataset.fullUrl=new URL(img.dataset.fullUrl,location.href).href;
       }
@@ -43,22 +37,22 @@
     root.querySelector('#tripFontPreload')?.remove();
     const style=root.querySelector('#trip-app-styles'),rule=style?.textContent.match(/@font-face\s*\{[^}]+\}/)?.[0],source=rule?.match(/url\("([^"]+)"\)/)?.[1];
     if(!source||source.startsWith('data:'))return;
-    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000),signal=operationController?.signal,abort=()=>controller.abort();
+    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000),signal=currentOperationSignal(),abort=()=>controller.abort();
     signal?.addEventListener('abort',abort,{once:true});
     try{
       if(signal?.aborted)controller.abort();
       const response=await fetch(new URL(source,document.baseURI),{signal:controller.signal});
       if(!response.ok)throw new Error('Font HTTP '+response.status);
       const data=await blobToDataUrl(new Blob([await response.arrayBuffer()],{type:'font/woff2'}));
-      if(operationCancelled)throw new Error('작업을 취소했습니다.');
+      if(isOperationCancelled())throw new Error('작업을 취소했습니다.');
       style.textContent=style.textContent.replace(source,data);
     }catch(error){
-      if(operationCancelled)throw error;
+      if(isOperationCancelled())throw error;
       style.textContent=style.textContent.replace(rule,'');console.warn('Export font unavailable; using the system font.',error);
     }finally{clearTimeout(timeout);signal?.removeEventListener('abort',abort);}
   }
   async function exportOfflineHtml(sourceState=captureState()) {
-    if(operationBusy)return;setOperationBusy(true,{cancelable:true,status:'오프라인 작업본 준비 중'});
+    if(isOperationBusy())return;setOperationBusy(true,{cancelable:true,status:'오프라인 작업본 준비 중'});
     try {
       const embedded=await embedPhotos(sourceState),state=embedded.state,cloneDoc=document.documentElement.cloneNode(true);
       cloneDoc.dataset.offline='true';cloneDoc.dataset.offlineId=Date.now().toString(36);
@@ -72,7 +66,7 @@
       const source='<!doctype html>\n'+cloneDoc.outerHTML,size=new Blob([source]).size;
       if(size>100*1024*1024){const choice=await showChoice({title:'오프라인 파일이 큽니다.',message:'사진을 포함한 파일 크기가 약 '+Math.ceil(size/1024/1024)+'MB입니다. 기기에 따라 열고 저장하는 데 시간이 걸릴 수 있습니다.',choices:[{label:'취소',value:'cancel'},{label:'계속 다운로드',value:'continue',className:'action-primary'}]});if(choice!=='continue'){setStatus('오프라인 작업본 생성을 취소했습니다.');return;}}
       downloadHtml(source,EXPORT_BASE_NAME+'_EDITABLE_'+todayLocal()+'.html');setStatus('오프라인 작업본을 만들었습니다.');
-    } catch(error) {console.error(error);if(operationCancelled){setStatus('오프라인 작업본 생성을 취소했습니다.');return;}setStatus('오프라인 작업본 생성 실패');await showChoice({title:'오프라인 작업본 생성 실패',message:error.message||'사진을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.',choices:[{label:'확인',value:'ok',className:'action-primary'}]});}
+    } catch(error) {console.error(error);if(isOperationCancelled()){setStatus('오프라인 작업본 생성을 취소했습니다.');return;}setStatus('오프라인 작업본 생성 실패');await showChoice({title:'오프라인 작업본 생성 실패',message:error.message||'사진을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.',choices:[{label:'확인',value:'ok',className:'action-primary'}]});}
     finally{const status=$('#status').textContent;setOperationBusy(false);setStatus(status);}
   }
   function appendReadonlyRuntime(root){
@@ -97,7 +91,7 @@
     root.querySelector('body')?.appendChild(script);
   }
   async function exportStaticHtml(){
-    if(operationBusy)return;setOperationBusy(true,{cancelable:true,status:'인쇄·공유용 사본 준비 중'});
+    if(isOperationBusy())return;setOperationBusy(true,{cancelable:true,status:'인쇄·공유용 사본 준비 중'});
     try{
       const embedded=await embedPhotos(captureState(),{strict:false}),cloneDoc=document.documentElement.cloneNode(true),photoData=new Map();
       const embeddedTemplate=document.createElement('template');embeddedTemplate.innerHTML=embedded.state.html;embeddedTemplate.content.querySelectorAll('.schedule-photo').forEach(figure=>{const img=figure.querySelector('img');photoData.set(figure.dataset.photoId,{src:img?.src||'',full:img?.dataset.fullUrl||img?.src||''});});
@@ -110,7 +104,7 @@
       cloneDoc.querySelectorAll('input[type="checkbox"]').forEach((input,index)=>{if($$('main input[type="checkbox"]')[index]?.checked)input.setAttribute('checked','');else input.removeAttribute('checked');input.disabled=true;});
       setArtifactBanner(cloneDoc,'readonly');appendReadonlyRuntime(cloneDoc);await embedArtifactFont(cloneDoc);downloadHtml('<!doctype html>\n'+cloneDoc.outerHTML,EXPORT_BASE_NAME+'_VIEW_ONLY_'+todayLocal()+'.html');
       setStatus(embedded.failures.length?'공유용 사본 생성 · '+embedded.failures.length+'개 사진은 온라인 주소 사용':'사진 포함 공유용 사본 생성 완료');
-    }catch(error){console.error(error);if(operationCancelled){setStatus('인쇄·공유용 사본 생성을 취소했습니다.');return;}setStatus('인쇄·공유용 사본 생성 실패');await showChoice({title:'사본을 만들지 못했습니다.',message:error.message,choices:[{label:'확인',value:'ok',className:'action-primary'}]});}
+    }catch(error){console.error(error);if(isOperationCancelled()){setStatus('인쇄·공유용 사본 생성을 취소했습니다.');return;}setStatus('인쇄·공유용 사본 생성 실패');await showChoice({title:'사본을 만들지 못했습니다.',message:error.message,choices:[{label:'확인',value:'ok',className:'action-primary'}]});}
     finally{const status=$('#status').textContent;setOperationBusy(false);setStatus(status);}
   }
 
@@ -119,4 +113,7 @@ $('#exportMenuBtn').onclick=()=>showDialog($('#exportDialog'));
 $('#exportBtn').onclick=()=>{$('#exportDialog').hidden=true;void exportStaticHtml();};
 $('#offlineExportBtn').onclick=()=>{$('#exportDialog').hidden=true;void exportOfflineHtml();};
 $('#exportCancel').onclick=()=>$('#exportDialog').hidden=true;
+}
+
+return Object.freeze({stripTransient,embedPhotos,downloadHtml,resetArtifactTheme,setArtifactBanner,embedTripConfig,embedArtifactFont,exportOfflineHtml,appendReadonlyRuntime,exportStaticHtml,bindExportsControls});
 }

@@ -2,7 +2,7 @@ const {parseTimetableTime,scheduleTimeValue,scheduleClockMask,scheduleClockValue
 const draftStorage=createDraftStorage({DRAFT_DB_NAME:DRAFT_DB_NAME,DRAFT_RECORD_KEY:DRAFT_RECORD_KEY,DRAFT_SESSION_KEY:DRAFT_SESSION_KEY,LEGACY_CACHE_KEY:LEGACY_CACHE_KEY,LEGACY_DRAFT_RECORD_KEY:LEGACY_DRAFT_RECORD_KEY,PUBLIC_CACHE_RECORD_KEY:PUBLIC_CACHE_RECORD_KEY,TRIP_ID:TRIP_ID,clone:clone,showDraftStorageWarning:(...args)=>showDraftStorageWarning(...args)});
 const {draftCheckpointKey,readDraftCheckpoint,removeDraftCheckpoint,openDraftDatabase,acquireDraftLock,prepareDraftStorage,readDraftRecord,readPublicCache,invalidateWrites,retainDraft}=draftStorage;
 const {decimalParts,roundRatio,safeMinor,parseLedgerInput,parseLedgerRate,convertLedgerAmount,ledgerSumParts,sumLedgerAmounts,formatLedgerSum,expenseMoney,emptyExpenseInput,calculateExpenseInput,normalizeExpense,normalizeExpenses,formatCurrencyAmount} = createLedgerDomain({LEDGER_CURRENCIES,currencyLabel,formatCurrencyMinor,safeDataId,hashText,findCategoryId});
-const documentSession=createDocumentSession({clone,normalize:(...args)=>normalizeState(...args),fingerprint:(...args)=>fingerprint(...args)});
+const documentSession=createDocumentSession({clone,historyDelay:()=>runtimeOptions.historyDelay(),normalize:(...args)=>normalizeState(...args),fingerprint:(...args)=>fingerprint(...args)});
 const draftWorkflow=createDraftWorkflow({OFFLINE_MODE:OFFLINE_MODE,
 SCHEMA_VERSION:SCHEMA_VERSION,
 TRIP_ID:TRIP_ID,
@@ -23,7 +23,7 @@ setStatus:(...args)=>setStatus(...args),
 showChoice:(...args)=>showChoice(...args),
 updateDirtyState:(...args)=>updateDirtyState(...args)});
 let {writeDraftRecord,clearDraftRecord,currentDraftRecord,flushDraftPersistence,queueDraftPersistence,clearCleanDraft,recoverOnlineDraft,deferRecovery,isRecoveryDeferred,cancelPendingWrites}=draftWorkflow;
-const documentAdapter=createDocumentAdapter({$:$,
+const documentAdapter=createDocumentAdapter({TIMETABLE_KINDS,$:$,
 $$:$$,
 DEFAULT_BUDGET_KRW:DEFAULT_BUDGET_KRW,
 DEFAULT_EXCHANGE_RATE:DEFAULT_EXCHANGE_RATE,
@@ -52,7 +52,7 @@ replaceLedger:state=>restoreLedgerState(state),
 restoreEntryBuffer:value=>restoreExpenseBuffer(value),
 scheduleKindMode:(...args)=>scheduleKindMode(...args),
 sumLedgerAmounts:(...args)=>sumLedgerAmounts(...args)});
-const {sanitizeMarkup,checkLabelText,preserveLegacyLedger,migratePublishedState,captureState,applyState,applyStatePreservingInputs,setMoneyTemplate,isApplying,migrationNotice}=documentAdapter;
+const {stateSummary,mapPlaceName,sanitizeMarkup,checkLabelText,preserveLegacyLedger,migratePublishedState,captureState,applyState,applyStatePreservingInputs,setMoneyTemplate,isApplying,migrationNotice}=documentAdapter;
 const normalizeState=(raw,imported=false)=>documentAdapter.normalizeState(raw,{imported,fallback:raw?.html?null:captureState()});
 const tripRepository = createTripRepository({client,tripId:TRIP_ID,offline:OFFLINE_MODE,publishedReadMs:()=>runtimeOptions.publishedReadMs});
 const {fetchPublishedState} = tripRepository;
@@ -147,6 +147,7 @@ focusAndSelect:(...args)=>focusAndSelect(...args),
 hashText:(...args)=>hashText(...args),
 iconSvg:(...args)=>iconSvg(...args),
 isOperationBusy:(...args)=>isOperationBusy(...args),
+mapPlaceName:(...args)=>mapPlaceName(...args),
 openMapDialog:(...args)=>openMapDialog(...args),
 parseTimetableTime:(...args)=>parseTimetableTime(...args),
 prefersReducedMotion:(...args)=>prefersReducedMotion(...args),
@@ -162,7 +163,7 @@ showDialog:(...args)=>showDialog(...args),
 timetableClock:(...args)=>timetableClock(...args),
 timetableKind:(...args)=>timetableKind(...args),
 uid:(...args)=>uid(...args)});
-let {mapPlaceName,addTimeRow,closeScheduleTimeDialog,openScheduleTimeDialog,scheduleTimeFormValue,renderScheduleClock,setScheduleClock,changeScheduleClock,undoScheduleClock,initializeScheduleClocks,updateScheduleTimePreview,saveScheduleTime,addScheduleWarning,moveScheduleRow,decorateDates,decorateMapLink,updatePhotoMoveButtons,decoratePhotoFigure,updateScheduleMoveButtons,updateScheduleKindControl,changeScheduleKind,updateEditableEmpty,decorateEditablePlaceholders,decorateScheduleRows,bindScheduleControls}=scheduleController;
+let {addTimeRow,closeScheduleTimeDialog,openScheduleTimeDialog,scheduleTimeFormValue,renderScheduleClock,setScheduleClock,changeScheduleClock,undoScheduleClock,initializeScheduleClocks,updateScheduleTimePreview,saveScheduleTime,addScheduleWarning,moveScheduleRow,decorateDates,decorateMapLink,updatePhotoMoveButtons,decoratePhotoFigure,updateScheduleMoveButtons,updateScheduleKindControl,changeScheduleKind,updateEditableEmpty,decorateEditablePlaceholders,decorateScheduleRows,bindScheduleControls}=scheduleController;
 
 const editingController=createEditingController({$:$,
 $$:$$,
@@ -175,7 +176,6 @@ applyStatePreservingInputs:(...args)=>applyStatePreservingInputs(...args),
 blockUnsupportedDocument:(...args)=>blockUnsupportedDocument(...args),
 body:body,
 buildDiff:(...args)=>buildDiff(...args),
-cancelCurrentOperation:(...args)=>cancelCurrentOperation(...args),
 captureState:(...args)=>captureState(...args),
 clearCleanDraft:(...args)=>clearCleanDraft(...args),
 clearDraftRecord:(...args)=>clearDraftRecord(...args),
@@ -184,7 +184,6 @@ client:client,
 closeNotice:(...args)=>closeNotice(...args),
 closePreview:(...args)=>closePreview(...args),
 closeScheduleTimeDialog:(...args)=>closeScheduleTimeDialog(...args),
-confirmSave:(...args)=>confirmSave(...args),
 currentDraftRecord:(...args)=>currentDraftRecord(...args),
 dialogs:dialogs,
 documentAdapter:documentAdapter,
@@ -199,8 +198,6 @@ getEditorSession:(...args)=>getEditorSession(...args),
 insertPlainText:(...args)=>insertPlainText(...args),
 invalidateVersionRequest:(...args)=>invalidateVersionRequest(...args),
 isChecklistSaving:(...args)=>isChecklistSaving(...args),
-isOperationBusy:(...args)=>isOperationBusy(...args),
-isOperationCancelled:(...args)=>isOperationCancelled(...args),
 materializeStagedPhotos:(...args)=>materializeStagedPhotos(...args),
 migratePublishedState:(...args)=>migratePublishedState(...args),
 normalizeState:(...args)=>normalizeState(...args),
@@ -210,7 +207,6 @@ openVersions:(...args)=>openVersions(...args),
 pendingCheckCount:(...args)=>pendingCheckCount(...args),
 queueDraftPersistence:(...args)=>queueDraftPersistence(...args),
 recoverOnlineDraft:(...args)=>recoverOnlineDraft(...args),
-resetDraft:(...args)=>resetDraft(...args),
 resetImportSelection:(...args)=>resetImportSelection(...args),
 resetInactivityTimer:(...args)=>resetInactivityTimer(...args),
 resetLedgerSelection:(...args)=>resetLedgerSelection(...args),
@@ -219,7 +215,6 @@ resetVersionSelection:(...args)=>resetVersionSelection(...args),
 runtimeOptions:runtimeOptions,
 sessionService:sessionService,
 setEditorSession:(...args)=>setEditorSession(...args),
-setOperationBusy:(...args)=>setOperationBusy(...args),
 setPublishedBaseline:(...args)=>setPublishedBaseline(...args),
 setStatus:(...args)=>setStatus(...args),
 showChoice:(...args)=>showChoice(...args),
@@ -230,7 +225,7 @@ tripRepository:tripRepository,
 updateContextControls:(...args)=>updateContextControls(...args),
 updateEditableEmpty:(...args)=>updateEditableEmpty(...args),
 writeDraftRecord:(...args)=>writeDraftRecord(...args)});
-let {showInactivityWarning,closeEditorDialogs,handleExternalSignOut,logoutPreservingDraft,requestManualLogout,discardDraft,discardAndLogout,bindAuthentication,isRevisionConflict,compactDiffMessage,resolveSaveConflict,persistState,saveAndFinish,requestFinishEditing,beginEditing,requestAuthentication,runPurpose,requireEditor,isDirty,updateDirtyState,setEditable,recordHistory,queueHistory,initializeHistory,updateHistoryControls,moveHistory,setEditingUI,finishMutation,isSaveInFlight,bindEditingControls}=editingController;
+let {setOperationBusy,cancelCurrentOperation,isOperationBusy,isOperationCancelled,currentOperationSignal,resetDraft,confirmSave,showInactivityWarning,closeEditorDialogs,handleExternalSignOut,logoutPreservingDraft,requestManualLogout,discardDraft,discardAndLogout,bindAuthentication,isRevisionConflict,compactDiffMessage,resolveSaveConflict,persistState,saveAndFinish,requestFinishEditing,beginEditing,requestAuthentication,runPurpose,requireEditor,isDirty,updateDirtyState,setEditable,recordHistory,queueHistory,initializeHistory,updateHistoryControls,moveHistory,setEditingUI,finishMutation,isSaveInFlight,bindEditingControls}=editingController;
 
 const navigationController=createNavigationController({$:$,
 $$:$$,
@@ -275,16 +270,16 @@ configEscape:(...args)=>configEscape(...args),
 rememberScheduleDay:(...args)=>rememberScheduleDay(...args)});
 let {dateKeyNumber,zonedDateNumber,updateTripProgress,zonedParts,zonedDateKey,timeZoneOffsetMinutes,updateWorldClocks,selectInitialTab,startTripClocks,disposeTripClocks,bindClocksControls}=clocksController;
 
-const documentController=createDocumentController({
-cancelTabScrollRelease:(...args)=>cancelTabScrollRelease(...args),
-disposeTimetable:(...args)=>disposeTimetable(...args),
-disposeTripClocks:(...args)=>disposeTripClocks(...args),$:$,
+const documentController=createDocumentController({$:$,
 OFFLINE_MODE:OFFLINE_MODE,
 applyState:(...args)=>applyState(...args),
 applyStatePreservingInputs:(...args)=>applyStatePreservingInputs(...args),
 blockUnsupportedDocument:(...args)=>blockUnsupportedDocument(...args),
 body:body,
+cancelTabScrollRelease:(...args)=>cancelTabScrollRelease(...args),
 captureState:(...args)=>captureState(...args),
+disposeTimetable:(...args)=>disposeTimetable(...args),
+disposeTripClocks:(...args)=>disposeTripClocks(...args),
 checklistEditorDirty:(...args)=>checklistEditorDirty(...args),
 client:client,
 clone:(...args)=>clone(...args),
@@ -309,9 +304,110 @@ readPublicCache:(...args)=>readPublicCache(...args),
 recoverOnlineDraft:(...args)=>recoverOnlineDraft(...args),
 sessionService:sessionService,
 setStatus:(...args)=>setStatus(...args),
+resetInactivityTimer:(...args)=>resetInactivityTimer(...args),
+setEditingUI:(...args)=>setEditingUI(...args),
 tripRepository:tripRepository,
 updateDirtyState:(...args)=>updateDirtyState(...args)});
-let {writePublicCache,setPublishedBaseline,refreshPublishedState,hydrate,bindDocumentControls}=documentController;
+let {closePreview,enterHistoricalPreview,applyImportSnapshot,writePublicCache,setPublishedBaseline,refreshPublishedState,hydrate,bindDocumentControls}=documentController;
+const photoService=createPhotoService({client,TRIP_ID,MEDIA_BUCKET,SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,operationSignal:()=>currentOperationSignal(),requestTimeout:value=>runtimeOptions.photoTimeout(value)});
+let {blobToDataUrl,dataUrlToBlob,photoExtension,compressImage,hashBlob,publicMediaUrl,isDuplicateUpload,withPhotoRequest,immutableBlobExists,uploadImmutableBlob,uploadPhotoBlobs,fetchAsDataUrl}=photoService;
+const comparison=createComparison({TRIP_DAYS,CURRENCY_CODES,currencyLabel});
+const buildDiff=(before,after)=>comparison.compareSummaries(stateSummary(before),stateSummary(after));
+
+const importsController=createImportsController({$:$,
+SCHEMA_VERSION:SCHEMA_VERSION,
+TRIP_ID:TRIP_ID,
+applyImportSnapshot:(...args)=>applyImportSnapshot(...args),
+buildDiff:(...args)=>buildDiff(...args),
+clone:(...args)=>clone(...args),
+documentSession:documentSession,
+fetchPublishedState:(...args)=>fetchPublishedState(...args),
+migratePublishedState:(...args)=>migratePublishedState(...args),
+normalizeState:(...args)=>normalizeState(...args),
+publicMediaUrl:(...args)=>publicMediaUrl(...args),
+renderDiff:(...args)=>renderDiff(...args),
+requireEditor:(...args)=>requireEditor(...args),
+setStatus:(...args)=>setStatus(...args),
+showChoice:(...args)=>showChoice(...args),
+showDialog:(...args)=>showDialog(...args)});
+let {renderImportDiff,chooseImportFile,readImportFile,materializeImportedPhotos,applyImportedDraft,resetImportSelection,bindImportsControls,pendingImportSnapshot}=importsController;
+
+const versionsController=createVersionsController({$:$,
+OFFLINE_MODE:OFFLINE_MODE,
+body:body,
+buildDiff:(...args)=>buildDiff(...args),
+captureState:(...args)=>captureState(...args),
+clone:(...args)=>clone(...args),
+closePreview:(...args)=>closePreview(...args),
+documentSession:documentSession,
+draftWorkflow:draftWorkflow,
+enterHistoricalPreview:(...args)=>enterHistoricalPreview(...args),
+escapeHtml:(...args)=>escapeHtml(...args),
+flushDraftPersistence:(...args)=>flushDraftPersistence(...args),
+initializeHistory:(...args)=>initializeHistory(...args),
+isChecklistSaving:(...args)=>isChecklistSaving(...args),
+isDirty:(...args)=>isDirty(...args),
+isOperationBusy:(...args)=>isOperationBusy(...args),
+isSaveInFlight:(...args)=>isSaveInFlight(...args),
+migratePublishedState:(...args)=>migratePublishedState(...args),
+normalizeState:(...args)=>normalizeState(...args),
+pendingCheckCount:(...args)=>pendingCheckCount(...args),
+persistState:(...args)=>persistState(...args),
+recordHistory:(...args)=>recordHistory(...args),
+recoverOnlineDraft:(...args)=>recoverOnlineDraft(...args),
+renderDiff:(...args)=>renderDiff(...args),
+requireEditor:(...args)=>requireEditor(...args),
+resetInactivityTimer:(...args)=>resetInactivityTimer(...args),
+runtimeOptions:runtimeOptions,
+sessionService:sessionService,
+setStatus:(...args)=>setStatus(...args),
+showChoice:(...args)=>showChoice(...args),
+showDialog:(...args)=>showDialog(...args),
+tripRepository:tripRepository});
+let {formatBytes,invalidateVersionRequest,beginVersionRequest,isCurrentVersionRequest,setVersionLoadStatus,closeVersions,readVersionRequest,showVersionLoadError,loadVersionContent,previewVersion,compareVersion,restoreSelectedVersion,openVersions,resetVersionSelection,bindVersionsControls}=versionsController;
+
+const photosController=createPhotosController({$:$,
+OFFLINE_MODE:OFFLINE_MODE,
+blobToDataUrl:(...args)=>blobToDataUrl(...args),
+body:body,
+compressImage:(...args)=>compressImage(...args),
+dataUrlToBlob:(...args)=>dataUrlToBlob(...args),
+decorateMapLink:(...args)=>decorateMapLink(...args),
+decoratePhotoFigure:(...args)=>decoratePhotoFigure(...args),
+escapeHtml:(...args)=>escapeHtml(...args),
+finishMutation:(...args)=>finishMutation(...args),
+isOperationBusy:(...args)=>isOperationBusy(...args),
+isOperationCancelled:(...args)=>isOperationCancelled(...args),
+mapPlaceName:(...args)=>mapPlaceName(...args),
+normalizeState:(...args)=>normalizeState(...args),
+recordHistory:(...args)=>recordHistory(...args),
+setFieldError:(...args)=>setFieldError(...args),
+setOperationBusy:(...args)=>setOperationBusy(...args),
+setStatus:(...args)=>setStatus(...args),
+showChoice:(...args)=>showChoice(...args),
+showDialog:(...args)=>showDialog(...args),
+uid:(...args)=>uid(...args),
+updatePhotoMoveButtons:(...args)=>updatePhotoMoveButtons(...args),
+uploadPhotoBlobs:(...args)=>uploadPhotoBlobs(...args)});
+let {materializeStagedPhotos,photoLabelFromName,createPhotoFigure,attachPhotos,movePhoto,openPhotoEditDialog,savePhotoMetadata,openMapDialog,saveMap,selectActiveScheduleRow,resetPhotoSelection,bindPhotosControls}=photosController;
+
+const exportsController=createExportsController({$:$,
+$$:$$,
+CONFIG:CONFIG,
+EXPORT_BASE_NAME:EXPORT_BASE_NAME,
+blobToDataUrl:(...args)=>blobToDataUrl(...args),
+captureState:(...args)=>captureState(...args),
+currentOperationSignal:(...args)=>currentOperationSignal(...args),
+fetchAsDataUrl:(...args)=>fetchAsDataUrl(...args),
+isOperationBusy:(...args)=>isOperationBusy(...args),
+isOperationCancelled:(...args)=>isOperationCancelled(...args),
+normalizeState:(...args)=>normalizeState(...args),
+setOperationBusy:(...args)=>setOperationBusy(...args),
+setStatus:(...args)=>setStatus(...args),
+showChoice:(...args)=>showChoice(...args),
+showDialog:(...args)=>showDialog(...args),
+todayLocal:(...args)=>todayLocal(...args)});
+let {stripTransient,embedPhotos,downloadHtml,resetArtifactTheme,setArtifactBanner,embedTripConfig,embedArtifactFont,exportOfflineHtml,appendReadonlyRuntime,exportStaticHtml,bindExportsControls}=exportsController;
 sessionService.initialize();bindAuthentication();
 bindLedgerControls();bindScheduleControls();bindChecklistControls();bindEditingControls();bindNavigationControls();bindDocumentControls();bindPhotosControls();bindVersionsControls();bindImportsControls();bindExportsControls();
 // @browser-fixture

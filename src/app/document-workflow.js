@@ -1,4 +1,4 @@
-function createDocumentController({$,OFFLINE_MODE,applyState,applyStatePreservingInputs,blockUnsupportedDocument,body,cancelTabScrollRelease,captureState,disposeTimetable,disposeTripClocks,checklistEditorDirty,client,clone,dialogs,documentSession,draftStorage,fetchPublishedState,fingerprint,finishHydration,flushDraftPersistence,getEditorSession,initializeHistory,isChecklistEditorSaving,isChecklistSaving,isDirty,isSaveInFlight,migratePublishedState,normalizeState,pendingCheckCount,readDraftRecord,readPublicCache,recoverOnlineDraft,sessionService,setStatus,tripRepository,updateDirtyState}) {
+function createDocumentController({$,OFFLINE_MODE,applyState,applyStatePreservingInputs,blockUnsupportedDocument,body,cancelTabScrollRelease,captureState,disposeTimetable,disposeTripClocks,checklistEditorDirty,client,clone,dialogs,documentSession,draftStorage,fetchPublishedState,fingerprint,finishHydration,flushDraftPersistence,getEditorSession,initializeHistory,isChecklistEditorSaving,isChecklistSaving,isDirty,isSaveInFlight,migratePublishedState,normalizeState,pendingCheckCount,readDraftRecord,readPublicCache,recoverOnlineDraft,sessionService,setStatus,resetInactivityTimer,setEditingUI,tripRepository,updateDirtyState}) {
 
 function writePublicCache(state,metadata={}){
   const baseline=documentSession.snapshot();
@@ -73,5 +73,8 @@ window.addEventListener('pagehide',event=>{void flushDraftPersistence();if(!even
 window.addEventListener('beforeunload',event=>{if(!isDirty()&&!isSaveInFlight()&&!pendingCheckCount()&&!isChecklistEditorSaving()&&!checklistEditorDirty())return;void flushDraftPersistence();event.preventDefault();event.returnValue='';});
 }
 
-return Object.freeze({writePublicCache,setPublishedBaseline,refreshPublishedState,hydrate,bindDocumentControls});
+function closePreview(){const previous=documentSession.snapshot().previewReturnState;if(previous)applyState(previous);documentSession.leavePreview();body.classList.remove('previewing');updateDirtyState();setStatus(documentSession.snapshot().pendingDraft?'저장 대기 중':'보기 모드');resetInactivityTimer();}
+function enterHistoricalPreview(state){documentSession.enterPreview(captureState());body.classList.add('previewing');setEditingUI(false);applyState(state);}
+function applyImportSnapshot(incoming,baseline,revision,updatedAt){documentSession.adoptImportBaseline(baseline,revision,updatedAt);applyState(incoming);initializeHistory();updateDirtyState();}
+return Object.freeze({closePreview,enterHistoricalPreview,applyImportSnapshot,writePublicCache,setPublishedBaseline,refreshPublishedState,hydrate,bindDocumentControls});
 }

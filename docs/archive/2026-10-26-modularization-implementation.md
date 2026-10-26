@@ -59,3 +59,11 @@ Exit: 29 focused unit checks and the complete storage/drafts browser suites pass
 PREP, ledger, schedule time/decorations, editing/save, navigation, timetable and clocks now have explicit controller factories. Ledger data/input buffers and PREP queues/maps/editor buffers are private. Document callbacks use capture/restore APIs rather than writable compatibility fields. Feature controls bind once to stable roots; startup contains construction/wiring/initialization instead of feature forms or save algorithms. Timetable listeners, clock intervals and navigation/history timers have owned cleanup on actual unload, preserving BFCache.
 
 Exit: all 129 unit tests and all 16 browser suites passed. Build/project/whitespace checks passed. Existing response-loss, replacement/input/focus, exports, lazy version races and PWA cases remain enabled. Media/version/import/operation state is the remaining stage-5 migration.
+
+## Stage 5 and Stop B — comparison/import/version/media
+
+Plain-summary comparison is independent of DOM projection. Import/version controllers privately own pending state and requests/cache; document actions own preview/apply transitions. Save/reset confirmations and the operation handle belong to editing. Photo encoding/hash/immutable transport is separate from photo/map selection/rendering. Exports remain one pipeline. Runtime now contains environment/identity only, with no feature state. Domain/photo/hydration tests read whole factory files. Fixture deadline options replace the global timer interception.
+
+Exit: all 131 unit tests and all 16 browser suites passed, including downloaded editable/read-only artifacts, encoding fallbacks, cancellation, response-loss and version races. One existing local HTTP health test failed transiently; an unchanged full rerun passed 131/131, including the real production-deadline test. Build/project/whitespace checks passed.
+
+Stop B review: no CSS cascade change is justified by the current two-user maintenance needs. Stage 6 groups coherent static HTML, documents existing CSS ownership and removes the misleading historical command; selectors/layers/order/values remain intact.

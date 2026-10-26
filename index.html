@@ -1267,48 +1267,7 @@ const {createLedgerCurrencies,currencyMetadata,assertCurrencyPair,currencyLabel,
   const BASELINE_MAIN_HTML = $('main').innerHTML;
   const PUBLISHED_MIGRATION_SELECTORS = ['.prepday',...TRIP_DAYS.map((_,index)=>'.day'+(index+1))];
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  let activeScheduleRow = null;
-
-
-
-
-  let pendingImport = null;
-
-
-
-  let activePhotoFigure = null;
-  let operationBusy = false;
-  let operationCancelled = false;
-  let operationController = null;
-  let selectedVersion = null;
-  let versionRequest = null;
-
-
-
-
-
-
-  const versionContentCache = new Map();
-
-  const runtimeOptions = {saveMs:12000, publishedReadMs:8000, versionReadMs:8000};
+  const runtimeOptions = {saveMs:12000, publishedReadMs:8000, versionReadMs:8000, photoTimeout:value=>value, historyDelay:()=>400};
 
 const TIMETABLE_KINDS={activity:'관광',food:'식사',transit:'이동',stay:'숙소·휴식',other:'기타'};
 
@@ -1605,20 +1564,12 @@ return Object.freeze({disposeTimetable,timetableClock,timetableDate,timetableZon
     target.dispatchEvent(inputEvent);
   }
 
-function setOperationBusy(on,{cancelable=false,status=''}={}) {
-    if(on&&!operationBusy)operationController=new AbortController();
-    if(!on){operationController?.abort();operationController=null;}
-    operationBusy=on;operationCancelled=false;body.classList.toggle('operation-busy',on);
-    const cancel=$('#cancelOperationBtn');if(cancel){cancel.classList.toggle('hidden',!on||!cancelable);cancel.disabled=!on||!cancelable;}
-    $('.editor-bar')?.setAttribute('aria-busy',String(on));
-    if(status)setStatus(status);
-    if(!on){updateHistoryControls();updateDirtyState();}
-  }
 
-function cancelCurrentOperation(){const button=$('#cancelOperationBtn');if(!operationBusy||!button||button.disabled)return;operationCancelled=true;operationController?.abort(new Error('작업을 취소했습니다. 초안은 유지됩니다.'));button.disabled=true;setStatus('작업을 취소하는 중입니다.');}
-function isOperationBusy(){return operationBusy;}
-function isOperationCancelled(){return operationCancelled;}
-function currentOperationSignal(){return operationController?.signal;}
+
+
+
+
+
 
 function showDraftStorageWarning(kind='') {
     let warning=$('#draftStorageWarning');
@@ -1627,6 +1578,8 @@ function showDraftStorageWarning(kind='') {
     warning.textContent=kind==='delete'?'초안 삭제 실패 · 저장 공간을 확인한 뒤 다시 시도해 주세요.':kind==='read'?'브라우저 초안을 확인하지 못했습니다 · 저장 공간을 확인해 주세요.':kind?'초안 보관 실패 · 새로고침 전에 공유 저장하거나 내보내세요.':'';
   }
 function fingerprint(state){return JSON.stringify(normalizeState(state||{}));}
+
+function renderDiff(summary,list,groups,message=''){const count=groups.reduce((sum,group)=>sum+group.items.length,0);summary.textContent=message||(count?count+'개 변경 사항이 있습니다.':'변경 사항이 없습니다.');list.innerHTML=groups.length?groups.map(group=>'<div class="diff-group"><strong>'+escapeHtml(group.title)+'</strong><ul>'+group.items.slice(0,80).map(item=>'<li>'+escapeHtml(item)+'</li>').join('')+'</ul></div>').join(''):'<div class="diff-empty">변경 사항이 없습니다.</div>';return count;}
 
 /** IndexedDB, ownership locks and synchronous checkpoints move as one protocol. */
 function createDraftStorage({DRAFT_DB_NAME,DRAFT_RECORD_KEY,DRAFT_SESSION_KEY,LEGACY_CACHE_KEY,LEGACY_DRAFT_RECORD_KEY,PUBLIC_CACHE_RECORD_KEY,TRIP_ID,clone,showDraftStorageWarning}) {
@@ -1915,7 +1868,7 @@ function cancelPendingWrites(){clearTimeout(draftWriteTimer);draftWriteTimer=nul
 
 return Object.freeze({writeDraftRecord,clearDraftRecord,currentDraftRecord,flushDraftPersistence,queueDraftPersistence,clearCleanDraft,recoverOnlineDraft,deferRecovery,isRecoveryDeferred,cancelPendingWrites});
 }
-function createDocumentController({$,OFFLINE_MODE,applyState,applyStatePreservingInputs,blockUnsupportedDocument,body,cancelTabScrollRelease,captureState,disposeTimetable,disposeTripClocks,checklistEditorDirty,client,clone,dialogs,documentSession,draftStorage,fetchPublishedState,fingerprint,finishHydration,flushDraftPersistence,getEditorSession,initializeHistory,isChecklistEditorSaving,isChecklistSaving,isDirty,isSaveInFlight,migratePublishedState,normalizeState,pendingCheckCount,readDraftRecord,readPublicCache,recoverOnlineDraft,sessionService,setStatus,tripRepository,updateDirtyState}) {
+function createDocumentController({$,OFFLINE_MODE,applyState,applyStatePreservingInputs,blockUnsupportedDocument,body,cancelTabScrollRelease,captureState,disposeTimetable,disposeTripClocks,checklistEditorDirty,client,clone,dialogs,documentSession,draftStorage,fetchPublishedState,fingerprint,finishHydration,flushDraftPersistence,getEditorSession,initializeHistory,isChecklistEditorSaving,isChecklistSaving,isDirty,isSaveInFlight,migratePublishedState,normalizeState,pendingCheckCount,readDraftRecord,readPublicCache,recoverOnlineDraft,sessionService,setStatus,resetInactivityTimer,setEditingUI,tripRepository,updateDirtyState}) {
 
 function writePublicCache(state,metadata={}){
   const baseline=documentSession.snapshot();
@@ -1990,7 +1943,10 @@ window.addEventListener('pagehide',event=>{void flushDraftPersistence();if(!even
 window.addEventListener('beforeunload',event=>{if(!isDirty()&&!isSaveInFlight()&&!pendingCheckCount()&&!isChecklistEditorSaving()&&!checklistEditorDirty())return;void flushDraftPersistence();event.preventDefault();event.returnValue='';});
 }
 
-return Object.freeze({writePublicCache,setPublishedBaseline,refreshPublishedState,hydrate,bindDocumentControls});
+function closePreview(){const previous=documentSession.snapshot().previewReturnState;if(previous)applyState(previous);documentSession.leavePreview();body.classList.remove('previewing');updateDirtyState();setStatus(documentSession.snapshot().pendingDraft?'저장 대기 중':'보기 모드');resetInactivityTimer();}
+function enterHistoricalPreview(state){documentSession.enterPreview(captureState());body.classList.add('previewing');setEditingUI(false);applyState(state);}
+function applyImportSnapshot(incoming,baseline,revision,updatedAt){documentSession.adoptImportBaseline(baseline,revision,updatedAt);applyState(incoming);initializeHistory();updateDirtyState();}
+return Object.freeze({closePreview,enterHistoricalPreview,applyImportSnapshot,writePublicCache,setPublishedBaseline,refreshPublishedState,hydrate,bindDocumentControls});
 }
 
 function createClocksController({$,CONFIG,DESTINATION_REFERENCE_LABEL,DESTINATION_TIME_ZONE,HOME_REFERENCE_LABEL,HOME_TIME_ZONE,PREVIEW_NOW,TRIP_DAYS,TRIP_END,TRIP_FIRST_DATE,TRIP_LAST_DATE,TRIP_START,VISITOR_TIME_ZONE,configEscape,rememberScheduleDay}) {
@@ -2346,7 +2302,7 @@ document.addEventListener('change',async event=>{if(event.target.id==='settingsE
 return Object.freeze({drawExpenseInput,handleExpenseInput,configureCurrencyLabels,getCategory,setExpenseCategoryOptions,formatExpenseDate,renderLedgerAmounts,renderLedger,addExpense,requestExpenseEdit,openExpenseDialog,saveExpenseChanges,moveExpense,deleteExpense,renderIconPicker,openLedgerSettings,openCategoryDialog,saveCategory,deleteCategory,updateExchangeRate,csvCell,exportExpensesCsv,readLedgerState,restoreLedgerState,captureExpenseBuffer,restoreExpenseBuffer,expenseEntryPending,resetLedgerSelection,bindLedgerControls});
 }
 /** Single owner of publication, preview, dirty and undo transitions. */
-function createDocumentSession({clone, normalize, fingerprint}) {
+function createDocumentSession({clone, normalize, fingerprint, historyDelay=()=>400}) {
   let lastSavedState=null, publishedRevision=0, publishedUpdatedAt='';
   let pendingRemoteState=null, draftBaselineUnknown=false, previewReturnState=null;
   let pendingDraft=false, documentWriteBlock='', history=[], historyIndex=-1, historyTimer=null;
@@ -2400,14 +2356,14 @@ function createDocumentSession({clone, normalize, fingerprint}) {
   function moveHistory(offset){const next=historyIndex+offset;if(next<0||next>=history.length)return null;historyIndex=next;return clone(history[next]);}
   function reconcileHistory(transform){history=history.map(state=>{try{return transform(clone(state));}catch(_){return state;}});}
   function cancelHistory(){clearTimeout(historyTimer);historyTimer=null;}
-  function queueHistory(record){cancelHistory();historyTimer=setTimeout(record,400);}
+  function queueHistory(record){cancelHistory();historyTimer=setTimeout(record,historyDelay());}
   return Object.freeze({snapshot,establishBaseline,acceptPublished,prepareOverwrite,adoptImportBaseline,
     restoreDraftBaseline,rememberRemote,markClean,acceptOfflineSave,dirty,updateDirty,enterPreview,leavePreview,blockWrites,
     acceptPrepResult,initializeHistory,recordLocalChange,moveHistory,reconcileHistory,cancelHistory,queueHistory});
 }
 
 /** DOM serialization/repair boundary. Normalization needs an explicit fallback. */
-function createDocumentAdapter({$,$$,DEFAULT_BUDGET_KRW,DEFAULT_EXCHANGE_RATE,IMPORT_ALLOWED_MONEY_IDS,MEDIA_PATH_PATTERN,SCHEMA_VERSION,SUPABASE_URL,TRIP_ID,afterApply,assertCurrencyPair,assertSupportedSchema,beforeApply,clone,currencyMetadata,drawExpenseInput,entryPending,hashText,normalizeCategories,normalizeExpenses,pendingCheckBefore,readEntryBuffer,readLedger,renderCheckFeedback,renderDocument,replaceLedger,restoreEntryBuffer,scheduleKindMode,sumLedgerAmounts}) {
+function createDocumentAdapter({$,$$,DEFAULT_BUDGET_KRW,DEFAULT_EXCHANGE_RATE,IMPORT_ALLOWED_MONEY_IDS,MEDIA_PATH_PATTERN,SCHEMA_VERSION,TIMETABLE_KINDS,SUPABASE_URL,TRIP_ID,afterApply,assertCurrencyPair,assertSupportedSchema,beforeApply,clone,currencyMetadata,drawExpenseInput,entryPending,hashText,normalizeCategories,normalizeExpenses,pendingCheckBefore,readEntryBuffer,readLedger,renderCheckFeedback,renderDocument,replaceLedger,restoreEntryBuffer,scheduleKindMode,sumLedgerAmounts}) {
 let applyingHistory=false,moneyTemplateHtml="";
   function sanitizeMarkup(markup, imported=false) {
     const template=document.createElement('template'); template.innerHTML=markup||'';
@@ -2562,7 +2518,15 @@ function setMoneyTemplate(html){moneyTemplateHtml=html;}
 function isApplying(){return applyingHistory;}
 function migrationNotice(){return ledgerMigrationNotice;}
 
-return Object.freeze({sanitizeMarkup,normalizeState,checkLabelText,preserveLegacyLedger,migratePublishedState,captureState,applyState,applyStatePreservingInputs,setMoneyTemplate,isApplying,migrationNotice});
+function stateSummary(state){const template=document.createElement('template');template.innerHTML=state.html;const schedules=[];template.content.querySelectorAll('.day:not(.prepday):not(.moneyday)').forEach((day,dayIndex)=>day.querySelectorAll('.timeline-row').forEach((row,index)=>{const mapLink=row.querySelector('.schedule-map a');schedules.push({id:row.dataset.rowId||'position-'+dayIndex+'-'+index,key:'DAY '+(dayIndex+1)+' 일정 '+(index+1),dayIndex,index,stay:row.dataset.stayCheckout||'',kind:TIMETABLE_KINDS[scheduleKindMode(row.dataset.scheduleKind)]||'자동',time:row.querySelector('.time')?.textContent.trim()||'',title:row.querySelector('h3')?.textContent.trim()||'',detail:row.querySelector('.remark')?.textContent.trim()||'',warning:Array.from(row.querySelectorAll('.schedule-warning')).map(item=>(item.querySelector('.schedule-warning-text')||item).textContent.trim()).filter(Boolean).join(' | '),mapName:mapPlaceName(mapLink),map:mapLink?.href||'',photos:Array.from(row.querySelectorAll('.schedule-photo')).map(photo=>{const img=photo.querySelector('img');return {id:photo.dataset.photoId||photo.dataset.fullPath||'photo',caption:photo.querySelector('figcaption')?.textContent.trim()||'',alt:img?.alt||''};})});}));const checks=Array.from(template.content.querySelectorAll('.checklist label span')).map((span,index)=>({id:span.closest('label')?.dataset.checkId||'position-'+index,text:span.textContent.trim(),important:span.closest('label')?.dataset.checkImportant==='true',checked:Boolean(state.checks?.[index])}));const days=Array.from(template.content.querySelectorAll('.day:not(.prepday):not(.moneyday)')).map(day=>day.querySelector('.day-head p')?.textContent.trim()||'');return {days,schedules,checks,expenses:state.expenses,categories:state.categories,exchangeRate:state.exchangeRate};}
+function mapPlaceName(anchor) {
+    if(!anchor)return '';
+    const stored=anchor?.dataset.placeName?.trim();
+    if(stored)return stored;
+    const raw=(anchor?.querySelector('.map-link-label')?.textContent||anchor?.textContent||'').replace(/↗/g,'').trim();
+    return raw.replace(/^Google Maps\s*[·-]\s*/i,'').replace(/\s*[·-]\s*Google Maps$/i,'').trim()||'위치';
+  }
+return Object.freeze({stateSummary,mapPlaceName,sanitizeMarkup,normalizeState,checkLabelText,preserveLegacyLedger,migratePublishedState,captureState,applyState,applyStatePreservingInputs,setMoneyTemplate,isApplying,migrationNotice});
 }
 
 /** Raw SDK results and errors; callers own normalization and conflict policy. */
@@ -2744,7 +2708,7 @@ function createSession({client,offline,editorEmail,activityKey,channelName,sessi
   return Object.freeze({editorEmailMatches,clearSessionTimers,scheduleSessionTimers,setEditorSession,acceptSharedActivity,resetInactivityTimer,getEditorSession,signOutEditor,initialize,dispose,current:()=>editorSession,isSigningOut:()=>signingOut});
 }
 
-function createEditingController({$,$$,EDITOR_EMAIL,OFFLINE_MODE,SCHEMA_VERSION,TRIP_ID,applyState,applyStatePreservingInputs,blockUnsupportedDocument,body,buildDiff,cancelCurrentOperation,captureState,clearCleanDraft,clearDraftRecord,clearSessionTimers,client,closeNotice,closePreview,closeScheduleTimeDialog,confirmSave,currentDraftRecord,dialogs,documentAdapter,documentSession,draftStorage,draftWorkflow,exportOfflineHtml,fetchPublishedState,fingerprint,flushDraftPersistence,getEditorSession,insertPlainText,invalidateVersionRequest,isChecklistSaving,isOperationBusy,isOperationCancelled,materializeStagedPhotos,migratePublishedState,normalizeState,openChecklistEditor,openLedgerSettings,openVersions,pendingCheckCount,queueDraftPersistence,recoverOnlineDraft,resetDraft,resetImportSelection,resetInactivityTimer,resetLedgerSelection,resetPhotoSelection,resetVersionSelection,runtimeOptions,sessionService,setEditorSession,setOperationBusy,setPublishedBaseline,setStatus,showChoice,showDialog,signOutEditor,syncChecklistControls,tripRepository,updateContextControls,updateEditableEmpty,writeDraftRecord}) {
+function createEditingController({$,$$,EDITOR_EMAIL,OFFLINE_MODE,SCHEMA_VERSION,TRIP_ID,applyState,applyStatePreservingInputs,blockUnsupportedDocument,body,buildDiff,captureState,clearCleanDraft,clearDraftRecord,clearSessionTimers,client,closeNotice,closePreview,closeScheduleTimeDialog,currentDraftRecord,dialogs,documentAdapter,documentSession,draftStorage,draftWorkflow,exportOfflineHtml,fetchPublishedState,fingerprint,flushDraftPersistence,getEditorSession,insertPlainText,invalidateVersionRequest,isChecklistSaving,materializeStagedPhotos,migratePublishedState,normalizeState,openChecklistEditor,openLedgerSettings,openVersions,pendingCheckCount,queueDraftPersistence,recoverOnlineDraft,resetImportSelection,resetInactivityTimer,resetLedgerSelection,resetPhotoSelection,resetVersionSelection,runtimeOptions,sessionService,setEditorSession,setPublishedBaseline,setStatus,showChoice,showDialog,signOutEditor,syncChecklistControls,tripRepository,updateContextControls,updateEditableEmpty,writeDraftRecord}) {
 let authPurpose = 'edit';
 let pendingAuthAction = null;
 let pendingAuthCancel = null;
@@ -2896,10 +2860,33 @@ document.addEventListener('input',event=>{refreshEditablePlaceholder(event);if(b
 document.addEventListener('change',async event=>{if(body.classList.contains('editing')&&event.target.closest('main')&&!event.target.closest('.add-expense')&&event.target.id!=='exchangeRate')recordHistory();});
 }
 
-return Object.freeze({showInactivityWarning,closeEditorDialogs,handleExternalSignOut,logoutPreservingDraft,requestManualLogout,discardDraft,discardAndLogout,bindAuthentication,isRevisionConflict,compactDiffMessage,resolveSaveConflict,persistState,saveAndFinish,requestFinishEditing,beginEditing,requestAuthentication,runPurpose,requireEditor,isDirty,updateDirtyState,setEditable,recordHistory,queueHistory,initializeHistory,updateHistoryControls,moveHistory,setEditingUI,finishMutation,isSaveInFlight,bindEditingControls});
+async function resetDraft(){const choice=await showChoice({title:'마지막 저장본으로 초기화',message:'현재 변경을 삭제하고 마지막 저장본으로 되돌립니다.',choices:[{label:'취소',value:'cancel'},{label:'초기화',value:'reset',className:'action-danger'}]});if(choice==='reset')discardDraft('마지막 저장본으로 초기화했습니다.');}
+
+async function confirmSave(){if(!documentSession.snapshot().pendingDraft){setStatus('저장할 변경이 없습니다.');return;}const choice=await showChoice({title:OFFLINE_MODE?'오프라인 작업본 저장':'공유 일정에 저장',message:OFFLINE_MODE?'수정된 내용을 포함한 새 작업본을 내려받습니다.':'저장하면 공개 링크에 변경 내용이 반영됩니다.',input:OFFLINE_MODE?null:{label:'버전 메모 (선택)','placeholder':'예: 항공편 시간 수정'},choices:[{label:'취소',value:'cancel'},{label:'저장',value:'save',className:'action-primary'}]});if(choice==='save')await saveAndFinish(dialogs.inputValue()||'수동 저장');}
+let operationBusy = false;
+let operationCancelled = false;
+let operationController = null;
+function setOperationBusy(on,{cancelable=false,status=''}={}) {
+    if(on&&!operationBusy)operationController=new AbortController();
+    if(!on){operationController?.abort();operationController=null;}
+    operationBusy=on;operationCancelled=false;body.classList.toggle('operation-busy',on);
+    const cancel=$('#cancelOperationBtn');if(cancel){cancel.classList.toggle('hidden',!on||!cancelable);cancel.disabled=!on||!cancelable;}
+    $('.editor-bar')?.setAttribute('aria-busy',String(on));
+    if(status)setStatus(status);
+    if(!on){updateHistoryControls();updateDirtyState();}
+  }
+
+function cancelCurrentOperation(){const button=$('#cancelOperationBtn');if(!operationBusy||!button||button.disabled)return;operationCancelled=true;operationController?.abort(new Error('작업을 취소했습니다. 초안은 유지됩니다.'));button.disabled=true;setStatus('작업을 취소하는 중입니다.');}
+
+function isOperationBusy(){return operationBusy;}
+
+function isOperationCancelled(){return operationCancelled;}
+
+function currentOperationSignal(){return operationController?.signal;}
+return Object.freeze({setOperationBusy,cancelCurrentOperation,isOperationBusy,isOperationCancelled,currentOperationSignal,resetDraft,confirmSave,showInactivityWarning,closeEditorDialogs,handleExternalSignOut,logoutPreservingDraft,requestManualLogout,discardDraft,discardAndLogout,bindAuthentication,isRevisionConflict,compactDiffMessage,resolveSaveConflict,persistState,saveAndFinish,requestFinishEditing,beginEditing,requestAuthentication,runPurpose,requireEditor,isDirty,updateDirtyState,setEditable,recordHistory,queueHistory,initializeHistory,updateHistoryControls,moveHistory,setEditingUI,finishMutation,isSaveInFlight,bindEditingControls});
 }
 
-function createScheduleController({$,$$,TIMETABLE_KINDS,TRIP_DAYS,body,configDateParts,decorateButtonIcons,documentSession,editScheduleClock,escapeHtml,focusAndSelect,hashText,iconSvg,isOperationBusy,openMapDialog,parseTimetableTime,prefersReducedMotion,readScheduleTime,recordHistory,resetInactivityTimer,scheduleClockMask,scheduleClockValue,scheduleKindMode,scheduleTimeValue,selectActiveScheduleRow,showDialog,timetableClock,timetableKind,uid}) {
+function createScheduleController({$,$$,TIMETABLE_KINDS,TRIP_DAYS,body,configDateParts,decorateButtonIcons,documentSession,editScheduleClock,escapeHtml,focusAndSelect,hashText,iconSvg,isOperationBusy,mapPlaceName,openMapDialog,parseTimetableTime,prefersReducedMotion,readScheduleTime,recordHistory,resetInactivityTimer,scheduleClockMask,scheduleClockValue,scheduleKindMode,scheduleTimeValue,selectActiveScheduleRow,showDialog,timetableClock,timetableKind,uid}) {
 let scheduleTimeTarget = null;
   function addTimeRow(){const id=$('.day-radio:checked')?.id||'';if(!/^d\d+$/.test(id))return;openScheduleTimeDialog(null,$('.day'+id.slice(1)));}
   function closeScheduleTimeDialog(){$('#scheduleTimeDialog').hidden=true;scheduleTimeTarget=null;}
@@ -3081,25 +3068,24 @@ $('#scheduleTimeDialog').addEventListener('keydown',event=>{if(event.key==='Ente
 }
 
 
-function mapPlaceName(anchor) {
-    if(!anchor)return '';
-    const stored=anchor?.dataset.placeName?.trim();
-    if(stored)return stored;
-    const raw=(anchor?.querySelector('.map-link-label')?.textContent||anchor?.textContent||'').replace(/↗/g,'').trim();
-    return raw.replace(/^Google Maps\s*[·-]\s*/i,'').replace(/\s*[·-]\s*Google Maps$/i,'').trim()||'위치';
-  }
-return Object.freeze({mapPlaceName,addTimeRow,closeScheduleTimeDialog,openScheduleTimeDialog,scheduleTimeFormValue,renderScheduleClock,setScheduleClock,changeScheduleClock,undoScheduleClock,initializeScheduleClocks,updateScheduleTimePreview,saveScheduleTime,addScheduleWarning,moveScheduleRow,decorateDates,decorateMapLink,updatePhotoMoveButtons,decoratePhotoFigure,updateScheduleMoveButtons,updateScheduleKindControl,changeScheduleKind,updateEditableEmpty,decorateEditablePlaceholders,decorateScheduleRows,bindScheduleControls});
+
+return Object.freeze({addTimeRow,closeScheduleTimeDialog,openScheduleTimeDialog,scheduleTimeFormValue,renderScheduleClock,setScheduleClock,changeScheduleClock,undoScheduleClock,initializeScheduleClocks,updateScheduleTimePreview,saveScheduleTime,addScheduleWarning,moveScheduleRow,decorateDates,decorateMapLink,updatePhotoMoveButtons,decoratePhotoFigure,updateScheduleMoveButtons,updateScheduleKindControl,changeScheduleKind,updateEditableEmpty,decorateEditablePlaceholders,decorateScheduleRows,bindScheduleControls});
 }
 
-  function blobToDataUrl(blob){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=reject;reader.readAsDataURL(blob);});}
-  function dataUrlToBlob(dataUrl){const [head,data]=dataUrl.split(','),mime=(head.match(/data:([^;]+)/)||[])[1]||'image/webp',bytes=atob(data),array=new Uint8Array(bytes.length);for(let i=0;i<bytes.length;i++)array[i]=bytes.charCodeAt(i);return new Blob([array],{type:mime});}
-  function photoExtension(blob){
+/** Browser encoding/hash and immutable Storage transport; no draft/render policy. */
+function createPhotoService({client,TRIP_ID,MEDIA_BUCKET,SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,operationSignal=()=>null,requestTimeout=value=>value}) {
+function blobToDataUrl(blob){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=reject;reader.readAsDataURL(blob);});}
+
+function dataUrlToBlob(dataUrl){const [head,data]=dataUrl.split(','),mime=(head.match(/data:([^;]+)/)||[])[1]||'image/webp',bytes=atob(data),array=new Uint8Array(bytes.length);for(let i=0;i<bytes.length;i++)array[i]=bytes.charCodeAt(i);return new Blob([array],{type:mime});}
+
+function photoExtension(blob){
     const extension={'image/webp':'webp','image/jpeg':'jpg'}[blob?.type];
     if(!extension)throw new Error('사진 형식을 변환하지 못했습니다. 다른 사진을 선택해 주세요.');
     if(!blob.size||blob.size>5*1024*1024)throw new Error('사진은 압축 후 5MB 이하여야 합니다. 크기를 줄여 다시 추가해 주세요.');
     return extension;
   }
-  async function compressImage(file,maxSide,quality=.8){
+
+async function compressImage(file,maxSide,quality=.8){
     const bitmap=await createImageBitmap(file),canvas=document.createElement('canvas');
     const scale=Math.min(1,maxSide/Math.max(bitmap.width,bitmap.height));
     canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
@@ -3115,14 +3101,18 @@ return Object.freeze({mapPlaceName,addTimeRow,closeScheduleTimeDialog,openSchedu
     }
     photoExtension(blob);return blob;
   }
-  async function hashBlob(blob){const digest=await crypto.subtle.digest('SHA-256',await blob.arrayBuffer());return Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,'0')).join('');}
-  function publicMediaUrl(path){return client.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl;}
-  function isDuplicateUpload(error){return /already exists|duplicate/i.test(String(error?.message||error?.error||''));}
-  async function withPhotoRequest(task,timeoutMs,label,parentSignal=operationController?.signal){
+
+async function hashBlob(blob){const digest=await crypto.subtle.digest('SHA-256',await blob.arrayBuffer());return Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,'0')).join('');}
+
+function publicMediaUrl(path){return client.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl;}
+
+function isDuplicateUpload(error){return /already exists|duplicate/i.test(String(error?.message||error?.error||''));}
+
+async function withPhotoRequest(task,timeoutMs,label,parentSignal=operationSignal()){
     const controller=new AbortController();
     const abort=()=>controller.abort(parentSignal.reason);
     if(parentSignal?.aborted)abort();else parentSignal?.addEventListener('abort',abort,{once:true});
-    const timeout=setTimeout(()=>controller.abort(new Error(label+' 시간이 초과되었습니다. 연결을 확인한 뒤 다시 시도해 주세요.')),timeoutMs);
+    const timeout=setTimeout(()=>controller.abort(new Error(label+' 시간이 초과되었습니다. 연결을 확인한 뒤 다시 시도해 주세요.')),requestTimeout(timeoutMs));
     let rejectAbort;
     const aborted=new Promise((_,reject)=>{rejectAbort=()=>reject(controller.signal.reason);controller.signal.addEventListener('abort',rejectAbort,{once:true});});
     try{
@@ -3132,7 +3122,8 @@ return Object.freeze({mapPlaceName,addTimeRow,closeScheduleTimeDialog,openSchedu
       clearTimeout(timeout);parentSignal?.removeEventListener('abort',abort);controller.signal.removeEventListener('abort',rejectAbort);
     }
   }
-  async function immutableBlobExists(path,signal=operationController?.signal){
+
+async function immutableBlobExists(path,signal=operationSignal()){
     return withPhotoRequest(async requestSignal=>{
       const response=await fetch(publicMediaUrl(path),{method:'HEAD',cache:'force-cache',signal:requestSignal});
       // Storage can return 400 for a missing object (supabase/storage#323).
@@ -3142,7 +3133,8 @@ return Object.freeze({mapPlaceName,addTimeRow,closeScheduleTimeDialog,openSchedu
       return true;
     },10000,'사진 확인',signal);
   }
-  async function uploadImmutableBlob(path,blob,signal=operationController?.signal){
+
+async function uploadImmutableBlob(path,blob,signal=operationSignal()){
     photoExtension(blob);if(await immutableBlobExists(path,signal))return;
     // This SDK version's Storage upload ignores AbortSignal. Use the same
     // authenticated, insert-only endpoint directly so cancellation reaches fetch.
@@ -3158,13 +3150,38 @@ return Object.freeze({mapPlaceName,addTimeRow,closeScheduleTimeDialog,openSchedu
       if(!response.ok&&!isDuplicateUpload(result))throw new Error(result.message||result.error||'사진 업로드 실패 · HTTP '+response.status);
     },60000,'사진 업로드',signal);
   }
-  async function uploadPhotoBlobs(full,thumb){const fullExtension=photoExtension(full),thumbExtension=photoExtension(thumb),[fullHash,thumbHash]=await Promise.all([hashBlob(full),hashBlob(thumb)]),fullPath=TRIP_ID+'/photos/'+fullHash+'.'+fullExtension,thumbPath=TRIP_ID+'/thumbs/'+thumbHash+'.'+thumbExtension;await Promise.all([uploadImmutableBlob(fullPath,full),uploadImmutableBlob(thumbPath,thumb)]);return {fullPath,thumbPath,fullUrl:publicMediaUrl(fullPath),thumbUrl:publicMediaUrl(thumbPath)};}
+
+async function uploadPhotoBlobs(full,thumb){const fullExtension=photoExtension(full),thumbExtension=photoExtension(thumb),[fullHash,thumbHash]=await Promise.all([hashBlob(full),hashBlob(thumb)]),fullPath=TRIP_ID+'/photos/'+fullHash+'.'+fullExtension,thumbPath=TRIP_ID+'/thumbs/'+thumbHash+'.'+thumbExtension;await Promise.all([uploadImmutableBlob(fullPath,full),uploadImmutableBlob(thumbPath,thumb)]);return {fullPath,thumbPath,fullUrl:publicMediaUrl(fullPath),thumbUrl:publicMediaUrl(thumbPath)};}
+async function fetchAsDataUrl(url){
+    if(url.startsWith('data:image/'))return url;
+    return withPhotoRequest(async signal=>{
+      const absolute=new URL(url,location.href).href,response=await fetch(absolute,{cache:'force-cache',signal});
+      if(!response.ok)throw new Error('사진 다운로드 실패 · HTTP '+response.status);
+      return blobToDataUrl(await response.blob());
+    },60000,'사진 다운로드');
+  }
+return Object.freeze({blobToDataUrl,dataUrlToBlob,photoExtension,compressImage,hashBlob,publicMediaUrl,isDuplicateUpload,withPhotoRequest,immutableBlobExists,uploadImmutableBlob,uploadPhotoBlobs,fetchAsDataUrl});
+}
+function createPhotosController({$,OFFLINE_MODE,blobToDataUrl,body,compressImage,dataUrlToBlob,decorateMapLink,decoratePhotoFigure,escapeHtml,finishMutation,isOperationBusy,isOperationCancelled,mapPlaceName,normalizeState,recordHistory,setFieldError,setOperationBusy,setStatus,showChoice,showDialog,uid,updatePhotoMoveButtons,uploadPhotoBlobs}) {
+let activeScheduleRow = null;
+let activePhotoFigure = null;
+
+
+
+
+
+
+
+
+
+
+
   async function materializeStagedPhotos(state){
     const normalized=normalizeState(state);if(OFFLINE_MODE)return normalized;
     const template=document.createElement('template');template.innerHTML=normalized.html;
     const figures=Array.from(template.content.querySelectorAll('.schedule-photo')).filter(figure=>{const img=figure.querySelector('img');return figure.dataset.staged==='true'||img?.src?.startsWith('data:image/')||img?.dataset.fullUrl?.startsWith('data:image/');});
     for(let index=0;index<figures.length;index++){
-      if(operationCancelled)throw new Error('사진 업로드가 취소되었습니다.');
+      if(isOperationCancelled())throw new Error('사진 업로드가 취소되었습니다.');
       const figure=figures[index],img=figure.querySelector('img'),fullData=img.dataset.fullUrl||img.src;if(!fullData?.startsWith('data:image/'))continue;
       setStatus('사진 업로드 '+(index+1)+'/'+figures.length);
       const source=dataUrlToBlob(fullData),full=['image/webp','image/jpeg'].includes(source.type)?source:await compressImage(source,1600,.8);
@@ -3178,18 +3195,18 @@ return Object.freeze({mapPlaceName,addTimeRow,closeScheduleTimeDialog,openSchedu
   function photoLabelFromName(name){return String(name||'일정 사진').replace(/\.[^.]+$/,'').trim()||'일정 사진';}
   function createPhotoFigure(info,label='일정 사진'){const figure=document.createElement('figure');figure.className='schedule-photo';figure.dataset.photoId=uid('photo');if(info.fullPath)figure.dataset.fullPath=info.fullPath;if(info.thumbPath)figure.dataset.thumbPath=info.thumbPath;if(info.staged)figure.dataset.staged='true';const safeLabel=photoLabelFromName(label);figure.innerHTML='<img alt="'+escapeHtml(safeLabel)+'" decoding="async" fetchpriority="low" loading="lazy" src="'+escapeHtml(info.thumbUrl||info.fullUrl)+'" data-full-url="'+escapeHtml(info.fullUrl||'')+'"><figcaption>'+escapeHtml(safeLabel)+'</figcaption>';decoratePhotoFigure(figure);return figure;}
   async function attachPhotos(files){
-    if(!activeScheduleRow||!files.length||operationBusy)return;
+    if(!activeScheduleRow||!files.length||isOperationBusy())return;
     const card=activeScheduleRow.querySelector('.card');let gallery=card.querySelector('.schedule-gallery');
     if(!gallery){gallery=document.createElement('div');gallery.className='schedule-gallery';card.insertBefore(gallery,card.querySelector('.schedule-media-tools'));}
     let attached=0;const failures=[];setOperationBusy(true,{cancelable:true,status:'사진 준비 0/'+files.length});
     try{
       for(let index=0;index<files.length;index++){
-        if(operationCancelled)break;const file=files[index];setStatus('사진 준비 '+(index+1)+'/'+files.length+' · '+file.name);
-        try{if(file.size>20*1024*1024)throw new Error('20MB를 초과했습니다.');const full=await compressImage(file,1600,.8);if(operationCancelled)break;const thumb=await compressImage(file,480,.76),info={fullUrl:await blobToDataUrl(full),thumbUrl:await blobToDataUrl(thumb),staged:true};gallery.appendChild(createPhotoFigure(info,file.name));attached++;}
+        if(isOperationCancelled())break;const file=files[index];setStatus('사진 준비 '+(index+1)+'/'+files.length+' · '+file.name);
+        try{if(file.size>20*1024*1024)throw new Error('20MB를 초과했습니다.');const full=await compressImage(file,1600,.8);if(isOperationCancelled())break;const thumb=await compressImage(file,480,.76),info={fullUrl:await blobToDataUrl(full),thumbUrl:await blobToDataUrl(thumb),staged:true};gallery.appendChild(createPhotoFigure(info,file.name));attached++;}
         catch(error){console.error(error);failures.push(file.name+' · '+error.message);}
       }
       updatePhotoMoveButtons(gallery);if(attached)finishMutation();
-    }finally{const cancelled=operationCancelled;setOperationBusy(false);setStatus(cancelled?'사진 작업 취소 · '+attached+'개 초안 유지':'사진 '+attached+'개 저장 대기');}
+    }finally{const cancelled=isOperationCancelled();setOperationBusy(false);setStatus(cancelled?'사진 작업 취소 · '+attached+'개 초안 유지':'사진 '+attached+'개 저장 대기');}
     if(failures.length)await showChoice({title:'일부 사진을 준비하지 못했습니다.',message:failures.slice(0,5).join('\n')+(failures.length>5?'\n외 '+(failures.length-5)+'개':''),choices:[{label:'확인',value:'ok',className:'action-primary'}]});
   }
   function movePhoto(figure,direction){if(!body.classList.contains('editing')||!figure)return;const gallery=figure.parentElement,figures=Array.from(gallery.querySelectorAll(':scope > .schedule-photo')),index=figures.indexOf(figure),next=index+direction;if(index<0||next<0||next>=figures.length)return;if(direction<0)figures[next].before(figure);else figures[next].after(figure);updatePhotoMoveButtons(gallery);recordHistory();}
@@ -3219,27 +3236,24 @@ if(event.target.classList.contains('schedule-map-delete')&&body.classList.contai
 document.addEventListener('keydown',event=>{const photo=event.target.closest?.('.schedule-photo img[role="button"]');if(photo&&!body.classList.contains('editing')&&(event.key==='Enter'||event.key===' ')){event.preventDefault();photo.click();}});
 }
 
+return Object.freeze({materializeStagedPhotos,photoLabelFromName,createPhotoFigure,attachPhotos,movePhoto,openPhotoEditDialog,savePhotoMetadata,openMapDialog,saveMap,selectActiveScheduleRow,resetPhotoSelection,bindPhotosControls});
+}
+
+function createExportsController({$,$$,CONFIG,EXPORT_BASE_NAME,blobToDataUrl,captureState,currentOperationSignal,fetchAsDataUrl,isOperationBusy,isOperationCancelled,normalizeState,setOperationBusy,setStatus,showChoice,showDialog,todayLocal}) {
   function stripTransient(root){root.querySelectorAll('#draftStorageWarning,.schedule-media-tools,.photo-actions,.row-actions,.photo-delete,.schedule-map-delete,.row-delete,.check-delete,.check-actions,.check-feedback,.warning-delete').forEach(el=>el.remove());root.querySelectorAll('[contenteditable]').forEach(el=>el.setAttribute('contenteditable','false'));}
-  async function fetchAsDataUrl(url){
-    if(url.startsWith('data:image/'))return url;
-    return withPhotoRequest(async signal=>{
-      const absolute=new URL(url,location.href).href,response=await fetch(absolute,{cache:'force-cache',signal});
-      if(!response.ok)throw new Error('사진 다운로드 실패 · HTTP '+response.status);
-      return blobToDataUrl(await response.blob());
-    },60000,'사진 다운로드');
-  }
+
   async function embedPhotos(state,{strict=true}={}){
     const normalized=normalizeState(state),template=document.createElement('template');template.innerHTML=normalized.html;const failures=[],photos=Array.from(template.content.querySelectorAll('.schedule-photo'));
     for(let i=0;i<photos.length;i++){
-      if(operationCancelled)throw new Error('내보내기가 취소되었습니다.');
+      if(isOperationCancelled())throw new Error('내보내기가 취소되었습니다.');
       const figure=photos[i],img=figure.querySelector('img'),thumb=img?.src,full=img?.dataset.fullUrl||thumb;if(!img||!full)continue;
       setStatus('사진 포함 '+(i+1)+'/'+photos.length);
       try{
-        const fullData=await fetchAsDataUrl(full);if(operationCancelled)throw new Error('내보내기가 취소되었습니다.');
-        const thumbData=!thumb||thumb===full?fullData:await fetchAsDataUrl(thumb);if(operationCancelled)throw new Error('내보내기가 취소되었습니다.');
+        const fullData=await fetchAsDataUrl(full);if(isOperationCancelled())throw new Error('내보내기가 취소되었습니다.');
+        const thumbData=!thumb||thumb===full?fullData:await fetchAsDataUrl(thumb);if(isOperationCancelled())throw new Error('내보내기가 취소되었습니다.');
         img.src=thumbData;img.dataset.fullUrl=fullData;figure.dataset.staged='true';delete figure.dataset.fullPath;delete figure.dataset.thumbPath;
       }catch(error){
-        if(operationCancelled)throw error;
+        if(isOperationCancelled())throw error;
         failures.push((img.alt||'사진')+' · '+error.message);if(strict)throw error;
         if(img.src)img.src=new URL(img.src,location.href).href;if(img.dataset.fullUrl)img.dataset.fullUrl=new URL(img.dataset.fullUrl,location.href).href;
       }
@@ -3264,22 +3278,22 @@ document.addEventListener('keydown',event=>{const photo=event.target.closest?.('
     root.querySelector('#tripFontPreload')?.remove();
     const style=root.querySelector('#trip-app-styles'),rule=style?.textContent.match(/@font-face\s*\{[^}]+\}/)?.[0],source=rule?.match(/url\("([^"]+)"\)/)?.[1];
     if(!source||source.startsWith('data:'))return;
-    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000),signal=operationController?.signal,abort=()=>controller.abort();
+    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000),signal=currentOperationSignal(),abort=()=>controller.abort();
     signal?.addEventListener('abort',abort,{once:true});
     try{
       if(signal?.aborted)controller.abort();
       const response=await fetch(new URL(source,document.baseURI),{signal:controller.signal});
       if(!response.ok)throw new Error('Font HTTP '+response.status);
       const data=await blobToDataUrl(new Blob([await response.arrayBuffer()],{type:'font/woff2'}));
-      if(operationCancelled)throw new Error('작업을 취소했습니다.');
+      if(isOperationCancelled())throw new Error('작업을 취소했습니다.');
       style.textContent=style.textContent.replace(source,data);
     }catch(error){
-      if(operationCancelled)throw error;
+      if(isOperationCancelled())throw error;
       style.textContent=style.textContent.replace(rule,'');console.warn('Export font unavailable; using the system font.',error);
     }finally{clearTimeout(timeout);signal?.removeEventListener('abort',abort);}
   }
   async function exportOfflineHtml(sourceState=captureState()) {
-    if(operationBusy)return;setOperationBusy(true,{cancelable:true,status:'오프라인 작업본 준비 중'});
+    if(isOperationBusy())return;setOperationBusy(true,{cancelable:true,status:'오프라인 작업본 준비 중'});
     try {
       const embedded=await embedPhotos(sourceState),state=embedded.state,cloneDoc=document.documentElement.cloneNode(true);
       cloneDoc.dataset.offline='true';cloneDoc.dataset.offlineId=Date.now().toString(36);
@@ -3293,7 +3307,7 @@ document.addEventListener('keydown',event=>{const photo=event.target.closest?.('
       const source='<!doctype html>\n'+cloneDoc.outerHTML,size=new Blob([source]).size;
       if(size>100*1024*1024){const choice=await showChoice({title:'오프라인 파일이 큽니다.',message:'사진을 포함한 파일 크기가 약 '+Math.ceil(size/1024/1024)+'MB입니다. 기기에 따라 열고 저장하는 데 시간이 걸릴 수 있습니다.',choices:[{label:'취소',value:'cancel'},{label:'계속 다운로드',value:'continue',className:'action-primary'}]});if(choice!=='continue'){setStatus('오프라인 작업본 생성을 취소했습니다.');return;}}
       downloadHtml(source,EXPORT_BASE_NAME+'_EDITABLE_'+todayLocal()+'.html');setStatus('오프라인 작업본을 만들었습니다.');
-    } catch(error) {console.error(error);if(operationCancelled){setStatus('오프라인 작업본 생성을 취소했습니다.');return;}setStatus('오프라인 작업본 생성 실패');await showChoice({title:'오프라인 작업본 생성 실패',message:error.message||'사진을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.',choices:[{label:'확인',value:'ok',className:'action-primary'}]});}
+    } catch(error) {console.error(error);if(isOperationCancelled()){setStatus('오프라인 작업본 생성을 취소했습니다.');return;}setStatus('오프라인 작업본 생성 실패');await showChoice({title:'오프라인 작업본 생성 실패',message:error.message||'사진을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.',choices:[{label:'확인',value:'ok',className:'action-primary'}]});}
     finally{const status=$('#status').textContent;setOperationBusy(false);setStatus(status);}
   }
   function appendReadonlyRuntime(root){
@@ -3318,7 +3332,7 @@ document.addEventListener('keydown',event=>{const photo=event.target.closest?.('
     root.querySelector('body')?.appendChild(script);
   }
   async function exportStaticHtml(){
-    if(operationBusy)return;setOperationBusy(true,{cancelable:true,status:'인쇄·공유용 사본 준비 중'});
+    if(isOperationBusy())return;setOperationBusy(true,{cancelable:true,status:'인쇄·공유용 사본 준비 중'});
     try{
       const embedded=await embedPhotos(captureState(),{strict:false}),cloneDoc=document.documentElement.cloneNode(true),photoData=new Map();
       const embeddedTemplate=document.createElement('template');embeddedTemplate.innerHTML=embedded.state.html;embeddedTemplate.content.querySelectorAll('.schedule-photo').forEach(figure=>{const img=figure.querySelector('img');photoData.set(figure.dataset.photoId,{src:img?.src||'',full:img?.dataset.fullUrl||img?.src||''});});
@@ -3331,7 +3345,7 @@ document.addEventListener('keydown',event=>{const photo=event.target.closest?.('
       cloneDoc.querySelectorAll('input[type="checkbox"]').forEach((input,index)=>{if($$('main input[type="checkbox"]')[index]?.checked)input.setAttribute('checked','');else input.removeAttribute('checked');input.disabled=true;});
       setArtifactBanner(cloneDoc,'readonly');appendReadonlyRuntime(cloneDoc);await embedArtifactFont(cloneDoc);downloadHtml('<!doctype html>\n'+cloneDoc.outerHTML,EXPORT_BASE_NAME+'_VIEW_ONLY_'+todayLocal()+'.html');
       setStatus(embedded.failures.length?'공유용 사본 생성 · '+embedded.failures.length+'개 사진은 온라인 주소 사용':'사진 포함 공유용 사본 생성 완료');
-    }catch(error){console.error(error);if(operationCancelled){setStatus('인쇄·공유용 사본 생성을 취소했습니다.');return;}setStatus('인쇄·공유용 사본 생성 실패');await showChoice({title:'사본을 만들지 못했습니다.',message:error.message,choices:[{label:'확인',value:'ok',className:'action-primary'}]});}
+    }catch(error){console.error(error);if(isOperationCancelled()){setStatus('인쇄·공유용 사본 생성을 취소했습니다.');return;}setStatus('인쇄·공유용 사본 생성 실패');await showChoice({title:'사본을 만들지 못했습니다.',message:error.message,choices:[{label:'확인',value:'ok',className:'action-primary'}]});}
     finally{const status=$('#status').textContent;setOperationBusy(false);setStatus(status);}
   }
 
@@ -3342,9 +3356,13 @@ $('#offlineExportBtn').onclick=()=>{$('#exportDialog').hidden=true;void exportOf
 $('#exportCancel').onclick=()=>$('#exportDialog').hidden=true;
 }
 
-  function stateSummary(state){const template=document.createElement('template');template.innerHTML=state.html;const schedules=[];template.content.querySelectorAll('.day:not(.prepday):not(.moneyday)').forEach((day,dayIndex)=>day.querySelectorAll('.timeline-row').forEach((row,index)=>{const mapLink=row.querySelector('.schedule-map a');schedules.push({id:row.dataset.rowId||'position-'+dayIndex+'-'+index,key:'DAY '+(dayIndex+1)+' 일정 '+(index+1),dayIndex,index,stay:row.dataset.stayCheckout||'',kind:TIMETABLE_KINDS[scheduleKindMode(row.dataset.scheduleKind)]||'자동',time:row.querySelector('.time')?.textContent.trim()||'',title:row.querySelector('h3')?.textContent.trim()||'',detail:row.querySelector('.remark')?.textContent.trim()||'',warning:Array.from(row.querySelectorAll('.schedule-warning')).map(item=>(item.querySelector('.schedule-warning-text')||item).textContent.trim()).filter(Boolean).join(' | '),mapName:mapPlaceName(mapLink),map:mapLink?.href||'',photos:Array.from(row.querySelectorAll('.schedule-photo')).map(photo=>{const img=photo.querySelector('img');return {id:photo.dataset.photoId||photo.dataset.fullPath||'photo',caption:photo.querySelector('figcaption')?.textContent.trim()||'',alt:img?.alt||''};})});}));const checks=Array.from(template.content.querySelectorAll('.checklist label span')).map((span,index)=>({id:span.closest('label')?.dataset.checkId||'position-'+index,text:span.textContent.trim(),important:span.closest('label')?.dataset.checkImportant==='true',checked:Boolean(state.checks?.[index])}));const days=Array.from(template.content.querySelectorAll('.day:not(.prepday):not(.moneyday)')).map(day=>day.querySelector('.day-head p')?.textContent.trim()||'');return {days,schedules,checks,expenses:state.expenses,categories:state.categories,exchangeRate:state.exchangeRate};}
-  function buildDiff(beforeState,afterState){
-    const before=stateSummary(beforeState),after=stateSummary(afterState),groups=[];
+return Object.freeze({stripTransient,embedPhotos,downloadHtml,resetArtifactTheme,setArtifactBanner,embedTripConfig,embedArtifactFont,exportOfflineHtml,appendReadonlyRuntime,exportStaticHtml,bindExportsControls});
+}
+
+/** Plain-summary comparison. DOM projection belongs to the document adapter. */
+function createComparison({TRIP_DAYS,CURRENCY_CODES,currencyLabel}){
+function compareSummaries(before,after){
+    const groups=[];
     const addGroup=(title,items)=>{if(items.length)groups.push({title,items});};
     const value=value=>String(value??'').trim()||'없음';
     const scheduleChanges=[];
@@ -3382,10 +3400,15 @@ $('#exportCancel').onclick=()=>$('#exportDialog').hidden=true;
     if(before.exchangeRate!==after.exchangeRate)addGroup('환율',['1 '+CURRENCY_CODES.quote+' = '+before.exchangeRate+' '+CURRENCY_CODES.base+' → '+after.exchangeRate+' '+CURRENCY_CODES.base]);
     return groups;
   }
-  function renderDiff(summary,list,groups,message=''){const count=groups.reduce((sum,group)=>sum+group.items.length,0);summary.textContent=message||(count?count+'개 변경 사항이 있습니다.':'변경 사항이 없습니다.');list.innerHTML=groups.length?groups.map(group=>'<div class="diff-group"><strong>'+escapeHtml(group.title)+'</strong><ul>'+group.items.slice(0,80).map(item=>'<li>'+escapeHtml(item)+'</li>').join('')+'</ul></div>').join(''):'<div class="diff-empty">변경 사항이 없습니다.</div>';return count;}
-  function renderImportDiff(groups,message=''){const count=renderDiff($('#importSummary'),$('#importDiff'),groups,message||(groups.length?'불러오면 현재 화면의 초안으로 적용됩니다.':'최신 저장본과 동일합니다.'));$('#importApply').disabled=!count;}
-  async function chooseImportFile(){await requireEditor('import',()=>$('#importFileInput').click());}
-  async function readImportFile(file){
+return Object.freeze({compareSummaries});
+}
+function createImportsController({$,SCHEMA_VERSION,TRIP_ID,applyImportSnapshot,buildDiff,clone,documentSession,fetchPublishedState,migratePublishedState,normalizeState,publicMediaUrl,renderDiff,requireEditor,setStatus,showChoice,showDialog}) {
+let pendingImport = null;
+function renderImportDiff(groups,message=''){const count=renderDiff($('#importSummary'),$('#importDiff'),groups,message||(groups.length?'불러오면 현재 화면의 초안으로 적용됩니다.':'최신 저장본과 동일합니다.'));$('#importApply').disabled=!count;}
+
+async function chooseImportFile(){await requireEditor('import',()=>$('#importFileInput').click());}
+
+async function readImportFile(file){
     try{
       const source=await file.text(),doc=new DOMParser().parseFromString(source,'text/html');
       if(doc.documentElement.dataset.tripId!==TRIP_ID||doc.documentElement.dataset.offline!=='true')throw new Error('이 여행에서 만든 오프라인 작업본이 아닙니다.');
@@ -3401,11 +3424,38 @@ $('#exportCancel').onclick=()=>$('#exportDialog').hidden=true;
     }catch(error){console.error(error);await showChoice({title:'작업본을 불러올 수 없습니다.',message:error.message,choices:[{label:'확인',value:'ok',className:'action-primary'}]});}
     finally{$('#importFileInput').value='';}
   }
-  async function materializeImportedPhotos(state){const normalized=normalizeState(state,true),template=document.createElement('template');template.innerHTML=normalized.html;for(const figure of template.content.querySelectorAll('.schedule-photo')){const img=figure.querySelector('img'),fullPath=figure.dataset.fullPath,thumbPath=figure.dataset.thumbPath;if(fullPath&&thumbPath){img.src=publicMediaUrl(thumbPath);img.dataset.fullUrl=publicMediaUrl(fullPath);continue;}if(!img.src.startsWith('data:image/'))continue;img.dataset.fullUrl=img.dataset.fullUrl||img.src;figure.dataset.staged='true';delete figure.dataset.fullPath;delete figure.dataset.thumbPath;}normalized.html=template.innerHTML;return normalized;}
-  async function applyImportedDraft(){if(!pendingImport)return;try{const published=await fetchPublishedState(),remoteRevision=Math.max(0,Number(published?.revision)||0);if(remoteRevision!==pendingImport.baselineRevision){if(!published?.content?.html)throw new Error('최신 저장본을 다시 확인하지 못했습니다.');const current=normalizeState(migratePublishedState(published.content)),groups=buildDiff(current,pendingImport.state);pendingImport.current=current;pendingImport.baselineRevision=remoteRevision;pendingImport.baselineUpdatedAt=published.updated_at||'';renderImportDiff(groups,'비교 중 최신 저장본이 변경되어 차이를 다시 계산했습니다. 내용을 확인하고 한 번 더 불러오세요.');return;}setStatus('편집본 사진을 준비 중입니다.');const incoming=await materializeImportedPhotos(pendingImport.state);documentSession.adoptImportBaseline(pendingImport.current,pendingImport.baselineRevision,pendingImport.baselineUpdatedAt);applyState(incoming);initializeHistory();updateDirtyState();$('#importDialog').hidden=true;pendingImport=null;setStatus('편집본 불러옴 · 저장되지 않음');}catch(error){console.error(error);setStatus('편집본 적용 실패');await showChoice({title:'편집본 적용 실패',message:error.message,choices:[{label:'확인',value:'ok',className:'action-primary'}]});}}
 
-  async function resetDraft(){const choice=await showChoice({title:'마지막 저장본으로 초기화',message:'현재 변경을 삭제하고 마지막 저장본으로 되돌립니다.',choices:[{label:'취소',value:'cancel'},{label:'초기화',value:'reset',className:'action-danger'}]});if(choice==='reset')discardDraft('마지막 저장본으로 초기화했습니다.');}
-  async function confirmSave(){if(!documentSession.snapshot().pendingDraft){setStatus('저장할 변경이 없습니다.');return;}const choice=await showChoice({title:OFFLINE_MODE?'오프라인 작업본 저장':'공유 일정에 저장',message:OFFLINE_MODE?'수정된 내용을 포함한 새 작업본을 내려받습니다.':'저장하면 공개 링크에 변경 내용이 반영됩니다.',input:OFFLINE_MODE?null:{label:'버전 메모 (선택)','placeholder':'예: 항공편 시간 수정'},choices:[{label:'취소',value:'cancel'},{label:'저장',value:'save',className:'action-primary'}]});if(choice==='save')await saveAndFinish(dialogs.inputValue()||'수동 저장');}
+async function materializeImportedPhotos(state){const normalized=normalizeState(state,true),template=document.createElement('template');template.innerHTML=normalized.html;for(const figure of template.content.querySelectorAll('.schedule-photo')){const img=figure.querySelector('img'),fullPath=figure.dataset.fullPath,thumbPath=figure.dataset.thumbPath;if(fullPath&&thumbPath){img.src=publicMediaUrl(thumbPath);img.dataset.fullUrl=publicMediaUrl(fullPath);continue;}if(!img.src.startsWith('data:image/'))continue;img.dataset.fullUrl=img.dataset.fullUrl||img.src;figure.dataset.staged='true';delete figure.dataset.fullPath;delete figure.dataset.thumbPath;}normalized.html=template.innerHTML;return normalized;}
+
+async function applyImportedDraft(){if(!pendingImport)return;try{const published=await fetchPublishedState(),remoteRevision=Math.max(0,Number(published?.revision)||0);if(remoteRevision!==pendingImport.baselineRevision){if(!published?.content?.html)throw new Error('최신 저장본을 다시 확인하지 못했습니다.');const current=normalizeState(migratePublishedState(published.content)),groups=buildDiff(current,pendingImport.state);pendingImport.current=current;pendingImport.baselineRevision=remoteRevision;pendingImport.baselineUpdatedAt=published.updated_at||'';renderImportDiff(groups,'비교 중 최신 저장본이 변경되어 차이를 다시 계산했습니다. 내용을 확인하고 한 번 더 불러오세요.');return;}setStatus('편집본 사진을 준비 중입니다.');const incoming=await materializeImportedPhotos(pendingImport.state);applyImportSnapshot(incoming,pendingImport.current,pendingImport.baselineRevision,pendingImport.baselineUpdatedAt);$('#importDialog').hidden=true;pendingImport=null;setStatus('편집본 불러옴 · 저장되지 않음');}catch(error){console.error(error);setStatus('편집본 적용 실패');await showChoice({title:'편집본 적용 실패',message:error.message,choices:[{label:'확인',value:'ok',className:'action-primary'}]});}}
+
+function resetImportSelection(){pendingImport=null;}
+
+function bindImportsControls(){
+$('#importBtn').onclick=chooseImportFile;
+$('#importFileInput').onchange=e=>{if(e.target.files[0])readImportFile(e.target.files[0]);};
+$('#importCancel').onclick=()=>{$('#importDialog').hidden=true;pendingImport=null;};
+$('#importApply').onclick=applyImportedDraft;
+}
+function pendingImportSnapshot(){return clone(pendingImport);}
+
+return Object.freeze({renderImportDiff,chooseImportFile,readImportFile,materializeImportedPhotos,applyImportedDraft,resetImportSelection,bindImportsControls,pendingImportSnapshot});
+}
+function createVersionsController({$,OFFLINE_MODE,body,buildDiff,captureState,clone,closePreview,documentSession,draftWorkflow,enterHistoricalPreview,escapeHtml,flushDraftPersistence,initializeHistory,isChecklistSaving,isDirty,isOperationBusy,isSaveInFlight,migratePublishedState,normalizeState,pendingCheckCount,persistState,recordHistory,recoverOnlineDraft,renderDiff,requireEditor,resetInactivityTimer,runtimeOptions,sessionService,setStatus,showChoice,showDialog,tripRepository}) {
+let selectedVersion = null;
+let versionRequest = null;
+const versionContentCache = new Map();
+
+
+
+
+
+
+
+
+
+
+
   function formatBytes(value){const size=Number(value)||0;if(size<1024)return size+' B';if(size<1024*1024)return (size/1024).toFixed(1)+' KB';return (size/1024/1024).toFixed(1)+' MB';}
   function invalidateVersionRequest(){const request=versionRequest;versionRequest=null;request?.controller.abort();}
   function beginVersionRequest(){invalidateVersionRequest();return versionRequest={controller:new AbortController()};}
@@ -3437,8 +3487,7 @@ $('#exportCancel').onclick=()=>$('#exportDialog').hidden=true;
       documentSession.cancelHistory();recordHistory();await flushDraftPersistence();
       if(!isCurrentVersionRequest(request)||isSaveInFlight()||isOperationBusy()||isChecklistSaving()||pendingCheckCount())return;
       // Keep the original working copy even when switching between previews.
-      documentSession.enterPreview(captureState());
-      body.classList.add('previewing');setEditingUI(false);applyState(state);
+      enterHistoricalPreview(state);
       $('#previewLabel').textContent='버전 #'+version.id+' · '+new Date(version.created_at).toLocaleString('ko-KR')+' 미리보기';
       closeVersions();setStatus('과거 저장본 미리보기 · 편집하려면 미리보기를 닫아 주세요.');
     }catch(error){showVersionLoadError(error,request);}
@@ -3467,10 +3516,10 @@ $('#exportCancel').onclick=()=>$('#exportDialog').hidden=true;
       data.forEach(version=>{const item=document.createElement('div');item.className='version-item';item.innerHTML='<div><strong>'+escapeHtml(version.note||'버전 #'+version.id)+'</strong><small>#'+version.id+' · '+escapeHtml(new Date(version.created_at).toLocaleString('ko-KR'))+' · '+escapeHtml(formatBytes(version.content_size))+'</small></div><button class="action-muted" type="button">비교</button><button class="action-muted" type="button">미리보기</button><button class="action-primary" type="button">복원</button>';const buttons=item.querySelectorAll('button');buttons[0].onclick=()=>compareVersion(version);buttons[1].onclick=()=>previewVersion(version);buttons[2].onclick=()=>compareVersion(version);list.appendChild(item);});
     }catch(error){if(!isCurrentVersionRequest(request))return;list.innerHTML='<div class="version-empty">닫고 다시 열어 주세요.</div>';showVersionLoadError(error,request);}
   }
-  function closePreview(){const previous=documentSession.snapshot().previewReturnState;if(previous)applyState(previous);documentSession.leavePreview();body.classList.remove('previewing');updateDirtyState();setStatus(documentSession.snapshot().pendingDraft?'저장 대기 중':'보기 모드');resetInactivityTimer();}
+
 
 function resetVersionSelection(){selectedVersion=null;}
-function resetImportSelection(){pendingImport=null;}
+
 
 function bindVersionsControls(){
 $('#versionsBtn').onclick=()=>requireEditor('versions');
@@ -3480,11 +3529,9 @@ $('#versionCompareClose').onclick=()=>{invalidateVersionRequest();$('#versionCom
 $('#versionCompareRestore').onclick=restoreSelectedVersion;
 }
 
-function bindImportsControls(){
-$('#importBtn').onclick=chooseImportFile;
-$('#importFileInput').onchange=e=>{if(e.target.files[0])readImportFile(e.target.files[0]);};
-$('#importCancel').onclick=()=>{$('#importDialog').hidden=true;pendingImport=null;};
-$('#importApply').onclick=applyImportedDraft;
+
+
+return Object.freeze({formatBytes,invalidateVersionRequest,beginVersionRequest,isCurrentVersionRequest,setVersionLoadStatus,closeVersions,readVersionRequest,showVersionLoadError,loadVersionContent,previewVersion,compareVersion,restoreSelectedVersion,openVersions,resetVersionSelection,bindVersionsControls});
 }
 function createNavigationController({$,$$,body,iconSvg,isOperationBusy,isTimetableActive,syncScheduleView}) {
 let lastScheduleDay = 'd1';
@@ -3790,7 +3837,7 @@ const {parseTimetableTime,scheduleTimeValue,scheduleClockMask,scheduleClockValue
 const draftStorage=createDraftStorage({DRAFT_DB_NAME:DRAFT_DB_NAME,DRAFT_RECORD_KEY:DRAFT_RECORD_KEY,DRAFT_SESSION_KEY:DRAFT_SESSION_KEY,LEGACY_CACHE_KEY:LEGACY_CACHE_KEY,LEGACY_DRAFT_RECORD_KEY:LEGACY_DRAFT_RECORD_KEY,PUBLIC_CACHE_RECORD_KEY:PUBLIC_CACHE_RECORD_KEY,TRIP_ID:TRIP_ID,clone:clone,showDraftStorageWarning:(...args)=>showDraftStorageWarning(...args)});
 const {draftCheckpointKey,readDraftCheckpoint,removeDraftCheckpoint,openDraftDatabase,acquireDraftLock,prepareDraftStorage,readDraftRecord,readPublicCache,invalidateWrites,retainDraft}=draftStorage;
 const {decimalParts,roundRatio,safeMinor,parseLedgerInput,parseLedgerRate,convertLedgerAmount,ledgerSumParts,sumLedgerAmounts,formatLedgerSum,expenseMoney,emptyExpenseInput,calculateExpenseInput,normalizeExpense,normalizeExpenses,formatCurrencyAmount} = createLedgerDomain({LEDGER_CURRENCIES,currencyLabel,formatCurrencyMinor,safeDataId,hashText,findCategoryId});
-const documentSession=createDocumentSession({clone,normalize:(...args)=>normalizeState(...args),fingerprint:(...args)=>fingerprint(...args)});
+const documentSession=createDocumentSession({clone,historyDelay:()=>runtimeOptions.historyDelay(),normalize:(...args)=>normalizeState(...args),fingerprint:(...args)=>fingerprint(...args)});
 const draftWorkflow=createDraftWorkflow({OFFLINE_MODE:OFFLINE_MODE,
 SCHEMA_VERSION:SCHEMA_VERSION,
 TRIP_ID:TRIP_ID,
@@ -3811,7 +3858,7 @@ setStatus:(...args)=>setStatus(...args),
 showChoice:(...args)=>showChoice(...args),
 updateDirtyState:(...args)=>updateDirtyState(...args)});
 let {writeDraftRecord,clearDraftRecord,currentDraftRecord,flushDraftPersistence,queueDraftPersistence,clearCleanDraft,recoverOnlineDraft,deferRecovery,isRecoveryDeferred,cancelPendingWrites}=draftWorkflow;
-const documentAdapter=createDocumentAdapter({$:$,
+const documentAdapter=createDocumentAdapter({TIMETABLE_KINDS,$:$,
 $$:$$,
 DEFAULT_BUDGET_KRW:DEFAULT_BUDGET_KRW,
 DEFAULT_EXCHANGE_RATE:DEFAULT_EXCHANGE_RATE,
@@ -3840,7 +3887,7 @@ replaceLedger:state=>restoreLedgerState(state),
 restoreEntryBuffer:value=>restoreExpenseBuffer(value),
 scheduleKindMode:(...args)=>scheduleKindMode(...args),
 sumLedgerAmounts:(...args)=>sumLedgerAmounts(...args)});
-const {sanitizeMarkup,checkLabelText,preserveLegacyLedger,migratePublishedState,captureState,applyState,applyStatePreservingInputs,setMoneyTemplate,isApplying,migrationNotice}=documentAdapter;
+const {stateSummary,mapPlaceName,sanitizeMarkup,checkLabelText,preserveLegacyLedger,migratePublishedState,captureState,applyState,applyStatePreservingInputs,setMoneyTemplate,isApplying,migrationNotice}=documentAdapter;
 const normalizeState=(raw,imported=false)=>documentAdapter.normalizeState(raw,{imported,fallback:raw?.html?null:captureState()});
 const tripRepository = createTripRepository({client,tripId:TRIP_ID,offline:OFFLINE_MODE,publishedReadMs:()=>runtimeOptions.publishedReadMs});
 const {fetchPublishedState} = tripRepository;
@@ -3935,6 +3982,7 @@ focusAndSelect:(...args)=>focusAndSelect(...args),
 hashText:(...args)=>hashText(...args),
 iconSvg:(...args)=>iconSvg(...args),
 isOperationBusy:(...args)=>isOperationBusy(...args),
+mapPlaceName:(...args)=>mapPlaceName(...args),
 openMapDialog:(...args)=>openMapDialog(...args),
 parseTimetableTime:(...args)=>parseTimetableTime(...args),
 prefersReducedMotion:(...args)=>prefersReducedMotion(...args),
@@ -3950,7 +3998,7 @@ showDialog:(...args)=>showDialog(...args),
 timetableClock:(...args)=>timetableClock(...args),
 timetableKind:(...args)=>timetableKind(...args),
 uid:(...args)=>uid(...args)});
-let {mapPlaceName,addTimeRow,closeScheduleTimeDialog,openScheduleTimeDialog,scheduleTimeFormValue,renderScheduleClock,setScheduleClock,changeScheduleClock,undoScheduleClock,initializeScheduleClocks,updateScheduleTimePreview,saveScheduleTime,addScheduleWarning,moveScheduleRow,decorateDates,decorateMapLink,updatePhotoMoveButtons,decoratePhotoFigure,updateScheduleMoveButtons,updateScheduleKindControl,changeScheduleKind,updateEditableEmpty,decorateEditablePlaceholders,decorateScheduleRows,bindScheduleControls}=scheduleController;
+let {addTimeRow,closeScheduleTimeDialog,openScheduleTimeDialog,scheduleTimeFormValue,renderScheduleClock,setScheduleClock,changeScheduleClock,undoScheduleClock,initializeScheduleClocks,updateScheduleTimePreview,saveScheduleTime,addScheduleWarning,moveScheduleRow,decorateDates,decorateMapLink,updatePhotoMoveButtons,decoratePhotoFigure,updateScheduleMoveButtons,updateScheduleKindControl,changeScheduleKind,updateEditableEmpty,decorateEditablePlaceholders,decorateScheduleRows,bindScheduleControls}=scheduleController;
 
 const editingController=createEditingController({$:$,
 $$:$$,
@@ -3963,7 +4011,6 @@ applyStatePreservingInputs:(...args)=>applyStatePreservingInputs(...args),
 blockUnsupportedDocument:(...args)=>blockUnsupportedDocument(...args),
 body:body,
 buildDiff:(...args)=>buildDiff(...args),
-cancelCurrentOperation:(...args)=>cancelCurrentOperation(...args),
 captureState:(...args)=>captureState(...args),
 clearCleanDraft:(...args)=>clearCleanDraft(...args),
 clearDraftRecord:(...args)=>clearDraftRecord(...args),
@@ -3972,7 +4019,6 @@ client:client,
 closeNotice:(...args)=>closeNotice(...args),
 closePreview:(...args)=>closePreview(...args),
 closeScheduleTimeDialog:(...args)=>closeScheduleTimeDialog(...args),
-confirmSave:(...args)=>confirmSave(...args),
 currentDraftRecord:(...args)=>currentDraftRecord(...args),
 dialogs:dialogs,
 documentAdapter:documentAdapter,
@@ -3987,8 +4033,6 @@ getEditorSession:(...args)=>getEditorSession(...args),
 insertPlainText:(...args)=>insertPlainText(...args),
 invalidateVersionRequest:(...args)=>invalidateVersionRequest(...args),
 isChecklistSaving:(...args)=>isChecklistSaving(...args),
-isOperationBusy:(...args)=>isOperationBusy(...args),
-isOperationCancelled:(...args)=>isOperationCancelled(...args),
 materializeStagedPhotos:(...args)=>materializeStagedPhotos(...args),
 migratePublishedState:(...args)=>migratePublishedState(...args),
 normalizeState:(...args)=>normalizeState(...args),
@@ -3998,7 +4042,6 @@ openVersions:(...args)=>openVersions(...args),
 pendingCheckCount:(...args)=>pendingCheckCount(...args),
 queueDraftPersistence:(...args)=>queueDraftPersistence(...args),
 recoverOnlineDraft:(...args)=>recoverOnlineDraft(...args),
-resetDraft:(...args)=>resetDraft(...args),
 resetImportSelection:(...args)=>resetImportSelection(...args),
 resetInactivityTimer:(...args)=>resetInactivityTimer(...args),
 resetLedgerSelection:(...args)=>resetLedgerSelection(...args),
@@ -4007,7 +4050,6 @@ resetVersionSelection:(...args)=>resetVersionSelection(...args),
 runtimeOptions:runtimeOptions,
 sessionService:sessionService,
 setEditorSession:(...args)=>setEditorSession(...args),
-setOperationBusy:(...args)=>setOperationBusy(...args),
 setPublishedBaseline:(...args)=>setPublishedBaseline(...args),
 setStatus:(...args)=>setStatus(...args),
 showChoice:(...args)=>showChoice(...args),
@@ -4018,7 +4060,7 @@ tripRepository:tripRepository,
 updateContextControls:(...args)=>updateContextControls(...args),
 updateEditableEmpty:(...args)=>updateEditableEmpty(...args),
 writeDraftRecord:(...args)=>writeDraftRecord(...args)});
-let {showInactivityWarning,closeEditorDialogs,handleExternalSignOut,logoutPreservingDraft,requestManualLogout,discardDraft,discardAndLogout,bindAuthentication,isRevisionConflict,compactDiffMessage,resolveSaveConflict,persistState,saveAndFinish,requestFinishEditing,beginEditing,requestAuthentication,runPurpose,requireEditor,isDirty,updateDirtyState,setEditable,recordHistory,queueHistory,initializeHistory,updateHistoryControls,moveHistory,setEditingUI,finishMutation,isSaveInFlight,bindEditingControls}=editingController;
+let {setOperationBusy,cancelCurrentOperation,isOperationBusy,isOperationCancelled,currentOperationSignal,resetDraft,confirmSave,showInactivityWarning,closeEditorDialogs,handleExternalSignOut,logoutPreservingDraft,requestManualLogout,discardDraft,discardAndLogout,bindAuthentication,isRevisionConflict,compactDiffMessage,resolveSaveConflict,persistState,saveAndFinish,requestFinishEditing,beginEditing,requestAuthentication,runPurpose,requireEditor,isDirty,updateDirtyState,setEditable,recordHistory,queueHistory,initializeHistory,updateHistoryControls,moveHistory,setEditingUI,finishMutation,isSaveInFlight,bindEditingControls}=editingController;
 
 const navigationController=createNavigationController({$:$,
 $$:$$,
@@ -4063,16 +4105,16 @@ configEscape:(...args)=>configEscape(...args),
 rememberScheduleDay:(...args)=>rememberScheduleDay(...args)});
 let {dateKeyNumber,zonedDateNumber,updateTripProgress,zonedParts,zonedDateKey,timeZoneOffsetMinutes,updateWorldClocks,selectInitialTab,startTripClocks,disposeTripClocks,bindClocksControls}=clocksController;
 
-const documentController=createDocumentController({
-cancelTabScrollRelease:(...args)=>cancelTabScrollRelease(...args),
-disposeTimetable:(...args)=>disposeTimetable(...args),
-disposeTripClocks:(...args)=>disposeTripClocks(...args),$:$,
+const documentController=createDocumentController({$:$,
 OFFLINE_MODE:OFFLINE_MODE,
 applyState:(...args)=>applyState(...args),
 applyStatePreservingInputs:(...args)=>applyStatePreservingInputs(...args),
 blockUnsupportedDocument:(...args)=>blockUnsupportedDocument(...args),
 body:body,
+cancelTabScrollRelease:(...args)=>cancelTabScrollRelease(...args),
 captureState:(...args)=>captureState(...args),
+disposeTimetable:(...args)=>disposeTimetable(...args),
+disposeTripClocks:(...args)=>disposeTripClocks(...args),
 checklistEditorDirty:(...args)=>checklistEditorDirty(...args),
 client:client,
 clone:(...args)=>clone(...args),
@@ -4097,9 +4139,110 @@ readPublicCache:(...args)=>readPublicCache(...args),
 recoverOnlineDraft:(...args)=>recoverOnlineDraft(...args),
 sessionService:sessionService,
 setStatus:(...args)=>setStatus(...args),
+resetInactivityTimer:(...args)=>resetInactivityTimer(...args),
+setEditingUI:(...args)=>setEditingUI(...args),
 tripRepository:tripRepository,
 updateDirtyState:(...args)=>updateDirtyState(...args)});
-let {writePublicCache,setPublishedBaseline,refreshPublishedState,hydrate,bindDocumentControls}=documentController;
+let {closePreview,enterHistoricalPreview,applyImportSnapshot,writePublicCache,setPublishedBaseline,refreshPublishedState,hydrate,bindDocumentControls}=documentController;
+const photoService=createPhotoService({client,TRIP_ID,MEDIA_BUCKET,SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,operationSignal:()=>currentOperationSignal(),requestTimeout:value=>runtimeOptions.photoTimeout(value)});
+let {blobToDataUrl,dataUrlToBlob,photoExtension,compressImage,hashBlob,publicMediaUrl,isDuplicateUpload,withPhotoRequest,immutableBlobExists,uploadImmutableBlob,uploadPhotoBlobs,fetchAsDataUrl}=photoService;
+const comparison=createComparison({TRIP_DAYS,CURRENCY_CODES,currencyLabel});
+const buildDiff=(before,after)=>comparison.compareSummaries(stateSummary(before),stateSummary(after));
+
+const importsController=createImportsController({$:$,
+SCHEMA_VERSION:SCHEMA_VERSION,
+TRIP_ID:TRIP_ID,
+applyImportSnapshot:(...args)=>applyImportSnapshot(...args),
+buildDiff:(...args)=>buildDiff(...args),
+clone:(...args)=>clone(...args),
+documentSession:documentSession,
+fetchPublishedState:(...args)=>fetchPublishedState(...args),
+migratePublishedState:(...args)=>migratePublishedState(...args),
+normalizeState:(...args)=>normalizeState(...args),
+publicMediaUrl:(...args)=>publicMediaUrl(...args),
+renderDiff:(...args)=>renderDiff(...args),
+requireEditor:(...args)=>requireEditor(...args),
+setStatus:(...args)=>setStatus(...args),
+showChoice:(...args)=>showChoice(...args),
+showDialog:(...args)=>showDialog(...args)});
+let {renderImportDiff,chooseImportFile,readImportFile,materializeImportedPhotos,applyImportedDraft,resetImportSelection,bindImportsControls,pendingImportSnapshot}=importsController;
+
+const versionsController=createVersionsController({$:$,
+OFFLINE_MODE:OFFLINE_MODE,
+body:body,
+buildDiff:(...args)=>buildDiff(...args),
+captureState:(...args)=>captureState(...args),
+clone:(...args)=>clone(...args),
+closePreview:(...args)=>closePreview(...args),
+documentSession:documentSession,
+draftWorkflow:draftWorkflow,
+enterHistoricalPreview:(...args)=>enterHistoricalPreview(...args),
+escapeHtml:(...args)=>escapeHtml(...args),
+flushDraftPersistence:(...args)=>flushDraftPersistence(...args),
+initializeHistory:(...args)=>initializeHistory(...args),
+isChecklistSaving:(...args)=>isChecklistSaving(...args),
+isDirty:(...args)=>isDirty(...args),
+isOperationBusy:(...args)=>isOperationBusy(...args),
+isSaveInFlight:(...args)=>isSaveInFlight(...args),
+migratePublishedState:(...args)=>migratePublishedState(...args),
+normalizeState:(...args)=>normalizeState(...args),
+pendingCheckCount:(...args)=>pendingCheckCount(...args),
+persistState:(...args)=>persistState(...args),
+recordHistory:(...args)=>recordHistory(...args),
+recoverOnlineDraft:(...args)=>recoverOnlineDraft(...args),
+renderDiff:(...args)=>renderDiff(...args),
+requireEditor:(...args)=>requireEditor(...args),
+resetInactivityTimer:(...args)=>resetInactivityTimer(...args),
+runtimeOptions:runtimeOptions,
+sessionService:sessionService,
+setStatus:(...args)=>setStatus(...args),
+showChoice:(...args)=>showChoice(...args),
+showDialog:(...args)=>showDialog(...args),
+tripRepository:tripRepository});
+let {formatBytes,invalidateVersionRequest,beginVersionRequest,isCurrentVersionRequest,setVersionLoadStatus,closeVersions,readVersionRequest,showVersionLoadError,loadVersionContent,previewVersion,compareVersion,restoreSelectedVersion,openVersions,resetVersionSelection,bindVersionsControls}=versionsController;
+
+const photosController=createPhotosController({$:$,
+OFFLINE_MODE:OFFLINE_MODE,
+blobToDataUrl:(...args)=>blobToDataUrl(...args),
+body:body,
+compressImage:(...args)=>compressImage(...args),
+dataUrlToBlob:(...args)=>dataUrlToBlob(...args),
+decorateMapLink:(...args)=>decorateMapLink(...args),
+decoratePhotoFigure:(...args)=>decoratePhotoFigure(...args),
+escapeHtml:(...args)=>escapeHtml(...args),
+finishMutation:(...args)=>finishMutation(...args),
+isOperationBusy:(...args)=>isOperationBusy(...args),
+isOperationCancelled:(...args)=>isOperationCancelled(...args),
+mapPlaceName:(...args)=>mapPlaceName(...args),
+normalizeState:(...args)=>normalizeState(...args),
+recordHistory:(...args)=>recordHistory(...args),
+setFieldError:(...args)=>setFieldError(...args),
+setOperationBusy:(...args)=>setOperationBusy(...args),
+setStatus:(...args)=>setStatus(...args),
+showChoice:(...args)=>showChoice(...args),
+showDialog:(...args)=>showDialog(...args),
+uid:(...args)=>uid(...args),
+updatePhotoMoveButtons:(...args)=>updatePhotoMoveButtons(...args),
+uploadPhotoBlobs:(...args)=>uploadPhotoBlobs(...args)});
+let {materializeStagedPhotos,photoLabelFromName,createPhotoFigure,attachPhotos,movePhoto,openPhotoEditDialog,savePhotoMetadata,openMapDialog,saveMap,selectActiveScheduleRow,resetPhotoSelection,bindPhotosControls}=photosController;
+
+const exportsController=createExportsController({$:$,
+$$:$$,
+CONFIG:CONFIG,
+EXPORT_BASE_NAME:EXPORT_BASE_NAME,
+blobToDataUrl:(...args)=>blobToDataUrl(...args),
+captureState:(...args)=>captureState(...args),
+currentOperationSignal:(...args)=>currentOperationSignal(...args),
+fetchAsDataUrl:(...args)=>fetchAsDataUrl(...args),
+isOperationBusy:(...args)=>isOperationBusy(...args),
+isOperationCancelled:(...args)=>isOperationCancelled(...args),
+normalizeState:(...args)=>normalizeState(...args),
+setOperationBusy:(...args)=>setOperationBusy(...args),
+setStatus:(...args)=>setStatus(...args),
+showChoice:(...args)=>showChoice(...args),
+showDialog:(...args)=>showDialog(...args),
+todayLocal:(...args)=>todayLocal(...args)});
+let {stripTransient,embedPhotos,downloadHtml,resetArtifactTheme,setArtifactBanner,embedTripConfig,embedArtifactFont,exportOfflineHtml,appendReadonlyRuntime,exportStaticHtml,bindExportsControls}=exportsController;
 sessionService.initialize();bindAuthentication();
 bindLedgerControls();bindScheduleControls();bindChecklistControls();bindEditingControls();bindNavigationControls();bindDocumentControls();bindPhotosControls();bindVersionsControls();bindImportsControls();bindExportsControls();
 // @browser-fixture

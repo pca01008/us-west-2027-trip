@@ -8,8 +8,8 @@ import { createBrowserDiagnostics } from './browser-diagnostics.mjs';
 
 const diagnostics = await createBrowserDiagnostics('photos');
 const { chromium } = await import(process.argv[2] ? pathToFileURL(process.argv[2]).href : 'playwright');
-const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
-const source = html.slice(html.indexOf('  function blobToDataUrl('), html.indexOf('  function movePhoto('));
+const source = (await Promise.all(['photo-service.js','photos.js'].map(file=>
+  readFile(new URL('../src/app/'+file,import.meta.url),'utf8')))).join('\n');
 const server = createServer((req, res) => res.end('<!doctype html><html><body></body></html>'));
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const origin = `http://127.0.0.1:${server.address().port}`;
@@ -33,14 +33,18 @@ try {
     const uploads=[];
     const client={auth:{getSession:async()=>({data:{session:{access_token:'test-token'}}})},storage:{from:()=>({getPublicUrl:path=>({data:{publicUrl:'https://storage.invalid/'+path}})})}};
     const fetch=async(url,options)=>{
+        if(options.method==='HEAD')return {ok:false,status:404};
         const path=url.split('/object/trip-media/')[1],blob=options.body;
         if(!['image/webp','image/jpeg'].includes(blob.type))throw Error('Unsupported MIME: '+blob.type);
         uploads.push({path,blob,options:{contentType:options.headers['Content-Type']}});return {ok:true,json:async()=>({Key:path})};
     };
     ${source}
-    immutableBlobExists=async()=>false;
-    window.photoTest={compressImage,blobToDataUrl,materializeStagedPhotos,attachPhotos,uploads,
-      setRow:row=>{activeScheduleRow=row;}};
+    const photoService=createPhotoService({client,TRIP_ID,MEDIA_BUCKET,SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,operationSignal:()=>operationController?.signal});
+    const photos=createPhotosController({$ : selector=>document.querySelector(selector),OFFLINE_MODE,
+      ...photoService,body:document.body,decorateMapLink:()=>{},decoratePhotoFigure,escapeHtml,finishMutation,
+      isOperationBusy:()=>operationBusy,isOperationCancelled:()=>operationCancelled,mapPlaceName:()=>'',
+      normalizeState,recordHistory:()=>{},setFieldError:()=>{},setOperationBusy,setStatus,showChoice,showDialog:()=>{},uid,updatePhotoMoveButtons});
+    window.photoTest={...photoService,...photos,uploads,setRow:photos.selectActiveScheduleRow};
   ` });
   const results = await page.evaluate(async () => {
     const check=(value,message)=>{if(!value)throw Error(message);};

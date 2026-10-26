@@ -3,9 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 import { webcrypto } from 'node:crypto';
-
-const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
-const source = html.slice(html.indexOf('  function photoExtension('), html.indexOf('  async function materializeStagedPhotos('));
+import { loadFactory } from './helpers/factories.mjs';
 
 function app({ webp = true, jpeg = true, nullResult = false, exists = false, error = null, fetchPhoto, session } = {}) {
   const encodes = [], fills = [], uploads = [], sizes = [];
@@ -13,7 +11,9 @@ function app({ webp = true, jpeg = true, nullResult = false, exists = false, err
   const context2d = { drawImage() {}, fillRect(...args) { fills.push({ color: this.fillStyle, operation: this.globalCompositeOperation, args }); } };
   const context = vm.createContext({ Blob, AbortController, setTimeout, clearTimeout, URL, crypto: webcrypto, TRIP_ID: 'us-west-2027', MEDIA_BUCKET: 'trip-media',
     SUPABASE_URL:'https://example.test',SUPABASE_PUBLISHABLE_KEY:'public-test-key',operationController:new AbortController(),
-    location:{href:'https://example.test/'},blobToDataUrl:async blob=>'data:'+blob.type+';base64,'+Buffer.from(await blob.arrayBuffer()).toString('base64'),
+    location:{href:'https://example.test/'},FileReader:class {
+      readAsDataURL(blob){blob.arrayBuffer().then(bytes=>{this.result='data:'+blob.type+';base64,'+Buffer.from(bytes).toString('base64');this.onload();},error=>this.onerror(error));}
+    },
     createImageBitmap: async () => ({ width: 2400, height: 1200, close() { closed++; } }),
     document: { createElement() { return { getContext: () => context2d, toBlob(callback, type, quality) {
       encodes.push({ type, quality }); sizes.push([this.width, this.height]);
@@ -29,8 +29,11 @@ function app({ webp = true, jpeg = true, nullResult = false, exists = false, err
       getPublicUrl: path => ({ data: { publicUrl: 'https://example.test/' + path } })
     }; } } }
   });
-  vm.runInContext(source, context);
-  vm.runInContext(html.slice(html.indexOf('  async function fetchAsDataUrl('),html.indexOf('  async function embedPhotos(')),context);
+  Object.assign(context,loadFactory('photoService',{
+    client:context.client,TRIP_ID:context.TRIP_ID,MEDIA_BUCKET:context.MEDIA_BUCKET,
+    SUPABASE_URL:context.SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY:context.SUPABASE_PUBLISHABLE_KEY,
+    operationSignal:()=>context.operationController.signal
+  },context));
   return { context, encodes, fills, uploads, sizes, get closed() { return closed; } };
 }
 

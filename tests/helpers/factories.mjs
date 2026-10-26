@@ -2,6 +2,9 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
 const modules = {
+  documentWorkflow: ['document-workflow.js', 'createDocumentController'],
+  photoService: ['photo-service.js', 'createPhotoService'],
+  comparison: ['comparison.js', 'createComparison'],
   documentSession: ['document-session.js', 'createDocumentSession'],
   timetable: ['timetable-core.js', 'createTimetableCore'],
   repository: ['trip-repository.js', 'createTripRepository'],
@@ -14,6 +17,7 @@ export function loadFactory(name, dependencies = {}, globals = {}) {
   const [file, factory] = modules[name] || [];
   if (!file) throw new Error('Unknown factory: ' + name);
   const source = readFileSync(new URL('../../src/app/' + file, import.meta.url), 'utf8');
-  const context = vm.createContext({...globals, dependencies});
+  const context = vm.isContext(globals) ? globals : vm.createContext({...globals});
+  context.dependencies = dependencies;
   return vm.runInContext(source + '\n' + factory + '(dependencies);', context, {filename:file});
 }

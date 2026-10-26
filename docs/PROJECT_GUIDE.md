@@ -85,7 +85,7 @@ Pages serves files; browser JavaScript renders and manages data; Supabase handle
 | `src/theme.js` | First-paint theme and theme controls |
 | `src/styles.css`, `src/styles/*.css` | Ordered cascade layers; `palette.css` owns reusable light/dark color roles |
 | `src/app.js` | Ordered feature includes in one existing IIFE |
-| `src/app/config.js`, `runtime.js` | Configuration/scaffold/environment; media/version state remains here until its ownership migration |
+| `src/app/config.js`, `runtime.js` | Configuration/scaffold and immutable environment/identity; no feature state |
 | `src/app/currency.js`, `ledger-domain.js` | Complete pure factories: immutable currency policy, exact arithmetic/input calculation and legacy normalization |
 | `src/app/ledger.js`, `categories.js` | Private ledger data/form buffers, display, labels, editing and delegated controls; category normalization helpers |
 | `src/app/timetable-core.js` | Complete pure factory for time parsing, masked clock editing, classification and interval layout |
@@ -99,12 +99,17 @@ Pages serves files; browser JavaScript renders and manages data; Supabase handle
 | `src/app/dialogs.js`, `session.js` | Private dialog/focus/choice state and editor identity/activity state; explicit initialization and disposal |
 | `src/app/trip-repository.js` | Raw published reads, revision RPC, version transport and owned Realtime cleanup; callers retain workflow policy |
 | `src/app/checklist.js` | Private PREP queue/editor/optimistic state, stable-ID patch saving and delegated controls |
-| `src/app/photos.js`, `exports.js`, `versions.js` | Media, standalone files and history/import workflows |
+| `src/app/comparison.js` | Plain-summary comparison; document adapter owns DOM-to-summary projection |
+| `src/app/imports.js`, `versions.js` | Separate private import and version request/selection/cache lifecycles; preview/apply route through document actions |
+| `src/app/photo-service.js`, `photos.js` | Encoding/hash/immutable transport and private photo/map selection/rendering, respectively |
+| `src/app/exports.js` | Complete editable/read-only artifact pipeline with explicit operation/photo collaborators |
 | `src/app/startup.js` | Explicit construction, callback wiring, binding and ordered initialization |
 | `src/app/utilities.js`, `ui-helpers.js` | Small shared helpers and status/storage-warning UI |
 | `src/trip/config.js`, `src/trip/days.js` | Current trip settings and default itinerary |
 
 Sources have explicit include order, not browser ES-module loading. Factories own migrated state and receive explicit collaborators; startup connects cyclic workflows with callbacks. Feature listeners bind once to stable roots and resolve current nodes after document replacement. Unit tests load complete factory files through `tests/helpers/factories.mjs`. `scripts/build-app.mjs` expands root-relative `@include` lines under `src/`, normalizes LF and writes committed `index.html`/`trip-config.js`. It rejects path escapes and cycles; `--check` rejects stale outputs without rewriting them. No runtime requests, bundler dependencies or new PWA assets are introduced. Exports remain self-contained. Search/edit `src/`; inspect generated output only for deployment/debugging.
+
+Domain calculations receive explicit currency/category/date inputs. The document adapter retains the DOM-based saved format; it does not maintain a parallel live document. Session snapshots are copied, and named transitions distinguish publication, recovered baselines, PREP reconciliation and preview. Storage reports committed/verified outcomes; workflow code decides recovery and discard. The repository preserves SDK errors/status/signals and never decides retries. Full saves and PREP patches retain separate policies; uncertain writes are verified once rather than automatically resent. Version requests retain their own cancellation/generation guard, separate from the editing operation handle used by photos/exports.
 
 ### Typography
 

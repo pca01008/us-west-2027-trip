@@ -38,7 +38,7 @@ const server = createServer(async (req, res) => {
     let body=await readBrowserFixture(new URL(file,root));
     if(file==='index.html') body=injectBrowserFixture(source
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/,'')
-      .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/,stub), 'window.__importTest={captureState,normalizeState,migratePublishedState,recordHistory,flushDraftPersistence,readDraftRecord,pending:()=>pendingImport};');
+      .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/,stub), 'window.__importTest={captureState,normalizeState,migratePublishedState,recordHistory,flushDraftPersistence,readDraftRecord,pending:()=>pendingImportSnapshot()};');
     if(file==='trip-config.js') body+=`\nwindow.TRIP_CONFIG.supabase={url:'http://127.0.0.1:${server.address().port}',publishableKey:'fixture'};`;
     res.setHeader('Content-Type',file.endsWith('.html')?'text/html; charset=utf-8':file.endsWith('.js')?'text/javascript; charset=utf-8':'image/webp');res.end(body);
   } catch(error) { res.writeHead(500).end(error.message); }

@@ -1,4 +1,4 @@
-function createEditingController({$,$$,EDITOR_EMAIL,OFFLINE_MODE,SCHEMA_VERSION,TRIP_ID,applyState,applyStatePreservingInputs,blockUnsupportedDocument,body,buildDiff,cancelCurrentOperation,captureState,clearCleanDraft,clearDraftRecord,clearSessionTimers,client,closeNotice,closePreview,closeScheduleTimeDialog,confirmSave,currentDraftRecord,dialogs,documentAdapter,documentSession,draftStorage,draftWorkflow,exportOfflineHtml,fetchPublishedState,fingerprint,flushDraftPersistence,getEditorSession,insertPlainText,invalidateVersionRequest,isChecklistSaving,isOperationBusy,isOperationCancelled,materializeStagedPhotos,migratePublishedState,normalizeState,openChecklistEditor,openLedgerSettings,openVersions,pendingCheckCount,queueDraftPersistence,recoverOnlineDraft,resetDraft,resetImportSelection,resetInactivityTimer,resetLedgerSelection,resetPhotoSelection,resetVersionSelection,runtimeOptions,sessionService,setEditorSession,setOperationBusy,setPublishedBaseline,setStatus,showChoice,showDialog,signOutEditor,syncChecklistControls,tripRepository,updateContextControls,updateEditableEmpty,writeDraftRecord}) {
+function createEditingController({$,$$,EDITOR_EMAIL,OFFLINE_MODE,SCHEMA_VERSION,TRIP_ID,applyState,applyStatePreservingInputs,blockUnsupportedDocument,body,buildDiff,captureState,clearCleanDraft,clearDraftRecord,clearSessionTimers,client,closeNotice,closePreview,closeScheduleTimeDialog,currentDraftRecord,dialogs,documentAdapter,documentSession,draftStorage,draftWorkflow,exportOfflineHtml,fetchPublishedState,fingerprint,flushDraftPersistence,getEditorSession,insertPlainText,invalidateVersionRequest,isChecklistSaving,materializeStagedPhotos,migratePublishedState,normalizeState,openChecklistEditor,openLedgerSettings,openVersions,pendingCheckCount,queueDraftPersistence,recoverOnlineDraft,resetImportSelection,resetInactivityTimer,resetLedgerSelection,resetPhotoSelection,resetVersionSelection,runtimeOptions,sessionService,setEditorSession,setPublishedBaseline,setStatus,showChoice,showDialog,signOutEditor,syncChecklistControls,tripRepository,updateContextControls,updateEditableEmpty,writeDraftRecord}) {
 let authPurpose = 'edit';
 let pendingAuthAction = null;
 let pendingAuthCancel = null;
@@ -150,5 +150,28 @@ document.addEventListener('input',event=>{refreshEditablePlaceholder(event);if(b
 document.addEventListener('change',async event=>{if(body.classList.contains('editing')&&event.target.closest('main')&&!event.target.closest('.add-expense')&&event.target.id!=='exchangeRate')recordHistory();});
 }
 
-return Object.freeze({showInactivityWarning,closeEditorDialogs,handleExternalSignOut,logoutPreservingDraft,requestManualLogout,discardDraft,discardAndLogout,bindAuthentication,isRevisionConflict,compactDiffMessage,resolveSaveConflict,persistState,saveAndFinish,requestFinishEditing,beginEditing,requestAuthentication,runPurpose,requireEditor,isDirty,updateDirtyState,setEditable,recordHistory,queueHistory,initializeHistory,updateHistoryControls,moveHistory,setEditingUI,finishMutation,isSaveInFlight,bindEditingControls});
+async function resetDraft(){const choice=await showChoice({title:'마지막 저장본으로 초기화',message:'현재 변경을 삭제하고 마지막 저장본으로 되돌립니다.',choices:[{label:'취소',value:'cancel'},{label:'초기화',value:'reset',className:'action-danger'}]});if(choice==='reset')discardDraft('마지막 저장본으로 초기화했습니다.');}
+
+async function confirmSave(){if(!documentSession.snapshot().pendingDraft){setStatus('저장할 변경이 없습니다.');return;}const choice=await showChoice({title:OFFLINE_MODE?'오프라인 작업본 저장':'공유 일정에 저장',message:OFFLINE_MODE?'수정된 내용을 포함한 새 작업본을 내려받습니다.':'저장하면 공개 링크에 변경 내용이 반영됩니다.',input:OFFLINE_MODE?null:{label:'버전 메모 (선택)','placeholder':'예: 항공편 시간 수정'},choices:[{label:'취소',value:'cancel'},{label:'저장',value:'save',className:'action-primary'}]});if(choice==='save')await saveAndFinish(dialogs.inputValue()||'수동 저장');}
+let operationBusy = false;
+let operationCancelled = false;
+let operationController = null;
+function setOperationBusy(on,{cancelable=false,status=''}={}) {
+    if(on&&!operationBusy)operationController=new AbortController();
+    if(!on){operationController?.abort();operationController=null;}
+    operationBusy=on;operationCancelled=false;body.classList.toggle('operation-busy',on);
+    const cancel=$('#cancelOperationBtn');if(cancel){cancel.classList.toggle('hidden',!on||!cancelable);cancel.disabled=!on||!cancelable;}
+    $('.editor-bar')?.setAttribute('aria-busy',String(on));
+    if(status)setStatus(status);
+    if(!on){updateHistoryControls();updateDirtyState();}
+  }
+
+function cancelCurrentOperation(){const button=$('#cancelOperationBtn');if(!operationBusy||!button||button.disabled)return;operationCancelled=true;operationController?.abort(new Error('작업을 취소했습니다. 초안은 유지됩니다.'));button.disabled=true;setStatus('작업을 취소하는 중입니다.');}
+
+function isOperationBusy(){return operationBusy;}
+
+function isOperationCancelled(){return operationCancelled;}
+
+function currentOperationSignal(){return operationController?.signal;}
+return Object.freeze({setOperationBusy,cancelCurrentOperation,isOperationBusy,isOperationCancelled,currentOperationSignal,resetDraft,confirmSave,showInactivityWarning,closeEditorDialogs,handleExternalSignOut,logoutPreservingDraft,requestManualLogout,discardDraft,discardAndLogout,bindAuthentication,isRevisionConflict,compactDiffMessage,resolveSaveConflict,persistState,saveAndFinish,requestFinishEditing,beginEditing,requestAuthentication,runPurpose,requireEditor,isDirty,updateDirtyState,setEditable,recordHistory,queueHistory,initializeHistory,updateHistoryControls,moveHistory,setEditingUI,finishMutation,isSaveInFlight,bindEditingControls});
 }

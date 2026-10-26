@@ -65,47 +65,6 @@
   const BASELINE_MAIN_HTML = $('main').innerHTML;
   const PUBLISHED_MIGRATION_SELECTORS = ['.prepday',...TRIP_DAYS.map((_,index)=>'.day'+(index+1))];
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  let activeScheduleRow = null;
-
-
-
-
-  let pendingImport = null;
-
-
-
-  let activePhotoFigure = null;
-  let operationBusy = false;
-  let operationCancelled = false;
-  let operationController = null;
-  let selectedVersion = null;
-  let versionRequest = null;
-
-
-
-
-
-
-  const versionContentCache = new Map();
-
-  const runtimeOptions = {saveMs:12000, publishedReadMs:8000, versionReadMs:8000};
+  const runtimeOptions = {saveMs:12000, publishedReadMs:8000, versionReadMs:8000, photoTimeout:value=>value, historyDelay:()=>400};
 
 const TIMETABLE_KINDS={activity:'관광',food:'식사',transit:'이동',stay:'숙소·휴식',other:'기타'};

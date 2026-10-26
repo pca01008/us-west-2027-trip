@@ -36,10 +36,13 @@
 
 // @include app/schedule-editor.js
 
+// @include app/photo-service.js
 // @include app/photos.js
 
 // @include app/exports.js
 
+// @include app/comparison.js
+// @include app/imports.js
 // @include app/versions.js
 // @include app/navigation.js
 

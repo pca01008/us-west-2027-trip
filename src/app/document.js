@@ -1,5 +1,5 @@
 /** DOM serialization/repair boundary. Normalization needs an explicit fallback. */
-function createDocumentAdapter({$,$$,DEFAULT_BUDGET_KRW,DEFAULT_EXCHANGE_RATE,IMPORT_ALLOWED_MONEY_IDS,MEDIA_PATH_PATTERN,SCHEMA_VERSION,SUPABASE_URL,TRIP_ID,afterApply,assertCurrencyPair,assertSupportedSchema,beforeApply,clone,currencyMetadata,drawExpenseInput,entryPending,hashText,normalizeCategories,normalizeExpenses,pendingCheckBefore,readEntryBuffer,readLedger,renderCheckFeedback,renderDocument,replaceLedger,restoreEntryBuffer,scheduleKindMode,sumLedgerAmounts}) {
+function createDocumentAdapter({$,$$,DEFAULT_BUDGET_KRW,DEFAULT_EXCHANGE_RATE,IMPORT_ALLOWED_MONEY_IDS,MEDIA_PATH_PATTERN,SCHEMA_VERSION,TIMETABLE_KINDS,SUPABASE_URL,TRIP_ID,afterApply,assertCurrencyPair,assertSupportedSchema,beforeApply,clone,currencyMetadata,drawExpenseInput,entryPending,hashText,normalizeCategories,normalizeExpenses,pendingCheckBefore,readEntryBuffer,readLedger,renderCheckFeedback,renderDocument,replaceLedger,restoreEntryBuffer,scheduleKindMode,sumLedgerAmounts}) {
 let applyingHistory=false,moneyTemplateHtml="";
   function sanitizeMarkup(markup, imported=false) {
     const template=document.createElement('template'); template.innerHTML=markup||'';
@@ -154,5 +154,13 @@ function setMoneyTemplate(html){moneyTemplateHtml=html;}
 function isApplying(){return applyingHistory;}
 function migrationNotice(){return ledgerMigrationNotice;}
 
-return Object.freeze({sanitizeMarkup,normalizeState,checkLabelText,preserveLegacyLedger,migratePublishedState,captureState,applyState,applyStatePreservingInputs,setMoneyTemplate,isApplying,migrationNotice});
+function stateSummary(state){const template=document.createElement('template');template.innerHTML=state.html;const schedules=[];template.content.querySelectorAll('.day:not(.prepday):not(.moneyday)').forEach((day,dayIndex)=>day.querySelectorAll('.timeline-row').forEach((row,index)=>{const mapLink=row.querySelector('.schedule-map a');schedules.push({id:row.dataset.rowId||'position-'+dayIndex+'-'+index,key:'DAY '+(dayIndex+1)+' 일정 '+(index+1),dayIndex,index,stay:row.dataset.stayCheckout||'',kind:TIMETABLE_KINDS[scheduleKindMode(row.dataset.scheduleKind)]||'자동',time:row.querySelector('.time')?.textContent.trim()||'',title:row.querySelector('h3')?.textContent.trim()||'',detail:row.querySelector('.remark')?.textContent.trim()||'',warning:Array.from(row.querySelectorAll('.schedule-warning')).map(item=>(item.querySelector('.schedule-warning-text')||item).textContent.trim()).filter(Boolean).join(' | '),mapName:mapPlaceName(mapLink),map:mapLink?.href||'',photos:Array.from(row.querySelectorAll('.schedule-photo')).map(photo=>{const img=photo.querySelector('img');return {id:photo.dataset.photoId||photo.dataset.fullPath||'photo',caption:photo.querySelector('figcaption')?.textContent.trim()||'',alt:img?.alt||''};})});}));const checks=Array.from(template.content.querySelectorAll('.checklist label span')).map((span,index)=>({id:span.closest('label')?.dataset.checkId||'position-'+index,text:span.textContent.trim(),important:span.closest('label')?.dataset.checkImportant==='true',checked:Boolean(state.checks?.[index])}));const days=Array.from(template.content.querySelectorAll('.day:not(.prepday):not(.moneyday)')).map(day=>day.querySelector('.day-head p')?.textContent.trim()||'');return {days,schedules,checks,expenses:state.expenses,categories:state.categories,exchangeRate:state.exchangeRate};}
+function mapPlaceName(anchor) {
+    if(!anchor)return '';
+    const stored=anchor?.dataset.placeName?.trim();
+    if(stored)return stored;
+    const raw=(anchor?.querySelector('.map-link-label')?.textContent||anchor?.textContent||'').replace(/↗/g,'').trim();
+    return raw.replace(/^Google Maps\s*[·-]\s*/i,'').replace(/\s*[·-]\s*Google Maps$/i,'').trim()||'위치';
+  }
+return Object.freeze({stateSummary,mapPlaceName,sanitizeMarkup,normalizeState,checkLabelText,preserveLegacyLedger,migratePublishedState,captureState,applyState,applyStatePreservingInputs,setMoneyTemplate,isApplying,migrationNotice});
 }

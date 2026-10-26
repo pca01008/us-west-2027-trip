@@ -121,8 +121,6 @@ test('캐시 정리는 같은 앱·경로의 이전 버전에만 적용된다', 
 });
 
 test('SDK 미연결 또는 오프라인 시작에서도 기존 공개본을 읽고 캐시 시점을 유지한다', async () => {
-  const html = await read('index.html');
-  const hydrate = html.match(/async function hydrate\(\)\{([\s\S]*?)\n  \}/)[0];
   for (const client of [null, {}]) {
     let displayed, baselineMetadata, status;
     const record = { state: { html: 'saved itinerary' }, revision: 7, cachedAt: '2026-09-01T00:00:00Z' };
@@ -130,17 +128,18 @@ test('SDK 미연결 또는 오프라인 시작에서도 기존 공개본을 읽�
       OFFLINE_MODE: false, client, navigator: { onLine: false }, lastSavedState: record.state,
       blockUnsupportedDocument: () => false, console: { warn() {} }, readPublicCache: async () => record,
       normalizeState: value => value, migratePublishedState: value => value,
+      captureState:()=>record.state,fingerprint:JSON.stringify,
       applyState: value => { displayed = value; },
-      setPublishedBaseline: (_row, _state, metadata) => { baselineMetadata = metadata; },
+      draftStorage:{writePublicCache:(_state,metadata)=>{baselineMetadata=metadata;return true;}},
       setStatus: value => { status = value; }, initializeHistory() {}, updateDirtyState() {},
       recoverOnlineDraft: async () => {}, finishHydration() {},
       // Halt after reading the cached state, before realtime setup for the mock client.
       TRIP_ID: 'test', getEditorSession: async () => {}
     });
     context.tripRepository={subscribe(){}};
-    context.documentSession={snapshot:()=>({lastSavedState:record.state})};
-    vm.runInContext(hydrate, context);
-    await context.hydrate();
+    context.documentSession={snapshot:()=>({lastSavedState:record.state}),acceptPublished(){}};
+    const api=loadFactory('documentWorkflow',context,{navigator:context.navigator,console:context.console});
+    await api.hydrate();
     assert.equal(displayed.html, 'saved itinerary');
     assert.equal(baselineMetadata.cachedAt, record.cachedAt);
     assert.match(status, /오프라인 캐시 표시/);
@@ -148,7 +147,6 @@ test('SDK 미연결 또는 오프라인 시작에서도 기존 공개본을 읽�
 });
 
 test('인터넷 연결 표시가 있어도 응답 없는 공유 서버 조회를 취소한다', async () => {
-  const html = await read('index.html');
 
   let signal;
   const query = {

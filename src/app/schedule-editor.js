@@ -1,4 +1,4 @@
-function createScheduleController({$,$$,TIMETABLE_KINDS,TRIP_DAYS,body,configDateParts,decorateButtonIcons,documentSession,editScheduleClock,escapeHtml,focusAndSelect,hashText,iconSvg,isOperationBusy,openMapDialog,parseTimetableTime,prefersReducedMotion,readScheduleTime,recordHistory,resetInactivityTimer,scheduleClockMask,scheduleClockValue,scheduleKindMode,scheduleTimeValue,selectActiveScheduleRow,showDialog,timetableClock,timetableKind,uid}) {
+function createScheduleController({$,$$,TIMETABLE_KINDS,TRIP_DAYS,body,configDateParts,decorateButtonIcons,documentSession,editScheduleClock,escapeHtml,focusAndSelect,hashText,iconSvg,isOperationBusy,mapPlaceName,openMapDialog,parseTimetableTime,prefersReducedMotion,readScheduleTime,recordHistory,resetInactivityTimer,scheduleClockMask,scheduleClockValue,scheduleKindMode,scheduleTimeValue,selectActiveScheduleRow,showDialog,timetableClock,timetableKind,uid}) {
 let scheduleTimeTarget = null;
   function addTimeRow(){const id=$('.day-radio:checked')?.id||'';if(!/^d\d+$/.test(id))return;openScheduleTimeDialog(null,$('.day'+id.slice(1)));}
   function closeScheduleTimeDialog(){$('#scheduleTimeDialog').hidden=true;scheduleTimeTarget=null;}
@@ -180,12 +180,6 @@ $('#scheduleTimeDialog').addEventListener('keydown',event=>{if(event.key==='Ente
 }
 
 
-function mapPlaceName(anchor) {
-    if(!anchor)return '';
-    const stored=anchor?.dataset.placeName?.trim();
-    if(stored)return stored;
-    const raw=(anchor?.querySelector('.map-link-label')?.textContent||anchor?.textContent||'').replace(/↗/g,'').trim();
-    return raw.replace(/^Google Maps\s*[·-]\s*/i,'').replace(/\s*[·-]\s*Google Maps$/i,'').trim()||'위치';
-  }
-return Object.freeze({mapPlaceName,addTimeRow,closeScheduleTimeDialog,openScheduleTimeDialog,scheduleTimeFormValue,renderScheduleClock,setScheduleClock,changeScheduleClock,undoScheduleClock,initializeScheduleClocks,updateScheduleTimePreview,saveScheduleTime,addScheduleWarning,moveScheduleRow,decorateDates,decorateMapLink,updatePhotoMoveButtons,decoratePhotoFigure,updateScheduleMoveButtons,updateScheduleKindControl,changeScheduleKind,updateEditableEmpty,decorateEditablePlaceholders,decorateScheduleRows,bindScheduleControls});
+
+return Object.freeze({addTimeRow,closeScheduleTimeDialog,openScheduleTimeDialog,scheduleTimeFormValue,renderScheduleClock,setScheduleClock,changeScheduleClock,undoScheduleClock,initializeScheduleClocks,updateScheduleTimePreview,saveScheduleTime,addScheduleWarning,moveScheduleRow,decorateDates,decorateMapLink,updatePhotoMoveButtons,decoratePhotoFigure,updateScheduleMoveButtons,updateScheduleKindControl,changeScheduleKind,updateEditableEmpty,decorateEditablePlaceholders,decorateScheduleRows,bindScheduleControls});
 }
