@@ -83,13 +83,14 @@ async function main(){
   for(const event of ['SIGINT','SIGTERM'])process.once(event,()=>controller.abort());
   const revision=spawnSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}),workingTree=spawnSync('git',['status','--porcelain'],{cwd:root,encoding:'utf8'});
   const source=revision.stdout?.trim()||'unknown',dirty=workingTree.stdout?.trim();
-  console.log(`${suites.length===3?'Full':'PARTIAL'} verification: ${suites.join(', ')}; commit ${source}; ${dirty?'modified working tree (development evidence)':'clean working tree'}`);
-  const report=await verify({suites,prepare:async selected=>{if(revision.status!==0||workingTree.status!==0)throw Error('Cannot establish Git commit/working-tree identity.');return preflight(selected);},signal:controller.signal,execute:async(suite,{npmCli},signal)=>{
+  const treeLabel=workingTree.status===0?(dirty?'modified working tree (development evidence)':'clean working tree'):'working-tree identity unavailable';
+  console.log(`${suites.length===3?'Full':'PARTIAL'} verification: ${suites.join(', ')}; commit ${source}; ${treeLabel}`);
+  const report=await verify({suites,prepare:async selected=>{if(revision.status!==0||workingTree.status!==0)throw Error('Cannot establish Git commit/working-tree identity: '+(revision.stderr||workingTree.stderr||'Git unavailable').trim());return preflight(selected);},signal:controller.signal,execute:async(suite,{npmCli},signal)=>{
     const start=Date.now(),commands=suite==='validate'?[['test']]:suite==='sql'?[['run','test:sql']]:[['run','test:browser:smoke'],['run','test:browser']];
     for(const args of commands){const result=await runCommand(process.execPath,[npmCli,...args],{timeoutMs:suite==='browser'?1200000:240000,signal});if(result.status!=='passed')return {...result,elapsedMs:Date.now()-start};}
     return {status:'passed',elapsedMs:Date.now()-start};
   }});
-  report.source={commit:source,dirty:Boolean(dirty)};
+  report.source={commit:source,dirty:workingTree.status===0?Boolean(dirty):null};
   const output=process.env.TRIP_CHECK_OUTPUT||await mkdtemp(path.join(tmpdir(),'westbound-ci-'));await mkdir(output,{recursive:true});await writeFile(path.join(output,'summary.json'),JSON.stringify(report,null,2));
   const summary=`${report.scope} verification ${report.status}\nCommit: ${source}${dirty?' (modified development files)':''}\n${Object.entries(report.results).map(([name,result])=>`${name}: ${result.status}${result.elapsedMs===undefined?'':` (${(result.elapsedMs/1000).toFixed(1)}s)`}`).join('\n')}\n${report.error||''}\n`;
   console.log(summary);console.log('Summary:',output);if(process.env.GITHUB_STEP_SUMMARY)await (await import('node:fs/promises')).appendFile(process.env.GITHUB_STEP_SUMMARY,'```text\n'+summary+'```\n');
