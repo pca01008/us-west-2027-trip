@@ -1945,7 +1945,7 @@ window.addEventListener('beforeunload',event=>{if(!isDirty()&&!isSaveInFlight()&
 
 function closePreview(){const previous=documentSession.snapshot().previewReturnState;if(previous)applyState(previous);documentSession.leavePreview();body.classList.remove('previewing');updateDirtyState();setStatus(documentSession.snapshot().pendingDraft?'저장 대기 중':'보기 모드');resetInactivityTimer();}
 function enterHistoricalPreview(state){documentSession.enterPreview(captureState());body.classList.add('previewing');setEditingUI(false);applyState(state);}
-function applyImportSnapshot(incoming,baseline,revision,updatedAt){documentSession.adoptImportBaseline(baseline,revision,updatedAt);applyState(incoming);initializeHistory();updateDirtyState();}
+function applyImportSnapshot(incoming,baseline,revision,updatedAt){applyState(incoming);documentSession.adoptImportBaseline(baseline,revision,updatedAt);initializeHistory();updateDirtyState();}
 return Object.freeze({closePreview,enterHistoricalPreview,applyImportSnapshot,writePublicCache,setPublishedBaseline,refreshPublishedState,hydrate,bindDocumentControls});
 }
 
@@ -2363,8 +2363,42 @@ function createDocumentSession({clone, normalize, fingerprint, historyDelay=()=>
 }
 
 /** DOM serialization/repair boundary. Normalization needs an explicit fallback. */
-function createDocumentAdapter({$,$$,DEFAULT_BUDGET_KRW,DEFAULT_EXCHANGE_RATE,IMPORT_ALLOWED_MONEY_IDS,MEDIA_PATH_PATTERN,SCHEMA_VERSION,TIMETABLE_KINDS,SUPABASE_URL,TRIP_ID,afterApply,assertCurrencyPair,assertSupportedSchema,beforeApply,clone,currencyMetadata,drawExpenseInput,entryPending,hashText,normalizeCategories,normalizeExpenses,pendingCheckBefore,readEntryBuffer,readLedger,renderCheckFeedback,renderDocument,replaceLedger,restoreEntryBuffer,scheduleKindMode,sumLedgerAmounts}) {
+function createDocumentAdapter({$,$$,DEFAULT_BUDGET_KRW,DEFAULT_EXCHANGE_RATE,IMPORT_ALLOWED_MONEY_IDS,MEDIA_PATH_PATTERN,SCHEMA_VERSION,TIMETABLE_KINDS,SUPABASE_URL,TRIP_ID,TRIP_DAYS,afterApply,assertCurrencyPair,assertSupportedSchema,beforeApply,clone,currencyMetadata,drawExpenseInput,entryPending,hashText,normalizeCategories,normalizeExpenses,pendingCheckBefore,readEntryBuffer,readLedger,renderCheckFeedback,renderDocument,replaceLedger,restoreEntryBuffer,scheduleKindMode,sumLedgerAmounts}) {
 let applyingHistory=false,moneyTemplateHtml="";
+  function validateDocumentMarkup(markup,{legacy=false,ledger=false}={}) {
+    const template=document.createElement('template');template.innerHTML=markup;
+    const root=template.content,expected=['prepday','moneyday',...TRIP_DAYS.map((_,index)=>'day'+(index+1))];
+    const invalid=()=>{throw new Error('작업본의 필수 화면 구조가 없거나 손상되었습니다. 원본 페이지에서 작업본을 다시 내려받아 주세요.');};
+    const panels=Array.from(root.querySelectorAll('[class]')).filter(el=>el.matches('.panel,.day,.prepday,.moneyday')||Array.from(el.classList).some(name=>/^day\d+$/.test(name)));
+    const seen=new Set();
+    for(const panel of panels){
+      const names=Array.from(panel.classList).filter(name=>expected.includes(name)||/^day\d+$/.test(name));
+      if(panel.parentNode!==root||!panel.matches('section.panel.day')||names.length!==1||!expected.includes(names[0])||seen.has(names[0]))invalid();
+      seen.add(names[0]);
+    }
+    if(!seen.has('prepday')||!seen.has('moneyday')||!Array.from(seen).some(name=>/^day\d+$/.test(name)))invalid();
+    for(const name of expected){
+      if(seen.has(name))continue;
+      // v4 exports could omit unused days. Restore empty shells, never default events.
+      if(!legacy)invalid();
+      const panel=document.createElement('section');panel.className='panel day '+name;
+      panel.innerHTML='<div class="day-head"><h2></h2><p></p></div>';root.appendChild(panel);
+    }
+    const prep=root.querySelector('.prepday');
+    if(prep.querySelectorAll(':scope > .checklist').length!==1)invalid();
+    for(const label of prep.querySelectorAll('.checklist label')){
+      if(label.querySelectorAll('input').length!==1||!label.querySelector('input[type="checkbox"]')||!label.querySelector('span'))invalid();
+    }
+    for(const day of root.querySelectorAll('.day:not(.prepday):not(.moneyday)')){
+      if(day.querySelectorAll(':scope > .day-head').length!==1||!day.querySelector(':scope > .day-head > h2')||!day.querySelector(':scope > .day-head > p'))invalid();
+    }
+    for(const row of root.querySelectorAll('.timeline-row')){
+      if(!row.parentElement?.matches('.day:not(.prepday):not(.moneyday)')||!row.querySelector(':scope > .time')||!row.querySelector(':scope > .card > h3')||!row.querySelector(':scope > .card > .remark'))invalid();
+    }
+    for(const photo of root.querySelectorAll('.schedule-photo'))if(!photo.querySelector('img'))invalid();
+    if(ledger)for(const id of IMPORT_ALLOWED_MONEY_IDS)if(root.querySelectorAll('.moneyday #'+id).length!==1)invalid();
+    return template.innerHTML;
+  }
   function sanitizeMarkup(markup, imported=false) {
     const template=document.createElement('template'); template.innerHTML=markup||'';
     template.content.querySelectorAll('script,style,iframe,object,embed,link,meta,form,.memo,.map,.schedule-media-tools,.photo-actions,.row-actions,.photo-delete,.row-delete,.check-delete,.check-actions,.check-feedback,.warning-delete').forEach(el=>el.remove());
@@ -2414,7 +2448,6 @@ let applyingHistory=false,moneyTemplateHtml="";
           seen.add(id);
         });
       }
-      Array.from(template.content.querySelectorAll('.moneyday')).slice(1).forEach(panel=>panel.remove());
       const seenIds=new Set();
       template.content.querySelectorAll('[id]').forEach(element=>{
         const id=element.id;
@@ -2437,7 +2470,12 @@ let applyingHistory=false,moneyTemplateHtml="";
     return {
       schemaVersion:SCHEMA_VERSION,
       ...currencyMetadata(),
-      html:sanitizeMarkup(raw?.html || fallback?.html || '', imported),
+      html:(()=>{
+        const markup=raw?.html || fallback?.html || '';
+        const prepared=imported?validateDocumentMarkup(markup,{legacy:Number(raw?.schemaVersion||0)<5}):markup;
+        const html=sanitizeMarkup(prepared,imported);
+        return imported?validateDocumentMarkup(html,{ledger:true}):html;
+      })(),
       expenses:(()=>{try{return normalizeExpenses(raw?.expenses,cats,Number.isFinite(rate)&&rate>0?rate:DEFAULT_EXCHANGE_RATE,Number(raw?.schemaVersion)||0);}catch(error){error.code='DOCUMENT_LEDGER';throw error;}})(),
       categories:cats,
       exchangeRate:Number.isFinite(rate)&&rate>0 ? rate : DEFAULT_EXCHANGE_RATE,
@@ -2493,14 +2531,24 @@ function captureState() {
   }
 
 function applyState(raw) {
-    if(!raw?.html)return; const state=normalizeState(raw); applyingHistory=true;
+    if(!raw?.html)return; const state=normalizeState(raw);state.html=validateDocumentMarkup(state.html,{ledger:true});
+    const main=$('main'),previousNodes=Array.from(main.childNodes),previousLedger=clone(readLedger()),previousBuffer=readEntryBuffer();
+    const active=document.activeElement,selection=active instanceof HTMLInputElement?[active.selectionStart,active.selectionEnd]:null;
     const pendingEntry=entryPending()?$$('.add-expense input,.add-expense select').map(input=>({id:input.id,value:input.value})):[];
-    beforeApply();
-    $('main').innerHTML=state.html; replaceLedger(state);
-    renderDocument();
-    pendingEntry.forEach(({id,value})=>{const input=$('#'+id);if(input&&(input.tagName!=='SELECT'||Array.from(input.options).some(option=>option.value===value)))input.value=value;});drawExpenseInput();
-    if(Array.isArray(state.checks))$$('main input[type="checkbox"]').forEach((input,index)=>input.checked=Boolean(state.checks[index]));
-    afterApply();applyingHistory=false;renderCheckFeedback();
+    applyingHistory=true;
+    try{
+      beforeApply();
+      main.innerHTML=state.html;replaceLedger(state);
+      renderDocument();
+      pendingEntry.forEach(({id,value})=>{const input=$('#'+id);if(input&&(input.tagName!=='SELECT'||Array.from(input.options).some(option=>option.value===value)))input.value=value;});drawExpenseInput();
+      if(Array.isArray(state.checks))$$('main input[type="checkbox"]').forEach((input,index)=>input.checked=Boolean(state.checks[index]));
+      afterApply();renderCheckFeedback();
+    }catch(error){
+      // Keep the original nodes and their input values/listeners; recovery must not render again.
+      main.replaceChildren(...previousNodes);replaceLedger(previousLedger);restoreEntryBuffer(previousBuffer);
+      if(active?.isConnected){active.focus({preventScroll:true});if(selection&&selection[0]!==null)active.setSelectionRange(...selection);}
+      throw error;
+    }finally{applyingHistory=false;}
   }
 function applyStatePreservingInputs(state) {
     // Preserve unsubmitted expense entry and keyboard focus across rendering.
@@ -3867,6 +3915,7 @@ MEDIA_PATH_PATTERN:MEDIA_PATH_PATTERN,
 SCHEMA_VERSION:SCHEMA_VERSION,
 SUPABASE_URL:SUPABASE_URL,
 TRIP_ID:TRIP_ID,
+TRIP_DAYS:TRIP_DAYS,
 afterApply:()=>{setEditable(body.classList.contains('editing'));updateContextControls();},
 assertCurrencyPair:(...args)=>assertCurrencyPair(...args),
 assertSupportedSchema:(...args)=>assertSupportedSchema(...args),

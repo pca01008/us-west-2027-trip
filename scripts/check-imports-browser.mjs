@@ -12,7 +12,7 @@ import { readBrowserFixture } from './browser-fixtures.mjs';
 const diagnostics = await createBrowserDiagnostics('imports');
 const { chromium } = await import(process.argv[2] ? pathToFileURL(process.argv[2]).href : 'playwright');
 const root = new URL('../', import.meta.url);
-const source = await readFile(new URL('index.html', root), 'utf8');
+const source = await readFile(process.env.IMPORTS_FIXTURE_HTML || new URL('index.html', root), 'utf8');
 const legacy = JSON.parse(await readFile(new URL('tests/fixtures/import-v4.json', root), 'utf8'));
 let row, saves, reads;
 const stub = `<script>window.supabase={createClient:()=>({
@@ -38,7 +38,7 @@ const server = createServer(async (req, res) => {
     let body=await readBrowserFixture(new URL(file,root));
     if(file==='index.html') body=injectBrowserFixture(source
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/,'')
-      .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/,stub), 'window.__importTest={captureState,normalizeState,migratePublishedState,recordHistory,flushDraftPersistence,readDraftRecord,pending:()=>pendingImportSnapshot()};');
+      .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/,stub), 'window.__importTest={captureState,normalizeState,stateSummary,migratePublishedState,applyImportSnapshot,recordHistory,moveHistory,flushDraftPersistence,readDraftRecord,snapshot:()=>documentSession.snapshot(),isApplying:()=>documentAdapter.isApplying(),pending:()=>pendingImportSnapshot()};');
     if(file==='trip-config.js') body+=`\nwindow.TRIP_CONFIG.supabase={url:'http://127.0.0.1:${server.address().port}',publishableKey:'fixture'};`;
     res.setHeader('Content-Type',file.endsWith('.html')?'text/html; charset=utf-8':file.endsWith('.js')?'text/javascript; charset=utf-8':'image/webp');res.end(body);
   } catch(error) { res.writeHead(500).end(error.message); }
@@ -73,7 +73,7 @@ try {
     });
     const page=await context.newPage();page.setDefaultTimeout(10000);page.on('pageerror',e=>errors.push(e.message));
     await page.goto(origin);await ready(page);
-    row={...row,content:await state(page),revision:3};await page.reload();await ready(page);
+    row={...row,content:{...await state(page),expenses:[{id:'retained-expense',name:'보존할 경비',amountKrw:14500,amountUsd:10,amountSource:'usd',appliedExchangeRate:1450,date:'2027-01-21',categoryId:'food'}]},revision:3};await page.reload();await ready(page);
     const dateBaseline=await state(page),dateServer=structuredClone(row);
     const dateMove=await page.evaluate(state=>{
       const template=document.createElement('template');template.innerHTML=state.html;
@@ -91,7 +91,9 @@ try {
     await page.waitForFunction(()=>document.querySelector('.day1 .timeline-row h3').isContentEditable);
     await page.locator('.day1 .timeline-row h3').first().fill('보존해야 할 기존 초안');
     await page.evaluate(async()=>{window.__importTest.recordHistory();await window.__importTest.flushDraftPersistence();});
-    const before=await state(page),draft=await stored(page),serverBefore=structuredClone(row);
+    let before=await state(page);
+    const draft=await stored(page),serverBefore=structuredClone(row);
+    const sessionBefore=await page.evaluate(()=>window.__importTest.snapshot());
     const rejected=[
       ['other trip',{tripId:'another-trip'},before,/이 여행/],
       ['not offline',{offline:'false'},before,/이 여행/],
@@ -111,10 +113,37 @@ try {
       ['damaged dual amount',{}, {...before,expenses:[{id:'bad',amountKrw:14000,amountUsd:null,amountSource:'usd',appliedExchangeRate:1400}]},/복구/],
       ['damaged legacy amount',{}, {...before,schemaVersion:5,expenses:[{id:'bad',amount:'Infinity',currency:'USD'}]},/복구/]
     ];
+    const malformed=await page.evaluate(raw=>{
+      const mutations=[
+        ['missing ledger',t=>t.content.querySelector('.moneyday').remove()],
+        ['missing PREP',t=>t.content.querySelector('.prepday').remove()],
+        ['missing day',t=>t.content.querySelector('.day2').remove()],
+        ['duplicate day',t=>t.content.append(t.content.querySelector('.day2').cloneNode(true))],
+        ['duplicate ledger',t=>t.content.append(t.content.querySelector('.moneyday').cloneNode(true))],
+        ['wrong day class',t=>t.content.querySelector('.day2').classList.replace('day2','day99')],
+        ['conflicting day classes',t=>t.content.querySelector('.day2').classList.add('day3')],
+        ['missing panel class',t=>t.content.querySelector('.day2').classList.remove('panel')],
+        ['nested day',t=>t.content.querySelector('.day1').append(t.content.querySelector('.day2'))],
+        ['missing day heading',t=>t.content.querySelector('.day2 .day-head h2').remove()],
+        ['missing day subtitle',t=>t.content.querySelector('.day2 .day-head p').remove()],
+        ['missing checklist',t=>t.content.querySelector('.prepday .checklist').remove()],
+        ['missing checkbox',t=>t.content.querySelector('.prepday .checklist label input').remove()],
+        ['missing time',t=>t.content.querySelector('.day1 .timeline-row .time').remove()],
+        ['missing card',t=>t.content.querySelector('.day1 .timeline-row .card').remove()],
+        ['missing title',t=>t.content.querySelector('.day1 .timeline-row h3').remove()],
+        ['missing remark',t=>t.content.querySelector('.day1 .timeline-row .remark').remove()],
+        ['missing photo image',t=>t.content.querySelector('.schedule-photo img').remove()]
+      ];
+      return mutations.map(([name,mutate])=>{const t=document.createElement('template');t.innerHTML=raw.html;mutate(t);return [name,{...raw,html:t.innerHTML}];});
+    },before);
+    rejected.push(['paragraph only',{}, {...before,html:'<p>Incomplete document</p>'},/필수 화면 구조/]);
+    rejected.push(...malformed.map(([name,incoming])=>[name,{},incoming,/필수 화면 구조/]));
     for(const [name,options,incoming,message] of rejected) {
       diagnostics.scenario(`reject ${name} / ${mobile ? 'mobile' : 'desktop'}`);
       const previousReads=reads;
-      await upload(page,incoming,options);await page.locator('#noticeDialog').waitFor({state:'visible'});
+      await upload(page,incoming,options);
+      await Promise.race([page.locator('#noticeDialog').waitFor({state:'visible'}),page.locator('#importDialog').waitFor({state:'visible'})]);
+      assert.equal(await page.locator('#noticeDialog').isVisible(),true,name+' must be rejected before comparison');
       assert.equal(await page.locator('#noticeTitle').textContent(),'작업본을 불러올 수 없습니다.',name);
       if(message)assert.match(await page.locator('#noticeDialog').textContent(),message,name);
       await page.getByRole('button',{name:'확인',exact:true}).click();
@@ -122,9 +151,64 @@ try {
       assert.equal(await page.locator('#importDialog').isVisible(),false,name);
       assert.deepEqual(await state(page),before,name+' preserves visible state');
       assert.deepEqual(await stored(page),draft,name+' preserves IndexedDB draft');
+      assert.deepEqual(await page.evaluate(()=>window.__importTest.snapshot()),sessionBefore,name+' preserves baseline and history');
+      assert.equal(await page.evaluate(()=>window.__importTest.isApplying()),false,name+' leaves editing available');
       assert.deepEqual(row,serverBefore);assert.equal(saves,0);assert.equal(reads,previousReads,name+' rejected before remote comparison');
     }
     console.log(`Imports (${mobile?'mobile':'desktop'}): ${rejected.length} invalid files rejected; draft retained.`);
+
+    const applyError=await page.evaluate(state=>{
+      try{window.__importTest.applyImportSnapshot({...state,html:'<p>Invalid at application boundary</p>'},state,99,'bad time');}
+      catch(error){return error.message;}
+    },before);
+    assert.match(applyError,/필수 화면 구조/,'Application revalidates even if file validation is bypassed');
+    assert.deepEqual(await state(page),before);
+    assert.deepEqual(await stored(page),draft);
+    assert.deepEqual(await page.evaluate(()=>window.__importTest.snapshot()),sessionBefore);
+    assert.equal(await page.evaluate(()=>window.__importTest.isApplying()),false);
+
+    diagnostics.scenario(`render failure rollback and retry / ${mobile ? 'mobile' : 'desktop'}`);
+    const renderFailure={...before,html:before.html.replace('보존해야 할 기존 초안','렌더링 실패 시험'),expenses:[],exchangeRate:1600};
+    await upload(page,renderFailure);await page.locator('#importDialog').waitFor({state:'visible'});
+    await page.evaluate(()=>{
+      document.querySelector('#expenseName').value='아직 추가하지 않은 항목';
+      document.querySelector('#expenseKrw').value='2500';
+      document.querySelector('#expenseKrw').dispatchEvent(new Event('input',{bubbles:true}));
+      window.__retainedMainNodes=Array.from(document.querySelector('main').childNodes);
+      const descriptor=Object.getOwnPropertyDescriptor(Node.prototype,'textContent');
+      Object.defineProperty(Node.prototype,'textContent',{...descriptor,set(value){
+        if(this.id==='totalKrw'){Object.defineProperty(Node.prototype,'textContent',descriptor);throw new Error('Forced import render failure');}
+        descriptor.set.call(this,value);
+      }});
+    });
+    await page.locator('#importApply').click();await page.locator('#noticeDialog').waitFor({state:'visible'});
+    assert.equal(await page.locator('#noticeTitle').textContent(),'편집본 적용 실패');
+    assert.match(await page.locator('#noticeDialog').textContent(),/Forced import render failure/,'The fault must occur during rendering');
+    await page.getByRole('button',{name:'확인',exact:true}).click();
+    assert.deepEqual(await state(page),before,'Render failure restores document and ledger');
+    assert.deepEqual(await stored(page),draft,'Render failure retains the stored draft');
+    assert.deepEqual(await page.evaluate(()=>window.__importTest.snapshot()),sessionBefore,'Render failure retains baseline, revision, dirty state and history');
+    assert.equal(await page.evaluate(()=>window.__importTest.isApplying()),false);
+    assert.equal(await page.evaluate(()=>window.__retainedMainNodes.every((node,index)=>document.querySelector('main').childNodes[index]===node)),true,'Rollback restores original nodes');
+    assert.equal(await page.locator('#expenseName').inputValue(),'아직 추가하지 않은 항목');
+    assert.equal(await page.locator('#expenseKrw').inputValue(),'2500');
+    assert.deepEqual(row,serverBefore);assert.equal(saves,0);
+    await page.locator('#importCancel').click();
+    await page.evaluate(()=>window.__importTest.moveHistory(-1));
+    assert.match((await state(page)).html,/일정 1-1/,'Undo still works after rejection');
+    await page.evaluate(()=>window.__importTest.moveHistory(1));
+    assert.deepEqual(await state(page),before,'Redo recovers the retained draft');
+    await page.evaluate(async()=>{document.querySelector('#expenseName').value='';document.querySelector('#expenseKrw').value='';document.querySelector('#expenseKrw').dispatchEvent(new Event('input',{bubbles:true}));await window.__importTest.flushDraftPersistence();});
+    // Retry the same file after the fault is gone, then recover the prior draft through import.
+    await upload(page,renderFailure);await page.locator('#importDialog').waitFor({state:'visible'});await apply(page);
+    assert.match((await state(page)).html,/렌더링 실패 시험/);
+    await upload(page,before);await page.locator('#importDialog').waitFor({state:'visible'});await apply(page);
+    const recovered=await state(page);
+    const summaries=await page.evaluate(({a,b})=>[window.__importTest.stateSummary(a),window.__importTest.stateSummary(b)],{a:recovered,b:before});
+    assert.deepEqual(summaries[0],summaries[1],'A valid import recovers the same content after rollback');
+    assert.deepEqual({...recovered,html:''},{...before,html:''},'A valid import recovers the same ledger and checks');
+    before=recovered;
+    const retainedDraft=await stored(page);
 
     diagnostics.scenario(`sanitize unsafe import / ${mobile ? 'mobile' : 'desktop'}`);
     const hostile=await page.evaluate(()=>{
@@ -140,12 +224,13 @@ try {
         <a class="safe-link" href="https://example.com/travel">정상 링크</a><a class="bad-link" href="javascript:window.__importExecuted=true">위험 링크</a><a class="bad-link" href="data:text/html,bad">데이터 링크</a>
         <img class="bad-image" src="javascript:window.__importExecuted=true" onerror="window.__importExecuted=true" data-full-url="javascript:window.__importExecuted=true">
         <div class="schedule-photos"><figure class="schedule-photo" data-photo-id="duplicate-photo"><img src="${photo}" srcset="https://invalid.example/import-probe-srcset 1x" data-full-url="${photo}" alt="정상 사진"><figcaption>사진 하나</figcaption></figure><figure class="schedule-photo" data-photo-id="duplicate-photo" data-full-path="../bad" data-thumb-path="../bad"><img src="${photo}" data-full-url="${photo}" alt="두 번째 사진"><figcaption>사진 둘</figcaption></figure></div></div>`);
+      t.content.querySelector('.moneyday').replaceChildren();
       raw.schemaVersion=5;raw.html=t.innerHTML;raw.exchangeRate='not-a-number';raw.budgetKrw=-1;
       raw.expenses=[{id:'duplicate-expense',name:'정상 지출',amount:'12.5',currency:'USD'},{id:'duplicate-expense',name:'기존 지출',amount:'1',currency:'INVALID',date:'bad'}];
       return raw;
     });
     await upload(page,hostile);await page.locator('#importDialog').waitFor({state:'visible'});
-    assert.deepEqual(await state(page),before,'Comparison must not apply anything');assert.deepEqual(await stored(page),draft);
+    assert.deepEqual(await state(page),before,'Comparison must not apply anything');assert.deepEqual(await stored(page),retainedDraft);
     const previewIds=await page.evaluate(()=>{
       const t=document.createElement('template');t.innerHTML=window.__importTest.pending().state.html;
       return ['row','check','photo'].map(kind=>Array.from(t.content.querySelectorAll('[data-'+kind+'-id]')).map(el=>el.getAttribute('data-'+kind+'-id')));
@@ -197,6 +282,8 @@ try {
     assert.deepEqual(identities(old.html),identities(expected.html),'Import must use deterministic legacy IDs');
     for(const [kind,id] of [['row','kept-row'],['check','kept-check'],['photo','kept-photo']])assert.ok(identities(old.html).some(pair=>pair[0]===kind&&pair[1]===id),'Preserve existing '+kind+' ID');
     assert.deepEqual(old.checks,[true,false]);assert.deepEqual(old.expenses,expected.expenses);
+    assert.equal(await page.locator('main .panel.day').count(),13,'Legacy omitted days receive empty usable shells');
+    assert.equal(await page.locator('.day2 .timeline-row').count(),0,'Legacy repair must not invent default events');
     assert.deepEqual(old.expenses,[{id:'kept-expense',name:'예약금',amountKrw:35700,amountUsd:25.5,amountSource:'usd',appliedExchangeRate:1400,date:'2027-01-21',categoryId:'food'}]);
     for(const text of ['직접 수정한 여행 설명','직접 추가한 아침 일정','구버전 메모 보존','식당 예약','창가 자리','여권 확인','충전기 챙기기','사진 설명 보존'])assert.ok(old.html.includes(text),text);
     await upload(page,{...legacy,schemaVersion:undefined},{version:4});await page.locator('#importDialog').waitFor({state:'visible'});await apply(page);

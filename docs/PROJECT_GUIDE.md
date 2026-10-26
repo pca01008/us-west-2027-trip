@@ -347,9 +347,13 @@ Offline working copies embed configuration, state JSON, and photos, remove Supab
 
 Print/share exports remove editing/server code, tools/dialogs, navigation/date/theme/CSV controls, disable inputs, and show all panels with a photo-viewing runtime. Photos embed when possible; remaining photos/maps need internet. Theme is light. Editable exports retain theme functionality/deployment path without the author's choice.
 
-Imports validate trip ID, offline marker, supported positive-integer file/data versions, and nonempty HTML; legacy data without a version uses the file version. Sanitized differences cover itinerary, PREP, ledger, categories, and rates against latest public state. Recheck immediately before apply; changed revisions require recomparison. Application creates only a draft; final save converts/uploads photos and publishes.
+Imports validate trip ID, offline marker, supported positive-integer file/data versions, nonempty HTML, and usable panel/control structure in a detached document before comparison. Each configured day, PREP, and ledger must occur once with the correct classes; required checklist, row, and photo elements must exist. The ledger UI is rebuilt from the current template. Pre-v5 exports may omit unused days; restore empty day shells without adding default events. Legacy data without a version uses the file version.
+
+Sanitized differences cover itinerary, PREP, ledger, categories, and rates against latest public state. Recheck immediately before apply; changed revisions require recomparison. Adopt the compared baseline only after rendering succeeds. Unexpected application failures restore the original DOM nodes, ledger, and expense input buffer; the applying flag always clears. Rejection leaves history and stored drafts unchanged. Application creates only a draft; final save converts/uploads photos and publishes.
 
 `migratePublishedState()` preserves old content/checks/IDs and supplies stable legacy IDs when absent. Invalid files are rejected before changing current UI/drafts.
+
+See the [F2 implementation and regression record](archive/2026-10-26-import-structure-f2.md) for the structure/rollback checks.
 
 <a id="sql-basics"></a>
 
