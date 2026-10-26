@@ -1,7 +1,9 @@
 # Modularization review and implementation plan
 
 Review date: October 26, 2026. Baseline: `de00d47` on `codex/modularize-travel-app`.
-Status: proposal only; no application refactor is implemented by this document.
+Status: stages 0–6 implemented, including Stop A/B reviews. See the [staged implementation and verification record](archive/2026-10-26-modularization-implementation.md); final delivery checks are recorded there. CSS layers/order/values were retained after Stop B.
+
+The review below preserves the original rationale and acceptance gates. Reviewed source links point to the baseline snapshot; [PROJECT_GUIDE.md](PROJECT_GUIDE.md#source-modules) owns the current module map.
 
 ## 1. Recommendation
 
@@ -36,7 +38,7 @@ Success does not require eliminating every shared helper or adding a formal arch
 ### 3.1 Existing strengths to retain
 
 - [build-app.mjs](../scripts/build-app.mjs) is a small Node-built-in assembler. It expands includes, rejects path escapes and cycles, normalizes LF, and checks generated freshness.
-- [app.js](../src/app.js) and [styles.css](../src/styles.css) provide visible assembly order. Browser deployment does not need a runtime module loader.
+- [app.js](https://github.com/pca01008/us-west-2027-trip/blob/de00d47/src/app.js) and [styles.css](https://github.com/pca01008/us-west-2027-trip/blob/de00d47/src/styles.css) provide visible assembly order. Browser deployment does not need a runtime module loader.
 - Current settings and initial itinerary are already separated in `src/trip/`.
 - Palette roles already have a source of truth in `src/styles/palette.css`.
 - Synthetic browser fixtures and diagnostics already exist. The runner currently lists 16 suites; that is an inventory, not a claim that they ran for this review.
@@ -49,15 +51,15 @@ At the reviewed commit, `src/app/` contains 23 JavaScript files totaling 232,521
 
 | Source | Size / lines at baseline | Mixed responsibilities or hidden dependency |
 |---|---:|---|
-| [runtime.js](../src/app/runtime.js) | 8,282 bytes / 139 lines | Configuration-derived constants, client creation, DOM references, icons, document state, feature state, queues and timers |
-| [startup.js](../src/app/startup.js) | 23,578 / 173 | Hydration, recovery, Realtime, auth events, page lifecycle, global event dispatch and feature-specific handlers |
-| [checklist-schedule.js](../src/app/checklist-schedule.js) | 25,987 / 279 | PREP patch saving, list editing, ledger input preservation, schedule/photo/map decoration |
-| [auth-dialogs.js](../src/app/auth-dialogs.js) | 12,549 / 65 | Generic dialogs, focus management, session timers, logout/discard flows and published-document reads |
-| [versions.js](../src/app/versions.js) | 21,315 / 126 | DOM summaries, comparison logic, imports, save/reset confirmation, history requests and preview lifecycle |
-| [timetable.js](../src/app/timetable.js) | 21,546 / 217 | Pure time/layout logic, DOM extraction, rendering and event initialization |
-| [ledger.js](../src/app/ledger.js) | 8,792 / 114 | Exact arithmetic, expense normalization, input models and DOM updates |
-| [drafts.js](../src/app/drafts.js) | 13,372 / 219 | IndexedDB, Web Locks, checkpoints, cache migration, published baseline and draft scheduling |
-| [index.html source](../src/index.html) | 22,581 / 118 | Shell, many dialogs, ledger template and script/style placement |
+| [runtime.js](https://github.com/pca01008/us-west-2027-trip/blob/de00d47/src/app/runtime.js) | 8,282 bytes / 139 lines | Configuration-derived constants, client creation, DOM references, icons, document state, feature state, queues and timers |
+| [startup.js](https://github.com/pca01008/us-west-2027-trip/blob/de00d47/src/app/startup.js) | 23,578 / 173 | Hydration, recovery, Realtime, auth events, page lifecycle, global event dispatch and feature-specific handlers |
+| [checklist-schedule.js](https://github.com/pca01008/us-west-2027-trip/blob/de00d47/src/app/checklist-schedule.js) | 25,987 / 279 | PREP patch saving, list editing, ledger input preservation, schedule/photo/map decoration |
+| [auth-dialogs.js](https://github.com/pca01008/us-west-2027-trip/blob/de00d47/src/app/auth-dialogs.js) | 12,549 / 65 | Generic dialogs, focus management, session timers, logout/discard flows and published-document reads |
+| [versions.js](https://github.com/pca01008/us-west-2027-trip/blob/de00d47/src/app/versions.js) | 21,315 / 126 | DOM summaries, comparison logic, imports, save/reset confirmation, history requests and preview lifecycle |
+| [timetable.js](https://github.com/pca01008/us-west-2027-trip/blob/de00d47/src/app/timetable.js) | 21,546 / 217 | Pure time/layout logic, DOM extraction, rendering and event initialization |
+| [ledger.js](https://github.com/pca01008/us-west-2027-trip/blob/de00d47/src/app/ledger.js) | 8,792 / 114 | Exact arithmetic, expense normalization, input models and DOM updates |
+| [drafts.js](https://github.com/pca01008/us-west-2027-trip/blob/de00d47/src/app/drafts.js) | 13,372 / 219 | IndexedDB, Web Locks, checkpoints, cache migration, published baseline and draft scheduling |
+| [index.html source](https://github.com/pca01008/us-west-2027-trip/blob/de00d47/src/index.html) | 22,581 / 118 | Shell, many dialogs, ledger template and script/style placement |
 
 Sizes include the checked-out file's encoding and line endings. The purpose is to expose dense responsibility clusters; no target byte or line limit is proposed.
 
@@ -410,9 +412,9 @@ For a later full ownership refactor (stages 3–5):
 
 The optional HTML/CSS stage has its own parity gate and is not a prerequisite for those outcomes.
 
-## 12. Documentation and validation for this review
+## 12. Original documentation-only review scope
 
-This task changes planning/navigation documentation only. It does not implement the modules above, modify generated app files, publish a site, or change server/user data.
+The initial review changed planning/navigation documentation only. Its original scope and evidence below remain historical; the subsequent implementation is recorded separately in the linked staged record.
 
 Documentation handling:
 

@@ -1,0 +1,34 @@
+<template id="moneyPanelTemplate">
+  <section class="panel day moneyday">
+    <div class="day-head"><h2>가계부</h2><p>여행 경비 기록</p></div>
+    <div class="expense-entry">
+      <div class="expense-entry-head"><strong>경비 추가</strong></div>
+      <div class="add-expense">
+        <label><span>날짜</span><input id="expenseDate" type="date"></label>
+        <label class="expense-category"><span>카테고리</span><select id="expenseCategory"></select></label>
+        <label class="expense-name"><span>항목</span><input id="expenseName" maxlength="80" placeholder="예: 교통비" type="text"></label>
+        <label class="" for="expenseKrw"><span>원화 (KRW)</span><input id="expenseKrw" inputmode="decimal" placeholder="0" type="text" aria-describedby="expenseKrwHint"><small class="amount-hint" id="expenseKrwHint"></small></label>
+        <label class="" for="expenseUsd"><span>달러 (USD)</span><input id="expenseUsd" inputmode="decimal" placeholder="0" type="text" aria-describedby="expenseUsdHint"><small class="amount-hint" id="expenseUsdHint"></small></label>
+        <button class="btn" data-icon="plus" id="addExpense" type="button">경비 추가</button>
+      </div>
+    </div>
+    <div class="exchange-rate">
+      <div class="exchange-rate-heading"><span class="exchange-rate-icon" aria-hidden="true">↔</span><div><strong>적용 환율</strong></div></div>
+      <label class="exchange-rate-control"><span>1 USD</span><b>=</b><input aria-label="1 USD 기준 원화 환율" id="exchangeRate" inputmode="decimal" type="text" value=""><span>KRW</span></label>
+      <span class="exchange-rate-updated" id="exchangeRateUpdated">수동 환율</span>
+    </div>
+    <div class="money-totals">
+      <div class="money-total"><small>원화 합계</small><strong id="totalKrw">₩0</strong></div>
+      <div class="money-total"><small>달러 합계</small><strong id="totalUsd">$0.00</strong></div>
+    </div>
+    <div class="category-summary" id="categorySummary"></div>
+    <div class="category-manager edit-only mode-only">
+      <div class="category-manager-head"><strong>가계부 카테고리</strong><button class="btn" data-icon="plus" id="addCategoryBtn" type="button">카테고리 추가</button></div>
+      <div class="category-manager-list" id="categoryManagerList"></div>
+    </div>
+    <div class="expenses-section">
+      <div class="expenses-head"><strong>지출 내역</strong><button class="action-muted" data-icon="export" id="expenseCsvExport" type="button">CSV 내보내기</button></div>
+      <div class="expenses" id="expenses"></div>
+    </div>
+  </section>
+</template>

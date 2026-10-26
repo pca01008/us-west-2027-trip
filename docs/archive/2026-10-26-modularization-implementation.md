@@ -67,3 +67,11 @@ Plain-summary comparison is independent of DOM projection. Import/version contro
 Exit: all 131 unit tests and all 16 browser suites passed, including downloaded editable/read-only artifacts, encoding fallbacks, cancellation, response-loss and version races. One existing local HTTP health test failed transiently; an unchanged full rerun passed 131/131, including the real production-deadline test. Build/project/whitespace checks passed.
 
 Stop B review: no CSS cascade change is justified by the current two-user maintenance needs. Stage 6 groups coherent static HTML, documents existing CSS ownership and removes the misleading historical command; selectors/layers/order/values remain intact.
+
+## Stage 6 — static organization
+
+Grouped dialogs, ledger template and timetable markup under `src/html/` using existing includes. The entire generated HTML is byte-identical to the stage-5 artifact. Removed the historical `styles:consolidate` shortcut and documented current CSS ownership without changing selectors/layers/order/values.
+
+Exit: 36 focused unit checks, palette/theme/inputs/navigation/ledger browser checks passed. Against baseline `de00d47`, all 24 palette scenarios have identical computed styles and PNG bytes (mobile/desktop, light/dark, itinerary/PREP/ledger/timetable/print). Build/project/whitespace checks passed.
+
+Current docs: source map/contracts and CSS ownership in Project Guide, fixture/build command changes in Operations, plan/navigation status updated. User Guide needs no behavior revision. Reviewed source links retain baseline snapshots; no docs were moved/deleted, and existing `src`/`docs` Pages exclusions remain sufficient.

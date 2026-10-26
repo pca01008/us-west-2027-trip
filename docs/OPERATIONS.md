@@ -123,7 +123,7 @@ Without PostgreSQL, dispatch `.github/workflows/validate.yml` on the work branch
 
 Edit `src/` using the [source map](PROJECT_GUIDE.md#source-modules), then run `npm run build`. Commit source and generated `index.html`/`trip-config.js` together. `npm run build:check`, `npm run check`, and `npm test` reject stale output. Pages serves the committed output directly and excludes `src/`; it does not rebuild it. No watch server or new dependencies are required. Keep include order unless changing initialization intentionally.
 
-`trip-config.template.js` is the reusable template, not the current generated configuration. `styles:consolidate` is a historical one-time utility, not the editing workflow.
+`trip-config.template.js` is the reusable template, not the current generated configuration. The historical `styles:consolidate` shortcut was removed because it targets generated HTML. Edit `src/styles/` and rebuild; do not run the old one-time utility.
 
 ### Save/permission SQL execution
 
@@ -190,7 +190,7 @@ Imports use [schema-4 fixture](../tests/fixtures/import-v4.json)/actual file inp
 
 Photo transport tests in `tests/photos.test.mjs`/draft browser tests stall auth/HEAD/upload/download/body, verify duplicate responses, real timeout/cancel disconnection, no public save, retained drafts, busy cleanup/retry, print URL fallback/cancel preventing download. Limits are shortened only in tests; no production calls.
 
-Actions jobs: unit/static Node 24; SQL Node 24/PostgreSQL 17; browser Node 22. SQL uses disposable service/locked dependencies. Browser installs locked packages/Chromium and retains `${runner.temp}/westbound-*/` as `browser-diagnostics` for seven days on failure. Run `npm run styles:consolidate` only for CSS consolidation.
+Actions jobs: unit/static Node 24; SQL Node 24/PostgreSQL 17; browser Node 22. SQL uses disposable service/locked dependencies. Browser installs locked packages/Chromium and retains `${runner.temp}/westbound-*/` as `browser-diagnostics` for seven days on failure.
 
 [Diagnostics](../scripts/browser-diagnostics.mjs) saves per-tab PNG, per-context trace ZIP, failure.json before browser close in OS temp `westbound-<check>-diagnostics-*`. JSON includes scenario/error/progress/latest 1, 000 console/page/request/HTTP 4xx/5xx events, including deliberately injected failures. Partial capture errors are recorded without losing others; successful traces are discarded; self-tests use `westbound-diagnostics-self-test-*`.
 

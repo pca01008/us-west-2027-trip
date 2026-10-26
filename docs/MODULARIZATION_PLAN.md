@@ -1,6 +1,6 @@
 # Modularization plan — October 25, 2026
 
-This extraction is complete. See the [October 26 review and implementation plan](MODULARIZATION_REVIEW_PLAN.md) for the proposed next stage of dependency and state isolation; it is not yet implemented.
+This extraction is complete. The [October 26 ownership refactor](MODULARIZATION_REVIEW_PLAN.md) is implemented separately; see its [staged verification record](archive/2026-10-26-modularization-implementation.md).
 
 ## Goal and constraints
 
