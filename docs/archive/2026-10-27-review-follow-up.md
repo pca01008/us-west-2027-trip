@@ -83,3 +83,17 @@ The pinned image pulled in 27 seconds on [40378846828](https://github.com/pca010
 Resume candidate `60ff077` established a clean source identity on [40415487651](https://github.com/pca01008/us-west-2027-trip/actions/runs/40415487651). Unit 185/SQL 24 passed; the clean Windows checkout also passed all 185 checks (24.3s). Browser preflight rejected unusable Firefox before any suite; aggregate failed and publication stayed skipped. Browser setup errors now retain executable location and original launch diagnostics to distinguish missing binaries from runtime configuration.
 
 Diagnostic run [40415909457](https://github.com/pca01008/us-west-2027-trip/actions/runs/40415909457), `563e9ef`, again passed unit/SQL and retained failed-browser artifacts. Firefox reported that root cannot use `/github/home`, owned by `pwuser`. Browser commands and their exact-path Git trust now use the existing root-owned `/root` home; no user/ownership/ACL changes or sandbox-disable flags were added.
+
+## Stage commits
+
+| Stage | Commit | Result |
+|---|---|---|
+| U2 | `061584d`, integrated by `da0efe0` | Preserve existing rate validation and regressions; initial duplicate `36411f4` superseded |
+| U3 | `7f569c9` | Readable ledger values/labels, responsive regression coverage |
+| T1 | `56b6e8f` | Reuse operation-boundary fixes/tests; fill photo-validation gaps |
+| T2 | `02f35df` | Computed type/contrast and representative states |
+| T3 | `abc3003` through `2eb1ad8` | Shared validation, artifact/publication gate and measured CI setup fixes |
+
+Schema 6/KRW/USD and production data are preserved. No production SQL, authenticated save, photo upload or trip-content mutation was performed. Pre-existing Cloud-guide work stays uncommitted in the original workspace.
+
+Candidate `2eb1ad8`, [40416203626](https://github.com/pca01008/us-west-2027-trip/actions/runs/40416203626): unit185/SQL24 and Firefox/WebKit functional suites passed. Every Chromium suite then failed with immediate renderer crashes (including the synthetic diagnostics fixture); this is not a full browser pass. Artifacts survived. The clean Windows candidate passed185 (24.0s). Preflight now renders/captures a trivial page, and a temporary Chromium process-log probe runs before expensive suites to diagnose the container failure.

@@ -60,7 +60,7 @@ async function preflight(suites) {
   if(suites.includes('browser')){
     const playwright=await import('playwright');versions.browsers={};
     for(const name of ['chromium','firefox','webkit']){
-      try{await access(playwright[name].executablePath());const browser=await playwright[name].launch({headless:true});try{versions.browsers[name]=browser.version();}finally{await browser.close();}}
+      try{await access(playwright[name].executablePath());const browser=await playwright[name].launch({headless:true});try{const page=await browser.newPage();await page.setContent('<!doctype html><title>Browser preflight</title><p>Render probe</p>',{timeout:10000});await page.screenshot({timeout:10000});versions.browsers[name]=browser.version();}finally{await browser.close();}}
       catch(error){throw Error(`Missing/unusable pinned ${name} at ${playwright[name].executablePath()}; install the pinned browsers or align the CI image with package-lock.json. ${error.message}`);}
     }
   }

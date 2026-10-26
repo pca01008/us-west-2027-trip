@@ -104,6 +104,11 @@ jobs:
           node-version-file: .node-version
           cache: npm
       - run: npm ci
+      - name: Diagnose Chromium container rendering
+        run: node --input-type=module -e 'import {chromium} from "playwright"; const b=await chromium.launch(); try {const p=await b.newPage(); await p.setContent("<p>Render probe</p>"); await p.screenshot({timeout:10000});} finally {await b.close();}'
+        env:
+          HOME: /root
+          DEBUG: pw:browser
       - run: npm run test:ci -- --suite=browser
         env:
           HOME: /root
