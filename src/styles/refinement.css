@@ -48,6 +48,8 @@
   .expense-entry #addExpense{margin-top:25px}
   .amount-hint{display:block;font-size:12px;line-height:1.5;color:var(--muted);overflow-wrap:anywhere}
   .amount-error{color:var(--red)}
+  .field-error{color:var(--red);font-size:12px;line-height:1.5;font-weight:600}
+  .field-error[hidden]{display:none}
   .money-totals{grid-template-columns:repeat(2,minmax(0,1fr))}
   .expense-amount{white-space:normal;overflow-wrap:anywhere}
   .ledger-amount{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}

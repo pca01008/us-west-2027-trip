@@ -77,7 +77,7 @@ Draft-storage failure means recent edits may exist only in the current tab. Save
 
 ## Photos and maps
 
-- Maps store a place name and external URL. Links remain visible offline; opening them needs internet.
+- Maps store a place name and HTTPS URL. Missing names or invalid links show an error beside the input and focus the field. Links remain visible offline; opening them needs internet.
 - Photo count is unlimited. New photos stay in drafts until final save. Uploads use WebP at up to 1600px full size/480px thumbnails, with JPEG fallback if WebP encoding is unsupported. Compressed files must be at most 5MB; thumbnails load lazily. Select original files up to 20MB each.
 - Existence checks time out after 10 seconds; uploads/export downloads after 60 seconds per request. Cancel operation aborts photo requests. Failure/cancellation preserves the draft. Offline export fails if required photos cannot download; print/share falls back to their online URLs.
 - Document deletion does not immediately delete stored photo files, allowing earlier-version restoration.
@@ -91,7 +91,7 @@ The current trip uses KRW/USD. Other trips may show a different configured pair;
 - Clear one manual amount to calculate from the remaining value. Clearing an automatic pair's source clears both; clearing only its result restores the calculation.
 - Manual amounts must be positive. Calculated results may round to zero. Correct invalid input before adding.
 - Remote saving, app resume, and reconnection preserve unadded input/cursor position. Deleted categories fall back to available ones. Input has no draft protection until Add.
-- Ledger settings manages the manual rate and categories. Category deletion moves its expenses to Deleted category.
+- Ledger settings manages the manual rate and categories. Category deletion moves its expenses to Deleted category. Empty category names or expense descriptions in editing dialogs show an error beside the input; correct the field and apply again.
 - KRW totals sum every expense's KRW amount; USD totals sum every USD amount. These express the same spending; do not add them together. Category totals follow the same rule. KRW totals no longer count only original KRW entries. Budget controls and expense filters are absent.
 - Expense rows and category totals display KRW (USD), with the second amount in teal. Currency symbols and parentheses distinguish the amounts in both themes and print; automatic-calculation labels remain beside the relevant amount.
 - CSV exports all entries, including unsaved changes, in screen order. Columns: date, description, category, KRW amount, USD amount, calculated currency, applied exchange rate. The last two are empty for manual pairs. Empty ledgers export headers only.

@@ -271,6 +271,8 @@ Timetable is a read-only projection. Start-only events have no inferred end; exp
 
 `showDialog()` records the active trigger before showing or focusing a modal. The dialog stack traps Tab and closes its top entry on Escape. Closing restores the trigger; ID/action selectors resolve replacement expense/category/time/photo controls after rendering. A child returns focus within its remaining parent. Hidden, unregistered dialogs do not steal focus. Modal openings use this helper; the mutation observer handles closes.
 
+Category name, edited expense name and map inputs use local `role="alert"` errors with `aria-describedby` and `aria-invalid`. Invalid submission focuses the first invalid field; input and reopening clear stale errors through `setFieldError()`.
+
 <a id="media"></a>
 
 ## Photos and maps

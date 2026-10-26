@@ -103,6 +103,13 @@ try {
     const page=await context.newPage();page.setDefaultTimeout(5000);page.on('pageerror',error=>errors.push(error.message));
     await page.goto(origin);await page.waitForFunction(()=>!document.body.classList.contains('hydrating'));
     const focused=async locator=>assert.equal(await locator.evaluate(el=>el===document.activeElement),true,'Focus returns to the current trigger');
+    const fieldError=async(id,dialog)=>{
+      const input=page.locator('#'+id),error=page.locator('#'+id+'Error');
+      await focused(input);assert.equal(await input.getAttribute('aria-invalid'),'true');
+      assert.equal(await input.getAttribute('aria-describedby'),id+'Error');assert.equal(await error.isVisible(),true);
+      assert.ok((await error.textContent()).trim());
+      assert.equal(await error.evaluate((el,dialog)=>{const r=el.getBoundingClientRect();return !!el.closest(dialog)&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight;},dialog),true,'Visible error stays inside the active dialog and viewport');
+    };
     const open=async(trigger,dialog,initial)=>{
       await trigger.focus();await page.keyboard.press('Enter');await page.locator(dialog).waitFor({state:'visible'});await focused(page.locator(initial));
       const buttons=page.locator(dialog).locator('button:visible:not([disabled]),input:visible:not([disabled]),select:visible:not([disabled]),textarea:visible:not([disabled]),a[href]:visible');
@@ -116,6 +123,8 @@ try {
       if(close==='Escape')await page.keyboard.press(close);else await page.locator(close).press('Enter');
       await page.locator('#expenseDialog').waitFor({state:'hidden'});await focused(expense);
     }
+    await open(expense,'#expenseDialog','#expenseEditName');await page.locator('#expenseEditName').fill('   ');await page.locator('#expenseEditSave').click();await fieldError('expenseEditName','#expenseDialog');
+    await page.locator('#expenseEditName').fill('Corrected expense');assert.equal(await page.locator('#expenseEditNameError').isHidden(),true);await page.locator('#expenseEditSave').click();await focused(expense);
     await page.locator('#editBtn').focus();await page.keyboard.press('Enter');await page.locator('#ledgerSettingsDialog').waitFor({state:'visible'});
     for(const close of ['Escape','#categoryCancel','#categorySave']){
       const trigger=page.locator(close==='#categorySave'?'[data-category-edit="food"]':'#settingsAddCategory').filter({visible:true});
@@ -124,6 +133,18 @@ try {
       if(close==='Escape')await page.keyboard.press(close);else await page.locator(close).press('Enter');
       await page.locator('#categoryDialog').waitFor({state:'hidden'});await focused(trigger);
       assert.equal(await page.locator('#ledgerSettingsDialog').isVisible(),true,'Closing a child keeps its parent open');
+    }
+    for(const theme of ['light','dark']){
+      // Set the theme before opening the parent; the background theme control is outside its focus trap.
+      await page.keyboard.press('Escape');await selectTheme(page,theme);await page.locator('#editBtn').click();
+      const trigger=page.locator('#settingsAddCategory');await open(trigger,'#categoryDialog','#categoryName');
+      for(const value of ['', '   ', '']){
+        await page.locator('#categoryName').fill(value);await page.locator('#categorySave').click();await fieldError('categoryName','#categoryDialog');
+      }
+      await page.screenshot({path:path.join(output,`${mobile?'mobile':'desktop'}-${theme}-category-error.png`)});
+      await page.locator('#categoryName').fill('Validated '+theme);assert.equal(await page.locator('#categoryNameError').isHidden(),true);assert.equal(await page.locator('#categoryName').getAttribute('aria-invalid'),'false');
+      await page.locator('#categorySave').click();await focused(trigger);assert.ok(await page.locator('#settingsCategoryList').textContent().then(text=>text.includes('Validated '+theme)));
+      await open(trigger,'#categoryDialog','#categoryName');assert.equal(await page.locator('#categoryNameError').isHidden(),true);await page.keyboard.press('Escape');await focused(trigger);
     }
     await page.keyboard.press('Escape');await focused(page.locator('#editBtn'));
     await selectTripTab(page,'d1');await page.locator('#editBtn').click();
@@ -135,6 +156,10 @@ try {
       if(close==='Escape')await page.keyboard.press(close);else await page.locator(close).press('Enter');
       await page.locator(dialog).waitFor({state:'hidden'});await focused(trigger);
     }
+    const map=page.locator('.day1 [data-media="map"]').first();await open(map,'#mapDialog','#mapName');
+    await page.locator('#mapName').fill(' ');await page.locator('#mapUrl').fill('http://example.test');await page.locator('#mapSave').click();await fieldError('mapName','#mapDialog');
+    await page.locator('#mapName').fill('Test place');await page.locator('#mapSave').click();await fieldError('mapUrl','#mapDialog');
+    await page.locator('#mapUrl').fill('https://example.test/map');assert.equal(await page.locator('#mapUrlError').isHidden(),true);await page.locator('#mapSave').click();await focused(map);
     await diagnostics.close(context);console.log(`Dialog focus (${mobile?'mobile':'desktop'}): keyboard open, Tab wrapping, Escape/Cancel/Apply, nested dialogs and replaced triggers passed.`);
   }
   for (const mobile of [false, true]) {

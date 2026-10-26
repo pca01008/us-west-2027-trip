@@ -127,6 +127,8 @@ Follow-up: see the [U1 fix and verification record](2026-10-26-dialog-focus.md).
 
 ### U2 — P2: Category validation is hidden outside its dialog
 
+Follow-up: see the [U2 fix and verification record](2026-10-26-dialog-validation.md). The reproduction below describes the original review baseline.
+
 **Location:** [ledger-editor.js](../../src/app/ledger-editor.js), line 38; [src/index.html](../../src/index.html), `categoryDialog` and global `status`.
 
 **Reproduction:** At 390px, open Ledger settings → Add category, leave the name empty, and select Apply.
