@@ -62,22 +62,47 @@
   async function resetDraft(){const choice=await showChoice({title:'마지막 저장본으로 초기화',message:'현재 변경을 삭제하고 마지막 저장본으로 되돌립니다.',choices:[{label:'취소',value:'cancel'},{label:'초기화',value:'reset',className:'action-danger'}]});if(choice==='reset')discardDraft('마지막 저장본으로 초기화했습니다.');}
   async function confirmSave(){if(!pendingDraft){setStatus('저장할 변경이 없습니다.');return;}const choice=await showChoice({title:OFFLINE_MODE?'오프라인 작업본 저장':'공유 일정에 저장',message:OFFLINE_MODE?'수정된 내용을 포함한 새 작업본을 내려받습니다.':'저장하면 공개 링크에 변경 내용이 반영됩니다.',input:OFFLINE_MODE?null:{label:'버전 메모 (선택)','placeholder':'예: 항공편 시간 수정'},choices:[{label:'취소',value:'cancel'},{label:'저장',value:'save',className:'action-primary'}]});if(choice==='save')await saveAndFinish(noticeInputValue||'수동 저장');}
   function formatBytes(value){const size=Number(value)||0;if(size<1024)return size+' B';if(size<1024*1024)return (size/1024).toFixed(1)+' KB';return (size/1024/1024).toFixed(1)+' MB';}
-  async function loadVersionContent(version){if(versionContentCache.has(version.id))return clone(versionContentCache.get(version.id));setStatus('버전 #'+version.id+' 불러오는 중');const {data,error}=await client.from('trip_document_versions').select('content').eq('trip_id',TRIP_ID).eq('id',version.id).single();if(error||!data?.content)throw error||new Error('버전 본문이 없습니다.');const state=normalizeState(migratePublishedState(data.content));versionContentCache.set(version.id,state);while(versionContentCache.size>5)versionContentCache.delete(versionContentCache.keys().next().value);return clone(state);}
+  function invalidateVersionRequest(){const request=versionRequest;versionRequest=null;request?.controller.abort();}
+  function beginVersionRequest(){invalidateVersionRequest();return versionRequest={controller:new AbortController()};}
+  function isCurrentVersionRequest(request){return versionRequest===request&&Boolean(editorSession)&&!signingOut&&!$('#versionDialog').hidden;}
+  function setVersionLoadStatus(message=''){const status=$('#versionLoadStatus');status.textContent=message;status.hidden=!message;}
+  function closeVersions(){invalidateVersionRequest();$('#versionDialog').hidden=true;$('#versionCompareDialog').hidden=true;selectedVersion=null;setVersionLoadStatus();resetInactivityTimer();}
+  async function readVersionRequest(task,request){
+    const signal=request.controller.signal;
+    let rejectAbort;
+    const aborted=new Promise((_,reject)=>{rejectAbort=()=>reject(signal.reason||new Error('버전 불러오기를 취소했습니다.'));signal.addEventListener('abort',rejectAbort,{once:true});if(signal.aborted)rejectAbort();});
+    const timeout=setTimeout(()=>request.controller.abort(new Error('불러오기 시간이 초과되었습니다. 다시 시도해 주세요.')),8000);
+    try{const result=await Promise.race([task(signal),aborted]);if(result.error)throw result.error;return result.data;}
+    finally{clearTimeout(timeout);signal.removeEventListener('abort',rejectAbort);}
+  }
+  function showVersionLoadError(error,request){if(!isCurrentVersionRequest(request))return;console.error(error);setVersionLoadStatus(request.controller.signal.aborted?request.controller.signal.reason.message:'버전을 불러오지 못했습니다. 다시 시도해 주세요.');}
+  async function loadVersionContent(version,request){
+    if(versionContentCache.has(version.id))return clone(versionContentCache.get(version.id));
+    const data=await readVersionRequest(signal=>client.from('trip_document_versions').select('content').eq('trip_id',TRIP_ID).eq('id',version.id).abortSignal(signal).single(),request);
+    if(!isCurrentVersionRequest(request))return null;
+    if(!data?.content)throw new Error('버전 본문이 없습니다.');
+    const state=normalizeState(migratePublishedState(data.content));versionContentCache.set(version.id,state);while(versionContentCache.size>5)versionContentCache.delete(versionContentCache.keys().next().value);return clone(state);
+  }
   async function previewVersion(version){
     if(saveInFlight||operationBusy||checklistSaving||pendingChecks.size)return;
+    const request=beginVersionRequest();setVersionLoadStatus('버전 #'+version.id+' 불러오는 중');
     try{
-      const state=await loadVersionContent(version);
-      if(saveInFlight||operationBusy||checklistSaving||pendingChecks.size)return;
+      const state=await loadVersionContent(version,request);
+      if(!isCurrentVersionRequest(request)||saveInFlight||operationBusy||checklistSaving||pendingChecks.size)return;
       clearTimeout(historyTimer);recordHistory();await flushDraftPersistence();
-      if(saveInFlight||operationBusy||checklistSaving||pendingChecks.size)return;
+      if(!isCurrentVersionRequest(request)||saveInFlight||operationBusy||checklistSaving||pendingChecks.size)return;
       // Keep the original working copy even when switching between previews.
       if(!previewReturnState)previewReturnState=captureState();
       body.classList.add('previewing');setEditingUI(false);applyState(state);
       $('#previewLabel').textContent='버전 #'+version.id+' · '+new Date(version.created_at).toLocaleString('ko-KR')+' 미리보기';
-      $('#versionDialog').hidden=true;setStatus('과거 저장본 미리보기 · 편집하려면 미리보기를 닫아 주세요.');
-    }catch(error){console.error(error);setStatus('버전 본문을 불러오지 못했습니다.');}
+      closeVersions();setStatus('과거 저장본 미리보기 · 편집하려면 미리보기를 닫아 주세요.');
+    }catch(error){showVersionLoadError(error,request);}
   }
-  async function compareVersion(version){try{const state=await loadVersionContent(version),groups=buildDiff(captureState(),state);selectedVersion={...version,state};$('#versionCompareTitle').textContent='버전 #'+version.id+' 차이';renderDiff($('#versionCompareSummary'),$('#versionCompareDiff'),groups,(version.note?version.note+' · ':'')+new Date(version.created_at).toLocaleString('ko-KR')+' 저장본과 현재 화면 비교');$('#versionCompareDialog').hidden=false;}catch(error){console.error(error);setStatus('버전 비교에 실패했습니다.');}}
+  async function compareVersion(version){
+    const request=beginVersionRequest();selectedVersion=null;setVersionLoadStatus('버전 #'+version.id+' 불러오는 중');
+    try{const state=await loadVersionContent(version,request);if(!isCurrentVersionRequest(request))return;const groups=buildDiff(captureState(),state);selectedVersion={...version,state};$('#versionCompareTitle').textContent='버전 #'+version.id+' 차이';renderDiff($('#versionCompareSummary'),$('#versionCompareDiff'),groups,(version.note?version.note+' · ':'')+new Date(version.created_at).toLocaleString('ko-KR')+' 저장본과 현재 화면 비교');setVersionLoadStatus();$('#versionCompareDialog').hidden=false;}
+    catch(error){showVersionLoadError(error,request);}
+  }
   async function restoreSelectedVersion(){
     if(!selectedVersion)return;
     if(deferredDraftRecovery){if(previewReturnState)closePreview();await recoverOnlineDraft();if(deferredDraftRecovery)return;}
@@ -87,5 +112,14 @@
     if(body.classList.contains('previewing'))closePreview();
     if(await persistState(restored,{note:'버전 #'+id+' 복원'})){initializeHistory();$('#versionCompareDialog').hidden=true;$('#versionDialog').hidden=true;selectedVersion=null;setStatus('버전 #'+id+'을 새 저장본으로 복원했습니다.');}
   }
-  async function openVersions(){if(OFFLINE_MODE)return;const list=$('#versionList');list.innerHTML='<div class="version-empty">저장 목록을 불러오는 중입니다.</div>';$('#versionDialog').hidden=false;const {data,error}=await client.from('trip_document_versions').select('id,note,content_size,created_at').eq('trip_id',TRIP_ID).order('created_at',{ascending:false}).limit(50);if(error){console.error(error);list.innerHTML='<div class="version-empty">목록을 불러오지 못했습니다.</div>';return;}list.innerHTML=data.length?'':'<div class="version-empty">아직 저장된 버전이 없습니다.</div>';data.forEach(version=>{const item=document.createElement('div');item.className='version-item';item.innerHTML='<div><strong>'+escapeHtml(version.note||'버전 #'+version.id)+'</strong><small>#'+version.id+' · '+escapeHtml(new Date(version.created_at).toLocaleString('ko-KR'))+' · '+escapeHtml(formatBytes(version.content_size))+'</small></div><button class="action-muted" type="button">비교</button><button class="action-muted" type="button">미리보기</button><button class="action-primary" type="button">복원</button>';const buttons=item.querySelectorAll('button');buttons[0].onclick=()=>compareVersion(version);buttons[1].onclick=()=>previewVersion(version);buttons[2].onclick=async()=>{await compareVersion(version);};list.appendChild(item);});}
+  async function openVersions(){
+    if(OFFLINE_MODE||!editorSession||signingOut)return;
+    const request=beginVersionRequest(),list=$('#versionList');selectedVersion=null;$('#versionCompareDialog').hidden=true;setVersionLoadStatus();list.innerHTML='<div class="version-empty">저장 목록을 불러오는 중입니다.</div>';$('#versionDialog').hidden=false;
+    try{
+      const data=await readVersionRequest(signal=>client.from('trip_document_versions').select('id,note,content_size,created_at').eq('trip_id',TRIP_ID).abortSignal(signal).order('created_at',{ascending:false}).limit(50),request);
+      if(!isCurrentVersionRequest(request))return;
+      list.innerHTML=data.length?'':'<div class="version-empty">아직 저장된 버전이 없습니다.</div>';
+      data.forEach(version=>{const item=document.createElement('div');item.className='version-item';item.innerHTML='<div><strong>'+escapeHtml(version.note||'버전 #'+version.id)+'</strong><small>#'+version.id+' · '+escapeHtml(new Date(version.created_at).toLocaleString('ko-KR'))+' · '+escapeHtml(formatBytes(version.content_size))+'</small></div><button class="action-muted" type="button">비교</button><button class="action-muted" type="button">미리보기</button><button class="action-primary" type="button">복원</button>';const buttons=item.querySelectorAll('button');buttons[0].onclick=()=>compareVersion(version);buttons[1].onclick=()=>previewVersion(version);buttons[2].onclick=()=>compareVersion(version);list.appendChild(item);});
+    }catch(error){if(!isCurrentVersionRequest(request))return;list.innerHTML='<div class="version-empty">닫고 다시 열어 주세요.</div>';showVersionLoadError(error,request);}
+  }
   function closePreview(){if(previewReturnState)applyState(previewReturnState);previewReturnState=null;body.classList.remove('previewing');updateDirtyState();setStatus(pendingDraft?'저장 대기 중':'보기 모드');resetInactivityTimer();}

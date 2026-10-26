@@ -126,6 +126,7 @@
   let operationCancelled = false;
   let operationController = null;
   let selectedVersion = null;
+  let versionRequest = null;
   let timetableActive = false;
   let timetableStart = 0;
   let timetableRange = window.matchMedia('(max-width:620px)').matches ? '1' : 'all';

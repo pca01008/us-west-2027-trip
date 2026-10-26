@@ -241,6 +241,8 @@ Deferred drafts may have `pendingDraft=false` because they are not applied. `que
 
 Versions load metadata first, content on demand. Preview preserves the original draft before entry; autosave/pagehide/refresh during preview retain original work. Editing/normal saves are blocked. Restore confirms publication and creates a new version. Undo holds up to 100 in-memory states; the server retains 50 versions.
 
+Version list/content reads share one interaction request identity and AbortController. Close, comparison dismissal, a newer selection/open, and sign-out invalidate pending work. Check identity, session and dialog visibility after content loading and draft persistence before opening comparisons or applying previews. Reads race cancellation with an eight-second deadline, even if transport ignores abort; only current results enter the five-item content cache. Loading/errors appear inside the version dialog, with explicit retry through selection or list reopening.
+
 Idle warning occurs at 29 minutes; at 30, `scheduleSessionTimers()` or expiry in `getEditorSession()` calls `logoutPreservingDraft()`, reusing external-sign-out preservation. `recoverOnlineDraft()` checks authentication/expiry before prompting; signed-out refresh shows public state until reauthentication. Explicit Discard and sign out still deletes. `scope: 'local'` applies manual/automatic sign-out to this browser session and synchronizes its tabs.
 
 <a id="ledger-timetable"></a>

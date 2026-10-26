@@ -79,6 +79,8 @@ Follow-up: see the [F2 fix and verification record](2026-10-26-prep-save-reconci
 
 ### F3 — P2: Version requests outlive the dialog interaction
 
+Follow-up: see the [F3 fix and verification record](2026-10-26-version-request-lifecycle.md). The reproduction below describes the original review baseline.
+
 **Location:** [versions.js](../../src/app/versions.js), lines 65–90; [startup.js](../../src/app/startup.js), line 93.
 
 **Reproduction:** Delay version-content loading, select Compare, then close the version list before the response arrives.
