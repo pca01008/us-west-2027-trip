@@ -138,6 +138,7 @@ try {
     await page.goto(origin);await ready(page);
     const baseline=await title(page).textContent();
     await selectTripTab(page,'d1');await page.locator('#editBtn').click();
+    await page.waitForFunction(()=>document.querySelector('.day1 .timeline-row h3').isContentEditable);
     await title(page).fill('RECORDED EDIT');
     await page.waitForFunction(()=>!document.querySelector('#undoBtn').disabled);
     // Hold only the history timer so real typing/clicks reliably occur before it.
@@ -157,6 +158,7 @@ try {
     reset();const cleanCtx=await context(`Undo to clean baseline and reload / ${mobile?'mobile':'desktop'}`,mobile?{viewport:{width:390,height:844},isMobile:true,hasTouch:true}:{}),cleanPage=await cleanCtx.newPage();
     await cleanPage.goto(origin);await ready(cleanPage);
     await selectTripTab(cleanPage,'d1');await cleanPage.locator('#editBtn').click();
+    await cleanPage.waitForFunction(()=>document.querySelector('.day1 .timeline-row h3').isContentEditable);
     await title(cleanPage).fill('RECORDED EDIT');
     await cleanPage.waitForFunction(()=>!document.querySelector('#undoBtn').disabled);
     await cleanPage.evaluate(()=>{window.__holdHistory=true;});
@@ -183,6 +185,7 @@ try {
       await page.reload();await ready(page);
     }
     await selectTripTab(page,'d1');await page.locator('#editBtn').click();
+    await page.waitForFunction(()=>document.querySelector('.day1 .timeline-row h3').isContentEditable);
     await page.evaluate(()=>{window.__holdHistory=true;});
     const field=page.locator(selector).first(),text=`First input ${selector} ${boundary}`;
     // Force reload to depend on the synchronous checkpoint, not a lucky IDB commit.
@@ -209,7 +212,9 @@ try {
   {
     reset();const ctx=await context('continuous input and first input after save'),page=await ctx.newPage();await page.goto(origin);await ready(page);
     await edit(page,'Saved baseline');assert.equal(await page.evaluate(()=>window.__draftTest.saveAndFinish()),true);
-    await selectTripTab(page,'d1');await page.locator('#editBtn').click();await page.evaluate(()=>{window.__holdHistory=true;});
+    await selectTripTab(page,'d1');await page.locator('#editBtn').click();
+    await page.waitForFunction(()=>document.querySelector('.day1 .timeline-row h3').isContentEditable);
+    await page.evaluate(()=>{window.__holdHistory=true;});
     for(const text of ['A','AB','ABC','Continuous first edit after save'])await title(page).fill(text);
     assert.equal(await page.evaluate(()=>window.__draftTest.historyIndex()),0);
     await page.reload();await recover(page);assert.equal(await title(page).textContent(),'Continuous first edit after save');
