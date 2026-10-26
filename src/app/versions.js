@@ -79,7 +79,7 @@
   function showVersionLoadError(error,request){if(!isCurrentVersionRequest(request))return;console.error(error);setVersionLoadStatus(request.controller.signal.aborted?request.controller.signal.reason.message:'버전을 불러오지 못했습니다. 다시 시도해 주세요.');}
   async function loadVersionContent(version,request){
     if(versionContentCache.has(version.id))return clone(versionContentCache.get(version.id));
-    const data=await readVersionRequest(signal=>client.from('trip_document_versions').select('content').eq('trip_id',TRIP_ID).eq('id',version.id).abortSignal(signal).single(),request);
+    const data=await readVersionRequest(signal=>tripRepository.readVersionContent(version.id,signal),request);
     if(!isCurrentVersionRequest(request))return null;
     if(!data?.content)throw new Error('버전 본문이 없습니다.');
     const state=normalizeState(migratePublishedState(data.content));versionContentCache.set(version.id,state);while(versionContentCache.size>5)versionContentCache.delete(versionContentCache.keys().next().value);return clone(state);
@@ -117,7 +117,7 @@
     if(OFFLINE_MODE||!editorSession||signingOut)return;
     const request=beginVersionRequest(),list=$('#versionList');selectedVersion=null;$('#versionCompareDialog').hidden=true;setVersionLoadStatus();list.innerHTML='<div class="version-empty">저장 목록을 불러오는 중입니다.</div>';showDialog($('#versionDialog'));
     try{
-      const data=await readVersionRequest(signal=>client.from('trip_document_versions').select('id,note,content_size,created_at').eq('trip_id',TRIP_ID).abortSignal(signal).order('created_at',{ascending:false}).limit(50),request);
+      const data=await readVersionRequest(signal=>tripRepository.readVersionMetadata(signal),request);
       if(!isCurrentVersionRequest(request))return;
       list.innerHTML=data.length?'':'<div class="version-empty">아직 저장된 버전이 없습니다.</div>';
       data.forEach(version=>{const item=document.createElement('div');item.className='version-item';item.innerHTML='<div><strong>'+escapeHtml(version.note||'버전 #'+version.id)+'</strong><small>#'+version.id+' · '+escapeHtml(new Date(version.created_at).toLocaleString('ko-KR'))+' · '+escapeHtml(formatBytes(version.content_size))+'</small></div><button class="action-muted" type="button">비교</button><button class="action-muted" type="button">미리보기</button><button class="action-primary" type="button">복원</button>';const buttons=item.querySelectorAll('button');buttons[0].onclick=()=>compareVersion(version);buttons[1].onclick=()=>previewVersion(version);buttons[2].onclick=()=>compareVersion(version);list.appendChild(item);});

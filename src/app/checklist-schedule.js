@@ -76,7 +76,7 @@
         }else if(!OFFLINE_MODE){
           const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),runtimeOptions.saveMs);
           let response,failure;
-          try{response=await client.rpc('save_trip_document',{p_trip_id:TRIP_ID,p_content:saved,p_expected_revision:Number(row.revision)||0,p_version_note:note}).abortSignal(controller.signal);}
+          try{response=await tripRepository.saveDocument(saved,Number(row.revision)||0,note,controller.signal);}
           catch(error){failure=error;}finally{clearTimeout(timeout);}
           if(response?.error&&isRevisionConflict(response.error)){if(attempt<2)continue;throw response.error;}
           const uncertain=controller.signal.aborted||failure||response?.status>=500||response?.status===408||response?.status===0||(!response?.data&&!response?.error);

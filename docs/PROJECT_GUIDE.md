@@ -91,6 +91,7 @@ Pages serves files; browser JavaScript renders and manages data; Supabase handle
 | `src/app/timetable-core.js` | Complete pure factory for time parsing, masked clock editing, classification and interval layout |
 | `src/app/timetable.js`, `trip-clock.js`, `navigation.js`, `schedule-editor.js` | Trip times, views and navigation |
 | `src/app/state*.js`, `drafts.js`, `saving.js`, `auth-dialogs.js` | Normalization, recovery, persistence and authorization |
+| `src/app/trip-repository.js` | Raw published reads, revision RPC, version transport and owned Realtime cleanup; callers retain workflow policy |
 | `src/app/checklist-schedule.js`, `photos.js`, `exports.js`, `versions.js` | Checklist/row behavior, media, standalone files and history |
 | `src/app/startup.js`, `utilities.js`, `ui-helpers.js` | Wiring and small shared helpers |
 | `src/trip/config.js`, `src/trip/days.js` | Current trip settings and default itinerary |

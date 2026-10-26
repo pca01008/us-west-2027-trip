@@ -25,6 +25,9 @@ const {decimalParts,roundRatio,safeMinor,parseLedgerInput,parseLedgerRate,conver
 // @include app/ledger-view.js
 // @include app/state-ui.js
 
+// @include app/trip-repository.js
+const tripRepository = createTripRepository({client,tripId:TRIP_ID,offline:OFFLINE_MODE,publishedReadMs:()=>runtimeOptions.publishedReadMs});
+const {fetchPublishedState} = tripRepository;
 // @include app/auth-dialogs.js
 // @include app/saving.js
 

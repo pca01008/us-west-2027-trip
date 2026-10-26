@@ -21,3 +21,9 @@ Exit: 8 focused unit tests and ledger/currency/ledger-compat browser suites pass
 `createTimetableCore()` owns time parsing, clock masks/edits, classification and interval layout. DOM reads/rendering remain in `timetable.js`. Tests load the complete core through the explicit factory mapping.
 
 Exit: 14 fixed-expectation unit tests, inputs/navigation browser suites, build/project/whitespace checks passed. The earlier long browser run completed all suites except the already repaired Daylight fixture compatibility check; its separate rerun passed all three cases.
+
+## Stage 2a — repository
+
+`createTripRepository()` owns published reads, revision-checked save transport, version metadata/content queries and Realtime subscription disposal. Callers retain timeout reconciliation, retries, normalization and conflict choices. SDK error objects/status and abort signals remain intact.
+
+Exit: repository/PWA unit checks, versions and PREP browser suites (including response-loss matrix) passed. Build/project/whitespace checks passed. No SQL or permission change.

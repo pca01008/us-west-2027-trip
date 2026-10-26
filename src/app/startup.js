@@ -79,12 +79,12 @@
     if(!lastSavedState)lastSavedState=normalizeState(captureState());
     initializeHistory();updateDirtyState();if(cacheStatus)setStatus(cacheStatus);await recoverOnlineDraft();finishHydration();
     if(!client)return;
-    client.channel('trip-document-'+TRIP_ID).on('postgres_changes',{event:'UPDATE',schema:'public',table:'trip_documents',filter:'trip_id=eq.'+TRIP_ID},payload=>{
+    tripRepository.subscribe(payload=>{
       if(!payload.new?.content?.html)return;
       let remoteState;try{remoteState=normalizeState(migratePublishedState(payload.new.content));}catch(error){blockUnsupportedDocument(error);console.warn(error);return;}
       if(body.classList.contains('editing')||pendingDraft||body.classList.contains('previewing')||checklistSaving||pendingChecks.size||!$('#checklistDialog').hidden){pendingRemoteState={row:payload.new,state:remoteState};setStatus('새 공유 저장본이 있습니다 · 저장 시 비교합니다.');return;}
       applyStatePreservingInputs(remoteState);setPublishedBaseline(payload.new,remoteState);initializeHistory();setStatus('새 저장본을 반영했습니다.');
-    }).subscribe(status=>{if(status==='SUBSCRIBED'&&loadedFromCache)void refreshPublishedState('reconnect');});
+    },status=>{if(status==='SUBSCRIBED'&&loadedFromCache)void refreshPublishedState('reconnect');});
     await getEditorSession();
   }
 
@@ -159,7 +159,7 @@
   window.addEventListener('online',()=>void refreshPublishedState('reconnect'));
   window.addEventListener('offline',()=>setStatus(pendingDraft?'오프라인 · 초안은 이 브라우저에 보관 중':'오프라인 · 저장된 화면 표시 중'));
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void refreshPublishedState('visible');else void flushDraftPersistence();});
-  window.addEventListener('pagehide',()=>{void flushDraftPersistence();});
+  window.addEventListener('pagehide',event=>{void flushDraftPersistence();if(!event.persisted)tripRepository.dispose();});
   window.addEventListener('beforeunload',event=>{if(!isDirty()&&!saveInFlight&&!pendingChecks.size&&!checklistEditorSaving&&!checklistEditorDirty())return;void flushDraftPersistence();event.preventDefault();event.returnValue='';});
   if(client)client.auth.onAuthStateChange((_event,session)=>{const wasAuthenticated=Boolean(editorSession),valid=editorEmailMatches(session?.user?.email)?session:null;if(valid){setEditorSession(valid);return;}setEditorSession(null);if(wasAuthenticated&&!signingOut)setTimeout(()=>void handleExternalSignOut('편집 세션이 종료되었습니다.'),0);});
 

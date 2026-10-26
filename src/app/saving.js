@@ -41,7 +41,7 @@
       const controller=new AbortController();timeout=setTimeout(()=>controller.abort(),runtimeOptions.saveMs);
       let response;
       try{
-        response=await client.rpc('save_trip_document',{p_trip_id:TRIP_ID,p_content:normalized,p_expected_revision:publishedRevision,p_version_note:note}).abortSignal(controller.signal);
+        response=await tripRepository.saveDocument(normalized,publishedRevision,note,controller.signal);
       }catch(error){if(!controller.signal.aborted)throw error;}
       finally{clearTimeout(timeout);}
       if(controller.signal.aborted){

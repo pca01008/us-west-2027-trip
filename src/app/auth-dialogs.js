@@ -57,9 +57,3 @@
   async function requestManualLogout(){if(!editorSession||OFFLINE_MODE)return;if(previewReturnState)closePreview();if(isDirty()){const choice=await showChoice({title:'로그아웃할까요?',message:'저장하지 않은 변경사항이 있습니다.',choices:[{label:'계속 사용',value:'continue'},{label:'폐기 후 로그아웃',value:'discard',className:'action-danger'},{label:'저장 후 로그아웃',value:'save',className:'action-primary'}]});if(choice!=='save'&&choice!=='discard')return;if(choice==='save'){if(!await saveAndFinish('로그아웃 전 저장'))return;}else{if(!await clearDraftRecord())return;if(lastSavedState)applyState(lastSavedState);}}setEditingUI(false);closeEditorDialogs();await signOutEditor();setStatus('편집자 로그아웃 완료');}
   async function discardDraft(message='수정 내용을 폐기했습니다.'){if(!await clearDraftRecord())return false;if(previewReturnState)closePreview();if(lastSavedState)applyState(lastSavedState);initializeHistory();setEditingUI(false);closeEditorDialogs();resetInactivityTimer();setStatus(message);return true;}
   async function discardAndLogout(message='수정 내용을 폐기하고 로그아웃했습니다.'){if(!await discardDraft(message)){resetInactivityTimer();return false;}closeNotice('timeout');await signOutEditor();setStatus(message);return true;}
-  async function fetchPublishedState(){
-    if(OFFLINE_MODE||!client)return null;
-    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),runtimeOptions.publishedReadMs);
-    try{const {data,error}=await client.from('trip_documents').select('content,updated_at,revision').eq('trip_id',TRIP_ID).abortSignal(controller.signal).maybeSingle();if(error)throw error;return data;}
-    finally{clearTimeout(timeout);}
-  }

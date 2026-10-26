@@ -1,3 +1,4 @@
+import { loadFactory } from './helpers/factories.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -136,7 +137,7 @@ test('SDK 미연결 또는 오프라인 시작에서도 기존 공개본을 읽�
       // Halt after reading the cached state, before realtime setup for the mock client.
       TRIP_ID: 'test', getEditorSession: async () => {}
     });
-    if (client) client.channel = () => ({ on: () => ({ subscribe() {} }) });
+    context.tripRepository={subscribe(){}};
     vm.runInContext(hydrate, context);
     await context.hydrate();
     assert.equal(displayed.html, 'saved itinerary');
@@ -147,18 +148,16 @@ test('SDK 미연결 또는 오프라인 시작에서도 기존 공개본을 읽�
 
 test('인터넷 연결 표시가 있어도 응답 없는 공유 서버 조회를 취소한다', async () => {
   const html = await read('index.html');
-  const source = html.match(/async function fetchPublishedState\(\)\{([\s\S]*?)\n  \}/)[0];
+
   let signal;
   const query = {
     select() { return this; }, eq() { return this; },
     abortSignal(value) { signal = value; return this; },
     maybeSingle() { return new Promise(resolve => signal.addEventListener('abort', () => resolve({ error: new Error('timeout') }), { once: true })); }
   };
-  const context = vm.createContext({
-    OFFLINE_MODE: false, TRIP_ID: 'test', client: { from: () => query }, AbortController, runtimeOptions:{publishedReadMs:8000},
-    setTimeout: fn => setTimeout(fn, 5), clearTimeout
-  });
-  vm.runInContext(source, context);
-  await assert.rejects(context.fetchPublishedState(), /timeout/);
+  const api = loadFactory('repository', {
+    offline:false, tripId:'test', client:{from:()=>query}
+  }, {AbortController,setTimeout:fn=>setTimeout(fn,5),clearTimeout});
+  await assert.rejects(api.fetchPublishedState(), /timeout/);
   assert.equal(signal.aborted, true);
 });

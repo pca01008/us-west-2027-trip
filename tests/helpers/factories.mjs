@@ -3,6 +3,7 @@ import vm from 'node:vm';
 
 const modules = {
   timetable: ['timetable-core.js', 'createTimetableCore'],
+  repository: ['trip-repository.js', 'createTripRepository'],
   currency: ['currency.js', 'createCurrencyPolicy'],
   ledger: ['ledger-domain.js', 'createLedgerDomain']
 };
