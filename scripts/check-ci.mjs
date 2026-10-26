@@ -61,7 +61,7 @@ async function preflight(suites) {
     const playwright=await import('playwright');versions.browsers={};
     for(const name of ['chromium','firefox','webkit']){
       try{await access(playwright[name].executablePath());const browser=await playwright[name].launch({headless:true});try{versions.browsers[name]=browser.version();}finally{await browser.close();}}
-      catch{throw Error(`Missing/unusable pinned ${name}; run npx playwright install --with-deps chromium firefox webkit.`);}
+      catch{throw Error(`Missing/unusable pinned ${name}; install the pinned browsers or align the CI image with package-lock.json.`);}
     }
   }
   console.log('Verified tools:',JSON.stringify(versions));

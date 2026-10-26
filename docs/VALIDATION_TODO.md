@@ -42,7 +42,7 @@ Historical incidents:
 ## Scope and constraints
 
 - Reuse existing Node scripts, Playwright fixtures, and SQL tests. Keep the solution practical for two users.
-- Use WSL2 / Ubuntu as the initial local Linux path. Add shared Docker execution only if measured differences justify its maintenance cost.
+- Use WSL2 / Ubuntu as the local Linux path. Browser CI now uses the matching official Playwright Noble image after a >20-minute system-dependency installation stall; this does not establish a completed local Docker/full verification path.
 - Keep ordinary Windows checks available for quick feedback; label them separately from full Linux verification.
 - Preserve schema 6, KRW/USD, trip IDs, production data, draft behavior, and existing application output.
 - Keep SQL tests on a disposable local PostgreSQL instance. Preserve loopback URL validation and outbound production blocking in browser fixtures.

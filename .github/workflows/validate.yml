@@ -90,6 +90,9 @@ jobs:
     needs: validate
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble@sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e
+      options: --init --ipc=host
     steps:
       - uses: actions/checkout@v4
         with:
@@ -99,7 +102,6 @@ jobs:
           node-version-file: .node-version
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium firefox webkit
       - run: npm run test:ci -- --suite=browser
         env:
           TMPDIR: ${{ runner.temp }}
