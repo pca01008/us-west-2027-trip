@@ -12,11 +12,17 @@ import { createBrowserDiagnostics } from './browser-diagnostics.mjs';
 import { readBrowserFixture } from './browser-fixtures.mjs';
 
 const diagnostics = await createBrowserDiagnostics('inputs');
+const args=process.argv.slice(2),functionalOnly=args.includes('--functional');
+assert.ok(args.every(arg=>!arg.startsWith('--')||arg==='--functional'),'Unknown input-suite option');
+const modulePath=args.find(arg=>!arg.startsWith('--'));
+// Extra-engine smoke verifies behavior; Chromium owns rendered PNG evidence.
+async function capture(page,options){if(!functionalOnly)await page.screenshot(options);}
+if(functionalOnly)console.log('PARTIAL visual coverage: functional assertions only; PNG evidence belongs to the Chromium suite.');
 async function waitForFixtureFonts(page){
   await page.evaluate(()=>{window.__fixtureFontsReady=false;document.fonts.load('700 16px "Pretendard Variable"','여행 ABC 0123').then(faces=>{window.__fixtureFontsReady=faces.length>0;});});
   await page.waitForFunction(()=>window.__fixtureFontsReady&&document.fonts.status==='loaded',null,{timeout:10000});
 }
-const playwright = await import(process.argv[2] ? pathToFileURL(process.argv[2]).href : 'playwright');
+const playwright = await import(modulePath ? pathToFileURL(modulePath).href : 'playwright');
 const engine=process.env.TRIP_BROWSER_ENGINE||'chromium';
 assert.ok(['chromium','firefox','webkit'].includes(engine),'Unsupported browser engine');
 const root = new URL('../', import.meta.url);
@@ -146,7 +152,7 @@ try {
       for(const value of ['', '   ', '']){
         await page.locator('#categoryName').fill(value);await page.locator('#categorySave').click();await fieldError('categoryName','#categoryDialog');
       }
-      await page.screenshot({path:path.join(output,`${mobile?'mobile':'desktop'}-${theme}-category-error.png`)});
+      await capture(page,{path:path.join(output,`${mobile?'mobile':'desktop'}-${theme}-category-error.png`)});
       await page.locator('#categoryName').fill('Validated '+theme);assert.equal(await page.locator('#categoryNameError').isHidden(),true);assert.equal(await page.locator('#categoryName').getAttribute('aria-invalid'),'false');
       await page.locator('#categorySave').click();await focused(trigger);assert.ok(await page.locator('#settingsCategoryList').textContent().then(text=>text.includes('Validated '+theme)));
       await open(trigger,'#categoryDialog','#categoryName');assert.equal(await page.locator('#categoryNameError').isHidden(),true);await page.keyboard.press('Escape');await focused(trigger);
@@ -181,7 +187,7 @@ try {
           assert.deepEqual(await page.evaluate(()=>window.__inputsTest.normalizeState(window.__inputsTest.captureState())),snapshot,'Invalid metadata must not change the document');
         }
       }
-      await page.screenshot({path:path.join(output,`${mobile?'mobile':'desktop'}-${theme}-photo-error.png`)});
+      await capture(page,{path:path.join(output,`${mobile?'mobile':'desktop'}-${theme}-photo-error.png`)});
       await caption.fill('  Corrected '+theme+' caption  ');
       assert.equal(await caption.getAttribute('aria-invalid'),'false');assert.equal(await page.locator('#photoCaptionError').isHidden(),true);
       assert.equal(await alt.getAttribute('aria-invalid'),'true','Correcting caption preserves the alt error');
@@ -310,7 +316,7 @@ try {
     assert.equal(await page.locator('#photoCaption').inputValue(), 'Hotel', 'Photo caption can be replaced directly');
     await page.locator('#photoEditCancel').click();
     await selectTheme(page, 'dark');
-    await row.scrollIntoViewIfNeeded(); await page.screenshot({ path: path.join(output, `${mobile ? 'mobile' : 'desktop'}-empty-fields.png`) });
+    await row.scrollIntoViewIfNeeded(); await capture(page,{ path: path.join(output, `${mobile ? 'mobile' : 'desktop'}-empty-fields.png`) });
     // Both exports must survive script execution/reload with empty values and correct view styles.
     for (const kind of ['editable', 'readonly']) {
       const download = page.waitForEvent('download');
@@ -355,7 +361,7 @@ try {
     console.log(`${mobile ? 'Mobile viewport/touch' : 'Desktop'}: input, composition events, undo/redo, import, exports and reload passed.`);
   }
   assert.deepEqual(errors, []);
-  console.log('Screenshots and exported fixtures:', output);
+  console.log(functionalOnly?'Exported fixtures (functional mode; no PNG captures):':'Screenshots and exported fixtures:',output);
 } catch (error) {
   await diagnostics.fail(error);
   throw error;

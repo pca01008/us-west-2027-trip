@@ -85,7 +85,7 @@ async function main(){
   const source=revision.stdout?.trim()||'unknown',dirty=workingTree.stdout?.trim();
   console.log(`${suites.length===3?'Full':'PARTIAL'} verification: ${suites.join(', ')}; commit ${source}; ${dirty?'modified working tree (development evidence)':'clean working tree'}`);
   const report=await verify({suites,prepare:async selected=>{if(revision.status!==0||workingTree.status!==0)throw Error('Cannot establish Git commit/working-tree identity.');return preflight(selected);},signal:controller.signal,execute:async(suite,{npmCli},signal)=>{
-    const start=Date.now(),commands=suite==='validate'?[['test']]:suite==='sql'?[['run','test:sql']]:[['run','test:browser'],['run','test:browser:smoke']];
+    const start=Date.now(),commands=suite==='validate'?[['test']]:suite==='sql'?[['run','test:sql']]:[['run','test:browser:smoke'],['run','test:browser']];
     for(const args of commands){const result=await runCommand(process.execPath,[npmCli,...args],{timeoutMs:suite==='browser'?1200000:240000,signal});if(result.status!=='passed')return {...result,elapsedMs:Date.now()-start};}
     return {status:'passed',elapsedMs:Date.now()-start};
   }});
