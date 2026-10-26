@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
 const modules = {
+  timetable: ['timetable-core.js', 'createTimetableCore'],
   currency: ['currency.js', 'createCurrencyPolicy'],
   ledger: ['ledger-domain.js', 'createLedgerDomain']
 };

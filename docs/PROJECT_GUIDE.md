@@ -88,6 +88,7 @@ Pages serves files; browser JavaScript renders and manages data; Supabase handle
 | `src/app/config.js`, `runtime.js` | Configuration validation/scaffold, constants and shared state |
 | `src/app/currency.js`, `ledger-domain.js` | Complete pure factories: immutable currency policy, exact arithmetic/input calculation and legacy normalization |
 | `src/app/ledger.js`, `ledger-view.js`, `ledger-editor.js`, `categories.js` | Ledger form buffers, display, currency labels and editing |
+| `src/app/timetable-core.js` | Complete pure factory for time parsing, masked clock editing, classification and interval layout |
 | `src/app/timetable.js`, `trip-clock.js`, `navigation.js`, `schedule-editor.js` | Trip times, views and navigation |
 | `src/app/state*.js`, `drafts.js`, `saving.js`, `auth-dialogs.js` | Normalization, recovery, persistence and authorization |
 | `src/app/checklist-schedule.js`, `photos.js`, `exports.js`, `versions.js` | Checklist/row behavior, media, standalone files and history |

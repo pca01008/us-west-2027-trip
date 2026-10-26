@@ -1,13 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import vm from 'node:vm';
+import { loadFactory } from './helpers/factories.mjs';
 
-const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
-const calculations = html.split('// Timetable calculations are pure:')[1]?.split('// End of pure timetable calculations.')[0];
-assert.ok(calculations, '시간표 계산 함수를 찾을 수 없습니다.');
-const context = vm.createContext({});
-vm.runInContext(calculations.slice(calculations.indexOf('function parseTimetableTime')), context);
+const context = loadFactory('timetable');
 const { parseTimetableTime: parse, layoutTimetableEvents: layout, timetableWindow: windowRange } = context;
 const plain = value => JSON.parse(JSON.stringify(value));
 const { scheduleTimeValue: timeValue, scheduleClockMask: clockMask, scheduleClockValue: clockValue, editScheduleClock: editClock } = context;

@@ -1,0 +1,90 @@
+/** Time parsing, clock edits, classification and interval layout; no browser state. */
+function createTimetableCore() {
+function parseTimetableTime(value) {
+    const match=String(value||'').trim().match(/^(\d{1,2}):(\d{2})(?:\s*(?:~|～|〜|–|—|-|부터)\s*(\d{1,2}):(\d{2})(?:\s*까지)?)?\s*$/);
+    if(!match)return null;
+    const start=Number(match[1])*60+Number(match[2]);
+    if(Number(match[1])>23||Number(match[2])>59)return null;
+    if(match[3]===undefined)return {start,end:null};
+    const hour=Number(match[3]),minute=Number(match[4]);
+    if(hour>24||minute>59||(hour===24&&minute!==0))return null;
+    let end=hour*60+minute;
+    if(end===start)return null;
+    if(end<start)end+=1440;
+    return {start,end};
+  }
+
+function scheduleTimeValue({mode='exact',start='',end='',label=''}) {
+    if(mode==='label')return {time:label.trim()||'미정',overnight:false};
+    start=start.trim();end=end.trim();
+    if(!start&&!end)return {time:'미정',overnight:false};
+    if(!start)return {error:'종료 시간을 입력하려면 시작 시간도 입력해 주세요.',field:'start'};
+    const parsedStart=parseTimetableTime(start);
+    if(!parsedStart||parsedStart.end!==null)return {error:'시작 시간을 00:00~23:59 형식으로 입력해 주세요.',field:'start'};
+    const clock=minutes=>String(Math.floor(minutes/60)).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0');
+    const startText=clock(parsedStart.start);
+    if(!end)return {time:startText,overnight:false};
+    if(!/^\d{1,2}:\d{2}$/.test(end))return {error:'종료 시간을 00:00~24:00 형식으로 입력해 주세요.',field:'end'};
+    const parsed=parseTimetableTime(startText+'~'+end);
+    if(!parsed)return {error:'종료 시간은 시작과 달라야 하며, 00:00~24:00 범위여야 합니다.',field:'end'};
+    const endMinutes=Number(end.split(':')[0])*60+Number(end.split(':')[1]);
+    return {time:startText+'~'+clock(endMinutes),overnight:parsed.end>=1440};
+  }
+
+function scheduleClockMask(value='') {
+    const raw=String(value);
+    if(/^[\d_]{2}:[\d_]{2}$/.test(raw))return raw;
+    const digits=raw.replace(/\D/g,'').slice(0,4).padEnd(4,'_');
+    return digits.slice(0,2)+':'+digits.slice(2);
+  }
+
+function scheduleClockValue(value){const mask=scheduleClockMask(value);return /\d/.test(mask)?mask:'';}
+
+function editScheduleClock(value,start,end,type,text='') {
+    const mask=scheduleClockMask(value).split(''),positions=[0,1,3,4];
+    let caret=start;
+    if(type==='insertText'){
+      const raw=String(text).normalize('NFKC').trim();
+      if(!/^\d+$/.test(raw)&&!/^\d{2}:\d{2}$/.test(raw))return {value:mask.join(''),caret};
+      const digits=raw.replace(':',''),available=positions.filter(position=>position>=start);
+      if(digits.length>available.length)return {value:mask.join(''),caret};
+      positions.filter(position=>position>=start&&position<end).forEach(position=>mask[position]='_');
+      digits.split('').forEach((digit,index)=>{const position=available[index];mask[position]=digit;caret=position===1?3:position+1;});
+    }else if(type.startsWith('delete')){
+      if(start!==end){positions.filter(position=>position>=start&&position<end).forEach(position=>mask[position]='_');caret=start===2?3:start;}
+      else {const position=type==='deleteContentBackward'?positions.filter(position=>position<start).at(-1):positions.find(position=>position>=start);if(position!==undefined){mask[position]='_';caret=position;}}
+    }
+    return {value:mask.join(''),caret};
+  }
+
+function scheduleKindMode(value){return ['activity','food','transit','stay','other'].includes(value)?value:'auto';}
+
+function timetableKind(title,chip='',selection='auto') {
+    const manual=scheduleKindMode(selection);if(manual!=='auto')return manual;
+    const text=title+' '+chip;
+    if(/체크인|체크아웃|숙박|숙소|휴식|취침|HOTEL|AIRBNB/i.test(text)&&!/비행|기내/.test(title))return 'stay';
+    if(/공항|비행|출국|귀국|출발|도착|이동|픽업|반납|렌터카|셔틀|탑승|귀로|FLIGHT|AIRPORT|ARRIVAL/i.test(text))return 'transit';
+    if(/식사|점심|저녁|아침|브런치|카페|커피|바비큐|레스토랑|식당/.test(text))return 'food';
+    if(/관람|관광|산책|투어|캐니언|미술관|박물관|해변|분수|공원|천문대|레이크|홀스슈|윈도우|루트 66|쇼|스피어|자유 일정/.test(text))return 'activity';
+    return 'other';
+  }
+
+function layoutTimetableEvents(events,{pixelsPerHour=64,minHeight=56}={}) {
+    const items=events.map(event=>({...event,visualEnd:Math.max(event.end??event.start,event.start+minHeight/pixelsPerHour*60)})).sort((a,b)=>a.start-b.start||a.visualEnd-b.visualEnd);
+    let group=[],groupEnd=-1;
+    function finishGroup(){
+      const laneEnds=[];
+      group.forEach(item=>{let lane=laneEnds.findIndex(end=>end<=item.start);if(lane<0)lane=laneEnds.length;laneEnds[lane]=item.visualEnd;item.lane=lane;});
+      group.forEach(item=>{item.lanes=laneEnds.length;item.conflict=item.end!==null&&group.some(other=>other!==item&&other.end!==null&&item.start<other.end&&other.start<item.end);});
+    }
+    items.forEach(item=>{if(item.start>=groupEnd){finishGroup();group=[];groupEnd=-1;}group.push(item);groupEnd=Math.max(groupEnd,item.visualEnd);});
+    finishGroup();return items;
+  }
+
+function timetableWindow(total,start,range) {
+    const count=range==='all'?total:Math.min(total,1);
+    const first=Math.min(Math.max(0,start),Math.max(0,total-count));
+    return {start:first,count,end:first+count};
+  }
+return Object.freeze({parseTimetableTime,scheduleTimeValue,scheduleClockMask,scheduleClockValue,editScheduleClock,scheduleKindMode,timetableKind,layoutTimetableEvents,timetableWindow});
+}

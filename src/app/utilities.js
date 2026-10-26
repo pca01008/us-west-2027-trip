@@ -23,5 +23,3 @@
     if(main)main.removeAttribute('aria-busy');
     if(pendingDraft)queueDraftPersistence();
   }
-
-  // Timetable calculations are pure: display metadata never enters the saved document.

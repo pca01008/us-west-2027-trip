@@ -6,6 +6,8 @@
 // @include app/runtime.js
 
 // @include app/utilities.js
+// @include app/timetable-core.js
+const {parseTimetableTime,scheduleTimeValue,scheduleClockMask,scheduleClockValue,editScheduleClock,scheduleKindMode,timetableKind,layoutTimetableEvents,timetableWindow} = createTimetableCore();
 // @include app/timetable.js
 // @include app/ui-helpers.js
 
