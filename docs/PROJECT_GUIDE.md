@@ -86,14 +86,15 @@ Pages serves files; browser JavaScript renders and manages data; Supabase handle
 | `src/styles.css`, `src/styles/*.css` | Ordered cascade layers; `palette.css` owns reusable light/dark color roles |
 | `src/app.js` | Ordered feature includes in one existing IIFE |
 | `src/app/config.js`, `runtime.js` | Configuration validation/scaffold, constants and shared state |
-| `src/app/currency.js`, `ledger*.js`, `categories.js` | Currency policy, exact money arithmetic, ledger display/editing |
+| `src/app/currency.js`, `ledger-domain.js` | Complete pure factories: immutable currency policy, exact arithmetic/input calculation and legacy normalization |
+| `src/app/ledger.js`, `ledger-view.js`, `ledger-editor.js`, `categories.js` | Ledger form buffers, display, currency labels and editing |
 | `src/app/timetable.js`, `trip-clock.js`, `navigation.js`, `schedule-editor.js` | Trip times, views and navigation |
 | `src/app/state*.js`, `drafts.js`, `saving.js`, `auth-dialogs.js` | Normalization, recovery, persistence and authorization |
 | `src/app/checklist-schedule.js`, `photos.js`, `exports.js`, `versions.js` | Checklist/row behavior, media, standalone files and history |
 | `src/app/startup.js`, `utilities.js`, `ui-helpers.js` | Wiring and small shared helpers |
 | `src/trip/config.js`, `src/trip/days.js` | Current trip settings and default itinerary |
 
-These are source fragments with explicit include order, not independently loaded ES modules. Functions retain the existing shared closure to avoid a broad state-management rewrite. `scripts/build-app.mjs` expands root-relative `@include` lines under `src/`, normalizes LF and writes committed `index.html`/`trip-config.js`. It rejects path escapes and cycles; `--check` rejects stale outputs without rewriting them. No runtime requests, bundler dependencies or new PWA assets are introduced. Exports remain self-contained. Search/edit `src/`; inspect generated output only for deployment/debugging.
+Sources have explicit include order, not browser ES-module loading. Domain factories receive their pure collaborators explicitly; the remaining browser fragments share the application closure during migration. Unit tests load complete factory files through `tests/helpers/factories.mjs`. `scripts/build-app.mjs` expands root-relative `@include` lines under `src/`, normalizes LF and writes committed `index.html`/`trip-config.js`. It rejects path escapes and cycles; `--check` rejects stale outputs without rewriting them. No runtime requests, bundler dependencies or new PWA assets are introduced. Exports remain self-contained. Search/edit `src/`; inspect generated output only for deployment/debugging.
 
 ### Typography
 

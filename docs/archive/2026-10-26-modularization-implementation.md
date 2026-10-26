@@ -9,3 +9,9 @@ Replaced initialization-line browser injection with one checked inert compositio
 Baseline unit/static: 123 tests and project checks passed. Sandboxed loopback tests failed because local HTTP was blocked; normal local execution passed. Browser checks use the existing user Chromium cache. Baseline drafts suite passed its lifecycle, response-loss, ownership, recovery, preview and input-preservation cases.
 
 Stage exit: 124 unit tests, generated freshness/project checks, reusable-currency browser suite passed. Source/generated diff and whitespace checked.
+
+## Stage 1a — ledger domain
+
+`createCurrencyPolicy()` owns immutable currency rules. `createLedgerDomain()` owns exact arithmetic, input calculations and normalization; category/ID collaborators are explicit. Currency labels stay in the view, unsubmitted input buffers stay outside the domain. Ledger/currency tests now load whole source files.
+
+Exit: 8 focused unit tests and ledger/currency/ledger-compat browser suites passed; build/project/whitespace checks passed. The compatibility suite exposed the paused Daylight artifact's missing fixture marker; a checked test-only legacy adapter preserves that separate artifact unchanged.

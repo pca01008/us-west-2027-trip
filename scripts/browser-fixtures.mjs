@@ -59,3 +59,11 @@ export function injectBrowserDeadlines(html, options) {
   if (html.split(anchor).length !== 2) throw new Error('Expected exactly one fixture options anchor');
   return html.replace(anchor, () => 'Object.assign(runtimeOptions,' + JSON.stringify(options) + ');');
 }
+
+// The paused Daylight artifact has no authoring seam; keep its compatibility
+// fixture adapter separate from the current application's composition contract.
+export function injectDaylightFixture(html, api) {
+  const legacy = 'initializeTimetable();initializeDialogAccessibility();';
+  if (html.split(legacy).length !== 2) throw new Error('Expected one Daylight initialization anchor');
+  return injectBrowserFixture(html.replace(legacy, fixtureMarker + '\n' + legacy), 'const runtimeOptions={};' + api);
+}

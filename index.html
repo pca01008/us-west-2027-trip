@@ -1135,6 +1135,8 @@ input:disabled,select:disabled{opacity:.7}
   const configuredTimeZones=[CONFIG.clocks?.home?.timeZone,CONFIG.clocks?.destination?.timeZone];
   if(configuredTimeZones.some(zone=>{if(typeof zone!=='string'||!zone.trim())return true;try{new Intl.DateTimeFormat('en-US',{timeZone:zone}).format();return false;}catch(_){return true;}}))throw new Error('clocks의 timeZone은 올바른 IANA 시간대여야 합니다.');
 
+/** Immutable currency policy; historical amount slots keep their names. */
+function createCurrencyPolicy(CONFIG) {
   // Storage slots keep their historical krw/usd names. Schema 7 binds them to
   // explicit base/quote codes; schema 6 always means KRW/USD.
   function createLedgerCurrencies(config) {
@@ -1167,28 +1169,12 @@ input:disabled,select:disabled{opacity:.7}
     const {symbol,digits,scale}=LEDGER_CURRENCIES[slot];
     return symbol+(minor/scale).toLocaleString(slot==='krw'?'ko-KR':'en-US')+(digits?'.'+String(minor%scale).padStart(digits,'0'):'');
   }
-  function formatCurrencyAmount(value,slot){
-    const part=decimalParts(Number(value)||0);
-    return formatCurrencyMinor(roundRatio(part.n*LEDGER_CURRENCIES[slot].scale,part.d),slot);
-  }
-  function configureCurrencyLabels(){
-    // Keep the deployed legacy DOM and wording byte-for-byte equivalent.
-    if(CURRENCY_CODES.base==='KRW'&&CURRENCY_CODES.quote==='USD')return;
-    for(const [slot,suffix] of [['krw','Krw'],['usd','Usd']]){
-      const currency=LEDGER_CURRENCIES[slot];
-      for(const prefix of ['expense','expenseEdit']){
-        const label=document.querySelector('label[for="'+prefix+suffix+'"]>span');
-        if(label)label.textContent=currency.label+' ('+currency.code+')';
-      }
-      const total=document.getElementById('total'+suffix);
-      if(total)total.previousElementSibling.textContent=currency.label+' 합계';
-    }
-    const rate=document.querySelector('.exchange-rate-control');
-    if(rate){rate.firstElementChild.textContent='1 '+CURRENCY_CODES.quote;rate.lastElementChild.textContent=CURRENCY_CODES.base;
-      rate.querySelector('input').setAttribute('aria-label','1 '+CURRENCY_CODES.quote+' 기준 '+currencyLabel('krw')+' 환율');}
-    const settings=document.querySelector('.ledger-settings-rate-control');
-    if(settings){settings.firstChild.textContent='1 '+CURRENCY_CODES.quote+' = ';settings.lastChild.textContent=' '+CURRENCY_CODES.base;}
-  }
+
+
+
+return Object.freeze({createLedgerCurrencies,currencyMetadata,assertCurrencyPair,currencyLabel,formatCurrencyMinor,LEDGER_CURRENCIES,CURRENCY_CODES});
+}
+const {createLedgerCurrencies,currencyMetadata,assertCurrencyPair,currencyLabel,formatCurrencyMinor,LEDGER_CURRENCIES,CURRENCY_CODES} = createCurrencyPolicy(CONFIG);
 
   const configEscape=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const TRIP_DAYS = CONFIG.days;
@@ -1930,16 +1916,21 @@ input:disabled,select:disabled{opacity:.7}
     return byName?.id || cats.find(item=>item.id==='misc')?.id || cats[0]?.id || DELETED_CATEGORY_ID;
   }
   // Ledger arithmetic uses decimal integers; only JSON boundaries use Number.
-  function decimalParts(value) {
+/** Exact money and legacy normalization. All collaborators are pure. */
+function createLedgerDomain({LEDGER_CURRENCIES,currencyLabel,formatCurrencyMinor,safeDataId,hashText,findCategoryId}) {
+function decimalParts(value) {
     const text=String(value),match=text.match(/^(\d+)(?:\.(\d+))?(?:e([+-]?\d+))?$/i);
     if(!match||text.length>400)throw new Error('올바른 금액을 입력해 주세요.');
     const shift=(match[2]||'').length-Number(match[3]||0);
     if(Math.abs(shift)>400)throw new Error('금액 범위를 초과했습니다.');
     return {n:BigInt(match[1]+(match[2]||''))*10n**BigInt(Math.max(0,-shift)),d:10n**BigInt(Math.max(0,shift))};
   }
-  function roundRatio(n,d){return (n*2n+d)/(d*2n);}
-  function safeMinor(n){if(n>BigInt(Number.MAX_SAFE_INTEGER))throw new Error('금액 범위를 초과했습니다.');return Number(n);}
-  function parseLedgerInput(raw,currency) {
+
+function roundRatio(n,d){return (n*2n+d)/(d*2n);}
+
+function safeMinor(n){if(n>BigInt(Number.MAX_SAFE_INTEGER))throw new Error('금액 범위를 초과했습니다.');return Number(n);}
+
+function parseLedgerInput(raw,currency) {
     const text=String(raw).trim();
     if(!text)throw new Error('금액을 입력해 주세요.');
     if(!/^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?$/.test(text))throw new Error('올바른 숫자를 입력해 주세요.');
@@ -1952,14 +1943,16 @@ input:disabled,select:disabled{opacity:.7}
     if(back.n*d!==n*back.d)throw new Error('금액 범위를 초과했습니다.');
     return value;
   }
-  function parseLedgerRate(raw){
+
+function parseLedgerRate(raw){
     const text=String(raw).trim();
     if(!/^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?$/.test(text))throw new Error('올바른 환율을 입력해 주세요.');
     const value=Number(text.replace(/,/g,''));
     if(!Number.isFinite(value)||value<=0)throw new Error('올바른 환율을 입력해 주세요.');
     return value;
   }
-  function convertLedgerAmount(amount,source,rate) {
+
+function convertLedgerAmount(amount,source,rate) {
     if(!Number.isFinite(rate)||rate<=0)throw new Error('자동 계산에 사용할 환율을 확인해 주세요.');
     const a=decimalParts(amount),r=decimalParts(rate);
     const scale=LEDGER_CURRENCIES[source==='krw'?'usd':'krw'].scale;
@@ -1968,23 +1961,29 @@ input:disabled,select:disabled{opacity:.7}
     if(back.n*scale!==minor*back.d)throw new Error('금액 범위를 초과했습니다.');
     return value;
   }
-  function ledgerSumParts(items,key){
+
+function ledgerSumParts(items,key){
     let n=0n,d=1n;
     for(const item of items){const part=decimalParts(item[key]);const scale=part.d>d?part.d:d;n=n*(scale/d)+part.n*(scale/part.d);d=scale;}
     return {n,d};
   }
-  function sumLedgerAmounts(items,key){
+
+function sumLedgerAmounts(items,key){
     const {n,d}=ledgerSumParts(items,key);
     return Number(n)/Number(d);
   }
-  function formatLedgerSum(items,currency){
+
+function formatLedgerSum(items,currency){
     const {n,d}=ledgerSumParts(items,currency==='krw'?'amountKrw':'amountUsd');
     const minor=roundRatio(n*LEDGER_CURRENCIES[currency].scale,d);
     return formatCurrencyMinor(minor,currency);
   }
-  function expenseMoney(item){return {amountKrw:item.amountKrw,amountUsd:item.amountUsd,amountSource:item.amountSource,appliedExchangeRate:item.appliedExchangeRate};}
-  function emptyExpenseInput(){return {krw:'',usd:'',original:null,touched:false,composing:false};}
-  function calculateExpenseInput(form,rate){
+
+function expenseMoney(item){return {amountKrw:item.amountKrw,amountUsd:item.amountUsd,amountSource:item.amountSource,appliedExchangeRate:item.appliedExchangeRate};}
+
+function emptyExpenseInput(){return {krw:'',usd:'',original:null,touched:false,composing:false};}
+
+function calculateExpenseInput(form,rate){
     if(form.original&&!form.touched)return {money:expenseMoney(form.original),errors:{}};
     const errors={},values={};
     for(const currency of ['krw','usd'])if(form[currency].trim())try{values[currency]=parseLedgerInput(form[currency],currency);}catch(error){errors[currency]=error.message;}
@@ -1998,28 +1997,8 @@ input:disabled,select:disabled{opacity:.7}
       return {money,errors};
     }catch(error){return {errors:{[source]:error.message}};}
   }
-  // End ledger arithmetic.
-  let expenseInput=emptyExpenseInput(),expenseEditInput=emptyExpenseInput(),expenseEditSnapshot=null,expenseAddPending=false;
-  function drawExpenseInput(edit=false,submit=false){
-    const form=edit?expenseEditInput:expenseInput,prefix=edit?'expenseEdit':'expense',result=calculateExpenseInput(form,exchangeRate);
-    for(const currency of ['krw','usd']){
-      const suffix=currency==='krw'?'Krw':'Usd',input=$('#'+prefix+suffix),hint=$('#'+prefix+suffix+'Hint');if(!input)continue;
-      const auto=result.money&&result.money.amountSource!=='both'&&result.money.amountSource!==currency;
-      const value=form[currency]||(result.money?String(result.money['amount'+suffix]):'');
-      if(!form.composing&&input.value!==value)input.value=value;
-      const error=(!result.empty||submit)?result.errors[currency]:'';
-      input.setAttribute('aria-invalid',error?'true':'false');hint.textContent=error||(auto?'수동 환율로 자동 계산':'');hint.classList.toggle('amount-error',Boolean(error));
-    }
-    if(submit&&!result.money){$('#'+prefix+(result.errors.usd?'Usd':'Krw')).focus();setStatus('금액을 확인해 주세요.');}
-    return result.money;
-  }
-  function handleExpenseInput(event){
-    const match=event.target.id?.match(/^(expense|expenseEdit)(Krw|Usd)$/);if(!match)return;
-    const edit=match[1]==='expenseEdit',form=edit?expenseEditInput:expenseInput,currency=match[2].toLowerCase();
-    form[currency]=event.target.value;form.touched=true;form.composing=Boolean(event.isComposing);
-    drawExpenseInput(edit);
-  }
-  function normalizeExpense(item,index,cats,rate,version) {
+
+function normalizeExpense(item,index,cats,rate,version) {
     const base={id:safeDataId(item?.id,'legacy-'+index+'-'+hashText(JSON.stringify(item||{}))),name:String(item?.name||'').trim().slice(0,80),date:/^\d{4}-\d{2}-\d{2}$/.test(item?.date||'')?item.date:'',categoryId:findCategoryId(item?.categoryId||item?.category||'misc',cats)};
     if(version>=6||['amountKrw','amountUsd','amountSource','appliedExchangeRate'].some(key=>Object.hasOwn(item||{},key))){
       const money=expenseMoney(item),source=money.amountSource;
@@ -2040,9 +2019,37 @@ input:disabled,select:disabled{opacity:.7}
     const converted=convertLedgerAmount(amount,source,rate);
     return {...base,amountKrw:source==='krw'?amount:converted,amountUsd:source==='usd'?amount:converted,amountSource:source,appliedExchangeRate:rate};
   }
-  function normalizeExpenses(input,cats,rate,version){
+
+function normalizeExpenses(input,cats,rate,version){
     if(input!==undefined&&!Array.isArray(input))throw new Error('지출 목록을 복구해 주세요.');
     const seen=new Set();return (input||[]).map((item,index)=>{const expense=normalizeExpense(item,index,cats,rate,version);if(seen.has(expense.id))expense.id+='-duplicate-'+index;seen.add(expense.id);return expense;});
+  }
+function formatCurrencyAmount(value,slot){
+    const part=decimalParts(Number(value)||0);
+    return formatCurrencyMinor(roundRatio(part.n*LEDGER_CURRENCIES[slot].scale,part.d),slot);
+  }
+return Object.freeze({decimalParts,roundRatio,safeMinor,parseLedgerInput,parseLedgerRate,convertLedgerAmount,ledgerSumParts,sumLedgerAmounts,formatLedgerSum,expenseMoney,emptyExpenseInput,calculateExpenseInput,normalizeExpense,normalizeExpenses,formatCurrencyAmount});
+}
+const {decimalParts,roundRatio,safeMinor,parseLedgerInput,parseLedgerRate,convertLedgerAmount,ledgerSumParts,sumLedgerAmounts,formatLedgerSum,expenseMoney,emptyExpenseInput,calculateExpenseInput,normalizeExpense,normalizeExpenses,formatCurrencyAmount} = createLedgerDomain({LEDGER_CURRENCIES,currencyLabel,formatCurrencyMinor,safeDataId,hashText,findCategoryId});
+let expenseInput=emptyExpenseInput(),expenseEditInput=emptyExpenseInput(),expenseEditSnapshot=null,expenseAddPending=false;
+  function drawExpenseInput(edit=false,submit=false){
+    const form=edit?expenseEditInput:expenseInput,prefix=edit?'expenseEdit':'expense',result=calculateExpenseInput(form,exchangeRate);
+    for(const currency of ['krw','usd']){
+      const suffix=currency==='krw'?'Krw':'Usd',input=$('#'+prefix+suffix),hint=$('#'+prefix+suffix+'Hint');if(!input)continue;
+      const auto=result.money&&result.money.amountSource!=='both'&&result.money.amountSource!==currency;
+      const value=form[currency]||(result.money?String(result.money['amount'+suffix]):'');
+      if(!form.composing&&input.value!==value)input.value=value;
+      const error=(!result.empty||submit)?result.errors[currency]:'';
+      input.setAttribute('aria-invalid',error?'true':'false');hint.textContent=error||(auto?'수동 환율로 자동 계산':'');hint.classList.toggle('amount-error',Boolean(error));
+    }
+    if(submit&&!result.money){$('#'+prefix+(result.errors.usd?'Usd':'Krw')).focus();setStatus('금액을 확인해 주세요.');}
+    return result.money;
+  }
+  function handleExpenseInput(event){
+    const match=event.target.id?.match(/^(expense|expenseEdit)(Krw|Usd)$/);if(!match)return;
+    const edit=match[1]==='expenseEdit',form=edit?expenseEditInput:expenseInput,currency=match[2].toLowerCase();
+    form[currency]=event.target.value;form.touched=true;form.composing=Boolean(event.isComposing);
+    drawExpenseInput(edit);
   }
   function sanitizeMarkup(markup, imported=false) {
     const template=document.createElement('template'); template.innerHTML=markup||'';
@@ -2433,6 +2440,24 @@ input:disabled,select:disabled{opacity:.7}
       const map=card.querySelector('.schedule-map');if(map){decorateMapLink(map);if(!map.querySelector('.schedule-map-delete')){const button=document.createElement('button');button.className='schedule-map-delete';button.type='button';button.textContent='삭제';map.appendChild(button);}}
     });
     updateScheduleMoveButtons();
+  }
+function configureCurrencyLabels(){
+    // Keep the deployed legacy DOM and wording byte-for-byte equivalent.
+    if(CURRENCY_CODES.base==='KRW'&&CURRENCY_CODES.quote==='USD')return;
+    for(const [slot,suffix] of [['krw','Krw'],['usd','Usd']]){
+      const currency=LEDGER_CURRENCIES[slot];
+      for(const prefix of ['expense','expenseEdit']){
+        const label=document.querySelector('label[for="'+prefix+suffix+'"]>span');
+        if(label)label.textContent=currency.label+' ('+currency.code+')';
+      }
+      const total=document.getElementById('total'+suffix);
+      if(total)total.previousElementSibling.textContent=currency.label+' 합계';
+    }
+    const rate=document.querySelector('.exchange-rate-control');
+    if(rate){rate.firstElementChild.textContent='1 '+CURRENCY_CODES.quote;rate.lastElementChild.textContent=CURRENCY_CODES.base;
+      rate.querySelector('input').setAttribute('aria-label','1 '+CURRENCY_CODES.quote+' 기준 '+currencyLabel('krw')+' 환율');}
+    const settings=document.querySelector('.ledger-settings-rate-control');
+    if(settings){settings.firstChild.textContent='1 '+CURRENCY_CODES.quote+' = ';settings.lastChild.textContent=' '+CURRENCY_CODES.base;}
   }
   function getCategory(id) { return categories.find(item=>item.id===id) || categories.find(item=>item.id==='misc') || categories[0]; }
   function setExpenseCategoryOptions(select,selected='',includeDeleted=false){if(!select)return;const items=categories.filter(item=>item.id!==DELETED_CATEGORY_ID||includeDeleted||item.id===selected);select.innerHTML=items.map(item=>'<option value="'+escapeHtml(item.id)+'"'+(item.id===DELETED_CATEGORY_ID?' disabled':'')+'>'+escapeHtml(item.icon+' '+item.name)+'</option>').join('');if(items.some(item=>item.id===selected))select.value=selected;}

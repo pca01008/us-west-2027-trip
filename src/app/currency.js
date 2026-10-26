@@ -1,3 +1,5 @@
+/** Immutable currency policy; historical amount slots keep their names. */
+function createCurrencyPolicy(CONFIG) {
   // Storage slots keep their historical krw/usd names. Schema 7 binds them to
   // explicit base/quote codes; schema 6 always means KRW/USD.
   function createLedgerCurrencies(config) {
@@ -30,25 +32,8 @@
     const {symbol,digits,scale}=LEDGER_CURRENCIES[slot];
     return symbol+(minor/scale).toLocaleString(slot==='krw'?'ko-KR':'en-US')+(digits?'.'+String(minor%scale).padStart(digits,'0'):'');
   }
-  function formatCurrencyAmount(value,slot){
-    const part=decimalParts(Number(value)||0);
-    return formatCurrencyMinor(roundRatio(part.n*LEDGER_CURRENCIES[slot].scale,part.d),slot);
-  }
-  function configureCurrencyLabels(){
-    // Keep the deployed legacy DOM and wording byte-for-byte equivalent.
-    if(CURRENCY_CODES.base==='KRW'&&CURRENCY_CODES.quote==='USD')return;
-    for(const [slot,suffix] of [['krw','Krw'],['usd','Usd']]){
-      const currency=LEDGER_CURRENCIES[slot];
-      for(const prefix of ['expense','expenseEdit']){
-        const label=document.querySelector('label[for="'+prefix+suffix+'"]>span');
-        if(label)label.textContent=currency.label+' ('+currency.code+')';
-      }
-      const total=document.getElementById('total'+suffix);
-      if(total)total.previousElementSibling.textContent=currency.label+' 합계';
-    }
-    const rate=document.querySelector('.exchange-rate-control');
-    if(rate){rate.firstElementChild.textContent='1 '+CURRENCY_CODES.quote;rate.lastElementChild.textContent=CURRENCY_CODES.base;
-      rate.querySelector('input').setAttribute('aria-label','1 '+CURRENCY_CODES.quote+' 기준 '+currencyLabel('krw')+' 환율');}
-    const settings=document.querySelector('.ledger-settings-rate-control');
-    if(settings){settings.firstChild.textContent='1 '+CURRENCY_CODES.quote+' = ';settings.lastChild.textContent=' '+CURRENCY_CODES.base;}
-  }
+
+
+
+return Object.freeze({createLedgerCurrencies,currencyMetadata,assertCurrencyPair,currencyLabel,formatCurrencyMinor,LEDGER_CURRENCIES,CURRENCY_CODES});
+}

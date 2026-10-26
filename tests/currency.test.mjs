@@ -1,14 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
-import vm from 'node:vm';
-const currency = await readFile(new URL('../src/app/currency.js', import.meta.url), 'utf8');
-const ledger = await readFile(new URL('../src/app/ledger.js', import.meta.url), 'utf8');
-const arithmetic = ledger.slice(0, ledger.indexOf('  // End ledger arithmetic.'));
+import { loadFactory } from './helpers/factories.mjs';
 function runtime(base='KRW',quote='JPY',schemaVersion=7) {
-  const context=vm.createContext({});
-  vm.runInContext('const CONFIG='+JSON.stringify({schemaVersion,ledger:{currencies:{base,quote}}})+';\n'+currency+arithmetic,context);
-  return context;
+  const policy=loadFactory('currency',{schemaVersion,ledger:{currencies:{base,quote}}});
+  return {...policy,...loadFactory('ledger',policy)};
 }
 test('new trip currencies use their actual minor units and exact half-up conversions',()=>{
   const yen=runtime();

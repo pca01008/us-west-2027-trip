@@ -19,6 +19,7 @@
   if(configuredTimeZones.some(zone=>{if(typeof zone!=='string'||!zone.trim())return true;try{new Intl.DateTimeFormat('en-US',{timeZone:zone}).format();return false;}catch(_){return true;}}))throw new Error('clocks의 timeZone은 올바른 IANA 시간대여야 합니다.');
 
 // @include app/currency.js
+const {createLedgerCurrencies,currencyMetadata,assertCurrencyPair,currencyLabel,formatCurrencyMinor,LEDGER_CURRENCIES,CURRENCY_CODES} = createCurrencyPolicy(CONFIG);
 
   const configEscape=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const TRIP_DAYS = CONFIG.days;

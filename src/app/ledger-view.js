@@ -1,3 +1,21 @@
+function configureCurrencyLabels(){
+    // Keep the deployed legacy DOM and wording byte-for-byte equivalent.
+    if(CURRENCY_CODES.base==='KRW'&&CURRENCY_CODES.quote==='USD')return;
+    for(const [slot,suffix] of [['krw','Krw'],['usd','Usd']]){
+      const currency=LEDGER_CURRENCIES[slot];
+      for(const prefix of ['expense','expenseEdit']){
+        const label=document.querySelector('label[for="'+prefix+suffix+'"]>span');
+        if(label)label.textContent=currency.label+' ('+currency.code+')';
+      }
+      const total=document.getElementById('total'+suffix);
+      if(total)total.previousElementSibling.textContent=currency.label+' 합계';
+    }
+    const rate=document.querySelector('.exchange-rate-control');
+    if(rate){rate.firstElementChild.textContent='1 '+CURRENCY_CODES.quote;rate.lastElementChild.textContent=CURRENCY_CODES.base;
+      rate.querySelector('input').setAttribute('aria-label','1 '+CURRENCY_CODES.quote+' 기준 '+currencyLabel('krw')+' 환율');}
+    const settings=document.querySelector('.ledger-settings-rate-control');
+    if(settings){settings.firstChild.textContent='1 '+CURRENCY_CODES.quote+' = ';settings.lastChild.textContent=' '+CURRENCY_CODES.base;}
+  }
   function getCategory(id) { return categories.find(item=>item.id===id) || categories.find(item=>item.id==='misc') || categories[0]; }
   function setExpenseCategoryOptions(select,selected='',includeDeleted=false){if(!select)return;const items=categories.filter(item=>item.id!==DELETED_CATEGORY_ID||includeDeleted||item.id===selected);select.innerHTML=items.map(item=>'<option value="'+escapeHtml(item.id)+'"'+(item.id===DELETED_CATEGORY_ID?' disabled':'')+'>'+escapeHtml(item.icon+' '+item.name)+'</option>').join('');if(items.some(item=>item.id===selected))select.value=selected;}
   function formatExpenseDate(date){return date?date.replace(/-/g,'.'):'날짜 미지정';}

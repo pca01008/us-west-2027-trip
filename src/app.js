@@ -14,6 +14,8 @@
 // @include app/trip-clock.js
 
 // @include app/categories.js
+// @include app/ledger-domain.js
+const {decimalParts,roundRatio,safeMinor,parseLedgerInput,parseLedgerRate,convertLedgerAmount,ledgerSumParts,sumLedgerAmounts,formatLedgerSum,expenseMoney,emptyExpenseInput,calculateExpenseInput,normalizeExpense,normalizeExpenses,formatCurrencyAmount} = createLedgerDomain({LEDGER_CURRENCIES,currencyLabel,formatCurrencyMinor,safeDataId,hashText,findCategoryId});
 // @include app/ledger.js
 // @include app/state.js
 
