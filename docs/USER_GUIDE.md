@@ -116,6 +116,7 @@ Undo is temporary editing history; versions are server history. Restore saves th
 - Export offers Offline working copy and Print/share copy.
 - Offline copies embed photos and support editing without internet. Above 100MB, a warning precedes download.
 - Saving offline downloads a new working copy. Online Import edited copy compares against the latest public document. Applying creates a draft; separate Save publishes it.
+- Cancel or Escape stops a pending import. Selecting another file or signing out also cancels it; delayed results cannot replace your draft or reopen an error. Apply is unavailable while its read is running.
 - Wrong-trip, incomplete, corrupt, and unsupported files are rejected without replacing the current draft. If application fails, the previous screen and unsaved edits remain available; retry or download a fresh working copy. Old copies retain itinerary/checks. Shared changes during comparison require reviewing refreshed differences before applying.
 - Print/share copies are read-only snapshots without editor tools or Supabase. Photos embed when possible; remaining online photos/map links need internet.
 - The existing app preserves Daylight importance flags/stay ranges during save/import but has no dedicated editor for them. Comparisons show missing metadata in old files/versions.

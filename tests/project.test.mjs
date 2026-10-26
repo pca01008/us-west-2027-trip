@@ -136,8 +136,8 @@ test('오프라인 불러오기는 revision을 재확인하고 최종 기준점�
   const html = await readFile(path.join(root, 'index.html'), 'utf8');
   const applyImport = html.match(/async function applyImportedDraft\(\)\{([\s\S]*?)\n  \}/)?.[1] || '';
   assert.match(html, /baselineRevision:Math\.max\(0,Number\(published\?\.revision\)\|\|0\)/);
-  assert.match(applyImport, /remoteRevision!==pendingImport\.baselineRevision/);
-  assert.match(applyImport, /applyImportSnapshot\(incoming,pendingImport\.current,pendingImport\.baselineRevision/);
+  assert.match(applyImport, /remoteRevision!==selection\.baselineRevision/);
+  assert.match(applyImport, /applyImportSnapshot\(incoming,selection\.current,selection\.baselineRevision/);
   assert.doesNotMatch(applyImport, /lastSavedState=clone\(current\)/);
   assert.match(html, /IMPORT_ALLOWED_MONEY_IDS/);
   assert.match(html, /seenCheckIds\.has\(label\.dataset\.checkId\)/);

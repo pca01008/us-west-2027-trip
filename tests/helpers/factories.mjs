@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
 const modules = {
+  imports: ['imports.js', 'createImportsController'],
   documentWorkflow: ['document-workflow.js', 'createDocumentController'],
   photoService: ['photo-service.js', 'createPhotoService'],
   comparison: ['comparison.js', 'createComparison'],

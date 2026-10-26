@@ -8,6 +8,7 @@ async function showInactivityWarning(){dialogs.startNoticeCountdown();const dirt
   function closeEditorDialogs(){invalidateVersionRequest();closeScheduleTimeDialog();['checklistDialog','ledgerSettingsDialog','categoryDialog','expenseDialog','mapDialog','photoEditDialog','importDialog','exportDialog','versionDialog','versionCompareDialog','photoViewer'].forEach(id=>{const dialog=$('#'+id);if(dialog)dialog.hidden=true;});resetLedgerSelection();resetPhotoSelection();resetVersionSelection();resetImportSelection();}
   async function handleExternalSignOut(message='편집 세션이 다른 탭에서 종료되었습니다.') {
     invalidateVersionRequest();
+    resetImportSelection();
     const hadDraft=isDirty()||draftWorkflow.isRecoveryDeferred();
     if(hadDraft){
       await flushDraftPersistence();

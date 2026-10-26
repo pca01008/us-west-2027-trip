@@ -15,16 +15,25 @@ const root = new URL('../', import.meta.url);
 const source = await readFile(process.env.IMPORTS_FIXTURE_HTML || new URL('index.html', root), 'utf8');
 const legacy = JSON.parse(await readFile(new URL('tests/fixtures/import-v4.json', root), 'utf8'));
 let row, saves, reads;
-const stub = `<script>window.supabase={createClient:()=>({
+const readPlans=[];
+function holdRead(){
+  let release,start,finish;
+  const gate=new Promise(resolve=>{release=resolve;}),started=new Promise(resolve=>{start=resolve;}),finished=new Promise(resolve=>{finish=resolve;});
+  const plan={gate,started,finished,release,start,finish};readPlans.push(plan);return plan;
+}
+const stub = `<script>
+window.__importReads=[];
+async function readImportDocument(){const read={settled:false};window.__importReads.push(read);try{return await(await fetch('/mock/doc')).json();}finally{read.settled=true;}}
+window.supabase={createClient:()=>({
   auth:{getSession:async()=>({data:{session:{access_token:'fixture',user:{email:window.TRIP_CONFIG.editorEmail}}}}),onAuthStateChange:()=>{}},
   storage:{from:()=>({getPublicUrl:path=>({data:{publicUrl:location.origin+'/storage/v1/object/public/trip-media/'+path}})})},
-  from:()=>{const q={select:()=>q,eq:()=>q,abortSignal:()=>q,maybeSingle:async()=>({data:await(await fetch('/mock/doc')).json()})};return q;},
+  from:()=>{const q={select:()=>q,eq:()=>q,abortSignal:()=>q,maybeSingle:async()=>({data:await readImportDocument()})};return q;},
   rpc:(_name,args)=>({abortSignal:async signal=>(await fetch('/mock/save',{method:'POST',body:JSON.stringify(args),signal})).json()}),
   channel:()=>({on:()=>({subscribe:()=>{}})})
 })};</script>`;
 const server = createServer(async (req, res) => {
   try {
-    if (req.url === '/mock/doc') { reads++; res.setHeader('Content-Type','application/json'); res.end(JSON.stringify(row)); return; }
+    if (req.url === '/mock/doc') { reads++;const plan=readPlans.shift();if(plan){plan.start();await plan.gate;}res.setHeader('Content-Type','application/json');res.end(JSON.stringify(row));plan?.finish();return; }
     if (req.url === '/mock/save') {
       saves++;
       let body='';for await (const part of req) body+=part;
@@ -38,7 +47,7 @@ const server = createServer(async (req, res) => {
     let body=await readBrowserFixture(new URL(file,root));
     if(file==='index.html') body=injectBrowserFixture(source
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/,'')
-      .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/,stub), 'window.__importTest={captureState,normalizeState,stateSummary,migratePublishedState,applyImportSnapshot,recordHistory,moveHistory,flushDraftPersistence,readDraftRecord,snapshot:()=>documentSession.snapshot(),isApplying:()=>documentAdapter.isApplying(),pending:()=>pendingImportSnapshot()};');
+      .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/,stub), 'window.__importTest={captureState,normalizeState,stateSummary,migratePublishedState,applyImportSnapshot,applyImportedDraft,recordHistory,moveHistory,flushDraftPersistence,readDraftRecord,handleExternalSignOut,setEditorSession,snapshot:()=>documentSession.snapshot(),isApplying:()=>documentAdapter.isApplying(),pending:()=>pendingImportSnapshot()};');
     if(file==='trip-config.js') body+=`\nwindow.TRIP_CONFIG.supabase={url:'http://127.0.0.1:${server.address().port}',publishableKey:'fixture'};`;
     res.setHeader('Content-Type',file.endsWith('.html')?'text/html; charset=utf-8':file.endsWith('.js')?'text/javascript; charset=utf-8':'image/webp');res.end(body);
   } catch(error) { res.writeHead(500).end(error.message); }
@@ -59,6 +68,11 @@ async function upload(page, incoming, options={}) {
 async function apply(page) {
   await page.locator('#importApply').click();await page.locator('#importDialog').waitFor({state:'hidden'});
   await page.evaluate(()=>window.__importTest.flushDraftPersistence());
+}
+async function finishRead(page,plan){
+  plan.release();await plan.finished;
+  await page.waitForFunction(()=>window.__importReads.every(read=>read.settled));
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
 }
 try {
   browser=await chromium.launch({headless:true,...(process.env.PWA_BROWSER_CHANNEL?{channel:process.env.PWA_BROWSER_CHANNEL}:{})});
@@ -94,6 +108,53 @@ try {
     let before=await state(page);
     const draft=await stored(page),serverBefore=structuredClone(row);
     const sessionBefore=await page.evaluate(()=>window.__importTest.snapshot());
+    const incomingCanceled={...before,html:before.html.replace('보존해야 할 기존 초안','취소할 가져오기')};
+    async function assertImportRetained(){
+      assert.deepEqual(await state(page),before,'Canceled import retains the visible draft');
+      assert.deepEqual(await stored(page),draft,'Canceled import retains the durable draft');
+      assert.deepEqual(await page.evaluate(()=>window.__importTest.snapshot()),sessionBefore,'Canceled import retains baseline and history');
+      assert.equal(await page.locator('#noticeDialog').isVisible(),false,'Canceled work cannot open a late error');
+      assert.equal(saves,0);assert.deepEqual(row,serverBefore);
+    }
+    for(const action of ['Cancel','Escape']){
+      diagnostics.scenario(`in-flight import ${action} / ${mobile?'mobile':'desktop'}`);
+      await upload(page,incomingCanceled);await page.locator('#importDialog').waitFor({state:'visible'});
+      const plan=holdRead();await page.locator('#importApply').click();await plan.started;
+      assert.equal(await page.locator('#importApply').isDisabled(),true,'Apply is disabled immediately');
+      // Invoke the handler again as well as checking the disabled browser control.
+      const readCount=reads;await page.evaluate(()=>window.__importTest.applyImportedDraft());
+      assert.equal(reads,readCount,'Duplicate Apply cannot start another read');
+      if(action==='Cancel')await page.locator('#importCancel').click();else await page.keyboard.press('Escape');
+      await page.locator('#importDialog').waitFor({state:'hidden'});
+      await finishRead(page,plan);await assertImportRetained();
+      assert.equal(await page.evaluate(()=>window.__importTest.pending()),null);
+    }
+    diagnostics.scenario(`selection replaces in-flight Apply / ${mobile?'mobile':'desktop'}`);
+    await upload(page,incomingCanceled);await page.locator('#importDialog').waitFor({state:'visible'});
+    const replaced=holdRead();await page.locator('#importApply').click();await replaced.started;
+    const replacement={...before,html:before.html.replace('보존해야 할 기존 초안','새로 선택한 가져오기')};
+    await upload(page,replacement);await page.waitForFunction(()=>window.__importTest.pending()?.state.html.includes('새로 선택한 가져오기'));
+    await finishRead(page,replaced);
+    assert.equal(await page.locator('#importDialog').isVisible(),true);
+    assert.equal(await page.locator('#importApply').isEnabled(),true);
+    assert.match(await page.locator('#importDiff').textContent(),/새로 선택한 가져오기/);
+    await page.locator('#importCancel').click();await assertImportRetained();
+
+    diagnostics.scenario(`reversed file comparison reads / ${mobile?'mobile':'desktop'}`);
+    const olderFile=holdRead();await upload(page,incomingCanceled);await olderFile.started;
+    await upload(page,replacement);await page.waitForFunction(()=>window.__importTest.pending()?.state.html.includes('새로 선택한 가져오기'));
+    await finishRead(page,olderFile);
+    assert.match(await page.locator('#importDiff').textContent(),/새로 선택한 가져오기/);
+    await page.locator('#importCancel').click();await assertImportRetained();
+
+    diagnostics.scenario(`session loss during Apply / ${mobile?'mobile':'desktop'}`);
+    await upload(page,incomingCanceled);await page.locator('#importDialog').waitFor({state:'visible'});
+    const signedOut=holdRead();await page.locator('#importApply').click();await signedOut.started;
+    await page.evaluate(()=>window.__importTest.setEditorSession(null));
+    await page.locator('#importDialog').waitFor({state:'hidden'});await finishRead(page,signedOut);
+    await assertImportRetained();
+    await page.evaluate(()=>window.__importTest.setEditorSession({user:{email:TRIP_CONFIG.editorEmail}}));
+    console.log(`Imports (${mobile?'mobile':'desktop'}): Cancel/Escape, replacement, reversed reads, session loss and duplicate Apply retain the draft.`);
     const rejected=[
       ['other trip',{tripId:'another-trip'},before,/이 여행/],
       ['not offline',{offline:'false'},before,/이 여행/],

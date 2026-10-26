@@ -353,6 +353,8 @@ Sanitized differences cover itinerary, PREP, ledger, categories, and rates again
 
 `migratePublishedState()` preserves old content/checks/IDs and supplies stable legacy IDs when absent. Invalid files are rejected before changing current UI/drafts.
 
+Imports retain a request identity and capture the selected comparison before applying. File reads, public reads, photo materialization, errors, and cleanup check that identity and the active editor session after awaiting. Cancel/Escape, another selection, and session invalidation clear it immediately, including before sign-out waits for draft persistence. Apply is disabled and guarded during an operation; revision changes still require reconfirmation. Stale work cannot change the draft, selection, controls, or status.
+
 See the [F2 implementation and regression record](archive/2026-10-26-import-structure-f2.md) for the structure/rollback checks.
 
 <a id="sql-basics"></a>

@@ -60,8 +60,8 @@ const {fetchPublishedState} = tripRepository;
 const dialogs=createDialogs({$, $$, body});
 const {closeNotice,showChoice,focusableIn,setFieldError,rememberDialogOrigin,showDialog,closeTopDialog,registerDialogState,initializeDialogAccessibility}=dialogs;
 const sessionService=createSession({client,offline:OFFLINE_MODE,editorEmail:EDITOR_EMAIL,activityKey:SESSION_ACTIVITY_KEY,channelName:SESSION_CHANNEL_NAME,sessionMs:SESSION_MS,warningMs:WARNING_MS,
-  onChange:session=>{body.classList.toggle('authenticated',Boolean(session)&&!OFFLINE_MODE);if(!session)invalidateVersionRequest();},
-  onInvalidate:()=>invalidateVersionRequest(),onWarning:()=>showInactivityWarning(),onExpire:message=>logoutPreservingDraft(message),onExternalSignOut:message=>handleExternalSignOut(message),
+  onChange:session=>{body.classList.toggle('authenticated',Boolean(session)&&!OFFLINE_MODE);if(!session){invalidateVersionRequest();resetImportSelection();}},
+  onInvalidate:()=>{invalidateVersionRequest();resetImportSelection();},onWarning:()=>showInactivityWarning(),onExpire:message=>logoutPreservingDraft(message),onExternalSignOut:message=>handleExternalSignOut(message),
   canTrackActivity:()=>$('#noticeDialog').hidden,onSharedActivity:()=>{if(!$('#noticeDialog').hidden&&!$('#sessionCountdown').hidden)closeNotice('continue');},onClearTimers:()=>dialogs.clearCountdown()});
 const {clearSessionTimers,scheduleSessionTimers,editorEmailMatches,setEditorSession,acceptSharedActivity,resetInactivityTimer,getEditorSession,signOutEditor}=sessionService;
 const ledgerController=createLedgerController({$:$,
@@ -328,6 +328,7 @@ normalizeState:(...args)=>normalizeState(...args),
 publicMediaUrl:(...args)=>publicMediaUrl(...args),
 renderDiff:(...args)=>renderDiff(...args),
 requireEditor:(...args)=>requireEditor(...args),
+sessionService:sessionService,
 setStatus:(...args)=>setStatus(...args),
 showChoice:(...args)=>showChoice(...args),
 showDialog:(...args)=>showDialog(...args)});
