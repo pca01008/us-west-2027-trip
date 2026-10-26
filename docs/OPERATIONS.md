@@ -119,6 +119,8 @@ The full command checks prerequisites before running unit/static/generated, SQL 
 
 For a fresh local Linux run, first install WSL2 Ubuntu 24.04 and Docker Engine/Desktop integration as user-managed prerequisites. In normal WSL under your account, create a separate Linux filesystem checkout (for example `~/src/us-west-2027-trip`), select the declared Node/npm versions, and run:
 
+The root CI container runs browser commands with `HOME=/root`; Firefox rejects GitHub's `/github/home`, owned by another container user. The exact-path Git trust entry uses the same home. This is container configuration, not a host permission repair.
+
 ```sh
 bash scripts/check-linux.sh
 ```
