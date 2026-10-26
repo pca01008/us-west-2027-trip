@@ -75,3 +75,23 @@ Grouped dialogs, ledger template and timetable markup under `src/html/` using ex
 Exit: 36 focused unit checks, palette/theme/inputs/navigation/ledger browser checks passed. Against baseline `de00d47`, all 24 palette scenarios have identical computed styles and PNG bytes (mobile/desktop, light/dark, itinerary/PREP/ledger/timetable/print). Build/project/whitespace checks passed.
 
 Current docs: source map/contracts and CSS ownership in Project Guide, fixture/build command changes in Operations, plan/navigation status updated. User Guide needs no behavior revision. Reviewed source links retain baseline snapshots; no docs were moved/deleted, and existing `src`/`docs` Pages exclusions remain sufficient.
+
+## Final integration
+
+Verified October 26, 2026, 04:22 UTC. Integration target: `d1acc631586c122828146d27853884d7f2b8d754` (the following verification-record commit changes documentation only).
+
+- Build freshness and project checks passed; all 131 unit tests passed, including the real 21-second health deadline test.
+- All 16 browser suites passed. Current and explicitly archived baseline version fixtures passed separately; all three ledger compatibility cases passed. The archived adapter preserves the existing `VERSIONS_FIXTURE_HTML` option without weakening the current marker contract.
+- Baseline visual parity: identical computed styles and PNG bytes in all 24 scenarios.
+- 114 current documentation links checked; source/generated whitespace checks passed.
+- Git diff confirms unchanged trip settings/config/template, SQL/migrations/health function, Daylight, PWA/manifest/icons/assets/font, CSS/theme and CI workflow.
+- No production data or SQL writes. Browser tests use synthetic fixtures; SQL execution remains the unchanged disposable CI job. Physical-device behavior beyond the existing browser matrix is not certified here.
+
+Application SHA-256:
+
+| Artifact | SHA-256 |
+|---|---|
+| `index.html` | `1029364f655b3e5348154268c0d50befaba220903d3f535d958ca74290f88175` |
+| `trip-config.js` | `162f7aeb1f04675672b3463b5b58ca74168c6375c30ac938351dd174803386ca` |
+
+Stage commits: 0 `9530c19`; 1a `7b6fe20`; 1b `a260d9c`; 2a `799ec79`; 2b/Stop A `097810f`; 3a `8a20dae`; 3b storage `ddb5f36`, recovery `164b3dc`; 4 `1f36441`; 5/Stop B `188f030`; 6 `28c9342`; archived-fixture compatibility `d1acc63`.
