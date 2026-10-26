@@ -153,3 +153,5 @@ Reopen online after deployment to update. Closing all app windows and reopening 
 ## Troubleshooting
 
 See [troubleshooting](OPERATIONS.md#troubleshooting) for saving, upload, and refresh issues. If save status is uncertain, retain the draft and follow the screen message.
+
+Photo metadata requires a description and alternative text. Blank or whitespace-only fields show an inline error in the dialog; correct them and apply again.

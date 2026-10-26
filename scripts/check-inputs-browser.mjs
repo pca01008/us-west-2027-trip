@@ -155,6 +155,21 @@ try {
       if(close==='Escape')await page.keyboard.press(close);else await page.locator(close).press('Enter');
       await page.locator(dialog).waitFor({state:'hidden'});await focused(trigger);
     }
+    for(const theme of ['light','dark']){
+      await selectTheme(page,theme);
+      const trigger=page.locator('.day1 [data-edit-photo]').first();await open(trigger,'#photoEditDialog','#photoCaption');
+      const original=await page.locator('.day1 .schedule-photo').first().evaluate(el=>({caption:el.querySelector('figcaption').textContent,alt:el.querySelector('img').alt}));
+      for(const value of ['', '   ', '']){
+        await page.locator('#photoCaption').fill(value);await page.locator('#photoAlt').fill(value);await page.locator('#photoEditSave').click();await fieldError('photoCaption','#photoEditDialog');
+        assert.equal(await page.locator('#photoAltError').isVisible(),true);
+      }
+      await page.screenshot({path:path.join(output,`${mobile?'mobile':'desktop'}-${theme}-photo-errors.png`)});
+      await page.locator('#photoCaption').fill('검증된 사진 설명');assert.equal(await page.locator('#photoCaptionError').isHidden(),true);
+      await page.locator('#photoEditSave').click();await fieldError('photoAlt','#photoEditDialog');
+      await page.locator('#photoAlt').fill('검증된 대체 텍스트');await page.locator('#photoEditSave').click();await focused(trigger);
+      assert.deepEqual(await page.locator('.day1 .schedule-photo').first().evaluate(el=>({caption:el.querySelector('figcaption').textContent,alt:el.querySelector('img').alt})),{caption:'검증된 사진 설명',alt:'검증된 대체 텍스트'});
+      await open(trigger,'#photoEditDialog','#photoCaption');assert.equal(await page.locator('#photoAltError').isHidden(),true);await page.locator('#photoCaption').fill(original.caption);await page.locator('#photoAlt').fill(original.alt);await page.locator('#photoEditSave').click();
+    }
     const map=page.locator('.day1 [data-media="map"]').first();await open(map,'#mapDialog','#mapName');
     await page.locator('#mapName').fill(' ');await page.locator('#mapUrl').fill('http://example.test');await page.locator('#mapSave').click();await fieldError('mapName','#mapDialog');
     await page.locator('#mapName').fill('Test place');await page.locator('#mapSave').click();await fieldError('mapUrl','#mapDialog');
