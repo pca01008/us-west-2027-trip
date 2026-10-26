@@ -16,7 +16,7 @@ const diagnostics = await createBrowserDiagnostics('ledger');
 const { chromium } = await import(process.argv[2] ? pathToFileURL(process.argv[2]).href : 'playwright');
 const root = new URL('../', import.meta.url);
 const output = await mkdtemp(path.join(tmpdir(), 'westbound-ledger-'));
-const source = await readFile(new URL('index.html', root), 'utf8');
+const source = await readFile(process.env.LEDGER_FIXTURE_HTML || new URL('index.html', root), 'utf8');
 const server = createServer(async (req, res) => {
   const file = new URL(req.url, 'http://localhost').pathname.slice(1) || 'index.html';
   if (!/^(index\.html|trip-config\.js|(?:icons|assets)\/[\w.-]+)$/.test(file)) { res.writeHead(404).end(); return; }
@@ -97,6 +97,65 @@ try {
       assert.deepEqual(await page.locator('#categorySummary .category-total b').allTextContents(), ['₩26,357 ($19.88)', '₩2,013 ($1.52)']);
       assert.deepEqual(await page.locator('#categorySummary small').allTextContents(), []);
       await csv(mixedCsv);
+
+      scenario = 'invalid settings rates remain visible without changing ledger state'; diagnostics.scenario(`${mode} / ${scenario}`);
+      const rateState = () => page.evaluate(() => {
+        const { exchangeRate, exchangeRateUpdated, expenses } = window.__ledgerTest.captureState();
+        return { exchangeRate, exchangeRateUpdated, expenses };
+      });
+      const unchangedRate = await rateState();
+      for (const theme of ['light', 'dark']) {
+        await selectTheme(page, theme, mobile);
+        await activate(page.locator('#editBtn'));
+        for (const invalid of ['', ' ', '0', '-1', 'bad', '1,45', '1450.1234567890123456789', '9007199254740993']) {
+          for (const action of ['pointer', 'Enter', 'Escape']) {
+            await page.locator('#settingsExchangeRate').fill('1450');
+            await page.locator('#settingsExchangeRate').fill(invalid);
+            assert.equal(await page.locator('#settingsExchangeRateError').isVisible(), false, 'typing clears stale error');
+            if (action === 'pointer') await activate(page.locator('#ledgerSettingsClose'));
+            else await page.locator('#settingsExchangeRate').press(action);
+            await page.locator('#settingsExchangeRateError').waitFor({state:'visible'});
+            assert.equal(await page.locator('#ledgerSettingsDialog').isVisible(), true, `${invalid}/${action}: stays open`);
+            assert.equal(await page.locator('#settingsExchangeRate').inputValue(), invalid, 'retain exact rejected input');
+            assert.equal(await page.locator('#settingsExchangeRate').getAttribute('aria-invalid'), 'true');
+            assert.equal(await page.locator('#settingsExchangeRate').getAttribute('aria-describedby'), 'settingsExchangeRateError');
+            assert.ok((await text('#settingsExchangeRateError')).trim().length > 0, 'actionable local error');
+            assert.equal(await page.locator('#settingsExchangeRate').evaluate(input => input === document.activeElement), true);
+            assert.deepEqual(await rateState(), unchangedRate, 'invalid submission does not mutate rate, timestamp or expenses');
+          }
+        }
+        await page.screenshot({path:path.join(output,`${mode}-${theme}-rate-validation.png`)});
+        // Category rendering must not overwrite a pending rate or dismiss its error.
+        await activate(page.locator('#settingsAddCategory'));
+        await page.locator('#categoryName').fill('환율 입력 보존');
+        await activate(page.locator('#categorySave'));
+        assert.equal(await page.locator('#settingsExchangeRate').inputValue(), '9007199254740993');
+        assert.equal(await page.locator('#settingsExchangeRateError').isVisible(), true);
+        await activate(page.locator('#ledgerSettingsRateRevert'));
+        assert.equal(await page.locator('#settingsExchangeRate').inputValue(), '1325.5');
+        assert.equal(await page.locator('#settingsExchangeRateError').isVisible(), false);
+        assert.equal(await page.locator('#settingsExchangeRate').getAttribute('aria-invalid'), 'false');
+        assert.equal(await page.locator('#ledgerSettingsDialog').isVisible(), true, 'revert only resets pending rate');
+        await activate(page.locator('#ledgerSettingsClose'));
+        await page.locator('#ledgerSettingsDialog').waitFor({state:'hidden'});
+        assert.deepEqual(await rateState(), unchangedRate, 'revert and unchanged apply create no rate change');
+        await activate(page.locator('#editBtn'));
+        assert.equal(await page.locator('#settingsExchangeRateError').isVisible(), false, 'reopen clears error');
+        await page.locator('#settingsExchangeRate').fill('1,450.125');
+        await page.locator('#settingsExchangeRate').press('Tab');
+        assert.deepEqual(await rateState(), unchangedRate, 'blur does not apply an unconfirmed rate');
+        await page.locator('#settingsExchangeRate').press('Enter');
+        await page.locator('#ledgerSettingsDialog').waitFor({state:'hidden'});
+        const appliedRate = await rateState();
+        assert.equal(appliedRate.exchangeRate, 1450.125);
+        assert.ok(appliedRate.exchangeRateUpdated, 'valid application records its timestamp');
+        assert.deepEqual(appliedRate.expenses, unchangedRate.expenses, 'existing amounts keep their original rates');
+        await activate(page.locator('#editBtn'));
+        await page.keyboard.press('Escape');
+        await page.locator('#ledgerSettingsDialog').waitFor({state:'hidden'});
+        assert.deepEqual(await rateState(), appliedRate, 'unchanged Escape leaves rate and timestamp untouched');
+        await fixture(mixed);
+      }
 
       scenario = 'rate and budget changes through settings'; diagnostics.scenario(`${mode} / ${scenario}`);
       await settings(1400);

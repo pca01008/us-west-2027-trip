@@ -309,6 +309,8 @@ Timetable is a read-only projection. Start-only events have no inferred end; exp
 
 `showDialog()` records the active trigger before showing or focusing a modal. The dialog stack traps Tab and closes its top entry on Escape. Closing restores the trigger; ID/action selectors resolve replacement expense/category/time/photo controls after rendering. A child returns focus within its remaining parent. Hidden, unregistered dialogs do not steal focus. Modal openings use this helper; the mutation observer handles closes.
 
+Settings rate input stays separate from the ledger until Apply and close, Enter, or Escape validates and applies it. Blur validates without applying; rendering preserves edited input. Invalid submission retains the input, shows a local alert and focuses the field. Revert rate restores the current rate without closing or undoing category edits. Rate parsing rejects decimal values that lose precision on JSON Number round trips; exact fractions and trailing zeros remain supported. Unchanged application leaves the rate timestamp/history untouched.
+
 Category name, edited expense name and map inputs use local `role="alert"` errors with `aria-describedby` and `aria-invalid`. Invalid submission focuses the first invalid field; input and reopening clear stale errors through `setFieldError()`.
 
 <a id="media"></a>
