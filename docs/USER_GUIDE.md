@@ -99,7 +99,7 @@ The current trip uses KRW/USD. Other trips may show a different configured pair;
 - Remote rate changes update only automatic results in unadded input; manual pairs remain unchanged.
 - Legacy entries receive the opposite amount once using the document rate as the **conversion baseline**. An initial notice explains differences from the previous KRW-equivalent total. Historical transaction rates are not reconstructed. Missing/invalid rates produce a default-rate notice.
 - Legacy precision, including fractional KRW, survives until amount editing. KRW display rounds while CSV preserves source precision, so displayed sums can differ from CSV totals.
-- Reorder with up/down buttons, then save. Deletion requires confirmation.
+- Reorder with up/down buttons, then save. Deletion requires confirmation. Ledger entry inputs and row actions have at least 44px touch areas.
 
 ## Versions and restoration
 

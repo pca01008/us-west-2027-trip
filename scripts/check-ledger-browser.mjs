@@ -1,4 +1,4 @@
-import { selectTripTab } from './browser-fixtures.mjs';
+import { selectTripTab, selectTheme } from './browser-fixtures.mjs';
 // Exercise real ledger rendering, UI changes and downloaded CSV bytes offline.
 // Only fixture setup uses an app hook; calculations and exports are not mocked.
 import assert from 'node:assert/strict';
@@ -256,6 +256,33 @@ try {
         await krw.fill('1.1');await activate(page.locator('#addExpense'));
         await page.screenshot({path:path.join(output,`${mode}-${width}-dual-error.png`),fullPage:true});
       }
+      scenario='44px ledger targets with long names and high amounts';diagnostics.scenario(`${mode} / ${scenario}`);
+      await page.evaluate(()=>{const api=window.__ledgerTest,state=api.captureState();state.expenses=Array.from({length:6},(_,i)=>({id:'touch-'+i,name:'긴 여행 경비 이름 Long expense '.repeat(3),date:'2027-01-21',categoryId:'food',amountKrw:9876543210,amountUsd:7654321.98,amountSource:'both',appliedExchangeRate:null}));api.applyState(api.normalizeState(state));});
+      const touchState=await page.evaluate(()=>{const api=window.__ledgerTest;return api.normalizeState(api.captureState());});
+      for(const theme of ['light','dark']){
+        await selectTheme(page,theme);
+        for(const width of [320,390,1440]){
+          await page.setViewportSize({width,height:900});
+          const geometry=await page.evaluate(()=>{
+            const rect=el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
+            return {overflow:document.documentElement.scrollWidth>innerWidth,inputs:Array.from(document.querySelectorAll('.expense-entry input,.expense-entry select'),rect),rows:Array.from(document.querySelectorAll('.expense'),row=>({row:rect(row),controls:Array.from(row.querySelectorAll('.expense-action:not(:disabled)'),rect)}))};
+          });
+          assert.equal(geometry.overflow,false,`${theme}/${width}: no document overflow`);
+          assert.ok(geometry.inputs.length>=5);assert.ok(geometry.inputs.every(r=>r.height>=44&&r.width>=44),`${theme}/${width}: input targets >=44px`);
+          for(const {row,controls} of geometry.rows)for(const [i,r] of controls.entries()){
+            assert.ok(r.width>=44&&r.height>=44,`${theme}/${width}: enabled row targets >=44x44px`);
+            assert.ok(r.left>=row.left&&r.right<=row.right&&r.top>=row.top&&r.bottom<=row.bottom,`${theme}/${width}: controls fit their row`);
+            if(i)assert.ok(r.left-controls[i-1].right>=4,`${theme}/${width}: separate action targets`);
+          }
+          await page.evaluate(()=>window.scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'}));
+          assert.ok(await page.locator('.expense').last().evaluate(row=>{const r=row.getBoundingClientRect(),nav=document.querySelector('.bottom-nav').getBoundingClientRect();return innerWidth>=1024?r.left>=nav.right&&r.bottom<=innerHeight:r.bottom<=nav.top;}),`${theme}/${width}: final row clears navigation`);
+          const modify=page.locator('.expense').last().locator('[data-edit-expense]');
+          assert.ok(await modify.evaluate(el=>{const r=el.getBoundingClientRect();return el.contains(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2));}),`${theme}/${width}: final Modify is hit-testable`);
+          await page.screenshot({path:path.join(output,`${mode}-${theme}-${width}-touch-targets.png`)});
+          await activate(modify);assert.equal(await page.locator('#expenseDialog').isVisible(),true);await page.locator('#expenseEditCancel').click();
+        }
+      }
+      assert.deepEqual(await page.evaluate(()=>{const api=window.__ledgerTest;return api.normalizeState(api.captureState());}),touchState,'Geometry/theme checks and canceled editing preserve data');
       console.log(`${mode}: mixed totals, rate changes, rounding, budget compatibility, ordering, deleted categories and ${downloadIndex} CSV downloads passed.`);
     } catch (error) {
       await diagnostics.fail(new Error(`${mode} ledger scenario: ${scenario}`, { cause: error }));

@@ -143,6 +143,8 @@ Follow-up: see the [U2 fix and verification record](2026-10-26-dialog-validation
 
 ### U3 — P2: Enlarge secondary touch controls
 
+Follow-up: see the [U3 fix and verification record](2026-10-26-ledger-touch-targets.md). The measurements below describe the original review baseline.
+
 **Location:** [ledger.css](../../src/styles/ledger.css), lines 7, 9, and 12; [refinement.css](../../src/styles/refinement.css), primary control sizing.
 
 **Measured at 390px:** Ledger inputs were 42px high; Modify was approximately 55×38px; Delete was 38×38px. Main navigation and Add expense already meet the 44px target. Hidden day radios and checkbox inputs with larger clickable labels were excluded from this finding.

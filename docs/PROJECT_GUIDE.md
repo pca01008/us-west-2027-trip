@@ -263,6 +263,8 @@ Each schema-5-or-earlier document, draft baseline, or version converts using its
 
 The expense array holds ID, name, both amounts, source/rate, date/category; its order is display order. Both currencies total stored values. Category deletion moves entries to `deleted`. CSV includes unsaved data/current array order and escapes formula-like prefixes.
 
+Ledger entry inputs/selects have a 44px minimum height. Row actions use at least 44×44px with 4px gaps across desktop/mobile; large amounts wrap above actions on narrow screens.
+
 `budgetKrw`/`defaultBudgetKrw` remain compatibility-only fields; UI neither uses nor changes them. Schema 6 expands document JSON without new tables. HTML normalization replaces old ledger markup with current `moneyTemplateHtml`, preventing removed budgets/filters from returning after loading documents/drafts/versions/files. Filter variables/events/render paths are removed while expenses, budget values, importance/stay metadata, and order remain.
 
 Timetable is a read-only projection. Start-only events have no inferred end; explicit intervals scale by duration, overlaps use columns, overnight spans continue. Unspecified/all-day/other-zone events are separate. Manual categories override keywords and survive state/version/offline round trips. See [usage](USER_GUIDE.md).
