@@ -53,17 +53,13 @@ export function injectBrowserFixture(html, api = '', options = {}) {
   if (html.split(fixtureMarker).length !== 2) throw new Error('Expected exactly one browser fixture marker');
   return html.replace(fixtureMarker, () => api + '\nObject.assign(runtimeOptions,' + JSON.stringify(options) + ');');
 }
-export function injectBrowserDeadlines(html, options) {
-  // The API injection already consumed the marker. Options belong before its API.
-  const anchor = 'Object.assign(runtimeOptions,{});';
-  if (html.split(anchor).length !== 2) throw new Error('Expected exactly one fixture options anchor');
-  return html.replace(anchor, () => 'Object.assign(runtimeOptions,' + JSON.stringify(options) + ');');
-}
-
-// The paused Daylight artifact has no authoring seam; keep its compatibility
-// fixture adapter separate from the current application's composition contract.
-export function injectDaylightFixture(html, api) {
+// Only explicitly selected archived artifacts use this adapter. Current builds
+// must satisfy the marker contract above, including when the marker is missing.
+export function injectArchivedFixture(html, api, options = {}) {
   const legacy = 'initializeTimetable();initializeDialogAccessibility();';
-  if (html.split(legacy).length !== 2) throw new Error('Expected one Daylight initialization anchor');
-  return injectBrowserFixture(html.replace(legacy, fixtureMarker + '\n' + legacy), 'const runtimeOptions={};' + api);
+  if (html.split(legacy).length !== 2) throw new Error('Expected one archived initialization anchor');
+  const prepared=html.replace(legacy,fixtureMarker+'\n'+legacy)
+    .replace("다시 시도해 주세요.')),8000)","다시 시도해 주세요.')),runtimeOptions.versionReadMs||8000)");
+  return injectBrowserFixture(prepared, 'const runtimeOptions={};' + api, options);
 }
+export const injectDaylightFixture = injectArchivedFixture;

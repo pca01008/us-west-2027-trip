@@ -1,4 +1,4 @@
-import { injectBrowserFixture, injectBrowserDeadlines } from './browser-fixtures.mjs';
+import { injectBrowserFixture, injectArchivedFixture } from './browser-fixtures.mjs';
 // Real version controls against synthetic, gated local HTTP reads only.
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -13,6 +13,7 @@ const diagnostics = await createBrowserDiagnostics('versions');
 const { chromium } = await import(process.argv[2] ? pathToFileURL(process.argv[2]).href : 'playwright');
 const root = new URL('../', import.meta.url);
 const source = await readFile(process.env.VERSIONS_FIXTURE_HTML || new URL('index.html', root), 'utf8');
+const injectVersionFixture=process.env.VERSIONS_FIXTURE_HTML&&!source.includes('// @browser-fixture')?injectArchivedFixture:injectBrowserFixture;
 const output = await mkdtemp(path.join(tmpdir(), 'westbound-versions-'));
 const plans = new Map();
 let versions = [], writes = 0;
@@ -58,9 +59,8 @@ const server = createServer(async (req, res) => {
     if (!/^(index\.html|trip-config\.js|(?:assets|icons)\/[\w.-]+)$/.test(file)) { res.writeHead(404).end(); return; }
     let body = await readBrowserFixture(new URL(file, root));
     if (file === 'index.html') {
-      body = injectBrowserFixture(source.replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
-        .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/, stub), 'const originalVersionFlush=flushDraftPersistence;flushDraftPersistence=async(...args)=>{const result=await originalVersionFlush(...args);await window.__versionDraftGate?.();return result;};window.__versionTest={captureState,normalizeState};');
-      if (url.searchParams.has('fastTimeout')) body = injectBrowserDeadlines(body, {versionReadMs:150});
+      body = injectVersionFixture(source.replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
+        .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/, stub), 'const originalVersionFlush=flushDraftPersistence;flushDraftPersistence=async(...args)=>{const result=await originalVersionFlush(...args);await window.__versionDraftGate?.();return result;};window.__versionTest={captureState,normalizeState};', {versionReadMs:url.searchParams.has('fastTimeout')?150:8000});
     }
     res.setHeader('Content-Type', file.endsWith('.html') ? 'text/html; charset=utf-8' : file.endsWith('.js') ? 'text/javascript; charset=utf-8' : 'application/octet-stream');
     res.end(body);

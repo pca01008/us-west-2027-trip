@@ -154,6 +154,8 @@ Isolated local APIs block production. [Fixtures](../scripts/browser-fixtures.mjs
 
 Synthetic servers use `injectBrowserFixture()` at the single inert `// @browser-fixture` composition marker. Missing/duplicate markers fail immediately. Fixture deadline options preserve production defaults; no private API is exposed by the normal build.
 
+The paused Daylight artifact and an explicitly supplied pre-marker `VERSIONS_FIXTURE_HTML` use a separate checked archived adapter. Current builds never silently fall back to initialization-line injection.
+
 | Check | Command and coverage |
 |---|---|
 | Full runner | `node scripts/check-browsers.mjs`; fails if any child fails; drafts has a five-minute process limit, other suites three minutes |

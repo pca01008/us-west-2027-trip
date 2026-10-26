@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { injectBrowserFixture } from '../scripts/browser-fixtures.mjs';
+import { injectBrowserFixture, injectArchivedFixture } from '../scripts/browser-fixtures.mjs';
 
 test('fixture seam rejects missing or duplicate composition markers', () => {
   assert.throws(() => injectBrowserFixture(''), /exactly one/);
@@ -9,4 +9,8 @@ test('fixture seam rejects missing or duplicate composition markers', () => {
   assert.match(transformed, /fixture\(\);/);
   assert.match(transformed, /"saveMs":120/);
   assert.doesNotMatch(transformed, /@browser-fixture/);
+  const archived='initializeTimetable();initializeDialogAccessibility();';
+  assert.throws(()=>injectBrowserFixture(archived),/exactly one/);
+  assert.throws(()=>injectArchivedFixture(archived+archived),/one archived/);
+  assert.match(injectArchivedFixture(archived,'fixture();',{versionReadMs:150}),/"versionReadMs":150/);
 });
