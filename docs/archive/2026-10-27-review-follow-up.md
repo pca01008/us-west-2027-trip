@@ -92,7 +92,7 @@ Diagnostic run [40415909457](https://github.com/pca01008/us-west-2027-trip/actio
 | U3 | `7f569c9` | Readable ledger values/labels, responsive regression coverage |
 | T1 | `56b6e8f` | Reuse operation-boundary fixes/tests; fill photo-validation gaps |
 | T2 | `02f35df` | Computed type/contrast and representative states |
-| T3 | `abc3003` through `2eb1ad8` | Shared validation, artifact/publication gate and measured CI setup fixes |
+| T3 | `abc3003` through `f6c6a88` | Shared validation, artifact/publication gate, measured CI fixes and editability wait |
 
 Schema 6/KRW/USD and production data are preserved. No production SQL, authenticated save, photo upload or trip-content mutation was performed. Pre-existing Cloud-guide work stays uncommitted in the original workspace.
 
@@ -103,3 +103,17 @@ On `3a0be47`, [40417173625](https://github.com/pca01008/us-west-2027-trip/action
 Container-local temp fixed rendering on `6537305`, [40417527169](https://github.com/pca01008/us-west-2027-trip/actions/runs/40417527169): Firefox/WebKit and 15 Chromium suites passed. Drafts exposed a fixture race after clicking Edit: typing began while the title was still `contenteditable=false`. The new boundary scenarios now wait for actual editability, matching the existing `edit()` helper. No sleeps, history flushes, deadline changes or app behavior changes are used. The failed full run remains failed; it is not replaced by the 15 passes.
 
 The corrected draft suite passed locally on Windows/pinned Chromium. The next work-branch run explicitly requests two additional input/draft passes after the full run (three total), retaining unchanged deadlines and every attempt.
+
+Clean Windows `f6c6a88` verification: `npm test` passed185 (24.0s). Two additional input/draft runs passed at **47.1/140.1s** and **46.2/139.7s**, with unchanged180/300s deadlines. Combined with the corrected standalone draft pass, the editability wait passed three consecutive local draft runs. These are Windows results, not local Ubuntu certification.
+
+## Verified release candidate
+
+Candidate `f6c6a88104a51324e46a82bc5a1ca4b8af7feee5` passed [40419080270](https://github.com/pca01008/us-west-2027-trip/actions/runs/40419080270): 185 unit/static checks, 24 PostgreSQL checks, Firefox/WebKit functional suites, all16 Chromium suites, and three consecutive input/draft runs. Inputs: **59.1/57.1/55.4s** of180s; drafts: **174.8/169.5/165.3s** of300s. The full browser stage took722.4s (20-minute stage/30-minute job budgets unchanged). [Machine-readable receipt](2026-10-27-review-follow-up/release-validation.json) preserves suite timings and scope.
+
+The aggregate and same-SHA Jekyll artifact check passed; manual work-branch deployment was skipped. Candidate Pages artifact12698065073, SHA256 `8052045f5a20677a97806ac30ea18474efe7494357a0d22592640c8ab4d75366`, matched required bytes and excluded authoring/test/private paths. Afterward Pages source was changed from legacy to `workflow` and confirmed by GET. A fresh fetch confirmed main remained `061584d`; nonforced promotion to the verified SHA succeeded. Main must validate/build/deploy that SHA before a production success claim.
+
+Main run [40421603642](https://github.com/pca01008/us-west-2027-trip/actions/runs/40421603642), same `f6c6a88`, failed WebKit theme-radio pointer acknowledgement after Firefox passed; deploy stayed blocked. Downloaded synthetic trace12698370108 shows the dark radio checked, `data-theme=dark`, and menu hidden after the click, while Playwright still waited for pointer completion. The font request returned200 in18.6ms; no page error was recorded. This is an observed automation acknowledgement failure, not proof of a production theme defect or of an external transient. No blind rerun was used.
+
+WebKit input fixtures now select themes with real focus+Space and explicitly require applied preference, checked radio and closed menu. Chromium/Firefox keep pointer theme coverage; all engines retain real pointer tabs/dialogs/fields and unchanged error/state assertions. WebKit pointer-theme completion and Linux PNG parity are not certified. App sources/output and deadlines are unchanged.
+
+The first local keyboard-helper check correctly failed its new closed-menu assertion when the requested radio was already selected (Space causes no change event). The helper now closes that unchanged selection with real Escape before checking all postconditions. This setup failure is retained; no timeout was ignored.

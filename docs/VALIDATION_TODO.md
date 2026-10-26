@@ -52,13 +52,13 @@ Historical incidents:
 ## P0 — Agree on one validation environment
 
 - [x] Select Ubuntu 24.04 for the local/CI baseline. Required CI uses that release; local full execution remains unverified below.
-- [ ] Select one exact Node 24 patch version after running the existing unit, SQL, and browser suites with it. Move browser CI from Node 22 only after that compatibility check passes.
+- [x] Pin Node 24.22.1/npm 11.19.1 after successful unit, SQL and browser CI coverage; all required jobs read the version file.
 - [x] Store the Node version in one checked-in version file supported by `actions/setup-node`; make local setup and all CI jobs read it. Document the expected npm version and dependency update procedure.
 - [x] Keep `package.json` runtime support separate from the validation baseline. Do not raise `engines.node` merely to pin the test environment; decide any supported-runtime change explicitly.
-- [ ] Keep Playwright pinned through `package-lock.json`. Install its Chromium with `npx playwright install --with-deps chromium` inside Linux.
+- [x] Keep Playwright 1.62.1 pinned through the lockfile. Browser CI uses its digest-pinned Noble image; local setup installs the same binaries/system dependencies explicitly.
 - [x] Reject `PWA_BROWSER_CHANNEL` overrides in the required full-check mode. Keep installed Chrome runs available as optional compatibility checks.
-- [ ] Use PostgreSQL 17 for local and CI SQL tests. Record its actual version; evaluate exact image pinning only if minor-version drift causes meaningful differences.
-- [ ] Run `npm ci` for every clean verification environment, including the GitHub unit job. Do not reuse Windows `node_modules` inside Linux.
+- [x] Configure disposable PostgreSQL 17 in CI/local helper; CI recorded 17.11. Local full execution remains unverified. Pin minors only if drift causes meaningful differences.
+- [x] Run `npm ci` for clean Windows and CI environments, including the unit job. Never reuse Windows `node_modules` inside Linux.
 - [x] Record OS release, architecture, Node/npm/Playwright/browser/PostgreSQL versions at the start of verification. Never print database passwords or full connection URLs.
 
 Acceptance: local Linux and CI use the agreed versions, and a mismatch produces an actionable failure instead of a misleading full pass.
@@ -128,7 +128,7 @@ Acceptance: repeated targeted runs are stable, current full-suite timings are re
 
 Immediate operating rule:
 
-- [ ] Validate the candidate commit locally and on its work branch before updating `main`. Preserve the verified commit identity; rerun checks when a merge or additional edit changes release code.
+- [x] Validate the candidate locally (Windows scope) and on its work branch before updating `main`. Preserve its SHA; clean local Linux full execution remains separate below.
 - [x] Inspect available GitHub branch rules and Pages source settings. Record actual capabilities; do not assume required checks or protection are enabled.
 - [ ] Where supported, require the stable aggregate check before merging to `main`, and inspect direct-push/bypass behavior. Document limitations honestly.
 
@@ -137,11 +137,11 @@ Enforced publication target:
 - [ ] Change Pages publication to a controlled Actions deployment that depends on successful validation of the same commit. A manual work-branch Validate run must never publish production.
 - [x] Prefer one workflow containing validation and dependent Pages build/deploy jobs. Gate publication to the intended `main` event/ref, with Pages permissions scoped to deployment jobs.
 - [x] Check out and package the validated commit, never a moving `main` reference. Avoid downloading an artifact whose source SHA is unverified.
-- [ ] Preserve current Jekyll/Pages behavior and `_config.yml` exclusions. Do not upload the raw repository: `docs`, `src`, dependency directories, test artifacts, and private/local exports must remain outside the published site as appropriate.
-- [ ] Preserve relative paths, PWA assets, `.nojekyll` behavior if applicable, and existing public preview directories. Verify the built publication artifact before switching Pages source settings.
+- [x] Preserve Jekyll/Pages behavior and `_config.yml` exclusions. Same-SHA artifact checks reject source, dependencies, tests and private/local exports.
+- [x] Preserve relative paths, PWA assets and existing preview directories; required-byte and browser path checks pass. Verify the publication artifact before switching Pages source.
 - [x] Define deployment concurrency so an older validation run cannot overwrite a newer release. Handle cancellation without publishing incomplete output.
 - [x] Test failure/cancellation/skip behavior on a work branch or nonpublishing dry run. Confirm deployment is unreachable when a required job fails.
-- [ ] Switch Pages source only after the replacement artifact and dependency graph are verified; avoid simultaneous independent publication paths.
+- [x] Switch Pages source only after the replacement artifact and dependency graph pass. GET confirmed `workflow`; legacy publication is disabled.
 - [x] Document recovery to a known compatible release. Rollback must preserve trip data and follow the same validation gate; do not restore an uncontrolled publication bypass.
 
 Acceptance: a failing candidate cannot publish. A successful release identifies its validated SHA, Pages artifact, deployment run, and final URL; record actual activation in the dated evidence.
@@ -149,11 +149,11 @@ Acceptance: a failing candidate cannot publish. A successful release identifies 
 ## P1 — Verify the complete change
 
 - [ ] Run the complete shared command from a clean Linux dependency installation against the final candidate files.
-- [ ] Run the same committed candidate in GitHub and compare environment metadata, suite selection, result counts, and elapsed time.
+- [x] Run the same committed candidate in GitHub; compare environment, selection, counts and timing in the dated receipt.
 - [x] Use isolated negative checks to prove: stale generated output fails; missing SQL fails; browser failure propagates; selected subsets remain partial; cancelled validation cannot deploy.
 - [x] Verify failure artifacts survive and successful runs do not accumulate unnecessary temporary files.
 - [x] Run existing Windows checks once for developer usability after changing shared scripts. Keep this result separate from Linux/CI equivalence.
-- [ ] Inspect the Pages artifact for required assets and excluded directories. Use a local preview for navigation/PWA path checks without production data writes.
+- [x] Check same-SHA Jekyll artifact bytes/exclusions and isolated navigation/PWA path fixtures without production writes.
 - [ ] After an actual authorized deployment, verify public asset identity and basic read-only behavior separately from automated fixture results.
 
 ## P1 — Maintain documentation and evidence
@@ -181,7 +181,7 @@ Do not combine this work with UI redesign, currency migration, dependency upgrad
 
 - [ ] Required local Linux and GitHub checks use the same declared tools and test stages.
 - [x] Missing prerequisites and failed/unfinished checks cannot produce a full pass.
-- [ ] Previously failing suites pass repeated runs with measured time headroom.
+- [x] Previously failing suites pass repeated Windows/CI runs with measured headroom; local Linux remains unverified above.
 - [ ] Production deploys only an artifact derived from the validated release commit.
 - [x] Documentation describes implemented behavior; dated evidence distinguishes local, CI, deployment, and device verification.
 - [x] Remaining limits are explicit: runner performance still varies, mocked browser APIs do not prove production integrations, and emulation does not replace physical-device testing.

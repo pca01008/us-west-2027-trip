@@ -1,5 +1,5 @@
 import { injectBrowserFixture } from './browser-fixtures.mjs';
-import { selectTripTab, selectTheme } from './browser-fixtures.mjs';
+import { selectTripTab, selectTheme as selectPointerTheme } from './browser-fixtures.mjs';
 // Exercise the real app in isolated offline fixtures; never contact production APIs.
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -25,6 +25,18 @@ async function waitForFixtureFonts(page){
 const playwright = await import(modulePath ? pathToFileURL(modulePath).href : 'playwright');
 const engine=process.env.TRIP_BROWSER_ENGINE||'chromium';
 assert.ok(['chromium','firefox','webkit'].includes(engine),'Unsupported browser engine');
+async function selectTheme(page,value){
+  if(engine==='webkit'){
+    // WebKit can apply a radio's change then stall its pointer acknowledgement.
+    // Exercise real keyboard activation; Chromium/Firefox retain pointer checks.
+    await page.locator('#themeToggle').click();
+    const radio=page.locator(`input[name="themePreference"][value="${value}"]`);
+    await radio.focus();await radio.press('Space');
+    if(await page.locator('#themeMenu').isVisible())await page.keyboard.press('Escape');
+  }else await selectPointerTheme(page,value);
+  await page.waitForFunction(value=>document.documentElement.dataset.themePreference===value&&document.querySelector(`input[name="themePreference"][value="${value}"]`).checked&&document.querySelector('#themeMenu').hidden,value);
+}
+if(engine==='webkit')console.log('WebKit theme fixtures use keyboard activation with applied/checked/closed assertions; pointer theme coverage belongs to Chromium/Firefox.');
 const root = new URL('../', import.meta.url);
 const output = await mkdtemp(path.join(tmpdir(), 'westbound-inputs-'));
 const source = await readFile(new URL('index.html', root), 'utf8');

@@ -1,0 +1,138 @@
+{
+  "candidate": "f6c6a88104a51324e46a82bc5a1ca4b8af7feee5",
+  "runId": 40419080270,
+  "runUrl": "https://github.com/pca01008/us-west-2027-trip/actions/runs/40419080270",
+  "scope": "CI Ubuntu 24.04, Node 24.22.1, npm 11.19.1, Playwright 1.62.1; native validate/SQL and pinned Noble browser container",
+  "unitTests": 185,
+  "sqlTests": 24,
+  "postgres": "17.11",
+  "browsers": {
+    "chromium": "151.0.7922.34",
+    "firefox": "153.0",
+    "webkit": "26.5"
+  },
+  "extraEngines": "Firefox and WebKit functional input/dialog/draft/export suites passed; PNG evidence owned by Chromium",
+  "timings": [
+    {
+      "suite": "diagnostics",
+      "elapsedSeconds": 1.7,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "drafts",
+      "elapsedSeconds": 174.8,
+      "deadlineSeconds": 300
+    },
+    {
+      "suite": "storage",
+      "elapsedSeconds": 50.2,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "inputs",
+      "elapsedSeconds": 59.1,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "imports",
+      "elapsedSeconds": 28.7,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "versions",
+      "elapsedSeconds": 41.4,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "ledger",
+      "elapsedSeconds": 41,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "currency",
+      "elapsedSeconds": 6.9,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "ledger-compat",
+      "elapsedSeconds": 1.5,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "prep",
+      "elapsedSeconds": 44.1,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "auth",
+      "elapsedSeconds": 7.6,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "photos",
+      "elapsedSeconds": 1.1,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "theme",
+      "elapsedSeconds": 7.2,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "palette",
+      "elapsedSeconds": 26.9,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "navigation",
+      "elapsedSeconds": 20,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "pwa",
+      "elapsedSeconds": 18.7,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "inputs",
+      "elapsedSeconds": 57.1,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "drafts",
+      "elapsedSeconds": 169.5,
+      "deadlineSeconds": 300
+    },
+    {
+      "suite": "inputs",
+      "elapsedSeconds": 55.4,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "drafts",
+      "elapsedSeconds": 165.3,
+      "deadlineSeconds": 300
+    }
+  ],
+  "windows": {
+    "cleanCandidateUnitTests": 185,
+    "unitSeconds": 23.959,
+    "correctedStandaloneDraft": "passed; elapsed not separately recorded",
+    "additionalBoundaryPasses": [
+      {
+        "inputsSeconds": 47.1,
+        "draftsSeconds": 140.1
+      },
+      {
+        "inputsSeconds": 46.2,
+        "draftsSeconds": 139.7
+      }
+    ]
+  },
+  "limits": [
+    "No clean local Ubuntu 24.04 full run",
+    "No physical-phone verification",
+    "No Linux WebKit PNG parity",
+    "No authenticated production writes or SQL"
+  ]
+}

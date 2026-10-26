@@ -119,6 +119,7 @@ The full command checks prerequisites before running unit/static/generated, SQL 
 
 The root CI container runs browser commands with `HOME=/root`; Firefox rejects GitHub's `/github/home`, owned by another container user. The exact-path Git trust entry uses the same home. This is container configuration, not a host permission repair.
 Browser profiles and diagnostics use container-local `/tmp`, with matching artifact paths. Chromium rendering crashed with profiles on the runner-mounted temp directory; preflight now renders and captures a trivial page before suites.
+WebKit input fixtures set themes through real keyboard activation and assert the applied value, checked radio and closed menu. A preserved trace showed pointer application succeeded while its automation acknowledgement stalled. Chromium/Firefox retain pointer-theme coverage; WebKit pointer-theme completion and Linux PNG parity remain limits.
 
 For a fresh local Linux run, first install WSL2 Ubuntu 24.04 and Docker Engine/Desktop integration as user-managed prerequisites. In normal WSL under your account, create a separate Linux filesystem checkout (for example `~/src/us-west-2027-trip`), select the declared Node/npm versions, and run:
 
