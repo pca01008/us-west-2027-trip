@@ -113,6 +113,8 @@ Follow-up: see the [F4 fix and verification record](2026-10-26-comparison-date-m
 
 ### U1 — P2: Modal focus origin is captured too late
 
+Follow-up: see the [U1 fix and verification record](2026-10-26-dialog-focus.md). The reproduction below describes the original review baseline.
+
 **Location:** [auth-dialogs.js](../../src/app/auth-dialogs.js), lines 5–12; [ledger-editor.js](../../src/app/ledger-editor.js), lines 16–19 and 37; [schedule-editor.js](../../src/app/schedule-editor.js), lines 3–17.
 
 **Reproduction and evidence:** Add a synthetic expense, select Modify, then press Escape. The dialog's stored focus origin was `expenseEditName`, an input inside the dialog. After closing, `document.activeElement` was `BODY`, not the originating Modify button.

@@ -53,7 +53,7 @@
       const schemaVersion=raw.schemaVersion===undefined?fileVersion:validateVersion(raw.schemaVersion);
       const incoming=normalizeState(migratePublishedState({...raw,schemaVersion}),true),published=await fetchPublishedState();
       const current=normalizeState(published?.content?.html?migratePublishedState(published.content):lastSavedState),groups=buildDiff(current,incoming);
-      pendingImport={state:incoming,baselineRevision:Math.max(0,Number(published?.revision)||0),baselineUpdatedAt:published?.updated_at||'',current};renderImportDiff(groups);$('#importDialog').hidden=false;
+      pendingImport={state:incoming,baselineRevision:Math.max(0,Number(published?.revision)||0),baselineUpdatedAt:published?.updated_at||'',current};renderImportDiff(groups);showDialog($('#importDialog'));
     }catch(error){console.error(error);await showChoice({title:'작업본을 불러올 수 없습니다.',message:error.message,choices:[{label:'확인',value:'ok',className:'action-primary'}]});}
     finally{$('#importFileInput').value='';}
   }
@@ -101,7 +101,7 @@
   }
   async function compareVersion(version){
     const request=beginVersionRequest();selectedVersion=null;setVersionLoadStatus('버전 #'+version.id+' 불러오는 중');
-    try{const state=await loadVersionContent(version,request);if(!isCurrentVersionRequest(request))return;const groups=buildDiff(captureState(),state);selectedVersion={...version,state};$('#versionCompareTitle').textContent='버전 #'+version.id+' 차이';renderDiff($('#versionCompareSummary'),$('#versionCompareDiff'),groups,(version.note?version.note+' · ':'')+new Date(version.created_at).toLocaleString('ko-KR')+' 저장본과 현재 화면 비교');setVersionLoadStatus();$('#versionCompareDialog').hidden=false;}
+    try{const state=await loadVersionContent(version,request);if(!isCurrentVersionRequest(request))return;const groups=buildDiff(captureState(),state);selectedVersion={...version,state};$('#versionCompareTitle').textContent='버전 #'+version.id+' 차이';renderDiff($('#versionCompareSummary'),$('#versionCompareDiff'),groups,(version.note?version.note+' · ':'')+new Date(version.created_at).toLocaleString('ko-KR')+' 저장본과 현재 화면 비교');setVersionLoadStatus();showDialog($('#versionCompareDialog'));}
     catch(error){showVersionLoadError(error,request);}
   }
   async function restoreSelectedVersion(){
@@ -115,7 +115,7 @@
   }
   async function openVersions(){
     if(OFFLINE_MODE||!editorSession||signingOut)return;
-    const request=beginVersionRequest(),list=$('#versionList');selectedVersion=null;$('#versionCompareDialog').hidden=true;setVersionLoadStatus();list.innerHTML='<div class="version-empty">저장 목록을 불러오는 중입니다.</div>';$('#versionDialog').hidden=false;
+    const request=beginVersionRequest(),list=$('#versionList');selectedVersion=null;$('#versionCompareDialog').hidden=true;setVersionLoadStatus();list.innerHTML='<div class="version-empty">저장 목록을 불러오는 중입니다.</div>';showDialog($('#versionDialog'));
     try{
       const data=await readVersionRequest(signal=>client.from('trip_document_versions').select('id,note,content_size,created_at').eq('trip_id',TRIP_ID).abortSignal(signal).order('created_at',{ascending:false}).limit(50),request);
       if(!isCurrentVersionRequest(request))return;

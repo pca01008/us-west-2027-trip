@@ -97,6 +97,47 @@ try {
     await diagnostics.close(context);console.log((mobile?'Mobile':'Desktop')+' tabs ('+reducedMotion+'): header position, long-to-short switches, nested labels, reselect, keyboard, rapid switches, timetable and data preservation passed.');
   }
   for (const mobile of [false, true]) {
+    diagnostics.scenario(`dialog keyboard focus / ${mobile ? 'mobile' : 'desktop'}`);
+    const context=await diagnostics.context(browser,{viewport:{width:mobile?390:1440,height:900},reducedMotion:'reduce'});
+    await context.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
+    const page=await context.newPage();page.setDefaultTimeout(5000);page.on('pageerror',error=>errors.push(error.message));
+    await page.goto(origin);await page.waitForFunction(()=>!document.body.classList.contains('hydrating'));
+    const focused=async locator=>assert.equal(await locator.evaluate(el=>el===document.activeElement),true,'Focus returns to the current trigger');
+    const open=async(trigger,dialog,initial)=>{
+      await trigger.focus();await page.keyboard.press('Enter');await page.locator(dialog).waitFor({state:'visible'});await focused(page.locator(initial));
+      const buttons=page.locator(dialog).locator('button:visible:not([disabled]),input:visible:not([disabled]),select:visible:not([disabled]),textarea:visible:not([disabled]),a[href]:visible');
+      await buttons.first().focus();await page.keyboard.press('Shift+Tab');await focused(buttons.last());
+      await page.keyboard.press('Tab');await focused(buttons.first());
+    };
+    await selectTripTab(page,'money');await page.locator('#expenseName').fill('Keyboard fixture');await page.locator('#expenseKrw').fill('14500');await page.locator('#addExpense').click();
+    const expense=page.locator('[data-edit-expense]').first();
+    for(const close of ['Escape','#expenseEditCancel','#expenseEditSave']){
+      await open(expense,'#expenseDialog','#expenseEditName');
+      if(close==='Escape')await page.keyboard.press(close);else await page.locator(close).press('Enter');
+      await page.locator('#expenseDialog').waitFor({state:'hidden'});await focused(expense);
+    }
+    await page.locator('#editBtn').focus();await page.keyboard.press('Enter');await page.locator('#ledgerSettingsDialog').waitFor({state:'visible'});
+    for(const close of ['Escape','#categoryCancel','#categorySave']){
+      const trigger=page.locator(close==='#categorySave'?'[data-category-edit="food"]':'#settingsAddCategory').filter({visible:true});
+      await open(trigger,'#categoryDialog','#categoryName');
+      if(close==='#categorySave')await page.locator('#categoryName').fill('Updated food');
+      if(close==='Escape')await page.keyboard.press(close);else await page.locator(close).press('Enter');
+      await page.locator('#categoryDialog').waitFor({state:'hidden'});await focused(trigger);
+      assert.equal(await page.locator('#ledgerSettingsDialog').isVisible(),true,'Closing a child keeps its parent open');
+    }
+    await page.keyboard.press('Escape');await focused(page.locator('#editBtn'));
+    await selectTripTab(page,'d1');await page.locator('#editBtn').click();
+    for(const [trigger,dialog,initial,cancel,save] of [
+      [page.locator('.day1 [data-media="time"]').first(),'#scheduleTimeDialog','#scheduleTimeStart','#scheduleTimeCancel','#scheduleTimeSave'],
+      [page.locator('.day1 [data-edit-photo]').first(),'#photoEditDialog','#photoCaption','#photoEditCancel','#photoEditSave']
+    ])for(const close of ['Escape',cancel,save]){
+      await open(trigger,dialog,initial);
+      if(close==='Escape')await page.keyboard.press(close);else await page.locator(close).press('Enter');
+      await page.locator(dialog).waitFor({state:'hidden'});await focused(trigger);
+    }
+    await diagnostics.close(context);console.log(`Dialog focus (${mobile?'mobile':'desktop'}): keyboard open, Tab wrapping, Escape/Cancel/Apply, nested dialogs and replaced triggers passed.`);
+  }
+  for (const mobile of [false, true]) {
     diagnostics.scenario(`input, import and export / ${mobile ? "mobile" : "desktop"}`);
     const context = await diagnostics.context(browser, { viewport: { width: mobile ? 390 : 1440, height: 900 }, isMobile: mobile, hasTouch: mobile, reducedMotion: 'reduce', acceptDownloads: true });
     await context.route('**/*', route => /^(file:|data:)/.test(route.request().url()) || route.request().url().startsWith(origin) ? route.continue() : route.abort());

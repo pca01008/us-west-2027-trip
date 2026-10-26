@@ -13,7 +13,7 @@
     setScheduleClock($('#scheduleTimeEnd'),parsed?.end!=null?timetableClock(parsed.end>1440?parsed.end-1440:parsed.end):'');
     $('#scheduleTimeLabel').value=row?time:'';
     $('#scheduleTimeZone').value=zone;
-    updateScheduleTimePreview();$('#scheduleTimeDialog').hidden=false;
+    updateScheduleTimePreview();showDialog($('#scheduleTimeDialog'));
     const initialInput=$(parsed||!row?'#scheduleTimeStart':'#scheduleTimeLabel');initialInput.focus();if(initialInput.id==='scheduleTimeLabel')initialInput.select();
   }
   function scheduleTimeFormValue(){return scheduleTimeValue({mode:$('#scheduleTimeMode').value,start:scheduleClockValue($('#scheduleTimeStart').value),end:scheduleClockValue($('#scheduleTimeEnd').value),label:$('#scheduleTimeLabel').value});}

@@ -159,7 +159,7 @@
       try{const latest=await fetchPublishedState();if(latest?.content?.html)checklistEditorBase=checklistItems(normalizeState(migratePublishedState(latest.content)));}catch(_){}
     }
     checklistEditorItems=clone(checklistEditorBase);newChecklistItemIds.clear();
-    $('#checklistEditorError').textContent='';renderChecklistEditor();$('#checklistDialog').hidden=false;syncChecklistControls();
+    $('#checklistEditorError').textContent='';renderChecklistEditor();showDialog($('#checklistDialog'));syncChecklistControls();
   }
   function renderChecklistEditor() {
     $('#checklistEditorRows').innerHTML=checklistEditorItems.map((item,index)=>'<div class="checklist-editor-row"><input type="checkbox" disabled aria-label="완료 상태"'+(item.checked?' checked':'')+'><textarea class="checklist-text" rows="2" data-check-index="'+index+'" aria-label="항목 '+(index+1)+'" placeholder="새 체크 항목">'+escapeHtml(item.text)+'</textarea><div class="checklist-row-actions"><button type="button" data-check-action="up" data-index="'+index+'" aria-label="위로 이동"'+(index===0?' disabled':'')+'>↑</button><button type="button" data-check-action="down" data-index="'+index+'" aria-label="아래로 이동"'+(index===checklistEditorItems.length-1?' disabled':'')+'>↓</button><button type="button" data-check-action="delete" data-index="'+index+'">삭제</button></div></div>').join('');

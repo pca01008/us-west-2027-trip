@@ -267,6 +267,10 @@ The expense array holds ID, name, both amounts, source/rate, date/category; its 
 
 Timetable is a read-only projection. Start-only events have no inferred end; explicit intervals scale by duration, overlaps use columns, overnight spans continue. Unspecified/all-day/other-zone events are separate. Manual categories override keywords and survive state/version/offline round trips. See [usage](USER_GUIDE.md).
 
+## Dialog focus
+
+`showDialog()` records the active trigger before showing or focusing a modal. The dialog stack traps Tab and closes its top entry on Escape. Closing restores the trigger; ID/action selectors resolve replacement expense/category/time/photo controls after rendering. A child returns focus within its remaining parent. Hidden, unregistered dialogs do not steal focus. Modal openings use this helper; the mutation observer handles closes.
+
 <a id="media"></a>
 
 ## Photos and maps

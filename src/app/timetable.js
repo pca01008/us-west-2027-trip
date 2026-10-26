@@ -197,7 +197,7 @@
     $('#timetableDetailTitle').textContent=event.title;
     $('#timetableDetailMeta').textContent=timetableDate(event.sourceDay)+' · DAY '+(event.sourceDay+1)+' · '+TIMETABLE_KINDS[event.kind];
     $('#timetableDetailTiming').textContent=event.time+' · '+(event.zone||timetableZoneName(TRIP_DAYS[event.sourceDay].date))+(event.end===null&&event.start!==null?' · 종료 시각 미정':'')+(event.end>1440?' · 다음 날까지':'')+(event.foreign?' · 시간축과 다른 시간대로, 입력된 원래 시각입니다.':'');
-    $('#timetableDetailContent').replaceChildren(card);$('#timetableDetail').hidden=false;
+    $('#timetableDetailContent').replaceChildren(card);showDialog($('#timetableDetail'));
   }
   function initializeTimetable() {
     $('#listViewBtn').onclick=()=>setScheduleView('list');$('#timetableViewBtn').onclick=()=>setScheduleView('timetable');
