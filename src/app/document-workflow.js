@@ -1,4 +1,5 @@
 function createDocumentController({$,OFFLINE_MODE,applyState,applyStatePreservingInputs,blockUnsupportedDocument,body,cancelTabScrollRelease,captureState,disposeTimetable,disposeTripClocks,checklistEditorDirty,client,clone,dialogs,documentSession,draftStorage,fetchPublishedState,fingerprint,finishHydration,flushDraftPersistence,getEditorSession,initializeHistory,isChecklistEditorSaving,isChecklistSaving,isDirty,isSaveInFlight,migratePublishedState,normalizeState,pendingCheckCount,readDraftRecord,readPublicCache,recoverOnlineDraft,sessionService,setStatus,resetInactivityTimer,setEditingUI,tripRepository,updateDirtyState}) {
+let refreshGeneration=0;
 
 function writePublicCache(state,metadata={}){
   const baseline=documentSession.snapshot();
@@ -13,19 +14,25 @@ function setPublishedBaseline(row,state,cacheMetadata={}) {
     void writePublicCache(documentSession.snapshot().lastSavedState,cacheMetadata);
   }
 
+function receivePublishedState(row,reason){
+    if(!row?.content?.html||!documentSession.canAdoptRemote(row))return false;
+    const state=normalizeState(migratePublishedState(row.content));
+    if(body.classList.contains('editing')||documentSession.snapshot().pendingDraft||body.classList.contains('previewing')||isChecklistSaving()||pendingCheckCount()||!$('#checklistDialog').hidden){
+      if(!documentSession.rememberRemote(row,state))return false;
+      setStatus('새 공유 저장본이 있습니다 · 저장 시 비교합니다.');return true;
+    }
+    applyStatePreservingInputs(state);setPublishedBaseline(row,state);initializeHistory();
+    setStatus(reason==='reconnect'?'연결 복구 · 최신 저장본 반영':reason==='realtime'?'새 저장본을 반영했습니다.':'최신 저장본을 반영했습니다.');return true;
+  }
+
 async function refreshPublishedState(reason='refresh') {
     if(OFFLINE_MODE||!client||!navigator.onLine)return false;
+    const generation=++refreshGeneration;
     try{
-      const row=await fetchPublishedState();if(!row?.content?.html)return false;
-      const revision=Math.max(0,Number(row.revision)||0),state=normalizeState(migratePublishedState(row.content));
-      if(body.classList.contains('editing')||documentSession.snapshot().pendingDraft||body.classList.contains('previewing')||isChecklistSaving()||pendingCheckCount()||!$('#checklistDialog').hidden){
-        if(revision!==documentSession.snapshot().publishedRevision){documentSession.rememberRemote(row,state);setStatus('새 공유 저장본이 있습니다 · 저장 시 비교합니다.');}
-        return true;
-      }
-      if(revision!==documentSession.snapshot().publishedRevision||fingerprint(state)!==fingerprint(documentSession.snapshot().lastSavedState)){applyStatePreservingInputs(state);setPublishedBaseline(row,state);initializeHistory();setStatus(reason==='reconnect'?'연결 복구 · 최신 저장본 반영':'최신 저장본을 반영했습니다.');}
-      else if(reason==='reconnect')setStatus('공유 서버 연결 복구 · 최신 상태');
+      const row=await fetchPublishedState();if(generation!==refreshGeneration||!row?.content?.html)return false;
+      if(!receivePublishedState(row,reason)&&reason==='reconnect'&&Number(row.revision)===documentSession.snapshot().publishedRevision)setStatus('공유 서버 연결 복구 · 최신 상태');
       return true;
-    }catch(error){if(blockUnsupportedDocument(error))return false;console.warn(error);setStatus('공유 서버 확인 실패 · 현재 화면 유지');return false;}
+    }catch(error){if(generation!==refreshGeneration)return false;if(blockUnsupportedDocument(error))return false;console.warn(error);setStatus('공유 서버 확인 실패 · 현재 화면 유지');return false;}
   }
 
 async function hydrate(){
@@ -58,10 +65,7 @@ async function hydrate(){
     initializeHistory();updateDirtyState();if(cacheStatus)setStatus(cacheStatus);await recoverOnlineDraft();finishHydration();
     if(!client)return;
     tripRepository.subscribe(payload=>{
-      if(!payload.new?.content?.html)return;
-      let remoteState;try{remoteState=normalizeState(migratePublishedState(payload.new.content));}catch(error){blockUnsupportedDocument(error);console.warn(error);return;}
-      if(body.classList.contains('editing')||documentSession.snapshot().pendingDraft||body.classList.contains('previewing')||isChecklistSaving()||pendingCheckCount()||!$('#checklistDialog').hidden){documentSession.rememberRemote(payload.new,remoteState);setStatus('새 공유 저장본이 있습니다 · 저장 시 비교합니다.');return;}
-      applyStatePreservingInputs(remoteState);setPublishedBaseline(payload.new,remoteState);initializeHistory();setStatus('새 저장본을 반영했습니다.');
+      try{if(receivePublishedState(payload.new,'realtime'))refreshGeneration++;}catch(error){blockUnsupportedDocument(error);console.warn(error);}
     },status=>{if(status==='SUBSCRIBED'&&loadedFromCache)void refreshPublishedState('reconnect');});
     await getEditorSession();
   }

@@ -169,7 +169,7 @@ IndexedDB holds public state, per-tab drafts, staged photos, baseline state/revi
 
 The PWA fetches static UI/configuration network-first with cache fallback on failure or after four seconds. Shared reads have an independent eight-second timeout. The service worker excludes Supabase Auth, database, and photo Storage traffic. Installation does not cache all photos.
 
-Realtime delivers notifications. Editing, drafts, previews, and checklist saves can defer applying remote content. Lost notifications do not undo successful database writes.
+Refresh and Realtime share one adoption rule: remote revisions must exceed the published baseline and cannot precede the newest pending candidate. Duplicate notifications leave history and cache untouched. Starting a refresh or receiving a newer Realtime update invalidates earlier refresh results and errors. Editing, drafts, previews, and checklist saves defer application while retaining only the newest remote candidate; a later refresh can adopt that candidate after deferral ends. Historical preview remains independent of the published revision and cache. Lost notifications do not undo successful database writes.
 
 <a id="state"></a>
 

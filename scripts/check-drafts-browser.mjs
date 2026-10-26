@@ -76,7 +76,7 @@ const server = createServer(async (req, res) => {
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
       .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, stub)
       .replace('data-offline="false"', url.searchParams.has('offline') ? 'data-offline="true"' : 'data-offline="false"'), `Object.defineProperty(runtimeOptions,'saveMs',{get:()=>window.__shortSaveTimeout?80:12000});runtimeOptions.historyDelay=()=>window.__holdHistory?60000:400;runtimeOptions.photoTimeout=value=>window.__shortPhotoTimeout&&[10000,60000].includes(value)?150:value;window.__draftTest={captureState,normalizeState,buildDiff,isDirty,recordHistory,flushDraftPersistence,queueDraftPersistence,readDraftRecord,writeDraftRecord,clearDraftRecord,moveHistory,discardDraft,discardAndLogout,logoutPreservingDraft,scheduleSessionTimers,getEditorSession,persistState,saveAndFinish,handleExternalSignOut,closeNotice,
-        refreshPublishedState,exportOfflineHtml,exportStaticHtml,busy:()=>isSaveInFlight()||isOperationBusy(),
+        refreshPublishedState,readPublicCache,closePreview,enterHistoricalPreview,sessionSnapshot:()=>documentSession.snapshot(),exportOfflineHtml,exportStaticHtml,busy:()=>isSaveInFlight()||isOperationBusy(),
         stagePhoto:async()=>{const canvas=document.createElement('canvas');canvas.width=8;canvas.height=8;const full=canvas.toDataURL('image/jpeg'),thumb=canvas.toDataURL('image/webp');let row=$('.day1 .timeline-row');selectActiveScheduleRow(row);const card=row.querySelector('.card');let gallery=card.querySelector('.schedule-photos');if(!gallery){gallery=document.createElement('div');gallery.className='schedule-photos';card.appendChild(gallery);}gallery.appendChild(createPhotoFigure({fullUrl:full,thumbUrl:thumb,staged:true},'Network draft'));recordHistory();await flushDraftPersistence();},
         remotePhotoState:()=>{const state=captureState(),template=document.createElement('template');template.innerHTML=state.html;const img=template.content.querySelector('.schedule-photo img');img.src=location.origin+'/storage/v1/object/public/trip-media/download.jpg';img.dataset.fullUrl=img.src;state.html=template.innerHTML;return state;},
         base:()=>documentSession.snapshot().lastSavedState,revision:()=>documentSession.snapshot().publishedRevision,pending:()=>pendingCheckCount(),dirty:()=>documentSession.snapshot().pendingDraft,historyIndex:()=>documentSession.snapshot().historyIndex,
@@ -418,6 +418,50 @@ try {
       assert.equal(await page.evaluate(()=>window.__draftTest.captureState().expenses[0].name),'After deferred recovery');
       assert.equal(saveCalls,0);
       await diagnostics.close(ctx);console.log(`Deferred draft (${mobile?'mobile':'desktop'}, ${source}, ${choice}): cancel preserves original; explicit choice protects new work across reload.`);
+    }
+    // F3: delayed network responses must not roll display, baseline or cache back.
+    {
+      reset();const ctx=await context(`remote ordering / ${mobile?'mobile':'desktop'}`,options),page=await ctx.newPage();await page.goto(origin);await ready(page);await seed(page);
+      const initialContent=structuredClone(row.content);
+      const makeRow=revision=>({revision,updated_at:new Date().toISOString(),content:{...structuredClone(initialContent),
+        html:initialContent.html.replace('일정 1-1','Remote '+revision),budgetKrw:revision*1000,
+        expenses:[{id:'ordering-expense',name:'Expense '+revision,amountKrw:1450,amountUsd:1,amountSource:'usd',appliedExchangeRate:1450,date:'2027-01-21',categoryId:'misc'}]}});
+      let onRead;await page.route(origin+'/mock/doc',route=>onRead(route));
+      let taskId=0;
+      async function startRead(){
+        const intercepted=new Promise(resolve=>{onRead=resolve;});const id=taskId++;
+        await page.evaluate(id=>{window.__orderedReads??=[];window.__orderedReads[id]=window.__draftTest.refreshPublishedState('reconnect');},id);
+        return {id,route:await intercepted};
+      }
+      async function complete(read,value){await read.route.fulfill({json:value});await page.evaluate(id=>window.__orderedReads[id],read.id);}
+      async function assertRevision(revision){
+        const actual=await page.evaluate(async()=>({current:window.__draftTest.captureState(),session:window.__draftTest.sessionSnapshot(),cache:await window.__draftTest.readPublicCache()}));
+        for(const state of [actual.current,actual.session.lastSavedState,actual.cache.state]){
+          assert.ok(state.html.includes('Remote '+revision));assert.equal(state.budgetKrw,revision*1000);assert.equal(state.expenses[0].name,'Expense '+revision);
+        }
+        assert.equal(actual.session.publishedRevision,revision);assert.equal(actual.cache.revision,revision);
+      }
+      const older=await startRead(),newer=await startRead();await complete(newer,makeRow(12));await complete(older,makeRow(11));await assertRevision(12);
+      const late=await startRead();await page.evaluate(row=>window.__emitRemote({new:row}),makeRow(14));await complete(late,makeRow(13));await assertRevision(14);
+      const before=await page.evaluate(async()=>({session:window.__draftTest.sessionSnapshot(),cache:await window.__draftTest.readPublicCache(),status:document.querySelector('#status').textContent}));
+      await page.evaluate(rows=>rows.forEach(row=>window.__emitRemote({new:row})),[makeRow(14),makeRow(13)]);
+      assert.deepEqual(await page.evaluate(async()=>({session:window.__draftTest.sessionSnapshot(),cache:await window.__draftTest.readPublicCache(),status:document.querySelector('#status').textContent})),before);
+      const oldRevision=await startRead();await complete(oldRevision,makeRow(11));await assertRevision(14);
+      await page.evaluate(()=>window.__draftTest.enterHistoricalPreview({...window.__draftTest.base(),budgetKrw:3}));
+      assert.equal(await page.evaluate(()=>window.__draftTest.captureState().budgetKrw),3);
+      await page.evaluate(rows=>rows.forEach(row=>window.__emitRemote({new:row})),[makeRow(16),makeRow(15)]);
+      assert.equal(await page.evaluate(()=>window.__draftTest.captureState().budgetKrw),3);assert.equal(await page.evaluate(()=>window.__draftTest.sessionSnapshot().pendingRemoteState.row.revision),16);
+      await page.evaluate(()=>window.__draftTest.closePreview());await assertRevision(14);
+      const afterPreview=await startRead();await complete(afterPreview,makeRow(16));await assertRevision(16);
+      await page.unroute(origin+'/mock/doc');row=makeRow(16);await edit(page,'Local ordering draft');const originalDraft=await stored(page);
+      row=makeRow(17);await page.evaluate(()=>window.__draftTest.refreshPublishedState('reconnect'));
+      assert.equal(await page.evaluate(()=>window.__draftTest.sessionSnapshot().pendingRemoteState.row.revision),17);
+      await page.evaluate(rows=>rows.forEach(row=>window.__emitRemote({new:row})),[makeRow(18),makeRow(17),makeRow(18)]);
+      assert.equal(await title(page).textContent(),'Local ordering draft');assert.equal(await page.evaluate(()=>window.__draftTest.revision()),16);
+      assert.equal(await page.evaluate(()=>window.__draftTest.sessionSnapshot().pendingRemoteState.row.revision),18);
+      assert.ok(await page.evaluate(()=>window.__draftTest.sessionSnapshot().pendingRemoteState.state.html.includes('Remote 18')));
+      assert.deepEqual(await stored(page),originalDraft);assert.equal((await page.evaluate(()=>window.__draftTest.readPublicCache())).revision,16);assert.equal(saveCalls,0);
+      await diagnostics.close(ctx);console.log(`Remote ordering (${mobile?'mobile':'desktop'}): reversed refresh, Realtime, duplicates, preview and dirty reconnect preserve display/baseline/cache/draft.`);
     }
     // Incoming shared updates must preserve an entry that has not been added.
     for(const delivery of ['visible','reconnect','realtime']) {

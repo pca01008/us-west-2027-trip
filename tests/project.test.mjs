@@ -54,7 +54,7 @@ test('브라우저 초안은 IndexedDB에 보존되고 저장 시 revision을 �
   assert.match(html, /recoverOnlineDraft/);
   assert.match(html, /beginEditing\(\)\{if\(!OFFLINE_MODE&&!documentSession\.snapshot\(\)\.pendingDraft\)/);
   assert.match(html, /tripRepository\.saveDocument\(normalized,documentSession\.snapshot\(\)\.publishedRevision/);
-  assert.match(html, /documentSession\.rememberRemote\(payload\.new,remoteState\)/);
+  assert.match(html, /receivePublishedState\(payload\.new,'realtime'\)/);
   assert.match(html, /PUBLIC_CACHE_RECORD_KEY/);
   assert.match(html, /transaction\.objectStore\('records'\)\.put\(record,PUBLIC_CACHE_RECORD_KEY\)/);
   assert.match(html, /writePublicCache\(legacy\.state,legacy\)/);

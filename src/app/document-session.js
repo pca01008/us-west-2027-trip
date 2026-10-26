@@ -23,7 +23,11 @@ function createDocumentSession({clone, normalize, fingerprint, historyDelay=()=>
     lastSavedState=clone(baseline);publishedRevision=Math.max(0,Number(revision)||0);
     publishedUpdatedAt=String(updatedAt||'');draftBaselineUnknown=unknown;pendingRemoteState=clone(remote);
   }
-  function rememberRemote(row,state){pendingRemoteState={row:clone(row),state:clone(state)};}
+  function canAdoptRemote(row){return Number(row?.revision)>publishedRevision&&Number(row.revision)>=(Number(pendingRemoteState?.row?.revision)||0);}
+  function rememberRemote(row,state){
+    if(!canAdoptRemote(row)||Number(row.revision)===Number(pendingRemoteState?.row?.revision))return false;
+    pendingRemoteState={row:clone(row),state:clone(state)};return true;
+  }
   function markClean(){pendingDraft=false;}
   function acceptOfflineSave(state){lastSavedState=clone(state);pendingDraft=false;}
   function dirty(current){return Boolean(lastSavedState&&fingerprint(previewReturnState||current)!==fingerprint(lastSavedState));}
@@ -55,6 +59,6 @@ function createDocumentSession({clone, normalize, fingerprint, historyDelay=()=>
   function cancelHistory(){clearTimeout(historyTimer);historyTimer=null;}
   function queueHistory(record){cancelHistory();historyTimer=setTimeout(record,historyDelay());}
   return Object.freeze({snapshot,establishBaseline,acceptPublished,prepareOverwrite,adoptImportBaseline,
-    restoreDraftBaseline,rememberRemote,markClean,acceptOfflineSave,dirty,updateDirty,enterPreview,leavePreview,blockWrites,
+    restoreDraftBaseline,canAdoptRemote,rememberRemote,markClean,acceptOfflineSave,dirty,updateDirty,enterPreview,leavePreview,blockWrites,
     acceptPrepResult,initializeHistory,recordLocalChange,moveHistory,reconcileHistory,cancelHistory,queueHistory});
 }
