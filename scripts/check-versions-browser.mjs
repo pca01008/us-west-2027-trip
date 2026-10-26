@@ -98,6 +98,41 @@ async function inactive(page, state) {
 try {
   browser = await chromium.launch({headless:true,...(process.env.PWA_BROWSER_CHANNEL?{channel:process.env.PWA_BROWSER_CHANNEL}:{})});
   for (const mobile of [false,true]) {
+    for (const change of ['boundary move','reordered move','within-day reorder','move with title edit','unchanged']) {
+      diagnostics.scenario(`comparison: ${change} / ${mobile?'mobile':'desktop'}`);
+      const {context,page,state} = await fixture(mobile);
+      const incoming = await page.evaluate(({state,change}) => {
+        const template=document.createElement('template');template.innerHTML=state.html;
+        const first=template.content.querySelector('.day1'),second=template.content.querySelector('.day2');
+        const row=first.querySelector('.timeline-row:last-child');
+        const order=()=>Array.from(template.content.querySelectorAll('.timeline-row'),item=>item.dataset.rowId);
+        const beforeOrder=order();
+        if(change==='within-day reorder')first.insertBefore(row,first.querySelector('.timeline-row'));
+        else if(change!=='unchanged'){
+          if(change==='reordered move')second.append(row);
+          else second.insertBefore(row,second.querySelector('.timeline-row'));
+          if(change==='move with title edit')row.querySelector('h3').textContent='Moved and renamed';
+        }
+        return {state:{...state,html:template.innerHTML},beforeOrder,afterOrder:order()};
+      },{state,change});
+      const moved=change.includes('move'),reordered=change==='reordered move'||change==='within-day reorder';
+      assert.equal(new Set(incoming.afterOrder).size,incoming.beforeOrder.length,'Stable event IDs survive');
+      if(reordered)assert.notDeepEqual(incoming.afterOrder,incoming.beforeOrder);
+      else assert.deepEqual(incoming.afterOrder,incoming.beforeOrder,'Boundary move preserves flattened order');
+      versions[0].content=incoming.state;
+      await open(page);await choose(page,1,'비교');await page.locator('#versionCompareDialog').waitFor();
+      const items=await page.locator('#versionCompareDiff li').allTextContents();
+      const expected=[];
+      if(moved)expected.push(new RegExp('DAY 2 일정 '+(change==='reordered move'?'3':'1')+' 날짜: 2027-01-21 → 2027-01-22'));
+      if(change==='move with title edit')expected.push(/제목: 일정 1-4 → Moved and renamed/);
+      if(reordered)expected.push(/^일정 표시 순서 변경$/);
+      assert.equal(items.length,expected.length,'Only meaningful date/content/order changes are reported');
+      expected.forEach(pattern=>assert.ok(items.some(item=>pattern.test(item)),`Missing comparison entry: ${pattern}; got ${items}`));
+      if(!expected.length)assert.equal(await page.locator('#versionCompareDiff .diff-empty').textContent(),'변경 사항이 없습니다.');
+      if(moved)await page.screenshot({path:path.join(output,`${mobile?'mobile':'desktop'}-${change.replaceAll(' ','-')}.png`)});
+      assert.deepEqual(await page.evaluate(()=>window.__versionTest.normalizeState(window.__versionTest.captureState())),state,'Comparison does not alter the current document');
+      await diagnostics.close(context);
+    }
     for (const action of ['비교','미리보기']) for (const close of ['button','escape']) {
       diagnostics.scenario(`${action}: close via ${close} / ${mobile?'mobile':'desktop'}`);
       const {context,page,state} = await fixture(mobile); await open(page);
@@ -202,6 +237,6 @@ try {
     }
   }
   assert.equal(writes,0,'Version reads never publish or restore fixture data');
-  console.log(`Versions: close/Escape, reversed selections, sign-out, stale lists, bounded reads and retries passed on desktop/mobile. Captures: ${output}`);
+  console.log(`Versions: date/content/order comparisons, close/Escape, reversed selections, sign-out, stale lists, bounded reads and retries passed on desktop/mobile. Captures: ${output}`);
 } catch (error) { await diagnostics.fail(error); throw error; }
 finally { for(const items of plans.values())for(const item of items)item.release(); await browser?.close(); server.closeAllConnections(); await new Promise(resolve=>server.close(resolve)); }

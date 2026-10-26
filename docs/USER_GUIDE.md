@@ -105,6 +105,8 @@ The current trip uses KRW/USD. Other trips may show a different configured pair;
 
 Up to 50 saved versions retain notes. Version management fetches metadata first and loads only selected content for compare/preview/restore. Preview blocks editing and normal saving while retaining the original draft. Publishing historical content requires Restore confirmation.
 
+Version, import and save-conflict comparisons show an event's old date → new date when it moves between days, including moves that preserve overall order.
+
 Closing version management or signing out cancels pending loads; selecting another version supersedes the previous selection. Failed or timed-out loads show a message in the version dialog. Select the version again to retry; for a failed list, close and reopen version management.
 
 Undo is temporary editing history; versions are server history. Restore saves the selected past content as a new version.

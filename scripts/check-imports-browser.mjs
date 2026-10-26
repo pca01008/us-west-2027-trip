@@ -75,6 +75,19 @@ try {
     const page=await context.newPage();page.setDefaultTimeout(10000);page.on('pageerror',e=>errors.push(e.message));
     await page.goto(origin);await ready(page);
     row={...row,content:await state(page),revision:3};await page.reload();await ready(page);
+    const dateBaseline=await state(page),dateServer=structuredClone(row);
+    const dateMove=await page.evaluate(state=>{
+      const template=document.createElement('template');template.innerHTML=state.html;
+      const row=template.content.querySelector('.day1 .timeline-row:last-child'),second=template.content.querySelector('.day2');
+      second.insertBefore(row,second.querySelector('.timeline-row'));
+      return {...state,html:template.innerHTML};
+    },dateBaseline);
+    await upload(page,dateMove);await page.locator('#importDialog').waitFor();
+    assert.deepEqual(await page.locator('#importDiff li').allTextContents(),['DAY 2 일정 1 날짜: 2027-01-21 → 2027-01-22']);
+    assert.equal(await page.locator('#importApply').isEnabled(),true,'A date-only move can be imported');
+    await page.locator('#importCancel').click();
+    assert.deepEqual(await state(page),dateBaseline,'Cancel retains the current document');
+    assert.deepEqual(row,dateServer,'Comparison never publishes the date move');
     await selectTripTab(page, 'd1');await page.locator('#editBtn').click();
     await page.waitForFunction(()=>document.querySelector('.day1 .timeline-row h3').isContentEditable);
     await page.locator('.day1 .timeline-row h3').first().fill('보존해야 할 기존 초안');

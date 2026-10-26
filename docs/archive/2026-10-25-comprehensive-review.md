@@ -95,6 +95,8 @@ Follow-up: see the [F3 fix and verification record](2026-10-26-version-request-l
 
 ### F4 — P2: Date movement can disappear from comparison
 
+Follow-up: see the [F4 fix and verification record](2026-10-26-comparison-date-moves.md). The reproduction below describes the original review baseline.
+
 **Location:** [versions.js](../../src/app/versions.js), lines 1–18 (`stateSummary`, `buildDiff`).
 
 **Reproduction:** In a synthetic saved-state copy, move the last event of day one to the beginning of day two while preserving its ID, content, and overall event order. Compare the two states. This models an imported or historical document; the current editor does not provide an across-day move control.

@@ -11,6 +11,7 @@
     after.schedules.forEach(item=>{
       const old=beforeSchedules.get(item.id);
       if(!old){scheduleChanges.push(item.key+' 추가: '+value(item.time)+' · '+value(item.title));return;}
+      if(old.dayIndex!==item.dayIndex){const date=event=>TRIP_DAYS[event.dayIndex]?.date||'DAY '+(event.dayIndex+1);scheduleChanges.push(item.key+' 날짜: '+date(old)+' → '+date(item));}
       [['숙박 종료일','stay'],['시간','time'],['제목','title'],['분류','kind'],['상세','detail'],['주의사항','warning'],['지도 장소','mapName'],['지도 링크','map']].forEach(([label,key])=>{if(old[key]!==item[key])scheduleChanges.push(item.key+' '+label+': '+value(old[key])+' → '+value(item[key]));});
       if(JSON.stringify(old.photos)!==JSON.stringify(item.photos))scheduleChanges.push(item.key+' 사진 구성·순서·설명 변경');
     });
