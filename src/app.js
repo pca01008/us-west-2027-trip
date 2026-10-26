@@ -11,6 +11,9 @@ const {parseTimetableTime,scheduleTimeValue,scheduleClockMask,scheduleClockValue
 // @include app/timetable.js
 // @include app/ui-helpers.js
 
+// @include app/draft-storage.js
+const draftStorage=createDraftStorage({DRAFT_DB_NAME:DRAFT_DB_NAME,DRAFT_RECORD_KEY:DRAFT_RECORD_KEY,DRAFT_SESSION_KEY:DRAFT_SESSION_KEY,LEGACY_CACHE_KEY:LEGACY_CACHE_KEY,LEGACY_DRAFT_RECORD_KEY:LEGACY_DRAFT_RECORD_KEY,PUBLIC_CACHE_RECORD_KEY:PUBLIC_CACHE_RECORD_KEY,TRIP_ID:TRIP_ID,clone:clone,showDraftStorageWarning:(...args)=>showDraftStorageWarning(...args)});
+const {draftCheckpointKey,readDraftCheckpoint,removeDraftCheckpoint,openDraftDatabase,acquireDraftLock,prepareDraftStorage,readDraftRecord,readPublicCache,invalidateWrites,retainDraft}=draftStorage;
 // @include app/drafts.js
 
 // @include app/trip-clock.js

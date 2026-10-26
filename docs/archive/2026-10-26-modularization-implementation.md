@@ -41,3 +41,9 @@ Stop A review: calculations can be changed with complete-file tests; dialog fixe
 `document.js` owns serialization, sanitization, legacy repair, normalization and apply/input preservation. Normalization takes a supplied fallback; the workflow supplies current DOM only when needed. `document-session.js` privately owns baseline/revision/remote candidates, dirty/preview/write-block state and undo history. Named published/draft/import/PREP transitions replace external field assignments. Snapshot reads cannot mutate the owner's baseline.
 
 Exit: focused unit checks (including independent PREP divergence and preview preservation), imports, drafts, PREP, versions and ledger-compat browser suites passed; build/project/whitespace checks passed. Ledger form/data callbacks temporarily target their existing state; stage 4 removes that bridge when its controller becomes private.
+
+## Stage 3b, storage slice
+
+`createDraftStorage()` privately owns IndexedDB transactions, Web Locks/claims, synchronous checkpoints, generations, memory records and public cache migration. Storage receives warning callbacks and explicit cache metadata; it never reads publication state or opens dialogs. Workflow guards still execute before invoking writes, without introducing an await before checkpoints. Failed offline saves explicitly retain the dirty memory record.
+
+Exit: focused unit/static checks plus the complete storage and drafts browser suites passed, including first-input navigation, failed/aborted writes/deletes, ownership, deferred recovery and offline baseline reload. Source/generated diff and whitespace checked. Recovery scheduling remains a separate next change.

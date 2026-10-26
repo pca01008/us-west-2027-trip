@@ -26,7 +26,7 @@
     let normalized=normalizeState(state);
     if(OFFLINE_MODE){
       const saved=await writeDraftRecord({tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:normalized,baseState:normalized,baseRevision:documentSession.snapshot().publishedRevision,baseUpdatedAt:documentSession.snapshot().publishedUpdatedAt,savedAt:new Date().toISOString(),dirty:false});
-      if(!saved){memoryDraftRecord=currentDraftRecord();return false;}
+      if(!saved){draftStorage.retainDraft(currentDraftRecord());return false;}
       documentSession.acceptOfflineSave(normalized);
       return {offline:true};
     }

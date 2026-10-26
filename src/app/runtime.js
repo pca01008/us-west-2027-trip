@@ -93,13 +93,6 @@
   let tabScrollReleaseHandler = null;
   let deferredDraftRecovery = false;
   let draftWriteTimer = null;
-  let draftDatabasePromise = null;
-  let memoryDraftRecord = null;
-  let draftWriteGeneration = 0;
-  let draftStoragePromise = null;
-  let draftStorageReady = false;
-  let draftLockPromise = null;
-  let memoryPublicCache = null;
   let saveInFlight = false;
   let activePhotoFigure = null;
   let operationBusy = false;
