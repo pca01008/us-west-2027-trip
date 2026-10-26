@@ -55,8 +55,8 @@ const server = createServer(async (req, res) => {
     if (relative === 'index.html') content = injectBrowserFixture(original
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
       .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, stub), `runtimeOptions.saveMs=${url.searchParams.has('uncertain')?120:12000};window.__prepTest={captureState,applyState,normalizeState,checklistItems,patchChecklist,patchCheck,isDirty,finishMutation,recordHistory,refreshPublishedState,
-        pending:()=>pendingChecks.size,base:()=>documentSession.snapshot().lastSavedState,revision:()=>documentSession.snapshot().publishedRevision,editorItems:()=>clone(checklistEditorItems),
-        draft:()=>{expenses.push({id:'unsaved-expense',name:'Unsaved meal',amountKrw:36250,amountUsd:25,amountSource:'usd',appliedExchangeRate:1450,date:'2027-05-01',categoryId:'misc'});renderLedger();finishMutation();},
+        pending:()=>pendingCheckCount(),base:()=>documentSession.snapshot().lastSavedState,revision:()=>documentSession.snapshot().publishedRevision,editorItems:()=>checklistEditorSnapshot(),
+        draft:()=>{restoreLedgerState({...readLedgerState(),expenses:[...readLedgerState().expenses,{id:'unsaved-expense',name:'Unsaved meal',amountKrw:36250,amountUsd:25,amountSource:'usd',appliedExchangeRate:1450,date:'2027-05-01',categoryId:'misc'}]});renderLedger();finishMutation();},
         storageFailure:()=>{writeDraftRecord=async()=>false;}};`)
       .replace('data-offline="false"', url.searchParams.has('offline') ? 'data-offline="true"' : 'data-offline="false"');
     res.setHeader('Content-Type', relative.endsWith('.html') ? 'text/html; charset=utf-8' : relative.endsWith('.js') ? 'text/javascript; charset=utf-8' : 'application/octet-stream');res.end(content);

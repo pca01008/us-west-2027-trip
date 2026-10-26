@@ -1,3 +1,5 @@
+function createClocksController({$,CONFIG,DESTINATION_REFERENCE_LABEL,DESTINATION_TIME_ZONE,HOME_REFERENCE_LABEL,HOME_TIME_ZONE,PREVIEW_NOW,TRIP_DAYS,TRIP_END,TRIP_FIRST_DATE,TRIP_LAST_DATE,TRIP_START,VISITOR_TIME_ZONE,configEscape,rememberScheduleDay}) {
+
   function dateKeyNumber(dateKey) { return Date.parse(dateKey+'T00:00:00Z')/86400000; }
   function zonedDateNumber(timestamp,timeZone) { return dateKeyNumber(zonedDateKey(timestamp,timeZone)); }
   function updateTripProgress() {
@@ -51,5 +53,16 @@
     if(dateKey>TRIP_LAST_DATE)target='money';
     else if(dateKey>=TRIP_FIRST_DATE){let dayIndex=TRIP_DAYS.findIndex(day=>day.date===dateKey);if(dayIndex<0){dayIndex=0;TRIP_DAYS.forEach((day,index)=>{if(day.date<=dateKey)dayIndex=index;});}target='d'+(dayIndex+1);}
     const radio=document.getElementById(target);if(radio)radio.checked=true;
-    if(/^d\d+$/.test(target))lastScheduleDay=target;
+    if(/^d\d+$/.test(target))rememberScheduleDay(target);
   }
+
+let progressTimer=null,worldTimer=null;
+function startTripClocks(){progressTimer=setInterval(updateTripProgress,60*60*1000);worldTimer=setInterval(updateWorldClocks,60*1000);}
+function disposeTripClocks(){clearInterval(progressTimer);clearInterval(worldTimer);}
+
+function bindClocksControls(){
+
+}
+
+return Object.freeze({dateKeyNumber,zonedDateNumber,updateTripProgress,zonedParts,zonedDateKey,timeZoneOffsetMinutes,updateWorldClocks,selectInitialTab,startTripClocks,disposeTripClocks,bindClocksControls});
+}

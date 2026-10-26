@@ -104,3 +104,24 @@
   function savePhotoMetadata(){const figure=activePhotoFigure,img=figure?.querySelector('img');if(!figure||!img)return;const caption=$('#photoCaption').value.trim(),alt=$('#photoAlt').value.trim();if(!caption||!alt){setStatus('사진 설명과 대체 텍스트를 모두 입력해 주세요.');return;}let text=figure.querySelector('figcaption');if(!text){text=document.createElement('figcaption');figure.appendChild(text);}text.textContent=caption;img.alt=alt;img.setAttribute('aria-label',caption+' 크게 보기');$('#photoEditDialog').hidden=true;activePhotoFigure=null;recordHistory();}
   function openMapDialog(row){activeScheduleRow=row;const map=row.querySelector('.schedule-map a');$('#mapName').value=mapPlaceName(map);$('#mapUrl').value=map?.href||'';setFieldError('mapName');setFieldError('mapUrl');showDialog($('#mapDialog'));$('#mapName').focus();}
   function saveMap(){const name=$('#mapName').value.trim(),url=$('#mapUrl').value.trim();setFieldError('mapName',name?'':'장소명을 입력해 주세요.');setFieldError('mapUrl',/^https:\/\//i.test(url)?'':'https 지도 링크를 입력해 주세요.');if(!name||!/^https:\/\//i.test(url)){$(name?'#mapUrl':'#mapName').focus();return;}const card=activeScheduleRow?.querySelector('.card');if(!card)return;let map=card.querySelector('.schedule-map');if(!map){map=document.createElement('div');map.className='schedule-map';card.insertBefore(map,card.querySelector('.schedule-media-tools'));}map.innerHTML='<a href="'+escapeHtml(url)+'" rel="noopener noreferrer" target="_blank" data-place-name="'+escapeHtml(name)+'"></a><button class="schedule-map-delete" type="button">삭제</button>';decorateMapLink(map);$('#mapDialog').hidden=true;recordHistory();}
+
+function selectActiveScheduleRow(row){activeScheduleRow=row;}
+function resetPhotoSelection(){activeScheduleRow=null;activePhotoFigure=null;}
+
+function bindPhotosControls(){
+['mapName','mapUrl'].forEach(id=>$('#'+id).addEventListener('input',()=>setFieldError(id)));
+$('#mapCancel').onclick=()=>$('#mapDialog').hidden=true;
+$('#mapSave').onclick=saveMap;
+$('#photoEditCancel').onclick=()=>{$('#photoEditDialog').hidden=true;activePhotoFigure=null;};
+$('#photoEditSave').onclick=savePhotoMetadata;
+$('#photoViewerClose').onclick=()=>$('#photoViewer').hidden=true;
+$('#photoInput').onchange=e=>{void attachPhotos(Array.from(e.target.files||[]));e.target.value='';};
+document.addEventListener('click',event=>{if(isOperationBusy())return;
+const photoMove=event.target.closest('[data-move-photo]');if(photoMove&&!photoMove.disabled){movePhoto(photoMove.closest('.schedule-photo'),Number(photoMove.dataset.movePhoto));return;}
+const photoEdit=event.target.closest('[data-edit-photo]');if(photoEdit&&body.classList.contains('editing')){openPhotoEditDialog(photoEdit.closest('.schedule-photo'));return;}
+const photo=event.target.closest('.schedule-photo img');if(photo&&!photo.closest('.map-capture')&&!body.classList.contains('editing')){$('#photoViewerImage').src=photo.dataset.fullUrl||photo.src;$('#photoViewerImage').alt=photo.alt||'일정 사진';showDialog($('#photoViewer'));return;}
+if(event.target.closest('[data-delete-photo]')&&body.classList.contains('editing')){const figure=event.target.closest('.schedule-photo'),gallery=figure?.parentElement;figure?.remove();if(gallery&&!gallery.querySelector('.schedule-photo'))gallery.remove();else updatePhotoMoveButtons(gallery);recordHistory();return;}
+if(event.target.classList.contains('schedule-map-delete')&&body.classList.contains('editing')){event.target.closest('.schedule-map')?.remove();recordHistory();return;}
+});
+document.addEventListener('keydown',event=>{const photo=event.target.closest?.('.schedule-photo img[role="button"]');if(photo&&!body.classList.contains('editing')&&(event.key==='Enter'||event.key===' ')){event.preventDefault();photo.click();}});
+}

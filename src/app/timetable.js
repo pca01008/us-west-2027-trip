@@ -1,4 +1,11 @@
-const TIMETABLE_KINDS={activity:'관광',food:'식사',transit:'이동',stay:'숙소·휴식',other:'기타'};
+function createTimetableController({$,$$,DESTINATION_REFERENCE_LABEL,DESTINATION_TIME_ZONE,TIMETABLE_KINDS,TRIP_DAYS,body,configDateParts,escapeHtml,layoutTimetableEvents,parseTimetableTime,showDialog,stripTransient,timetableKind,timetableWindow}) {
+let timetableActive = false;
+let timetableStart = 0;
+let timetableRange = window.matchMedia('(max-width:620px)').matches ? '1' : 'all';
+let timetableDays = [];
+let timetableOverviewResizeFrame = 0;
+let timetableDayScrollTop = 0;
+
   function timetableClock(minutes){return String(Math.floor(minutes/60)).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0');}
   function timetableDate(index){const parts=configDateParts(TRIP_DAYS[index].date);return parts.month+'/'+parts.day;}
   function timetableZoneName(date){return new Intl.DateTimeFormat('en-US',{timeZone:DESTINATION_TIME_ZONE,timeZoneName:'short'}).formatToParts(new Date(date+'T12:00:00Z')).find(part=>part.type==='timeZoneName')?.value||DESTINATION_TIME_ZONE;}
@@ -119,19 +126,31 @@ const TIMETABLE_KINDS={activity:'관광',food:'식사',transit:'이동',stay:'�
     $('#timetableDetailTiming').textContent=event.time+' · '+(event.zone||timetableZoneName(TRIP_DAYS[event.sourceDay].date))+(event.end===null&&event.start!==null?' · 종료 시각 미정':'')+(event.end>1440?' · 다음 날까지':'')+(event.foreign?' · 시간축과 다른 시간대로, 입력된 원래 시각입니다.':'');
     $('#timetableDetailContent').replaceChildren(card);showDialog($('#timetableDetail'));
   }
+  let listenerController=null;
   function initializeTimetable() {
+    if(listenerController)return;listenerController=new AbortController();
     $('#listViewBtn').onclick=()=>setScheduleView('list');$('#timetableViewBtn').onclick=()=>setScheduleView('timetable');
     $('#timetableView').addEventListener('click',event=>{
       const day=event.target.closest('[data-tt-open-day]');if(day){timetableStart=Number(day.dataset.ttOpenDay);timetableRange='1';renderTimetable({resetScroll:true});$('#timetableStart').focus({preventScroll:true});return;}
       const range=event.target.closest('[data-tt-range]');if(range){timetableRange=range.dataset.ttRange;renderTimetable({resetScroll:true});return;}
       const item=event.target.closest('[data-tt-event]');if(item)openTimetableDetail(item.dataset.ttEvent);
-    });
+    },{signal:listenerController.signal});
     $('#timetablePrev').onclick=()=>{timetableStart--;renderTimetable({resetScroll:true});};
     $('#timetableNext').onclick=()=>{timetableStart++;renderTimetable({resetScroll:true});};
     $('#timetableStart').onchange=event=>{timetableStart=Number(event.target.value);renderTimetable({resetScroll:true});};
     $('#timetableDetailClose').onclick=()=>{$('#timetableDetail').hidden=true;};
-    window.addEventListener('beforeprint',()=>{$('main').hidden=false;});
-    window.addEventListener('afterprint',syncScheduleView);
-    window.addEventListener('resize',()=>{if(!timetableActive||timetableRange!=='all')return;cancelAnimationFrame(timetableOverviewResizeFrame);timetableOverviewResizeFrame=requestAnimationFrame(()=>renderTimetable());});
-    document.addEventListener('change',event=>{if(!event.target.matches('.day-radio')||!timetableActive)return;if(/^d\d+$/.test(event.target.id)){timetableStart=Number(event.target.id.slice(1))-1;renderTimetable({resetScroll:true});}});
+    window.addEventListener('beforeprint',()=>{$('main').hidden=false;},{signal:listenerController.signal});
+    window.addEventListener('afterprint',syncScheduleView,{signal:listenerController.signal});
+    window.addEventListener('resize',()=>{if(!timetableActive||timetableRange!=='all')return;cancelAnimationFrame(timetableOverviewResizeFrame);timetableOverviewResizeFrame=requestAnimationFrame(()=>renderTimetable());},{signal:listenerController.signal});
+    document.addEventListener('change',event=>{if(!event.target.matches('.day-radio')||!timetableActive)return;if(/^d\d+$/.test(event.target.id)){timetableStart=Number(event.target.id.slice(1))-1;renderTimetable({resetScroll:true});}},{signal:listenerController.signal});
   }
+
+function isTimetableActive(){return timetableActive;}
+
+function bindTimetableControls(){
+
+}
+
+function disposeTimetable(){listenerController?.abort();cancelAnimationFrame(timetableOverviewResizeFrame);}
+return Object.freeze({disposeTimetable,timetableClock,timetableDate,timetableZoneName,readScheduleTime,readTimetableDays,timetableEventButton,renderTimetableOverview,renderTimetable,setScheduleView,syncScheduleView,openTimetableDetail,initializeTimetable,isTimetableActive,bindTimetableControls});
+}

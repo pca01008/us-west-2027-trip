@@ -16,7 +16,7 @@
     Object.assign(result.find(item=>item.id===DELETED_CATEGORY_ID),{name:'삭제된 카테고리',icon:'🗑️',system:true});
     return result;
   }
-  function findCategoryId(raw,cats=categories) {
+  function findCategoryId(raw,cats) {
     if (cats.some(item => item.id === raw)) return raw;
     const byName = cats.find(item => item.name === raw || (item.icon+' '+item.name) === raw);
     return byName?.id || cats.find(item=>item.id==='misc')?.id || cats[0]?.id || DELETED_CATEGORY_ID;

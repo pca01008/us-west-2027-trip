@@ -65,45 +65,47 @@
   const BASELINE_MAIN_HTML = $('main').innerHTML;
   const PUBLISHED_MIGRATION_SELECTORS = ['.prepday',...TRIP_DAYS.map((_,index)=>'.day'+(index+1))];
 
-  let expenses = [];
-  let categories = DEFAULT_CATEGORIES.map(item => ({...item}));
-  let exchangeRate = DEFAULT_EXCHANGE_RATE;
-  let exchangeRateUpdated = '';
-  let budgetKrw = DEFAULT_BUDGET_KRW;
-  let lastScheduleDay = 'd1';
-  const pendingChecks = new Map();
-  const checkFeedback = new Map();
-  let checklistQueue = Promise.resolve();
-  let checklistSaving = false;
-  let checklistAuthPending = false;
-  let checklistEditorBase = [];
-  let checklistEditorItems = [];
-  const newChecklistItemIds = new Set();
-  let checklistEditorSaving = false;
-  let authPurpose = 'edit';
-  let pendingAuthAction = null;
-  let pendingAuthCancel = null;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   let activeScheduleRow = null;
-  let scheduleTimeTarget = null;
-  let editingCategoryId = null;
-  let editingExpenseId = null;
-  let selectedCategoryIcon = '📦';
+
+
+
+
   let pendingImport = null;
-  let tabScrollReleaseTimer = null;
-  let tabScrollReleaseHandler = null;
-  let saveInFlight = false;
+
+
+
   let activePhotoFigure = null;
   let operationBusy = false;
   let operationCancelled = false;
   let operationController = null;
   let selectedVersion = null;
   let versionRequest = null;
-  let timetableActive = false;
-  let timetableStart = 0;
-  let timetableRange = window.matchMedia('(max-width:620px)').matches ? '1' : 'all';
-  let timetableDays = [];
-  let timetableOverviewResizeFrame = 0;
-  let timetableDayScrollTop = 0;
+
+
+
+
+
+
   const versionContentCache = new Map();
 
   const runtimeOptions = {saveMs:12000, publishedReadMs:8000, versionReadMs:8000};
+
+const TIMETABLE_KINDS={activity:'관광',food:'식사',transit:'이동',stay:'숙소·휴식',other:'기타'};

@@ -85,13 +85,13 @@
     const state=normalizeState(migratePublishedState(data.content));versionContentCache.set(version.id,state);while(versionContentCache.size>5)versionContentCache.delete(versionContentCache.keys().next().value);return clone(state);
   }
   async function previewVersion(version){
-    if(saveInFlight||operationBusy||checklistSaving||pendingChecks.size)return;
+    if(isSaveInFlight()||isOperationBusy()||isChecklistSaving()||pendingCheckCount())return;
     const request=beginVersionRequest();setVersionLoadStatus('버전 #'+version.id+' 불러오는 중');
     try{
       const state=await loadVersionContent(version,request);
-      if(!isCurrentVersionRequest(request)||saveInFlight||operationBusy||checklistSaving||pendingChecks.size)return;
+      if(!isCurrentVersionRequest(request)||isSaveInFlight()||isOperationBusy()||isChecklistSaving()||pendingCheckCount())return;
       documentSession.cancelHistory();recordHistory();await flushDraftPersistence();
-      if(!isCurrentVersionRequest(request)||saveInFlight||operationBusy||checklistSaving||pendingChecks.size)return;
+      if(!isCurrentVersionRequest(request)||isSaveInFlight()||isOperationBusy()||isChecklistSaving()||pendingCheckCount())return;
       // Keep the original working copy even when switching between previews.
       documentSession.enterPreview(captureState());
       body.classList.add('previewing');setEditingUI(false);applyState(state);
@@ -124,3 +124,21 @@
     }catch(error){if(!isCurrentVersionRequest(request))return;list.innerHTML='<div class="version-empty">닫고 다시 열어 주세요.</div>';showVersionLoadError(error,request);}
   }
   function closePreview(){const previous=documentSession.snapshot().previewReturnState;if(previous)applyState(previous);documentSession.leavePreview();body.classList.remove('previewing');updateDirtyState();setStatus(documentSession.snapshot().pendingDraft?'저장 대기 중':'보기 모드');resetInactivityTimer();}
+
+function resetVersionSelection(){selectedVersion=null;}
+function resetImportSelection(){pendingImport=null;}
+
+function bindVersionsControls(){
+$('#versionsBtn').onclick=()=>requireEditor('versions');
+$('#closePreviewBtn').onclick=closePreview;
+$('#closeVersionsBtn').onclick=closeVersions;
+$('#versionCompareClose').onclick=()=>{invalidateVersionRequest();$('#versionCompareDialog').hidden=true;selectedVersion=null;};
+$('#versionCompareRestore').onclick=restoreSelectedVersion;
+}
+
+function bindImportsControls(){
+$('#importBtn').onclick=chooseImportFile;
+$('#importFileInput').onchange=e=>{if(e.target.files[0])readImportFile(e.target.files[0]);};
+$('#importCancel').onclick=()=>{$('#importDialog').hidden=true;pendingImport=null;};
+$('#importApply').onclick=applyImportedDraft;
+}

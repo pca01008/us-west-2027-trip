@@ -53,3 +53,9 @@ Exit: focused unit/static checks plus the complete storage and drafts browser su
 `createDraftWorkflow()` owns deferred recovery and the draft timer. Recovery actions moved out of startup; external callers query recovery status or defer/cancel through actions. Published/cache coordination stays in `document-workflow.js`; storage mechanics are unchanged from the preceding commit.
 
 Exit: 29 focused unit checks and the complete storage/drafts browser suites passed. Build/project/whitespace checks passed. First-input checkpoints still execute synchronously through the guard before storage awaits.
+
+## Stage 4 — feature controllers/composition
+
+PREP, ledger, schedule time/decorations, editing/save, navigation, timetable and clocks now have explicit controller factories. Ledger data/input buffers and PREP queues/maps/editor buffers are private. Document callbacks use capture/restore APIs rather than writable compatibility fields. Feature controls bind once to stable roots; startup contains construction/wiring/initialization instead of feature forms or save algorithms. Timetable listeners, clock intervals and navigation/history timers have owned cleanup on actual unload, preserving BFCache.
+
+Exit: all 129 unit tests and all 16 browser suites passed. Build/project/whitespace checks passed. Existing response-loss, replacement/input/focus, exports, lazy version races and PWA cases remain enabled. Media/version/import/operation state is the remaining stage-5 migration.

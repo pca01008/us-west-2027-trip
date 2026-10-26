@@ -113,3 +113,10 @@
     }catch(error){console.error(error);if(operationCancelled){setStatus('인쇄·공유용 사본 생성을 취소했습니다.');return;}setStatus('인쇄·공유용 사본 생성 실패');await showChoice({title:'사본을 만들지 못했습니다.',message:error.message,choices:[{label:'확인',value:'ok',className:'action-primary'}]});}
     finally{const status=$('#status').textContent;setOperationBusy(false);setStatus(status);}
   }
+
+function bindExportsControls(){
+$('#exportMenuBtn').onclick=()=>showDialog($('#exportDialog'));
+$('#exportBtn').onclick=()=>{$('#exportDialog').hidden=true;void exportStaticHtml();};
+$('#offlineExportBtn').onclick=()=>{$('#exportDialog').hidden=true;void exportOfflineHtml();};
+$('#exportCancel').onclick=()=>$('#exportDialog').hidden=true;
+}

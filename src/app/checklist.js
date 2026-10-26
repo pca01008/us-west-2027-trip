@@ -1,10 +1,14 @@
-  function decorateDates() {
-    TRIP_DAYS.forEach((day,index)=>{
-      const number=index+1,parts=configDateParts(day.date),head=$('.day'+number+' .day-head h2'),tab=$('label[for="d'+number+'"]');
-      if(head) head.innerHTML=parts.month+'/'+parts.day+'<span>'+parts.weekday+' · DAY '+number+'</span>';
-      if(tab) tab.innerHTML=parts.month+'/'+parts.day+'<span>'+parts.weekday.slice(0,1)+' · DAY '+number+'</span>';
-    });
-  }
+function createChecklistController({$,$$,OFFLINE_MODE,SCHEMA_VERSION,TRIP_ID,applyStatePreservingInputs,body,captureState,checkLabelText,clearDraftRecord,clone,decorateButtonIcons,documentSession,draftWorkflow,escapeHtml,fetchPublishedState,fingerprint,isOperationBusy,isRevisionConflict,isSaveInFlight,migratePublishedState,normalizeState,recordHistory,requireEditor,resetInactivityTimer,runtimeOptions,setStatus,showDialog,tripRepository,uid,updateDirtyState,updateEditableEmpty,writeDraftRecord,writePublicCache}) {
+const pendingChecks = new Map();
+const checkFeedback = new Map();
+let checklistQueue = Promise.resolve();
+let checklistSaving = false;
+let checklistAuthPending = false;
+let checklistEditorBase = [];
+let checklistEditorItems = [];
+const newChecklistItemIds = new Set();
+let checklistEditorSaving = false;
+
   // Patch the latest published snapshot by stable checklist ID, never a local
   // document draft. The existing revision-checked RPC makes each patch atomic.
   function checklistItems(state) {
@@ -30,7 +34,7 @@
   }
   function syncChecklistControls() {
     const busy=checklistSaving||pendingChecks.size>0;
-    $$('.prepday .checklist input[type="checkbox"]').forEach(input=>{input.disabled=body.classList.contains('editing')||body.classList.contains('previewing')||operationBusy||checklistAuthPending||pendingChecks.has(input.closest('label').dataset.checkId)||!$('#checklistDialog').hidden;});
+    $$('.prepday .checklist input[type="checkbox"]').forEach(input=>{input.disabled=body.classList.contains('editing')||body.classList.contains('previewing')||isOperationBusy()||checklistAuthPending||pendingChecks.has(input.closest('label').dataset.checkId)||!$('#checklistDialog').hidden;});
     if(busy){$('#editBtn').disabled=true;$('#saveBtn').disabled=true;}
     else $('#editBtn').disabled=false;
     if(body.classList.contains('previewing'))$('#saveBtn').disabled=true;
@@ -51,7 +55,7 @@
 
   async function commitChecklistPatch(transform,note,isApplied) {
     if(documentSession.snapshot().documentWriteBlock)throw new Error(documentSession.snapshot().documentWriteBlock);
-    if(saveInFlight||operationBusy)throw new Error('다른 저장이 끝난 뒤 다시 시도해 주세요.');
+    if(isSaveInFlight()||isOperationBusy())throw new Error('다른 저장이 끝난 뒤 다시 시도해 주세요.');
     checklistSaving=true;syncChecklistControls();
     try {
       for(let attempt=0;attempt<3;attempt++) {
@@ -119,7 +123,7 @@
   async function requestCheckToggle(input) {
     const id=input.closest('label').dataset.checkId,value=input.checked;
     input.checked=!value;
-    if(body.classList.contains('editing')||body.classList.contains('previewing')||operationBusy)return;
+    if(body.classList.contains('editing')||body.classList.contains('previewing')||isOperationBusy())return;
     await authorizeCheck(id,value);
   }
   function queueCheck(id,value) {
@@ -201,66 +205,41 @@
     updateChecklistMoveButtons();
   }
   function updateChecklistMoveButtons(){const labels=$$('.prepday .checklist label');labels.forEach((label,index)=>{const buttons=label.querySelectorAll('[data-move-check]');if(buttons[0])buttons[0].disabled=index===0;if(buttons[1])buttons[1].disabled=index===labels.length-1;});}
-  function mapPlaceName(anchor) {
-    if(!anchor)return '';
-    const stored=anchor?.dataset.placeName?.trim();
-    if(stored)return stored;
-    const raw=(anchor?.querySelector('.map-link-label')?.textContent||anchor?.textContent||'').replace(/↗/g,'').trim();
-    return raw.replace(/^Google Maps\s*[·-]\s*/i,'').replace(/\s*[·-]\s*Google Maps$/i,'').trim()||'위치';
-  }
-  function decorateMapLink(map) {
-    const anchor=map?.querySelector('a');if(!anchor)return;
-    const place=mapPlaceName(anchor);anchor.dataset.placeName=place;anchor.className='map-link';
-    anchor.setAttribute('aria-label','Google Maps · '+place+' (새 창)');
-    anchor.innerHTML=iconSvg('map')+'<span class="map-link-label">Google Maps · '+escapeHtml(place)+'</span><span class="map-link-arrow" aria-hidden="true">↗</span>';
-  }
-  function updatePhotoMoveButtons(gallery){if(!gallery)return;const figures=Array.from(gallery.querySelectorAll(':scope > .schedule-photo'));figures.forEach((figure,index)=>{const buttons=figure.querySelectorAll('[data-move-photo]');if(buttons[0])buttons[0].disabled=index===0;if(buttons[1])buttons[1].disabled=index===figures.length-1;});}
-  function decoratePhotoFigure(figure,seenPhotoIds=null){
-    if(!figure.dataset.photoId||seenPhotoIds?.has(figure.dataset.photoId))figure.dataset.photoId=uid('photo');seenPhotoIds?.add(figure.dataset.photoId);
-    const img=figure.querySelector('img');if(!img)return;img.loading='lazy';img.decoding='async';img.fetchPriority='low';
-    let caption=figure.querySelector('figcaption');if(!caption){caption=document.createElement('figcaption');caption.textContent=img.alt||'일정 사진';figure.appendChild(caption);}
-    if(!figure.classList.contains('map-capture')){img.tabIndex=0;img.setAttribute('role','button');img.setAttribute('aria-label',(caption.textContent.trim()||img.alt||'일정 사진')+' 크게 보기');}
-    figure.querySelector(':scope > .photo-delete')?.remove();
-    let actions=figure.querySelector(':scope > .photo-actions');
-    if(!actions){actions=document.createElement('span');actions.className='photo-actions';actions.innerHTML='<button class="photo-action" data-icon="up" data-move-photo="-1" type="button" aria-label="사진을 앞으로 이동"></button><button class="photo-action" data-icon="down" data-move-photo="1" type="button" aria-label="사진을 뒤로 이동"></button><button class="photo-action" data-icon="edit" data-edit-photo type="button" aria-label="사진 정보 편집"></button><button class="photo-action delete" data-delete-photo type="button" aria-label="사진 삭제">×</button>';figure.appendChild(actions);decorateButtonIcons(actions);}
-  }
-  function updateScheduleMoveButtons(){$$('main .day:not(.prepday):not(.moneyday)').forEach(panel=>{const rows=Array.from(panel.querySelectorAll(':scope > .timeline-row'));rows.forEach((row,index)=>{const buttons=row.querySelectorAll('[data-move-row]');if(buttons[0])buttons[0].disabled=index===0;if(buttons[1])buttons[1].disabled=index===rows.length-1;});});}
-  function updateScheduleKindControl(row){
-    const select=row.querySelector('.schedule-kind-select');if(!select)return;
-    const mode=scheduleKindMode(row.dataset.scheduleKind),title=row.querySelector('h3')?.textContent||'',chip=row.querySelector('.chip')?.textContent||'',automatic=timetableKind(title,chip),effective=timetableKind(title,chip,mode);
-    select.value=mode;select.options[0].textContent='자동 ('+TIMETABLE_KINDS[automatic]+')';
-    select.closest('.schedule-kind-control').className='schedule-kind-control tt-kind-'+effective;
-  }
-  function changeScheduleKind(select){
-    const row=select.closest('.timeline-row');if(!row)return;
-    if(!body.classList.contains('editing')){updateScheduleKindControl(row);return;}
-    documentSession.cancelHistory();recordHistory();
-    const mode=scheduleKindMode(select.value);if(mode==='auto')delete row.dataset.scheduleKind;else row.dataset.scheduleKind=mode;
-    updateScheduleKindControl(row);recordHistory();resetInactivityTimer();
-  }
-  function updateEditableEmpty(element){element.dataset.empty=String(!element.textContent.trim());}
-  function decorateEditablePlaceholders(root){
-    [['h3','일정 제목'],['.remark','장소 또는 메모'],['.schedule-warning-text','주의사항']].forEach(([selector,label])=>{
-      root.querySelectorAll(selector).forEach(element=>{element.dataset.placeholder=label;updateEditableEmpty(element);});
-    });
-  }
-  function decorateScheduleRows() {
-    const seenRowIds=new Set(),seenPhotoIds=new Set();
-    $$('.timeline-row').forEach((row,index)=>{
-      if(!row.dataset.rowId||seenRowIds.has(row.dataset.rowId))row.dataset.rowId='row-'+hashText((row.closest('.day')?.className||'')+'-'+index+'-'+row.textContent+'-'+uid());seenRowIds.add(row.dataset.rowId);
-      const card=row.querySelector('.card');if(!card)return;
-      row.querySelector(':scope > .row-delete')?.remove();
-      let rowActions=row.querySelector(':scope > .row-actions');
-      if(!rowActions){rowActions=document.createElement('span');rowActions.className='row-actions';rowActions.innerHTML='<button class="row-action" data-icon="up" data-move-row="-1" type="button" aria-label="일정을 위로 이동"></button><button class="row-action" data-icon="down" data-move-row="1" type="button" aria-label="일정을 아래로 이동"></button><button class="row-action delete" data-delete-row type="button" aria-label="일정 삭제">×</button>';row.appendChild(rowActions);decorateButtonIcons(rowActions);}
-      if(!card.querySelector('.schedule-media-tools')){const tools=document.createElement('div');tools.className='schedule-media-tools';tools.innerHTML='<button data-media="time" data-icon="edit" type="button">시간 설정</button><button data-media="photo" data-icon="photo" type="button">사진 첨부</button><button data-media="map" data-icon="map" type="button">지도 첨부</button><button data-media="warning" data-icon="alert" type="button">주의사항 추가</button>';card.appendChild(tools);decorateButtonIcons(tools);}
-      const mediaTools=card.querySelector('.schedule-media-tools');
-      if(!mediaTools.querySelector('.schedule-kind-control')){const label=document.createElement('label');label.className='schedule-kind-control';label.innerHTML='<span>일정 분류</span><i aria-hidden="true"></i><select class="schedule-kind-select" aria-label="일정 분류"><option value="auto">자동</option>'+Object.entries(TIMETABLE_KINDS).map(([value,name])=>'<option value="'+value+'">'+name+'</option>').join('')+'</select>';mediaTools.prepend(label);}
-      updateScheduleKindControl(row);
-      card.querySelectorAll('.schedule-warning').forEach(warning=>{let text=warning.querySelector('.schedule-warning-text');if(!text){const value=warning.textContent.trim();warning.textContent='';text=document.createElement('span');text.className='schedule-warning-text';text.textContent=value;warning.appendChild(text);}if(!warning.querySelector('.warning-delete')){const button=document.createElement('button');button.className='warning-delete';button.type='button';button.textContent='삭제';warning.appendChild(button);}});
-      decorateEditablePlaceholders(card);
-      card.querySelectorAll('.schedule-photo').forEach(figure=>decoratePhotoFigure(figure,seenPhotoIds));
-      card.querySelectorAll('.schedule-gallery').forEach(updatePhotoMoveButtons);
-      const map=card.querySelector('.schedule-map');if(map){decorateMapLink(map);if(!map.querySelector('.schedule-map-delete')){const button=document.createElement('button');button.className='schedule-map-delete';button.type='button';button.textContent='삭제';map.appendChild(button);}}
-    });
-    updateScheduleMoveButtons();
-  }
+
+
+
+
+
+
+
+
+
+
+
+async function addCheckRow(){if($('.day-radio:checked')?.id!=='prep')return;await requireEditor('checklist',async()=>{await openChecklistEditor();addChecklistItem();});}
+
+function moveCheck(id,direction){if(!body.classList.contains('editing'))return;const labels=$$('.prepday .checklist label'),index=labels.findIndex(label=>label.dataset.checkId===id),next=index+direction;if(index<0||next<0||next>=labels.length)return;const label=labels[index],target=labels[next];if(direction<0)target.before(label);else target.after(label);updateChecklistMoveButtons();recordHistory();}
+function pendingCheckCount(){return pendingChecks.size;}
+function pendingCheckBefore(id){return pendingChecks.get(id)?.before;}
+function isChecklistSaving(){return checklistSaving;}
+function isChecklistEditorSaving(){return checklistEditorSaving;}
+function checklistEditorSnapshot(){return clone(checklistEditorItems);}
+
+function bindChecklistControls(){
+$('#addCheckBtn').onclick=addCheckRow;
+document.addEventListener('click',event=>{if(isOperationBusy())return;
+if(event.target.classList.contains('check-delete')&&body.classList.contains('editing')){event.target.closest('label')?.remove();updateChecklistMoveButtons();recordHistory();return;}
+const checkMove=event.target.closest('[data-move-check]');if(checkMove&&!checkMove.disabled){moveCheck(checkMove.dataset.moveCheck,Number(checkMove.dataset.moveDirection));return;}
+});
+document.addEventListener('change',async event=>{if(event.target.matches('.prepday .checklist input[type="checkbox"]')){await requestCheckToggle(event.target);return;}});
+document.addEventListener('click',event=>{if((pendingChecks.size||checklistSaving)&&event.target.closest('.editor-bar')){event.preventDefault();event.stopImmediatePropagation();}},true);
+$('#checklistAdd').onclick=addChecklistItem;
+$('#checklistCancel').onclick=()=>{if(!checklistEditorSaving){$('#checklistDialog').hidden=true;syncChecklistControls();}};
+$('#checklistSave').onclick=()=>void saveChecklistEditor();
+$('#checklistEditorRows').addEventListener('input',event=>{const index=Number(event.target.dataset.checkIndex);if(event.target.matches('.checklist-text')&&checklistEditorItems[index])checklistEditorItems[index].text=event.target.value;resetInactivityTimer();});
+$('#checklistEditorRows').addEventListener('click',event=>{const button=event.target.closest('[data-check-action]');if(!button||button.disabled)return;const index=Number(button.dataset.index),action=button.dataset.checkAction;if(action==='delete')checklistEditorItems.splice(index,1);else{const next=index+(action==='up'?-1:1);[checklistEditorItems[index],checklistEditorItems[next]]=[checklistEditorItems[next],checklistEditorItems[index]];}renderChecklistEditor();const rows=$$('#checklistEditorRows .checklist-editor-row');rows[Math.min(index,rows.length-1)]?.querySelector('.checklist-text')?.focus();});
+document.addEventListener('click',event=>{const retry=event.target.closest('[data-retry-check]');if(!retry)return;const item=checkFeedback.get(retry.dataset.retryCheck);if(item)void authorizeCheck(retry.dataset.retryCheck,item.value);});
+}
+
+return Object.freeze({checklistItems,checklistShape,patchCheck,patchChecklist,syncChecklistControls,renderCheckFeedback,commitChecklistPatch,authorizeCheck,requestCheckToggle,queueCheck,checklistEditorDirty,openChecklistEditor,renderChecklistEditor,addChecklistItem,saveChecklistEditor,decorateChecklist,updateChecklistMoveButtons,addCheckRow,moveCheck,pendingCheckCount,pendingCheckBefore,isChecklistSaving,isChecklistEditorSaving,checklistEditorSnapshot,bindChecklistControls});
+}
