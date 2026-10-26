@@ -104,26 +104,21 @@ jobs:
           node-version-file: .node-version
           cache: npm
       - run: npm ci
-      - name: Diagnose Chromium container rendering
-        run: node --input-type=module -e 'import {chromium} from "playwright"; const b=await chromium.launch(); try {const p=await b.newPage(); await p.setContent("<p>Render probe</p>"); await p.screenshot({timeout:10000});} finally {await b.close();}'
-        env:
-          HOME: /root
-          DEBUG: pw:browser
       - run: npm run test:ci -- --suite=browser
         env:
           HOME: /root
-          TMPDIR: ${{ runner.temp }}
-          TRIP_CHECK_OUTPUT: ${{ runner.temp }}/westbound-ci-browser
+          TMPDIR: /tmp
+          TRIP_CHECK_OUTPUT: /tmp/westbound-ci-browser
       - if: inputs.repeat_boundaries && github.ref != 'refs/heads/main'
         run: npm run test:browser:repeat
         env:
           HOME: /root
-          TMPDIR: ${{ runner.temp }}
+          TMPDIR: /tmp
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: browser-diagnostics
-          path: ${{ runner.temp }}/westbound-*/
+          path: /tmp/westbound-*/
           if-no-files-found: warn
           retention-days: 7
       - uses: actions/upload-artifact@v4
@@ -131,8 +126,8 @@ jobs:
         with:
           name: browser-summary
           path: |
-            ${{ runner.temp }}/westbound-ci-browser/
-            ${{ runner.temp }}/westbound-browser-timing-*/
+            /tmp/westbound-ci-browser/
+            /tmp/westbound-browser-timing-*/
           if-no-files-found: warn
           retention-days: 7
 
