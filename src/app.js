@@ -15,6 +15,7 @@ const {parseTimetableTime,scheduleTimeValue,scheduleClockMask,scheduleClockValue
 const draftStorage=createDraftStorage({DRAFT_DB_NAME:DRAFT_DB_NAME,DRAFT_RECORD_KEY:DRAFT_RECORD_KEY,DRAFT_SESSION_KEY:DRAFT_SESSION_KEY,LEGACY_CACHE_KEY:LEGACY_CACHE_KEY,LEGACY_DRAFT_RECORD_KEY:LEGACY_DRAFT_RECORD_KEY,PUBLIC_CACHE_RECORD_KEY:PUBLIC_CACHE_RECORD_KEY,TRIP_ID:TRIP_ID,clone:clone,showDraftStorageWarning:(...args)=>showDraftStorageWarning(...args)});
 const {draftCheckpointKey,readDraftCheckpoint,removeDraftCheckpoint,openDraftDatabase,acquireDraftLock,prepareDraftStorage,readDraftRecord,readPublicCache,invalidateWrites,retainDraft}=draftStorage;
 // @include app/drafts.js
+// @include app/document-workflow.js
 
 // @include app/trip-clock.js
 
@@ -24,6 +25,26 @@ const {decimalParts,roundRatio,safeMinor,parseLedgerInput,parseLedgerRate,conver
 // @include app/ledger.js
 // @include app/document-session.js
 const documentSession=createDocumentSession({clone,normalize:(...args)=>normalizeState(...args),fingerprint:(...args)=>fingerprint(...args)});
+const draftWorkflow=createDraftWorkflow({OFFLINE_MODE:OFFLINE_MODE,
+SCHEMA_VERSION:SCHEMA_VERSION,
+TRIP_ID:TRIP_ID,
+applyState:(...args)=>applyState(...args),
+body:body,
+captureState:(...args)=>captureState(...args),
+clone:(...args)=>clone(...args),
+documentSession:documentSession,
+draftStorage:draftStorage,
+fingerprint:(...args)=>fingerprint(...args),
+getEditorSession:(...args)=>getEditorSession(...args),
+initializeHistory:(...args)=>initializeHistory(...args),
+isDirty:(...args)=>isDirty(...args),
+migratePublishedState:(...args)=>migratePublishedState(...args),
+normalizeState:(...args)=>normalizeState(...args),
+readDraftRecord:(...args)=>readDraftRecord(...args),
+setStatus:(...args)=>setStatus(...args),
+showChoice:(...args)=>showChoice(...args),
+updateDirtyState:(...args)=>updateDirtyState(...args)});
+let {writeDraftRecord,clearDraftRecord,currentDraftRecord,flushDraftPersistence,queueDraftPersistence,clearCleanDraft,recoverOnlineDraft,deferRecovery,isRecoveryDeferred,cancelPendingWrites}=draftWorkflow;
 // @include app/document.js
 const documentAdapter=createDocumentAdapter({$:$,
 $$:$$,

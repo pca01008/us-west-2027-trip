@@ -47,3 +47,9 @@ Exit: focused unit checks (including independent PREP divergence and preview pre
 `createDraftStorage()` privately owns IndexedDB transactions, Web Locks/claims, synchronous checkpoints, generations, memory records and public cache migration. Storage receives warning callbacks and explicit cache metadata; it never reads publication state or opens dialogs. Workflow guards still execute before invoking writes, without introducing an await before checkpoints. Failed offline saves explicitly retain the dirty memory record.
 
 Exit: focused unit/static checks plus the complete storage and drafts browser suites passed, including first-input navigation, failed/aborted writes/deletes, ownership, deferred recovery and offline baseline reload. Source/generated diff and whitespace checked. Recovery scheduling remains a separate next change.
+
+## Stage 3b, scheduling/recovery slice
+
+`createDraftWorkflow()` owns deferred recovery and the draft timer. Recovery actions moved out of startup; external callers query recovery status or defer/cancel through actions. Published/cache coordination stays in `document-workflow.js`; storage mechanics are unchanged from the preceding commit.
+
+Exit: 29 focused unit checks and the complete storage/drafts browser suites passed. Build/project/whitespace checks passed. First-input checkpoints still execute synchronously through the guard before storage awaits.

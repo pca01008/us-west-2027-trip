@@ -11,7 +11,7 @@
   function blockUnsupportedDocument(error){
     if(!['DOCUMENT_SCHEMA','DOCUMENT_LEDGER','DOCUMENT_CURRENCY'].includes(error?.code))return false;
     documentSession.blockWrites(error.code==='DOCUMENT_CURRENCY'?error.message:error.code==='DOCUMENT_SCHEMA'?'앱을 새로고침해 주세요':'지출 데이터를 읽지 못했습니다. 작업본을 보관하고 최근 저장 버전을 확인해 주세요.');
-    clearTimeout(draftWriteTimer);setStatus(documentSession.snapshot().documentWriteBlock);return true;
+    draftWorkflow.cancelPendingWrites();setStatus(documentSession.snapshot().documentWriteBlock);return true;
   }
   function setStatus(message) { if ($('#status')) $('#status').textContent = documentSession.snapshot().documentWriteBlock||message; }
   function finishHydration() {

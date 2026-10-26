@@ -91,8 +91,6 @@
   let pendingImport = null;
   let tabScrollReleaseTimer = null;
   let tabScrollReleaseHandler = null;
-  let deferredDraftRecovery = false;
-  let draftWriteTimer = null;
   let saveInFlight = false;
   let activePhotoFigure = null;
   let operationBusy = false;

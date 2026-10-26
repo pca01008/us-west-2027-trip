@@ -3,12 +3,12 @@ async function showInactivityWarning(){dialogs.startNoticeCountdown();const dirt
   function closeEditorDialogs(){invalidateVersionRequest();closeScheduleTimeDialog();['checklistDialog','ledgerSettingsDialog','categoryDialog','expenseDialog','mapDialog','photoEditDialog','importDialog','exportDialog','versionDialog','versionCompareDialog','photoViewer'].forEach(id=>{const dialog=$('#'+id);if(dialog)dialog.hidden=true;});editingCategoryId=null;editingExpenseId=null;activeScheduleRow=null;activePhotoFigure=null;selectedVersion=null;pendingImport=null;}
   async function handleExternalSignOut(message='편집 세션이 다른 탭에서 종료되었습니다.') {
     invalidateVersionRequest();
-    const hadDraft=isDirty()||deferredDraftRecovery;
+    const hadDraft=isDirty()||draftWorkflow.isRecoveryDeferred();
     if(hadDraft){
       await flushDraftPersistence();
       // The shared view no longer contains this draft. Require recovery before
       // another edit, and retain the guard across duplicate sign-out events.
-      deferredDraftRecovery=true;
+      draftWorkflow.deferRecovery();
     }
     if(documentSession.snapshot().previewReturnState)closePreview();
     if(documentSession.snapshot().lastSavedState)applyState(documentSession.snapshot().lastSavedState);

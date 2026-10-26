@@ -90,7 +90,7 @@
         const localBefore=captureState(),baseBefore=clone(documentSession.snapshot().lastSavedState);
         const nextLocal=transform(localBefore),nextBase=normalizeState(transform(baseBefore));
         if(OFFLINE_MODE){
-          clearTimeout(draftWriteTimer);
+          draftWorkflow.cancelPendingWrites();
           const dirty=fingerprint(nextLocal)!==fingerprint(nextBase);
           const ok=await writeDraftRecord({tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:nextLocal,baseState:nextBase,baseRevision:documentSession.snapshot().publishedRevision,baseUpdatedAt:documentSession.snapshot().publishedUpdatedAt,savedAt:new Date().toISOString(),dirty});
           if(!ok)throw new Error('브라우저에 저장하지 못했습니다. 다시 시도해 주세요.');
@@ -133,7 +133,7 @@
         const before=pendingChecks.get(id)?.before,restoreFocus=document.activeElement===document.body;pendingChecks.delete(id);
         const current=$$('.prepday .checklist label').find(label=>label.dataset.checkId===id)?.querySelector('input');if(current)current.checked=saved?value:before;
         updateDirtyState();renderCheckFeedback();if(restoreFocus&&current&&$('.day-radio:checked')?.id==='prep'&&$('#authDialog').hidden)current.focus({preventScroll:true});resetInactivityTimer();
-        if(saved&&!documentSession.snapshot().pendingDraft&&!OFFLINE_MODE&&!deferredDraftRecovery)await clearDraftRecord();
+        if(saved&&!documentSession.snapshot().pendingDraft&&!OFFLINE_MODE&&!draftWorkflow.isRecoveryDeferred())await clearDraftRecord();
         if(saved){const feedback=checkFeedback.get(id);setTimeout(()=>{if(checkFeedback.get(id)===feedback){checkFeedback.delete(id);renderCheckFeedback();}},3500);}
       }
     });
@@ -177,7 +177,7 @@
         return patchChecklist(state,publishedItems);
       },'준비 목록 편집',state=>checklistShape(checklistItems(state))===checklistShape(items));
       $('#checklistDialog').hidden=true;checkFeedback.clear();renderCheckFeedback();updateDirtyState();
-      if(!documentSession.snapshot().pendingDraft&&!OFFLINE_MODE&&!deferredDraftRecovery)await clearDraftRecord();
+      if(!documentSession.snapshot().pendingDraft&&!OFFLINE_MODE&&!draftWorkflow.isRecoveryDeferred())await clearDraftRecord();
       setStatus(OFFLINE_MODE?'목록을 이 브라우저에 저장했습니다.':'목록 저장됨');
     }catch(error){
       // Submitted IDs may now exist remotely. A later explicit retry must retain

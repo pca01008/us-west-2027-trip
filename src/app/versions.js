@@ -106,7 +106,7 @@
   }
   async function restoreSelectedVersion(){
     if(!selectedVersion)return;
-    if(deferredDraftRecovery){if(documentSession.snapshot().previewReturnState)closePreview();await recoverOnlineDraft();if(deferredDraftRecovery)return;}
+    if(draftWorkflow.isRecoveryDeferred()){if(documentSession.snapshot().previewReturnState)closePreview();await recoverOnlineDraft();if(draftWorkflow.isRecoveryDeferred())return;}
     const hasDraft=isDirty(),choice=await showChoice({title:'버전 #'+selectedVersion.id+'을 복원할까요?',message:hasDraft?'현재 저장하지 않은 초안은 복원본으로 대체됩니다. 복원본은 새 버전으로 저장되어 공개됩니다.':'복원본은 새 버전으로 저장되어 공개됩니다.',choices:[{label:'취소',value:'cancel'},{label:'복원',value:'restore',className:'action-primary'}]});
     if(choice!=='restore')return;
     const restored=clone(selectedVersion.state),id=selectedVersion.id;

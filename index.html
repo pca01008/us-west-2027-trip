@@ -1293,8 +1293,6 @@ const {createLedgerCurrencies,currencyMetadata,assertCurrencyPair,currencyLabel,
   let pendingImport = null;
   let tabScrollReleaseTimer = null;
   let tabScrollReleaseHandler = null;
-  let deferredDraftRecovery = false;
-  let draftWriteTimer = null;
   let saveInFlight = false;
   let activePhotoFigure = null;
   let operationBusy = false;
@@ -1325,7 +1323,7 @@ const {createLedgerCurrencies,currencyMetadata,assertCurrencyPair,currencyLabel,
   function blockUnsupportedDocument(error){
     if(!['DOCUMENT_SCHEMA','DOCUMENT_LEDGER','DOCUMENT_CURRENCY'].includes(error?.code))return false;
     documentSession.blockWrites(error.code==='DOCUMENT_CURRENCY'?error.message:error.code==='DOCUMENT_SCHEMA'?'앱을 새로고침해 주세요':'지출 데이터를 읽지 못했습니다. 작업본을 보관하고 최근 저장 버전을 확인해 주세요.');
-    clearTimeout(draftWriteTimer);setStatus(documentSession.snapshot().documentWriteBlock);return true;
+    draftWorkflow.cancelPendingWrites();setStatus(documentSession.snapshot().documentWriteBlock);return true;
   }
   function setStatus(message) { if ($('#status')) $('#status').textContent = documentSession.snapshot().documentWriteBlock||message; }
   function finishHydration() {
@@ -1794,6 +1792,9 @@ return Object.freeze({draftCheckpointKey,readDraftCheckpoint,removeDraftCheckpoi
 }
 const draftStorage=createDraftStorage({DRAFT_DB_NAME:DRAFT_DB_NAME,DRAFT_RECORD_KEY:DRAFT_RECORD_KEY,DRAFT_SESSION_KEY:DRAFT_SESSION_KEY,LEGACY_CACHE_KEY:LEGACY_CACHE_KEY,LEGACY_DRAFT_RECORD_KEY:LEGACY_DRAFT_RECORD_KEY,PUBLIC_CACHE_RECORD_KEY:PUBLIC_CACHE_RECORD_KEY,TRIP_ID:TRIP_ID,clone:clone,showDraftStorageWarning:(...args)=>showDraftStorageWarning(...args)});
 const {draftCheckpointKey,readDraftCheckpoint,removeDraftCheckpoint,openDraftDatabase,acquireDraftLock,prepareDraftStorage,readDraftRecord,readPublicCache,invalidateWrites,retainDraft}=draftStorage;
+/** Draft scheduling and recovery policy; storage mechanics have a separate owner. */
+function createDraftWorkflow({OFFLINE_MODE,SCHEMA_VERSION,TRIP_ID,applyState,body,captureState,clone,documentSession,draftStorage,fingerprint,getEditorSession,initializeHistory,isDirty,migratePublishedState,normalizeState,readDraftRecord,setStatus,showChoice,updateDirtyState}) {
+let deferredDraftRecovery=false,draftWriteTimer=null;
 // Workflow guards run before the storage call, preserving synchronous checkpoints.
 function writeDraftRecord(record){
   if(documentSession.snapshot().documentWriteBlock||deferredDraftRecovery)return Promise.resolve(false);
@@ -1806,27 +1807,15 @@ async function clearDraftRecord(){
   if(cleared)deferredDraftRecovery=false;
   return cleared;
 }
-function writePublicCache(state,metadata={}){
-  const baseline=documentSession.snapshot();
-  return draftStorage.writePublicCache(state,{...metadata,revision:metadata.revision??baseline.publishedRevision,updatedAt:metadata.updatedAt??baseline.publishedUpdatedAt});
-}
+
   // A synchronous checkpoint covers navigation before an IndexedDB commit.
   // It uses the same per-page ownership/claim rules as the durable draft.
 
-  function showDraftStorageWarning(kind='') {
-    let warning=$('#draftStorageWarning');
-    if(!warning){warning=document.createElement('span');warning.id='draftStorageWarning';warning.className='chip';warning.setAttribute('role','alert');$('#status').after(warning);}
-    warning.hidden=!kind;
-    warning.textContent=kind==='delete'?'초안 삭제 실패 · 저장 공간을 확인한 뒤 다시 시도해 주세요.':kind==='read'?'브라우저 초안을 확인하지 못했습니다 · 저장 공간을 확인해 주세요.':kind?'초안 보관 실패 · 새로고침 전에 공유 저장하거나 내보내세요.':'';
-  }
+
   // A live page owns its record until its Web Lock is released on unload.
   // Recovery only moves records whose owner is no longer open.
 
-  function setPublishedBaseline(row,state,cacheMetadata={}) {
-    const normalized=normalizeState(state),current=normalizeState(captureState());
-    documentSession.acceptPublished(row,fingerprint(current)===fingerprint(normalized)?normalized:current);
-    void writePublicCache(documentSession.snapshot().lastSavedState,cacheMetadata);
-  }
+
   function currentDraftRecord() {
     return {tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:documentSession.snapshot().previewReturnState?clone(documentSession.snapshot().previewReturnState):captureState(),baseState:documentSession.snapshot().draftBaselineUnknown?null:clone(documentSession.snapshot().lastSavedState),baseRevision:documentSession.snapshot().publishedRevision,baseUpdatedAt:documentSession.snapshot().publishedUpdatedAt,savedAt:new Date().toISOString(),dirty:true};
   }
@@ -1850,6 +1839,63 @@ function writePublicCache(state,metadata={}){
     draftStorage.invalidateWrites();clearTimeout(draftWriteTimer);draftWriteTimer=null;
     if(OFFLINE_MODE)void writeDraftRecord({...currentDraftRecord(),dirty:false});
     else void clearDraftRecord();
+  }
+
+async function recoverOnlineDraft() {
+    const record=await readDraftRecord();
+    if(!record?.dirty||record.tripId!==TRIP_ID||!record.state?.html){deferredDraftRecovery=false;return;}
+    const incoming=normalizeState(migratePublishedState(record.state));
+    if(documentSession.snapshot().lastSavedState&&fingerprint(incoming)===fingerprint(documentSession.snapshot().lastSavedState)){documentSession.markClean();await clearDraftRecord();return;}
+    if(!await getEditorSession()){
+      deferredDraftRecovery=true;
+      setStatus('초안을 보관했습니다 · 로그인 후 복구할 수 있습니다.');
+      return;
+    }
+    const serverChanged=Number(record.baseRevision||0)!==documentSession.snapshot().publishedRevision;
+    const savedAt=record.savedAt?new Date(record.savedAt).toLocaleString('ko-KR'):'이전 접속';
+    const choice=await showChoice({title:'저장하지 않은 초안을 찾았습니다.',message:savedAt+'에 이 브라우저에 보관한 초안입니다.'+(serverChanged?' 그 뒤 공유 저장본이 변경되어 저장할 때 차이를 다시 확인합니다.':''),choices:[{label:'초안 삭제',value:'discard',className:'action-danger'},{label:'초안 복구',value:'restore',className:'action-primary'}]});
+    if(choice==='discard'){
+      documentSession.markClean();
+      if(documentSession.snapshot().lastSavedState){applyState(documentSession.snapshot().lastSavedState);documentSession.establishBaseline(clone(normalizeState(captureState())));}
+      initializeHistory();
+      const cleared=await clearDraftRecord();
+      if(!cleared)deferredDraftRecovery=true;
+      updateDirtyState();
+      if(cleared)setStatus('브라우저 초안을 삭제했습니다.');
+      else await showChoice({title:'초안을 삭제하지 못했습니다.',message:'브라우저 저장소에서 초안을 지우지 못했습니다. 사이트 저장 공간을 확인한 뒤 다시 시도해 주세요.',choices:[{label:'확인',value:'ok',className:'action-primary'}]});
+      return;
+    }
+    // Dismissing recovery keeps the stored draft and the current shared view.
+    if(choice!=='restore'){deferredDraftRecovery=true;setStatus('초안을 이 브라우저에 보관했습니다.');return;}
+    deferredDraftRecovery=false;
+    const latestState=clone(documentSession.snapshot().lastSavedState),latestRow={revision:documentSession.snapshot().publishedRevision,updated_at:documentSession.snapshot().publishedUpdatedAt,content:latestState};
+    // A legacy draft without a baseline must not adopt a newer revision through
+    // a checklist patch. Keep that uncertainty across subsequent draft writes.
+    documentSession.restoreDraftBaseline({baseline:record.baseState?.html?normalizeState(migratePublishedState(record.baseState)):latestState,revision:record.baseRevision,updatedAt:record.baseUpdatedAt,unknown:serverChanged&&!record.baseState?.html,remote:serverChanged?{row:latestRow,state:latestState}:null});
+    applyState(incoming);initializeHistory();updateDirtyState();setStatus('초안 복구됨 · 저장되지 않음');
+  }
+function deferRecovery(){deferredDraftRecovery=true;}
+function isRecoveryDeferred(){return deferredDraftRecovery;}
+function cancelPendingWrites(){clearTimeout(draftWriteTimer);draftWriteTimer=null;}
+
+return Object.freeze({writeDraftRecord,clearDraftRecord,currentDraftRecord,flushDraftPersistence,queueDraftPersistence,clearCleanDraft,recoverOnlineDraft,deferRecovery,isRecoveryDeferred,cancelPendingWrites});
+}
+function writePublicCache(state,metadata={}){
+  const baseline=documentSession.snapshot();
+  return draftStorage.writePublicCache(state,{...metadata,revision:metadata.revision??baseline.publishedRevision,updatedAt:metadata.updatedAt??baseline.publishedUpdatedAt});
+}
+
+function showDraftStorageWarning(kind='') {
+    let warning=$('#draftStorageWarning');
+    if(!warning){warning=document.createElement('span');warning.id='draftStorageWarning';warning.className='chip';warning.setAttribute('role','alert');$('#status').after(warning);}
+    warning.hidden=!kind;
+    warning.textContent=kind==='delete'?'초안 삭제 실패 · 저장 공간을 확인한 뒤 다시 시도해 주세요.':kind==='read'?'브라우저 초안을 확인하지 못했습니다 · 저장 공간을 확인해 주세요.':kind?'초안 보관 실패 · 새로고침 전에 공유 저장하거나 내보내세요.':'';
+  }
+
+function setPublishedBaseline(row,state,cacheMetadata={}) {
+    const normalized=normalizeState(state),current=normalizeState(captureState());
+    documentSession.acceptPublished(row,fingerprint(current)===fingerprint(normalized)?normalized:current);
+    void writePublicCache(documentSession.snapshot().lastSavedState,cacheMetadata);
   }
 
   function dateKeyNumber(dateKey) { return Date.parse(dateKey+'T00:00:00Z')/86400000; }
@@ -2128,6 +2174,26 @@ function createDocumentSession({clone, normalize, fingerprint}) {
     acceptPrepResult,initializeHistory,recordLocalChange,moveHistory,reconcileHistory,cancelHistory,queueHistory});
 }
 const documentSession=createDocumentSession({clone,normalize:(...args)=>normalizeState(...args),fingerprint:(...args)=>fingerprint(...args)});
+const draftWorkflow=createDraftWorkflow({OFFLINE_MODE:OFFLINE_MODE,
+SCHEMA_VERSION:SCHEMA_VERSION,
+TRIP_ID:TRIP_ID,
+applyState:(...args)=>applyState(...args),
+body:body,
+captureState:(...args)=>captureState(...args),
+clone:(...args)=>clone(...args),
+documentSession:documentSession,
+draftStorage:draftStorage,
+fingerprint:(...args)=>fingerprint(...args),
+getEditorSession:(...args)=>getEditorSession(...args),
+initializeHistory:(...args)=>initializeHistory(...args),
+isDirty:(...args)=>isDirty(...args),
+migratePublishedState:(...args)=>migratePublishedState(...args),
+normalizeState:(...args)=>normalizeState(...args),
+readDraftRecord:(...args)=>readDraftRecord(...args),
+setStatus:(...args)=>setStatus(...args),
+showChoice:(...args)=>showChoice(...args),
+updateDirtyState:(...args)=>updateDirtyState(...args)});
+let {writeDraftRecord,clearDraftRecord,currentDraftRecord,flushDraftPersistence,queueDraftPersistence,clearCleanDraft,recoverOnlineDraft,deferRecovery,isRecoveryDeferred,cancelPendingWrites}=draftWorkflow;
 /** DOM serialization/repair boundary. Normalization needs an explicit fallback. */
 function createDocumentAdapter({$,$$,DEFAULT_BUDGET_KRW,DEFAULT_EXCHANGE_RATE,IMPORT_ALLOWED_MONEY_IDS,MEDIA_PATH_PATTERN,SCHEMA_VERSION,SUPABASE_URL,TRIP_ID,afterApply,assertCurrencyPair,assertSupportedSchema,beforeApply,clone,currencyMetadata,drawExpenseInput,entryPending,hashText,normalizeCategories,normalizeExpenses,pendingCheckBefore,readEntryBuffer,readLedger,renderCheckFeedback,renderDocument,replaceLedger,restoreEntryBuffer,scheduleKindMode,sumLedgerAmounts}) {
 let applyingHistory=false,moneyTemplateHtml="";
@@ -2410,7 +2476,7 @@ const normalizeState=(raw,imported=false)=>documentAdapter.normalizeState(raw,{i
         const localBefore=captureState(),baseBefore=clone(documentSession.snapshot().lastSavedState);
         const nextLocal=transform(localBefore),nextBase=normalizeState(transform(baseBefore));
         if(OFFLINE_MODE){
-          clearTimeout(draftWriteTimer);
+          draftWorkflow.cancelPendingWrites();
           const dirty=fingerprint(nextLocal)!==fingerprint(nextBase);
           const ok=await writeDraftRecord({tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:nextLocal,baseState:nextBase,baseRevision:documentSession.snapshot().publishedRevision,baseUpdatedAt:documentSession.snapshot().publishedUpdatedAt,savedAt:new Date().toISOString(),dirty});
           if(!ok)throw new Error('브라우저에 저장하지 못했습니다. 다시 시도해 주세요.');
@@ -2453,7 +2519,7 @@ const normalizeState=(raw,imported=false)=>documentAdapter.normalizeState(raw,{i
         const before=pendingChecks.get(id)?.before,restoreFocus=document.activeElement===document.body;pendingChecks.delete(id);
         const current=$$('.prepday .checklist label').find(label=>label.dataset.checkId===id)?.querySelector('input');if(current)current.checked=saved?value:before;
         updateDirtyState();renderCheckFeedback();if(restoreFocus&&current&&$('.day-radio:checked')?.id==='prep'&&$('#authDialog').hidden)current.focus({preventScroll:true});resetInactivityTimer();
-        if(saved&&!documentSession.snapshot().pendingDraft&&!OFFLINE_MODE&&!deferredDraftRecovery)await clearDraftRecord();
+        if(saved&&!documentSession.snapshot().pendingDraft&&!OFFLINE_MODE&&!draftWorkflow.isRecoveryDeferred())await clearDraftRecord();
         if(saved){const feedback=checkFeedback.get(id);setTimeout(()=>{if(checkFeedback.get(id)===feedback){checkFeedback.delete(id);renderCheckFeedback();}},3500);}
       }
     });
@@ -2497,7 +2563,7 @@ const normalizeState=(raw,imported=false)=>documentAdapter.normalizeState(raw,{i
         return patchChecklist(state,publishedItems);
       },'준비 목록 편집',state=>checklistShape(checklistItems(state))===checklistShape(items));
       $('#checklistDialog').hidden=true;checkFeedback.clear();renderCheckFeedback();updateDirtyState();
-      if(!documentSession.snapshot().pendingDraft&&!OFFLINE_MODE&&!deferredDraftRecovery)await clearDraftRecord();
+      if(!documentSession.snapshot().pendingDraft&&!OFFLINE_MODE&&!draftWorkflow.isRecoveryDeferred())await clearDraftRecord();
       setStatus(OFFLINE_MODE?'목록을 이 브라우저에 저장했습니다.':'목록 저장됨');
     }catch(error){
       // Submitted IDs may now exist remotely. A later explicit retry must retain
@@ -2826,12 +2892,12 @@ async function showInactivityWarning(){dialogs.startNoticeCountdown();const dirt
   function closeEditorDialogs(){invalidateVersionRequest();closeScheduleTimeDialog();['checklistDialog','ledgerSettingsDialog','categoryDialog','expenseDialog','mapDialog','photoEditDialog','importDialog','exportDialog','versionDialog','versionCompareDialog','photoViewer'].forEach(id=>{const dialog=$('#'+id);if(dialog)dialog.hidden=true;});editingCategoryId=null;editingExpenseId=null;activeScheduleRow=null;activePhotoFigure=null;selectedVersion=null;pendingImport=null;}
   async function handleExternalSignOut(message='편집 세션이 다른 탭에서 종료되었습니다.') {
     invalidateVersionRequest();
-    const hadDraft=isDirty()||deferredDraftRecovery;
+    const hadDraft=isDirty()||draftWorkflow.isRecoveryDeferred();
     if(hadDraft){
       await flushDraftPersistence();
       // The shared view no longer contains this draft. Require recovery before
       // another edit, and retain the guard across duplicate sign-out events.
-      deferredDraftRecovery=true;
+      draftWorkflow.deferRecovery();
     }
     if(documentSession.snapshot().previewReturnState)closePreview();
     if(documentSession.snapshot().lastSavedState)applyState(documentSession.snapshot().lastSavedState);
@@ -2874,7 +2940,7 @@ function bindAuthentication(){
   async function persistState(state,{note='수동 저장'}={}){
     if(documentSession.snapshot().documentWriteBlock){setStatus(documentSession.snapshot().documentWriteBlock);return false;}
     if(body.classList.contains('previewing')){setStatus('미리보기를 닫은 뒤 저장해 주세요.');return false;}
-    if(deferredDraftRecovery){setStatus('보관한 초안을 복구하거나 삭제한 뒤 편집해 주세요.');return false;}
+    if(draftWorkflow.isRecoveryDeferred()){setStatus('보관한 초안을 복구하거나 삭제한 뒤 편집해 주세요.');return false;}
     if(saveInFlight||operationBusy||checklistSaving||pendingChecks.size){setStatus('다른 작업이 끝난 뒤 저장해 주세요.');return false;}
     let normalized=normalizeState(state);
     if(OFFLINE_MODE){
@@ -2927,9 +2993,9 @@ function bindAuthentication(){
     if(documentSession.snapshot().documentWriteBlock&&purpose!=='versions'){pendingAuthAction=null;pendingAuthCancel?.();pendingAuthCancel=null;setStatus(documentSession.snapshot().documentWriteBlock);return;}
     const cancel=()=>{const action=pendingAuthCancel;pendingAuthAction=null;pendingAuthCancel=null;if(action)action();};
     if(body.classList.contains('previewing')&&purpose!=='versions'){cancel();setStatus('미리보기를 닫은 뒤 편집해 주세요.');return;}
-    if(deferredDraftRecovery&&['edit','ledger','ledger-settings','import','save'].includes(purpose)){
+    if(draftWorkflow.isRecoveryDeferred()&&['edit','ledger','ledger-settings','import','save'].includes(purpose)){
       await recoverOnlineDraft();
-      if(deferredDraftRecovery){cancel();return;}
+      if(draftWorkflow.isRecoveryDeferred()){cancel();return;}
     }
     resetInactivityTimer();if(purpose==='edit')await beginEditing();if(purpose==='versions')await openVersions();if(purpose==='save')await confirmSave();if(purpose==='ledger-settings')openLedgerSettings();if((purpose==='ledger'||purpose==='checklist'||purpose==='import')&&pendingAuthAction){const action=pendingAuthAction;pendingAuthAction=null;pendingAuthCancel=null;await action();}
   }
@@ -3397,7 +3463,7 @@ function bindAuthentication(){
   }
   async function restoreSelectedVersion(){
     if(!selectedVersion)return;
-    if(deferredDraftRecovery){if(documentSession.snapshot().previewReturnState)closePreview();await recoverOnlineDraft();if(deferredDraftRecovery)return;}
+    if(draftWorkflow.isRecoveryDeferred()){if(documentSession.snapshot().previewReturnState)closePreview();await recoverOnlineDraft();if(draftWorkflow.isRecoveryDeferred())return;}
     const hasDraft=isDirty(),choice=await showChoice({title:'버전 #'+selectedVersion.id+'을 복원할까요?',message:hasDraft?'현재 저장하지 않은 초안은 복원본으로 대체됩니다. 복원본은 새 버전으로 저장되어 공개됩니다.':'복원본은 새 버전으로 저장되어 공개됩니다.',choices:[{label:'취소',value:'cancel'},{label:'복원',value:'restore',className:'action-primary'}]});
     if(choice!=='restore')return;
     const restored=clone(selectedVersion.state),id=selectedVersion.id;
@@ -3435,41 +3501,7 @@ function bindAuthentication(){
     tabs.scrollTo({left:Math.max(0,Math.min(target,maximum)),behavior});
   }
 
-  async function recoverOnlineDraft() {
-    const record=await readDraftRecord();
-    if(!record?.dirty||record.tripId!==TRIP_ID||!record.state?.html){deferredDraftRecovery=false;return;}
-    const incoming=normalizeState(migratePublishedState(record.state));
-    if(documentSession.snapshot().lastSavedState&&fingerprint(incoming)===fingerprint(documentSession.snapshot().lastSavedState)){documentSession.markClean();await clearDraftRecord();return;}
-    if(!await getEditorSession()){
-      deferredDraftRecovery=true;
-      setStatus('초안을 보관했습니다 · 로그인 후 복구할 수 있습니다.');
-      return;
-    }
-    const serverChanged=Number(record.baseRevision||0)!==documentSession.snapshot().publishedRevision;
-    const savedAt=record.savedAt?new Date(record.savedAt).toLocaleString('ko-KR'):'이전 접속';
-    const choice=await showChoice({title:'저장하지 않은 초안을 찾았습니다.',message:savedAt+'에 이 브라우저에 보관한 초안입니다.'+(serverChanged?' 그 뒤 공유 저장본이 변경되어 저장할 때 차이를 다시 확인합니다.':''),choices:[{label:'초안 삭제',value:'discard',className:'action-danger'},{label:'초안 복구',value:'restore',className:'action-primary'}]});
-    if(choice==='discard'){
-      documentSession.markClean();
-      if(documentSession.snapshot().lastSavedState){applyState(documentSession.snapshot().lastSavedState);documentSession.establishBaseline(clone(normalizeState(captureState())));}
-      initializeHistory();
-      const cleared=await clearDraftRecord();
-      if(!cleared)deferredDraftRecovery=true;
-      updateDirtyState();
-      if(cleared)setStatus('브라우저 초안을 삭제했습니다.');
-      else await showChoice({title:'초안을 삭제하지 못했습니다.',message:'브라우저 저장소에서 초안을 지우지 못했습니다. 사이트 저장 공간을 확인한 뒤 다시 시도해 주세요.',choices:[{label:'확인',value:'ok',className:'action-primary'}]});
-      return;
-    }
-    // Dismissing recovery keeps the stored draft and the current shared view.
-    if(choice!=='restore'){deferredDraftRecovery=true;setStatus('초안을 이 브라우저에 보관했습니다.');return;}
-    deferredDraftRecovery=false;
-    const latestState=clone(documentSession.snapshot().lastSavedState),latestRow={revision:documentSession.snapshot().publishedRevision,updated_at:documentSession.snapshot().publishedUpdatedAt,content:latestState};
-    // A legacy draft without a baseline must not adopt a newer revision through
-    // a checklist patch. Keep that uncertainty across subsequent draft writes.
-    documentSession.restoreDraftBaseline({baseline:record.baseState?.html?normalizeState(migratePublishedState(record.baseState)):latestState,revision:record.baseRevision,updatedAt:record.baseUpdatedAt,unknown:serverChanged&&!record.baseState?.html,remote:serverChanged?{row:latestRow,state:latestState}:null});
-    applyState(incoming);initializeHistory();updateDirtyState();setStatus('초안 복구됨 · 저장되지 않음');
-  }
-
-  async function refreshPublishedState(reason='refresh') {
+async function refreshPublishedState(reason='refresh') {
     if(OFFLINE_MODE||!client||!navigator.onLine)return false;
     try{
       const row=await fetchPublishedState();if(!row?.content?.html)return false;

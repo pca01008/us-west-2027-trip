@@ -93,7 +93,9 @@ Pages serves files; browser JavaScript renders and manages data; Supabase handle
 | `src/app/document.js` | DOM capture/normalization/apply, sanitization, legacy repair and input/focus preservation; normalization receives an explicit fallback |
 | `src/app/document-session.js` | Private baseline/revision/remote candidate, dirty/preview, write blocking and history transitions |
 | `src/app/draft-storage.js` | Private IndexedDB transaction/ownership/checkpoint protocol, verified deletion, memory fallback and public cache migration |
-| `src/app/state-ui.js`, `drafts.js`, `saving.js`, `editing.js` | State UI, recovery, persistence and editing/logout policy |
+| `src/app/drafts.js` | Private draft scheduling/deferred recovery; guards call storage synchronously before awaiting durability |
+| `src/app/document-workflow.js` | Published baseline/cache coordination and storage-warning view |
+| `src/app/state-ui.js`, `saving.js`, `editing.js` | State UI, persistence and editing/logout policy |
 | `src/app/dialogs.js`, `session.js` | Private dialog/focus/choice state and editor identity/activity state; explicit initialization and disposal |
 | `src/app/trip-repository.js` | Raw published reads, revision RPC, version transport and owned Realtime cleanup; callers retain workflow policy |
 | `src/app/checklist-schedule.js`, `photos.js`, `exports.js`, `versions.js` | Checklist/row behavior, media, standalone files and history |

@@ -21,7 +21,7 @@
   async function persistState(state,{note='수동 저장'}={}){
     if(documentSession.snapshot().documentWriteBlock){setStatus(documentSession.snapshot().documentWriteBlock);return false;}
     if(body.classList.contains('previewing')){setStatus('미리보기를 닫은 뒤 저장해 주세요.');return false;}
-    if(deferredDraftRecovery){setStatus('보관한 초안을 복구하거나 삭제한 뒤 편집해 주세요.');return false;}
+    if(draftWorkflow.isRecoveryDeferred()){setStatus('보관한 초안을 복구하거나 삭제한 뒤 편집해 주세요.');return false;}
     if(saveInFlight||operationBusy||checklistSaving||pendingChecks.size){setStatus('다른 작업이 끝난 뒤 저장해 주세요.');return false;}
     let normalized=normalizeState(state);
     if(OFFLINE_MODE){
@@ -74,9 +74,9 @@
     if(documentSession.snapshot().documentWriteBlock&&purpose!=='versions'){pendingAuthAction=null;pendingAuthCancel?.();pendingAuthCancel=null;setStatus(documentSession.snapshot().documentWriteBlock);return;}
     const cancel=()=>{const action=pendingAuthCancel;pendingAuthAction=null;pendingAuthCancel=null;if(action)action();};
     if(body.classList.contains('previewing')&&purpose!=='versions'){cancel();setStatus('미리보기를 닫은 뒤 편집해 주세요.');return;}
-    if(deferredDraftRecovery&&['edit','ledger','ledger-settings','import','save'].includes(purpose)){
+    if(draftWorkflow.isRecoveryDeferred()&&['edit','ledger','ledger-settings','import','save'].includes(purpose)){
       await recoverOnlineDraft();
-      if(deferredDraftRecovery){cancel();return;}
+      if(draftWorkflow.isRecoveryDeferred()){cancel();return;}
     }
     resetInactivityTimer();if(purpose==='edit')await beginEditing();if(purpose==='versions')await openVersions();if(purpose==='save')await confirmSave();if(purpose==='ledger-settings')openLedgerSettings();if((purpose==='ledger'||purpose==='checklist'||purpose==='import')&&pendingAuthAction){const action=pendingAuthAction;pendingAuthAction=null;pendingAuthCancel=null;await action();}
   }
