@@ -1,3 +1,4 @@
+import { injectBrowserFixture } from './browser-fixtures.mjs';
 import { selectTripTab } from './browser-fixtures.mjs';
 // Actual file input + application code, with a local revision-checked API only.
 import assert from 'node:assert/strict';
@@ -35,11 +36,9 @@ const server = createServer(async (req, res) => {
     const file=new URL(req.url,'http://localhost').pathname.slice(1)||'index.html';
     if (!/^(index\.html|trip-config\.js|(?:assets|icons)\/[\w.-]+)$/.test(file)) { res.writeHead(404).end();return; }
     let body=await readBrowserFixture(new URL(file,root));
-    if(file==='index.html') body=source
+    if(file==='index.html') body=injectBrowserFixture(source
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/,'')
-      .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/,stub)
-      .replace('initializeTimetable();initializeDialogAccessibility();',
-        'window.__importTest={captureState,normalizeState,migratePublishedState,recordHistory,flushDraftPersistence,readDraftRecord,pending:()=>pendingImport};initializeTimetable();initializeDialogAccessibility();');
+      .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/,stub), 'window.__importTest={captureState,normalizeState,migratePublishedState,recordHistory,flushDraftPersistence,readDraftRecord,pending:()=>pendingImport};');
     if(file==='trip-config.js') body+=`\nwindow.TRIP_CONFIG.supabase={url:'http://127.0.0.1:${server.address().port}',publishableKey:'fixture'};`;
     res.setHeader('Content-Type',file.endsWith('.html')?'text/html; charset=utf-8':file.endsWith('.js')?'text/javascript; charset=utf-8':'image/webp');res.end(body);
   } catch(error) { res.writeHead(500).end(error.message); }

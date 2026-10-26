@@ -1,3 +1,4 @@
+import { injectBrowserFixture } from './browser-fixtures.mjs';
 import { selectTripTab } from './browser-fixtures.mjs';
 // Real IndexedDB transactions with faults injected at browser API boundaries.
 // Application storage functions are never replaced. All HTTP traffic stays local.
@@ -33,11 +34,10 @@ const server = createServer(async (req,res) => {
     const url=new URL(req.url,'http://localhost'),file=url.pathname.slice(1)||'index.html';
     if(!/^(index\.html|trip-config\.js|(?:assets|icons)\/[\w.-]+)$/.test(file)){res.writeHead(404).end();return;}
     let body=await readBrowserFixture(new URL(file,root));
-    if(file==='index.html')body=source
+    if(file==='index.html')body=injectBrowserFixture(source
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/,'')
       .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/,stub)
-      .replace('data-offline="false"',url.searchParams.has('offline')?'data-offline="true"':'data-offline="false"')
-      .replace('initializeTimetable();initializeDialogAccessibility();',`window.__storageTest={captureState,recordHistory,flushDraftPersistence,readDraftRecord,clearDraftRecord,discardDraft,discardAndLogout,saveAndFinish,exportOfflineHtml,handleExternalSignOut,recoverOnlineDraft,isDirty,key:DRAFT_RECORD_KEY,db:DRAFT_DB_NAME};initializeTimetable();initializeDialogAccessibility();`);
+      .replace('data-offline="false"',url.searchParams.has('offline')?'data-offline="true"':'data-offline="false"'), `window.__storageTest={captureState,recordHistory,flushDraftPersistence,readDraftRecord,clearDraftRecord,discardDraft,discardAndLogout,saveAndFinish,exportOfflineHtml,handleExternalSignOut,recoverOnlineDraft,isDirty,key:DRAFT_RECORD_KEY,db:DRAFT_DB_NAME};`);
     res.setHeader('Content-Type',file.endsWith('.html')?'text/html; charset=utf-8':file.endsWith('.js')?'text/javascript; charset=utf-8':'image/webp');res.end(body);
   }catch(error){res.writeHead(500).end(error.message);}
 });

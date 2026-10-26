@@ -155,7 +155,7 @@ test('인터넷 연결 표시가 있어도 응답 없는 공유 서버 조회를
     maybeSingle() { return new Promise(resolve => signal.addEventListener('abort', () => resolve({ error: new Error('timeout') }), { once: true })); }
   };
   const context = vm.createContext({
-    OFFLINE_MODE: false, TRIP_ID: 'test', client: { from: () => query }, AbortController,
+    OFFLINE_MODE: false, TRIP_ID: 'test', client: { from: () => query }, AbortController, runtimeOptions:{publishedReadMs:8000},
     setTimeout: fn => setTimeout(fn, 5), clearTimeout
   });
   vm.runInContext(source, context);

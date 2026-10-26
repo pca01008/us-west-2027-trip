@@ -11,7 +11,8 @@ Work now focuses on the existing app. Further Daylight development and productio
 | Functionality, UI, and test findings | [2026-10-25 comprehensive review](docs/archive/2026-10-25-comprehensive-review.md) — reproduced issues, priorities, and proposed regression coverage |
 | Itinerary, timetable, PREP, ledger, draft recovery, installation, exports | [User guide](docs/USER_GUIDE.md) |
 | Architecture, data, saving, permissions, SQL | [Project guide](docs/PROJECT_GUIDE.md) |
-| Modular sources and reusable currencies | [Source map](docs/PROJECT_GUIDE.md#source-modules) · [Plan](docs/MODULARIZATION_PLAN.md) · [New trips](docs/OPERATIONS.md#new-trip) |
+| Modular sources and reusable currencies | [Source map](docs/PROJECT_GUIDE.md#source-modules) · [Completed extraction plan](docs/MODULARIZATION_PLAN.md) · [New trips](docs/OPERATIONS.md#new-trip) |
+| Further modularization for development | [October 26 review and implementation plan](docs/MODULARIZATION_REVIEW_PLAN.md) — proposed ownership, interfaces, stages, and regression gates |
 | Current color palette and change workflow | [Color roles](docs/PROJECT_GUIDE.md#color-palette) · [Maintenance](docs/OPERATIONS.md#palette-maintenance) |
 | Pretendard font loading, offline copies, validation limits | [Typography](docs/PROJECT_GUIDE.md#typography) · [October 24 checks](docs/archive/2026-10-24-pretendard.md) |
 | Setup, new trips, testing, deployment, DB checks, troubleshooting | [Operations guide](docs/OPERATIONS.md) |

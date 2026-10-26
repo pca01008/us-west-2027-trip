@@ -152,6 +152,8 @@ Coverage: control reads/identity sequence confirm grant modes; explicit-only cat
 
 Isolated local APIs block production. [Fixtures](../scripts/browser-fixtures.mjs) use synthetic trips, `example.test` accounts, generated images. Real phone keyboards/iPhone uploads/Samsung forced darkening need device checks.
 
+Synthetic servers use `injectBrowserFixture()` at the single inert `// @browser-fixture` composition marker. Missing/duplicate markers fail immediately. Fixture deadline options preserve production defaults; no private API is exposed by the normal build.
+
 | Check | Command and coverage |
 |---|---|
 | Full runner | `node scripts/check-browsers.mjs`; fails if any child fails; drafts has a five-minute process limit, other suites three minutes |

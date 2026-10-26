@@ -59,7 +59,7 @@
   async function discardAndLogout(message='수정 내용을 폐기하고 로그아웃했습니다.'){if(!await discardDraft(message)){resetInactivityTimer();return false;}closeNotice('timeout');await signOutEditor();setStatus(message);return true;}
   async function fetchPublishedState(){
     if(OFFLINE_MODE||!client)return null;
-    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);
+    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),runtimeOptions.publishedReadMs);
     try{const {data,error}=await client.from('trip_documents').select('content,updated_at,revision').eq('trip_id',TRIP_ID).abortSignal(controller.signal).maybeSingle();if(error)throw error;return data;}
     finally{clearTimeout(timeout);}
   }

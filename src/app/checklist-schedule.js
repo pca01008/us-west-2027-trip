@@ -74,7 +74,7 @@
         if(!OFFLINE_MODE&&fingerprint(saved)===fingerprint(remote)){
           transform(remote,'verified');saved=remote;result=row;
         }else if(!OFFLINE_MODE){
-          const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),12000);
+          const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),runtimeOptions.saveMs);
           let response,failure;
           try{response=await client.rpc('save_trip_document',{p_trip_id:TRIP_ID,p_content:saved,p_expected_revision:Number(row.revision)||0,p_version_note:note}).abortSignal(controller.signal);}
           catch(error){failure=error;}finally{clearTimeout(timeout);}

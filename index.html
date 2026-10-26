@@ -1354,6 +1354,8 @@ input:disabled,select:disabled{opacity:.7}
   const openDialogStack = [];
   const sessionChannel = !OFFLINE_MODE&&'BroadcastChannel' in window ? new BroadcastChannel(SESSION_CHANNEL_NAME) : null;
 
+  const runtimeOptions = {saveMs:12000, publishedReadMs:8000, versionReadMs:8000};
+
   function uid(prefix='id') {
     return prefix + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,9);
   }
@@ -2229,7 +2231,7 @@ input:disabled,select:disabled{opacity:.7}
         if(!OFFLINE_MODE&&fingerprint(saved)===fingerprint(remote)){
           transform(remote,'verified');saved=remote;result=row;
         }else if(!OFFLINE_MODE){
-          const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),12000);
+          const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),runtimeOptions.saveMs);
           let response,failure;
           try{response=await client.rpc('save_trip_document',{p_trip_id:TRIP_ID,p_content:saved,p_expected_revision:Number(row.revision)||0,p_version_note:note}).abortSignal(controller.signal);}
           catch(error){failure=error;}finally{clearTimeout(timeout);}
@@ -2550,7 +2552,7 @@ input:disabled,select:disabled{opacity:.7}
   async function discardAndLogout(message='수정 내용을 폐기하고 로그아웃했습니다.'){if(!await discardDraft(message)){resetInactivityTimer();return false;}closeNotice('timeout');await signOutEditor();setStatus(message);return true;}
   async function fetchPublishedState(){
     if(OFFLINE_MODE||!client)return null;
-    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);
+    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),runtimeOptions.publishedReadMs);
     try{const {data,error}=await client.from('trip_documents').select('content,updated_at,revision').eq('trip_id',TRIP_ID).abortSignal(controller.signal).maybeSingle();if(error)throw error;return data;}
     finally{clearTimeout(timeout);}
   }
@@ -2594,7 +2596,7 @@ input:disabled,select:disabled{opacity:.7}
       normalized=await materializeStagedPhotos(normalized);
       if(operationCancelled)throw new Error('저장을 취소했습니다. 초안은 유지됩니다.');
       setOperationBusy(true,{cancelable:false,status:'공유 저장 중'});
-      const controller=new AbortController();timeout=setTimeout(()=>controller.abort(),12000);
+      const controller=new AbortController();timeout=setTimeout(()=>controller.abort(),runtimeOptions.saveMs);
       let response;
       try{
         response=await client.rpc('save_trip_document',{p_trip_id:TRIP_ID,p_content:normalized,p_expected_revision:publishedRevision,p_version_note:note}).abortSignal(controller.signal);
@@ -3067,7 +3069,7 @@ input:disabled,select:disabled{opacity:.7}
     const signal=request.controller.signal;
     let rejectAbort;
     const aborted=new Promise((_,reject)=>{rejectAbort=()=>reject(signal.reason||new Error('버전 불러오기를 취소했습니다.'));signal.addEventListener('abort',rejectAbort,{once:true});if(signal.aborted)rejectAbort();});
-    const timeout=setTimeout(()=>request.controller.abort(new Error('불러오기 시간이 초과되었습니다. 다시 시도해 주세요.')),8000);
+    const timeout=setTimeout(()=>request.controller.abort(new Error('불러오기 시간이 초과되었습니다. 다시 시도해 주세요.')),runtimeOptions.versionReadMs);
     try{const result=await Promise.race([task(signal),aborted]);if(result.error)throw result.error;return result.data;}
     finally{clearTimeout(timeout);signal.removeEventListener('abort',rejectAbort);}
   }
@@ -3311,6 +3313,7 @@ input:disabled,select:disabled{opacity:.7}
   $('#checklistEditorRows').addEventListener('input',event=>{const index=Number(event.target.dataset.checkIndex);if(event.target.matches('.checklist-text')&&checklistEditorItems[index])checklistEditorItems[index].text=event.target.value;resetInactivityTimer();});
   $('#checklistEditorRows').addEventListener('click',event=>{const button=event.target.closest('[data-check-action]');if(!button||button.disabled)return;const index=Number(button.dataset.index),action=button.dataset.checkAction;if(action==='delete')checklistEditorItems.splice(index,1);else{const next=index+(action==='up'?-1:1);[checklistEditorItems[index],checklistEditorItems[next]]=[checklistEditorItems[next],checklistEditorItems[index]];}renderChecklistEditor();const rows=$$('#checklistEditorRows .checklist-editor-row');rows[Math.min(index,rows.length-1)]?.querySelector('.checklist-text')?.focus();});
   document.addEventListener('click',event=>{const retry=event.target.closest('[data-retry-check]');if(!retry)return;const item=checkFeedback.get(retry.dataset.retryCheck);if(item)void authorizeCheck(retry.dataset.retryCheck,item.value);});
+  // @browser-fixture
   initializeTimetable();initializeDialogAccessibility();selectInitialTab();decorateButtonIcons();decorateDates();decorateChecklist();renderLedger();moneyTemplateHtml=$('.moneyday').outerHTML;decorateScheduleRows();body.classList.add('viewing');setEditable(false);lastSavedState=normalizeState(captureState());updateContextControls();updateTripProgress();updateWorldClocks();setInterval(updateTripProgress,60*60*1000);setInterval(updateWorldClocks,60*1000);revealSelectedTab('auto');void hydrate().catch(error=>{blockUnsupportedDocument(error);console.error(error);setStatus('일정을 불러오지 못했습니다 · 현재 화면 유지');}).finally(finishHydration);
 })();
 </script>

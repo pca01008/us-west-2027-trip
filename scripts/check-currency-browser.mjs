@@ -1,3 +1,4 @@
+import { injectBrowserFixture } from './browser-fixtures.mjs';
 // Reusable-currency checks use synthetic data and never contact production.
 import assert from 'node:assert/strict';
 import { readFile, mkdtemp } from 'node:fs/promises';
@@ -12,10 +13,9 @@ const diagnostics=await createBrowserDiagnostics('currency');
 const source=await readFile(new URL('../index.html',import.meta.url),'utf8');
 const output=await mkdtemp(path.join(tmpdir(),'westbound-currency-'));
 const origin='http://127.0.0.1:37899';
-const html=source.replace('data-offline="false"','data-offline="true"')
+const html=injectBrowserFixture(source.replace('data-offline="false"','data-offline="true"')
   .replace(/<script id="pwaRegistration"[^>]*><\/script>/,'')
-  .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/,'')
-  .replace('initializeTimetable();initializeDialogAccessibility();','window.__currencyTest={captureState,normalizeState,exportOfflineHtml,exportStaticHtml,flushDraftPersistence,persistState};initializeTimetable();initializeDialogAccessibility();');
+  .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/,''), 'window.__currencyTest={captureState,normalizeState,exportOfflineHtml,exportStaticHtml,flushDraftPersistence,persistState};');
 const errors=[];
 let browser;
 try {

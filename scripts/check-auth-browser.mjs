@@ -1,3 +1,4 @@
+import { injectBrowserFixture } from './browser-fixtures.mjs';
 import { selectTripTab } from './browser-fixtures.mjs';
 // Real, version-matched Supabase SDK against local HTTP fixtures only.
 // No auth methods or app auth handlers are replaced or invoked by the tests.
@@ -73,10 +74,9 @@ const server = createServer(async (req, res) => {
     if (!/^(index\.html|trip-config\.js|(?:icons|assets)\/[\w.-]+)$/.test(file)) { res.writeHead(404).end(); return; }
     let content = await readBrowserFixture(new URL(file, root));
     if (file === 'trip-config.js') content += `\nObject.assign(window.TRIP_CONFIG,{editorEmail:'${email}',cacheNamespace:'auth_fixture',supabase:{url:location.origin,publishableKey:'sb_publishable_test'}});`;
-    if (file === 'index.html') content = source
+    if (file === 'index.html') content = injectBrowserFixture(source
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
-      .replace(sdkURL, '/fixture-supabase.js').replace(/integrity="sha384-[^"]+"/, `integrity="${integrity}"`)
-      .replace('initializeTimetable();initializeDialogAccessibility();', `window.__authTest={captureState,readDraftRecord,flushDraftPersistence,session:()=>editorSession};window.__authEvents=[];client.auth.onAuthStateChange(event=>window.__authEvents.push(event));initializeTimetable();initializeDialogAccessibility();`);
+      .replace(sdkURL, '/fixture-supabase.js').replace(/integrity="sha384-[^"]+"/, `integrity="${integrity}"`), `window.__authTest={captureState,readDraftRecord,flushDraftPersistence,session:()=>editorSession};window.__authEvents=[];client.auth.onAuthStateChange(event=>window.__authEvents.push(event));`);
     res.writeHead(200, { 'Content-Type': file.endsWith('.html') ? 'text/html; charset=utf-8' : file.endsWith('.js') ? 'text/javascript' : 'application/octet-stream' }).end(content);
   } catch (error) { fixtureErrors.push(error.message); json(res, 500, { message: error.message }); }
 });

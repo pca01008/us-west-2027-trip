@@ -69,6 +69,7 @@ Pages serves files; browser JavaScript renders and manages data; Supabase handle
 - `supabase/functions/trip-db-health/`: separately deployed [health function](OPERATIONS.md#db-health).
 - `scripts/check-trip-sql.mjs`, `tests/fixtures/trip-sql-*.sql`: isolated PostgreSQL execution of saves, permissions, concurrency, and upgrades; see [coverage](OPERATIONS.md#validation).
 - `scripts/browser-diagnostics.mjs`, `scripts/browser-fixtures.mjs`: shared diagnostics and synthetic browser fixtures.
+- Browser fixture APIs replace one inert composition comment only in synthetic test servers; production exposes no test API.
 - `.gitattributes`: LF normalization. `.git/` is version-control metadata and must not be edited directly.
 - Local `reference.html` and `.agents/skills/`: design references, not deployment requirements.
 

@@ -1,3 +1,4 @@
+import { injectBrowserFixture } from './browser-fixtures.mjs';
 // Legacy refinement regression checks, with synthetic data and no production requests.
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -13,11 +14,10 @@ const root = new URL('../', import.meta.url);
 const diagnostics = await createBrowserDiagnostics(`navigation-${engine}`);
 const output = diagnostics.output;
 await mkdir(output, { recursive: true });
-const source = (await readFile(new URL('index.html', root), 'utf8'))
+const source = injectBrowserFixture((await readFile(new URL('index.html', root), 'utf8'))
   .replace('data-offline="false"', 'data-offline="true"')
   .replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
-  .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/, '')
-  .replace('initializeTimetable();initializeDialogAccessibility();', 'window.__navigationTest={captureState,applyStatePreservingInputs,updateTripProgress,updateWorldClocks};initializeTimetable();initializeDialogAccessibility();');
+  .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/, ''), 'window.__navigationTest={captureState,applyStatePreservingInputs,updateTripProgress,updateWorldClocks};');
 const server = createServer(async (req, res) => {
   const file = new URL(req.url, 'http://localhost').pathname.slice(1) || 'index.html';
   if (!/^(index\.html|trip-config\.js|(?:assets|icons)\/[\w.-]+)$/.test(file)) { res.writeHead(404).end(); return; }

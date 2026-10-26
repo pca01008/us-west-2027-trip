@@ -1,3 +1,4 @@
+import { injectBrowserFixture } from './browser-fixtures.mjs';
 import { selectTripTab } from './browser-fixtures.mjs';
 // Exercise the actual app with a revision-checked local server. No production access.
 import assert from 'node:assert/strict';
@@ -51,14 +52,12 @@ const server = createServer(async (req, res) => {
     const relative = url.pathname.slice(1) || 'index.html';
     if (!/^(index\.html|trip-config\.js|(?:icons|assets)\/[\w.-]+)$/.test(relative)) { res.writeHead(404).end(); return; }
     let content = await readBrowserFixture(new URL(relative, root));
-    if (relative === 'index.html') content = original
-      .replaceAll('setTimeout(()=>controller.abort(),12000)', url.searchParams.has('uncertain')?'setTimeout(()=>controller.abort(),120)':'setTimeout(()=>controller.abort(),12000)')
+    if (relative === 'index.html') content = injectBrowserFixture(original
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
-      .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, stub)
-      .replace('initializeTimetable();initializeDialogAccessibility();', `window.__prepTest={captureState,applyState,normalizeState,checklistItems,patchChecklist,patchCheck,isDirty,finishMutation,recordHistory,refreshPublishedState,
+      .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, stub), `runtimeOptions.saveMs=${url.searchParams.has('uncertain')?120:12000};window.__prepTest={captureState,applyState,normalizeState,checklistItems,patchChecklist,patchCheck,isDirty,finishMutation,recordHistory,refreshPublishedState,
         pending:()=>pendingChecks.size,base:()=>lastSavedState,revision:()=>publishedRevision,editorItems:()=>clone(checklistEditorItems),
         draft:()=>{expenses.push({id:'unsaved-expense',name:'Unsaved meal',amountKrw:36250,amountUsd:25,amountSource:'usd',appliedExchangeRate:1450,date:'2027-05-01',categoryId:'misc'});renderLedger();finishMutation();},
-        storageFailure:()=>{writeDraftRecord=async()=>false;}};initializeTimetable();initializeDialogAccessibility();`)
+        storageFailure:()=>{writeDraftRecord=async()=>false;}};`)
       .replace('data-offline="false"', url.searchParams.has('offline') ? 'data-offline="true"' : 'data-offline="false"');
     res.setHeader('Content-Type', relative.endsWith('.html') ? 'text/html; charset=utf-8' : relative.endsWith('.js') ? 'text/javascript; charset=utf-8' : 'application/octet-stream');res.end(content);
   } catch (error) { res.writeHead(500).end(error.message); }

@@ -1,3 +1,4 @@
+import { injectBrowserFixture } from './browser-fixtures.mjs';
 import { selectTripTab, selectTheme } from './browser-fixtures.mjs';
 // Exercise real ledger rendering, UI changes and downloaded CSV bytes offline.
 // Only fixture setup uses an app hook; calculations and exports are not mocked.
@@ -21,11 +22,9 @@ const server = createServer(async (req, res) => {
   if (!/^(index\.html|trip-config\.js|(?:icons|assets)\/[\w.-]+)$/.test(file)) { res.writeHead(404).end(); return; }
   try {
     let content = await readBrowserFixture(new URL(file, root));
-    if (file === 'index.html') content = source.replace('data-offline="false"', 'data-offline="true"')
+    if (file === 'index.html') content = injectBrowserFixture(source.replace('data-offline="false"', 'data-offline="true"')
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
-      .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/, '')
-      .replace('initializeTimetable();initializeDialogAccessibility();',
-        'window.__ledgerTest={captureState,applyState,applyStatePreservingInputs,normalizeState,buildDiff,migratePublishedState,exportOfflineHtml,exportStaticHtml};initializeTimetable();initializeDialogAccessibility();');
+      .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/, ''), 'window.__ledgerTest={captureState,applyState,applyStatePreservingInputs,normalizeState,buildDiff,migratePublishedState,exportOfflineHtml,exportStaticHtml};');
     res.writeHead(200, { 'Content-Type': { html: 'text/html; charset=utf-8', js: 'text/javascript; charset=utf-8', webp: 'image/webp', png: 'image/png', svg: 'image/svg+xml' }[file.split('.').at(-1)], 'Cache-Control': 'no-store' });
     res.end(content);
   } catch (error) { res.writeHead(500).end(error.message); }

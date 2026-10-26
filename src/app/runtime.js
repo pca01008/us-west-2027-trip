@@ -137,3 +137,5 @@
   const dialogFocusOrigins = new WeakMap();
   const openDialogStack = [];
   const sessionChannel = !OFFLINE_MODE&&'BroadcastChannel' in window ? new BroadcastChannel(SESSION_CHANNEL_NAME) : null;
+
+  const runtimeOptions = {saveMs:12000, publishedReadMs:8000, versionReadMs:8000};

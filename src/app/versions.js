@@ -72,7 +72,7 @@
     const signal=request.controller.signal;
     let rejectAbort;
     const aborted=new Promise((_,reject)=>{rejectAbort=()=>reject(signal.reason||new Error('버전 불러오기를 취소했습니다.'));signal.addEventListener('abort',rejectAbort,{once:true});if(signal.aborted)rejectAbort();});
-    const timeout=setTimeout(()=>request.controller.abort(new Error('불러오기 시간이 초과되었습니다. 다시 시도해 주세요.')),8000);
+    const timeout=setTimeout(()=>request.controller.abort(new Error('불러오기 시간이 초과되었습니다. 다시 시도해 주세요.')),runtimeOptions.versionReadMs);
     try{const result=await Promise.race([task(signal),aborted]);if(result.error)throw result.error;return result.data;}
     finally{clearTimeout(timeout);signal.removeEventListener('abort',rejectAbort);}
   }

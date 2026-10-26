@@ -1,3 +1,4 @@
+import { injectBrowserFixture } from './browser-fixtures.mjs';
 import { selectTripTab, selectTheme } from './browser-fixtures.mjs';
 // Isolated UI checks with local fixtures. No production API/auth calls or writes.
 import assert from 'node:assert/strict';
@@ -22,10 +23,8 @@ const server = createServer(async (req, res) => {
   try {
     let body = await readBrowserFixture(new URL(relative, root));
     if (relative === 'index.html') {
-      body = source.replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
-        .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, '')
-        // Read-only diagnostics are exposed only by this local test fixture.
-        .replace('initializeTimetable();initializeDialogAccessibility();', 'window.__themeTest={captureState,isDirty};initializeTimetable();initializeDialogAccessibility();');
+      body = injectBrowserFixture(source.replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
+        .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, ''), 'window.__themeTest={captureState,isDirty};');
       if (url.pathname.startsWith('/offline/')) body = body.replace('data-offline="false"', 'data-offline="true"');
     }
     const ext = relative.split('.').at(-1);

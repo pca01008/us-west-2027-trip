@@ -1,3 +1,4 @@
+import { injectBrowserFixture } from './browser-fixtures.mjs';
 // Only loopback fixtures: prove incompatible documents cannot replace an existing draft.
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -12,11 +13,10 @@ const server=createServer(async(req,res)=>{
     const url=new URL(req.url,'http://localhost'),daylight=url.pathname.startsWith('/daylight/');
     const file=url.pathname.replace(/^\/(?:daylight\/)?/,'')||'index.html';
     let body;
-    if(file==='index.html')body=sources[daylight?1:0]
+    if(file==='index.html')body=injectBrowserFixture(sources[daylight?1:0]
       .replace('data-offline="false"','data-offline="true"')
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/,'')
-      .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/,'')
-      .replace('initializeTimetable();initializeDialogAccessibility();','window.__compat={captureState,normalizeState,writeDraftRecord,readDraftRecord,clearDraftRecord,persistState};initializeTimetable();initializeDialogAccessibility();');
+      .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/,''), 'window.__compat={captureState,normalizeState,writeDraftRecord,readDraftRecord,clearDraftRecord,persistState};');
     else if(file==='trip-config.js')body=`window.TRIP_CONFIG=${JSON.stringify({...fixtureConfig,schemaVersion:daylight?5:6})};`;
     else if(/^(?:assets|icons)\/[\w.-]+$/.test(file))body=await readBrowserFixture(new URL(file,root));
     else {res.writeHead(404).end();return;}

@@ -1,3 +1,4 @@
+import { injectBrowserFixture } from './browser-fixtures.mjs';
 import { selectTripTab, selectTheme } from './browser-fixtures.mjs';
 // Exercise the real app in isolated offline fixtures; never contact production APIs.
 import assert from 'node:assert/strict';
@@ -20,11 +21,9 @@ const server = createServer(async (req, res) => {
   if (!/^(index\.html|trip-config\.js|(?:icons|assets)\/[\w.-]+)$/.test(relative)) { res.writeHead(404).end(); return; }
   try {
     let content = await readBrowserFixture(new URL(relative, root));
-    if (relative === 'index.html') content = source.replace('data-offline="false"', 'data-offline="true"')
+    if (relative === 'index.html') content = injectBrowserFixture(source.replace('data-offline="false"', 'data-offline="true"')
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
-      .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, '')
-      .replace('initializeTimetable();initializeDialogAccessibility();',
-        'window.__inputsTest={captureState,applyState,normalizeState,recordHistory,exportOfflineHtml,exportStaticHtml};initializeTimetable();initializeDialogAccessibility();');
+      .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, ''), 'window.__inputsTest={captureState,applyState,normalizeState,recordHistory,exportOfflineHtml,exportStaticHtml};');
     const ext = relative.split('.').at(-1);
     res.writeHead(200, { 'Content-Type': { html: 'text/html; charset=utf-8', js: 'text/javascript; charset=utf-8', webp: 'image/webp', png: 'image/png', svg: 'image/svg+xml', woff2: 'font/woff2' }[ext], 'Cache-Control': 'no-store' });
     res.end(content);

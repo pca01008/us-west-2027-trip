@@ -1,5 +1,7 @@
 # Modularization plan — October 25, 2026
 
+This extraction is complete. See the [October 26 review and implementation plan](MODULARIZATION_REVIEW_PLAN.md) for the proposed next stage of dependency and state isolation; it is not yet implemented.
+
 ## Goal and constraints
 
 Make future edits smaller and travel reuse safer. Preserve the current navy/coral UI, existing US West data, draft keys, offline exports, PWA behavior, and shared Daylight compatibility. Use Node built-ins and the existing test tools; no framework or runtime module loader.

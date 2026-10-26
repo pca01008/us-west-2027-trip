@@ -38,7 +38,7 @@
       normalized=await materializeStagedPhotos(normalized);
       if(operationCancelled)throw new Error('저장을 취소했습니다. 초안은 유지됩니다.');
       setOperationBusy(true,{cancelable:false,status:'공유 저장 중'});
-      const controller=new AbortController();timeout=setTimeout(()=>controller.abort(),12000);
+      const controller=new AbortController();timeout=setTimeout(()=>controller.abort(),runtimeOptions.saveMs);
       let response;
       try{
         response=await client.rpc('save_trip_document',{p_trip_id:TRIP_ID,p_content:normalized,p_expected_revision:publishedRevision,p_version_note:note}).abortSignal(controller.signal);

@@ -1,3 +1,4 @@
+import { injectBrowserFixture } from './browser-fixtures.mjs';
 import { selectTripTab } from './browser-fixtures.mjs';
 // Regression checks against the real app with a local revision-checked API.
 // All external requests are blocked; production data is never read or changed.
@@ -73,17 +74,16 @@ const server = createServer(async (req, res) => {
     const file = url.pathname.slice(1) || 'index.html';
     if (!/^(index\.html|trip-config\.js|assets\/[\w.-]+)$/.test(file)) { res.writeHead(404).end(); return; }
     let body = await readBrowserFixture(new URL(file, root));
-    if (file === 'index.html') body = original
+    if (file === 'index.html') body = injectBrowserFixture(original
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
       .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, stub)
-      .replace('data-offline="false"', url.searchParams.has('offline') ? 'data-offline="true"' : 'data-offline="false"')
-      .replace('initializeTimetable();initializeDialogAccessibility();', `window.__draftTest={captureState,normalizeState,buildDiff,isDirty,recordHistory,flushDraftPersistence,queueDraftPersistence,readDraftRecord,writeDraftRecord,clearDraftRecord,moveHistory,discardDraft,discardAndLogout,logoutPreservingDraft,scheduleSessionTimers,getEditorSession,persistState,saveAndFinish,handleExternalSignOut,closeNotice,
+      .replace('data-offline="false"', url.searchParams.has('offline') ? 'data-offline="true"' : 'data-offline="false"'), `window.__draftTest={captureState,normalizeState,buildDiff,isDirty,recordHistory,flushDraftPersistence,queueDraftPersistence,readDraftRecord,writeDraftRecord,clearDraftRecord,moveHistory,discardDraft,discardAndLogout,logoutPreservingDraft,scheduleSessionTimers,getEditorSession,persistState,saveAndFinish,handleExternalSignOut,closeNotice,
         refreshPublishedState,exportOfflineHtml,exportStaticHtml,busy:()=>saveInFlight||operationBusy,
         stagePhoto:async()=>{const canvas=document.createElement('canvas');canvas.width=8;canvas.height=8;const full=canvas.toDataURL('image/jpeg'),thumb=canvas.toDataURL('image/webp');let row=$('.day1 .timeline-row');activeScheduleRow=row;const card=row.querySelector('.card');let gallery=card.querySelector('.schedule-photos');if(!gallery){gallery=document.createElement('div');gallery.className='schedule-photos';card.appendChild(gallery);}gallery.appendChild(createPhotoFigure({fullUrl:full,thumbUrl:thumb,staged:true},'Network draft'));recordHistory();await flushDraftPersistence();},
         remotePhotoState:()=>{const state=captureState(),template=document.createElement('template');template.innerHTML=state.html;const img=template.content.querySelector('.schedule-photo img');img.src=location.origin+'/storage/v1/object/public/trip-media/download.jpg';img.dataset.fullUrl=img.src;state.html=template.innerHTML;return state;},
         base:()=>lastSavedState,revision:()=>publishedRevision,pending:()=>pendingChecks.size,dirty:()=>pendingDraft,historyIndex:()=>historyIndex,
         legacyDraft:async()=>{const record=await readDraftRecord();delete record.baseState;await writeDraftRecord(record);deferredDraftRecovery=true;pendingDraft=false;clearTimeout(draftWriteTimer);},
-        activityKey:SESSION_ACTIVITY_KEY,key:DRAFT_RECORD_KEY,legacyKey:LEGACY_DRAFT_RECORD_KEY,db:DRAFT_DB_NAME,sessionKey:DRAFT_SESSION_KEY};initializeTimetable();initializeDialogAccessibility();`);
+        activityKey:SESSION_ACTIVITY_KEY,key:DRAFT_RECORD_KEY,legacyKey:LEGACY_DRAFT_RECORD_KEY,db:DRAFT_DB_NAME,sessionKey:DRAFT_SESSION_KEY};`);
     if(file==='trip-config.js')body=body+`\nwindow.TRIP_CONFIG.supabase={url:'http://127.0.0.1:${server.address().port}',publishableKey:'fixture-key'};`;
     res.setHeader('Content-Type', file.endsWith('.html') ? 'text/html; charset=utf-8' : file.endsWith('.js') ? 'text/javascript; charset=utf-8' : 'image/webp');
     res.end(body);

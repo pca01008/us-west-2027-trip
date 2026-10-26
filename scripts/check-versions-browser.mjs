@@ -1,3 +1,4 @@
+import { injectBrowserFixture, injectBrowserDeadlines } from './browser-fixtures.mjs';
 // Real version controls against synthetic, gated local HTTP reads only.
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -57,11 +58,9 @@ const server = createServer(async (req, res) => {
     if (!/^(index\.html|trip-config\.js|(?:assets|icons)\/[\w.-]+)$/.test(file)) { res.writeHead(404).end(); return; }
     let body = await readBrowserFixture(new URL(file, root));
     if (file === 'index.html') {
-      body = source.replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
-        .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/, stub)
-        .replace('initializeTimetable();initializeDialogAccessibility();',
-          'const originalVersionFlush=flushDraftPersistence;flushDraftPersistence=async(...args)=>{const result=await originalVersionFlush(...args);await window.__versionDraftGate?.();return result;};window.__versionTest={captureState,normalizeState};initializeTimetable();initializeDialogAccessibility();');
-      if (url.searchParams.has('fastTimeout')) body = body.replace("다시 시도해 주세요.')),8000)", "다시 시도해 주세요.')),150)");
+      body = injectBrowserFixture(source.replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
+        .replace(/<script src="[^"]*supabase[^"]*"[^>]*><\/script>/, stub), 'const originalVersionFlush=flushDraftPersistence;flushDraftPersistence=async(...args)=>{const result=await originalVersionFlush(...args);await window.__versionDraftGate?.();return result;};window.__versionTest={captureState,normalizeState};');
+      if (url.searchParams.has('fastTimeout')) body = injectBrowserDeadlines(body, {versionReadMs:150});
     }
     res.setHeader('Content-Type', file.endsWith('.html') ? 'text/html; charset=utf-8' : file.endsWith('.js') ? 'text/javascript; charset=utf-8' : 'application/octet-stream');
     res.end(body);

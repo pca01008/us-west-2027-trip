@@ -46,3 +46,16 @@ export async function selectTheme(page, value) {
   // Selecting the active radio closes the menu too.
   if (await page.locator('#themeMenu').isVisible()) await page.locator('input[name="themePreference"]:checked').click();
 }
+
+// Only synthetic test servers replace this inert composition-boundary comment.
+const fixtureMarker = '// @browser-fixture';
+export function injectBrowserFixture(html, api = '', options = {}) {
+  if (html.split(fixtureMarker).length !== 2) throw new Error('Expected exactly one browser fixture marker');
+  return html.replace(fixtureMarker, () => api + '\nObject.assign(runtimeOptions,' + JSON.stringify(options) + ');');
+}
+export function injectBrowserDeadlines(html, options) {
+  // The API injection already consumed the marker. Options belong before its API.
+  const anchor = 'Object.assign(runtimeOptions,{});';
+  if (html.split(anchor).length !== 2) throw new Error('Expected exactly one fixture options anchor');
+  return html.replace(anchor, () => 'Object.assign(runtimeOptions,' + JSON.stringify(options) + ');');
+}
