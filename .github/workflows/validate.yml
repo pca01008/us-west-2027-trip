@@ -6,10 +6,6 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
-      gate_probe:
-        description: Nonpublishing failure/skip gate check
-        type: boolean
-        default: false
       repeat_boundaries:
         description: Additional input/draft stability passes on a work branch
         type: boolean
@@ -35,8 +31,6 @@ jobs:
           node-version-file: .node-version
           cache: npm
       - run: npm ci
-      - if: inputs.gate_probe
-        run: exit 1
       - run: npm run test:ci -- --suite=validate
         env:
           TRIP_CHECK_OUTPUT: ${{ runner.temp }}/westbound-ci-validate
@@ -49,7 +43,6 @@ jobs:
           retention-days: 7
 
   sql:
-    if: ${{ !inputs.gate_probe }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     services:
@@ -86,7 +79,6 @@ jobs:
           retention-days: 7
 
   browser:
-    if: ${{ !inputs.gate_probe }}
     needs: validate
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -137,10 +129,16 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
       - name: Require every validation job
         env:
           RESULTS: ${{ toJSON(needs) }}
-        run: node -e 'const jobs=Object.values(JSON.parse(process.env.RESULTS)); if(jobs.length!==3 || jobs.some(job=>job.result!=="success")) process.exit(1)'
+        run: node scripts/require-validation.mjs
 
   pages-build:
     needs: required

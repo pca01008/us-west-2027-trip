@@ -1,0 +1,55 @@
+name: Gate probe (intentional failure)
+run-name: Gate probe (intentional failure) - ${{ github.ref_name }}
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Gate probe - intentional failure
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Fail deliberately
+        run: exit 1
+
+  sql:
+    name: Gate probe - skipped SQL
+    if: ${{ false }}
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo This job must stay skipped
+
+  browser:
+    name: Gate probe - skipped browser
+    if: ${{ false }}
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo This job must stay skipped
+
+  probe-required:
+    name: Gate probe - rejection
+    if: always()
+    needs: [validate, sql, browser]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - name: Reject failed and skipped validation
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: node scripts/require-validation.mjs
+
+  probe-pages-build:
+    name: Gate probe - blocked publication
+    needs: probe-required
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - run: exit 1
