@@ -2,6 +2,8 @@
 
 Scope: U2 → U3 → T1 → T2 → T3 from the [October 26 review](2026-10-26-project-review.md). Starting commit: `ef4349f`; existing README/Operations/Cloud-guide/review changes were preserved. Current trip remains schema 6, KRW/USD.
 
+See [production result](#production-result) for the final release. Chronological notes retain superseded approaches and every failed verification attempt.
+
 ## U2 — Rate validation
 
 Settings rate input is buffered until Apply/Enter. Invalid text stays visible with an associated inline error and focus; Cancel/Escape discards only pending rate input. Nested category rendering preserves it. Positive rates allow up to six decimal places. Unchanged rates do not create mutations.
@@ -92,11 +94,11 @@ Diagnostic run [40415909457](https://github.com/pca01008/us-west-2027-trip/actio
 | U3 | `7f569c9` | Readable ledger values/labels, responsive regression coverage |
 | T1 | `56b6e8f` | Reuse operation-boundary fixes/tests; fill photo-validation gaps |
 | T2 | `02f35df` | Computed type/contrast and representative states |
-| T3 | `abc3003` through `f6c6a88` | Shared validation, artifact/publication gate, measured CI fixes and editability wait |
+| T3 | `abc3003` through `2e82ee9` | Shared validation, artifact/publication gate, measured CI fixes and fixture readiness |
 
 Schema 6/KRW/USD and production data are preserved. No production SQL, authenticated save, photo upload or trip-content mutation was performed. Pre-existing Cloud-guide work stays uncommitted in the original workspace.
 
-Candidate `2eb1ad8`, [40416203626](https://github.com/pca01008/us-west-2027-trip/actions/runs/40416203626): unit185/SQL24 and Firefox/WebKit functional suites passed. Every Chromium suite then failed with immediate renderer crashes (including the synthetic diagnostics fixture); this is not a full browser pass. Artifacts survived. The clean Windows candidate passed185 (24.0s). Preflight now renders/captures a trivial page, and a temporary Chromium process-log probe runs before expensive suites to diagnose the container failure.
+Candidate `2eb1ad8`, [40416203626](https://github.com/pca01008/us-west-2027-trip/actions/runs/40416203626): 185 unit/24 SQL checks and Firefox/WebKit functional suites passed. Every Chromium suite then failed with immediate renderer crashes (including the synthetic diagnostics fixture); this is not a full browser pass. Artifacts survived. The clean Windows candidate passed 185 (24.0s). Preflight now renders/captures a trivial page, and a temporary Chromium process-log probe runs before expensive suites to diagnose the container failure.
 
 On `3a0be47`, [40417173625](https://github.com/pca01008/us-west-2027-trip/actions/runs/40417173625), the standalone Chromium render/screenshot probe passed using default `/tmp`. The immediately following preflight with runner-mounted `TMPDIR` crashed on a trivial screenshot. Browser commands now use container-local `/tmp` for profiles and matching summary/diagnostic upload paths. This isolates the observed configuration difference without weakening browser assertions or adding launch flags; the temporary process-log probe is removed because permanent preflight now exercises rendering.
 
@@ -104,16 +106,28 @@ Container-local temp fixed rendering on `6537305`, [40417527169](https://github.
 
 The corrected draft suite passed locally on Windows/pinned Chromium. The next work-branch run explicitly requests two additional input/draft passes after the full run (three total), retaining unchanged deadlines and every attempt.
 
-Clean Windows `f6c6a88` verification: `npm test` passed185 (24.0s). Two additional input/draft runs passed at **47.1/140.1s** and **46.2/139.7s**, with unchanged180/300s deadlines. Combined with the corrected standalone draft pass, the editability wait passed three consecutive local draft runs. These are Windows results, not local Ubuntu certification.
+Clean Windows `f6c6a88` verification: `npm test` passed 185 (24.0s). Two additional input/draft runs passed at **47.1/140.1s** and **46.2/139.7s**, with unchanged 180/300s deadlines. Combined with the corrected standalone draft pass, the editability wait passed three consecutive local draft runs. These are Windows results, not local Ubuntu certification.
 
 ## Verified release candidate
 
-Candidate `f6c6a88104a51324e46a82bc5a1ca4b8af7feee5` passed [40419080270](https://github.com/pca01008/us-west-2027-trip/actions/runs/40419080270): 185 unit/static checks, 24 PostgreSQL checks, Firefox/WebKit functional suites, all16 Chromium suites, and three consecutive input/draft runs. Inputs: **59.1/57.1/55.4s** of180s; drafts: **174.8/169.5/165.3s** of300s. The full browser stage took722.4s (20-minute stage/30-minute job budgets unchanged). [Machine-readable receipt](2026-10-27-review-follow-up/release-validation.json) preserves suite timings and scope.
+Candidate `f6c6a88104a51324e46a82bc5a1ca4b8af7feee5` passed [40419080270](https://github.com/pca01008/us-west-2027-trip/actions/runs/40419080270): 185 unit/static checks, 24 PostgreSQL checks, Firefox/WebKit functional suites, all 16 Chromium suites, and three consecutive input/draft runs. Inputs: **59.1/57.1/55.4s** of 180s; drafts: **174.8/169.5/165.3s** of 300s. The full browser stage took 722.4s (20-minute stage/30-minute job budgets unchanged). [Machine-readable receipt](2026-10-27-review-follow-up/release-validation.json) preserves suite timings and scope.
 
-The aggregate and same-SHA Jekyll artifact check passed; manual work-branch deployment was skipped. Candidate Pages artifact12698065073, SHA256 `8052045f5a20677a97806ac30ea18474efe7494357a0d22592640c8ab4d75366`, matched required bytes and excluded authoring/test/private paths. Afterward Pages source was changed from legacy to `workflow` and confirmed by GET. A fresh fetch confirmed main remained `061584d`; nonforced promotion to the verified SHA succeeded. Main must validate/build/deploy that SHA before a production success claim.
+The aggregate and same-SHA Jekyll artifact check passed; manual work-branch deployment was skipped. Candidate Pages artifact 12698065073, SHA256 `8052045f5a20677a97806ac30ea18474efe7494357a0d22592640c8ab4d75366`, matched required bytes and excluded authoring/test/private paths. Afterward Pages source was changed from legacy to `workflow` and confirmed by GET. A fresh fetch confirmed main remained `061584d`; nonforced promotion to the verified SHA succeeded. Main must validate/build/deploy that SHA before a production success claim.
 
-Main run [40421603642](https://github.com/pca01008/us-west-2027-trip/actions/runs/40421603642), same `f6c6a88`, failed WebKit theme-radio pointer acknowledgement after Firefox passed; deploy stayed blocked. Downloaded synthetic trace12698370108 shows the dark radio checked, `data-theme=dark`, and menu hidden after the click, while Playwright still waited for pointer completion. The font request returned200 in18.6ms; no page error was recorded. This is an observed automation acknowledgement failure, not proof of a production theme defect or of an external transient. No blind rerun was used.
+Main run [40421603642](https://github.com/pca01008/us-west-2027-trip/actions/runs/40421603642), same `f6c6a88`, failed WebKit theme-radio pointer acknowledgement after Firefox passed; deploy stayed blocked. Downloaded synthetic trace 12698370108 shows the dark radio checked, `data-theme=dark`, and menu hidden after the click, while Playwright still waited for pointer completion. The font request returned 200 in 18.6ms; no page error was recorded. This is an observed automation acknowledgement failure, not proof of a production theme defect or of an external transient. No blind rerun was used.
 
 WebKit input fixtures now select themes with real focus+Space and explicitly require applied preference, checked radio and closed menu. Chromium/Firefox keep pointer theme coverage; all engines retain real pointer tabs/dialogs/fields and unchanged error/state assertions. WebKit pointer-theme completion and Linux PNG parity are not certified. App sources/output and deadlines are unchanged.
 
 The first local keyboard-helper check correctly failed its new closed-menu assertion when the requested radio was already selected (Space causes no change event). The helper now closes that unchanged selection with real Escape before checking all postconditions. This setup failure is retained; no timeout was ignored.
+
+## Production result
+
+Released **`2e82ee984f1b9cd4a766029ccffcd66124aee322`**. Work-branch [40422860167](https://github.com/pca01008/us-west-2027-trip/actions/runs/40422860167) and main [40424580118](https://github.com/pca01008/us-west-2027-trip/actions/runs/40424580118) both passed 185 unit/static checks, 24 SQL checks, Firefox/WebKit functional suites and all 16 Chromium suites. Main browser stage: 583.6s; candidate: 749.1s. Native jobs used Ubuntu 24.04.5; browser image Ubuntu 24.04.4; both used Node 24.22.1/npm 11.19.1/Playwright 1.62.1. PostgreSQL 17.11 passed. Clean Windows candidate passed 185 in 24.4s; corrected WebKit and Chromium input suites passed locally.
+
+Main's aggregate, exact-SHA Jekyll byte/exclusion check and Pages deployment succeeded. Artifact 12698364449 SHA256 `c7d35b40c7dcf30433f83d9b0b0fa697336943f39c102607447257db86203365`; deploy reported success at 00:21:55 UTC, October 27. [Published site](https://pca01008.github.io/us-west-2027-trip/) then matched **8 asset files** and rejected **6 excluded paths** with 404. Fresh pinned Chromium at 390×844 read the published document (one successful API read), navigated schedule/PREP/ledger without overflow, and recorded no page/API errors or writes. Its live-data screenshot stays ignored and is not committed.
+
+Pages GET confirms `workflow`/`built`. Main protection GET confirms strict `required` checks, administrators included, force pushes/deletion disabled and no required PR review. No unvalidated push was attempted against production. Earlier failing/skip/cancel probes and the actual blocked main attempt remain evidence of the publication gate.
+
+Receipts: [deployment/environment/timings](2026-10-27-review-follow-up/deployment-receipt.json), [public file hashes/exclusions](2026-10-27-review-follow-up/production-assets.json), [production read-only counts](2026-10-27-review-follow-up/production-readonly.json), [preserved WebKit pointer failure](2026-10-27-review-follow-up/webkit-pointer-failure.json). Three-pass boundary evidence belongs to `f6c6a88`; app sources and public assets are unchanged in the final release, while its WebKit fixture uses the documented keyboard path. Do not describe those older repetitions as three executions of the final test file.
+
+Remaining: clean local Ubuntu 24.04 full/fresh-terminal execution; both travelers' physical phones (numeric/IME input, keyboard, photos, installed offline/reconnect); WebKit pointer-theme acknowledgement and Linux PNG parity. Production authenticated saves/SQL/Storage writes and real JWT/Realtime integration were not tested. The final receipt commit is documentation-only on the work branch; production main stays at the validated release SHA.

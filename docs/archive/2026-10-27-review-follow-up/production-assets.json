@@ -1,0 +1,70 @@
+{
+  "sha": "2e82ee984f1b9cd4a766029ccffcd66124aee322",
+  "base": "https://pca01008.github.io/us-west-2027-trip/",
+  "results": [
+    {
+      "name": "index.html",
+      "bytes": 419553,
+      "sha256": "8af16398fada4967c185d3c32e7f3e84e02b4546176e983566bac5ff49bd463b"
+    },
+    {
+      "name": "trip-config.js",
+      "bytes": 13432,
+      "sha256": "162f7aeb1f04675672b3463b5b58ca74168c6375c30ac938351dd174803386ca"
+    },
+    {
+      "name": "sw.js",
+      "bytes": 3686,
+      "sha256": "f9dd6f253fdcbca9b73743edba32282782782255d11ea8ce2c19d648a464ba97"
+    },
+    {
+      "name": "pwa.js",
+      "bytes": 589,
+      "sha256": "d84f2bfff1add6f368f0131a56c5a6d5e56df2770c39447322d1c02a89528cb3"
+    },
+    {
+      "name": "manifest.webmanifest",
+      "bytes": 631,
+      "sha256": "02a52d380583f848be6df071cd5d404e15c867a20d6e01e821ff666ff36f48d8"
+    },
+    {
+      "name": "assets/PretendardVariable-1.3.9.woff2",
+      "bytes": 2057688,
+      "sha256": "9599f12fd42fc0bce1cd50b47a0c022e108d7aa64dd0d1bb0ed44f3282d900b4"
+    },
+    {
+      "name": "assets/OFL-Pretendard.txt",
+      "bytes": 4417,
+      "sha256": "3b8ac478fa32708ecd929cd7eae8cc32aba1710ca8ec95386d0db9db89ce57dd"
+    },
+    {
+      "name": "icons/icon-192.png",
+      "bytes": 2342,
+      "sha256": "8cf2289689f8c128f3096993a15e9d1b90de913286298154ac53c2f29708259b"
+    },
+    {
+      "name": "docs/OPERATIONS.md",
+      "status": 404
+    },
+    {
+      "name": "src/index.html",
+      "status": 404
+    },
+    {
+      "name": "scripts/check-project.mjs",
+      "status": 404
+    },
+    {
+      "name": "tests/project.test.mjs",
+      "status": 404
+    },
+    {
+      "name": "package.json",
+      "status": 404
+    },
+    {
+      "name": "supabase_setup.sql",
+      "status": 404
+    }
+  ]
+}

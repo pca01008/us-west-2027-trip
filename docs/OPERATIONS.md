@@ -250,6 +250,8 @@ Pages publication uses the Validate workflow: `required` → `pages-build` → m
 
 Recover by reverting the faulty release on a work branch, validating that candidate, then updating main through the same gate; never bypass validation or roll back live trip data. Branch protection capabilities and local Linux/device gaps remain in the dated evidence.
 
+Active settings verified October 27: Pages source `workflow`; main requires strict `required` checks including administrators, with force pushes/deletion disabled. A direct update must already have successful checks; no PR-review requirement is configured. Settings were confirmed by API, without attempting an unvalidated production push. [Release receipt](archive/2026-10-27-review-follow-up.md#production-result) records the deployed SHA and remaining local/device limits.
+
 Bump worker `VERSION` for cache-list/strategy/icon/image/font changes. Retain the bundled font and license when deploying or reusing the app; see [typography](PROJECT_GUIDE.md#typography) for loading/export behavior. SDK updates must synchronize pinned HTML URL/SRI and worker `SDK_URL`/`SDK_INTEGRITY`. Close old windows for activation; avoid forced refresh while editing. `scripts/generate-icons.ps1` generates PNGs matching `icons/icon.svg`.
 
 <a id="db-health"></a>
