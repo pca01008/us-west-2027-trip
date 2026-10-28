@@ -19,3 +19,20 @@ Map entry and imported links use the same HTTPS URL parser, requiring a hostname
 Windows Chromium input suite passed at desktop/mobile sizes, including malformed HTTPS hosts/ports, import sanitization, exact document/history retention, keyboard icon selection/reopening and network-blocked exported Enter/Space/Tab/Shift+Tab/Esc/Close. Imports (25.4s), photos (1.0s), ledger (35.5s) passed. [Unit evidence](2026-10-28-review-fixes/stage2-unit.txt): 185/185 passed. Generated/project/diff checks passed; the mechanical detector reported no findings in changed targets. Visual inspection: [export viewer](2026-10-28-review-fixes/mobile-readonly-viewer.png), [dark photo error](2026-10-28-review-fixes/mobile-dark-photo-error.png). The viewer uses the synthetic 1px photo; the empty center is fixture content.
 
 Firefox and WebKit functional input/dialog/export suites also passed the new regressions on Windows. Chromium owns PNG evidence; physical screen readers/touch/IME and Linux engine results are distinct scopes.
+
+## Stage 3 — documentation and measurement (D1/I3)
+
+README now identifies validated main commits and Actions publication, linking Operations. I1 (mobile framing) and I2 (unadded expense buffering) remain optional product changes and were not implemented. The existing visual direction, save policy and dependencies are retained.
+
+The optional `profile-editing-browser.mjs` measures synthetic offline input/capture/fingerprint/durability/history/undo/redo. [Raw baseline](2026-10-28-review-fixes/photo-profile.json), app source `01a29af`, Windows Node 24.22.1/Chromium 151.0.7922.34, 32 events, 390×844. Eight generated 1600×1000 JPEGs plus thumbnails produce a 9.16 MiB serialized state. CPU rate 4x is deliberate throttling, not a phone model. Five samples per repeated operation; undo/redo one each. All stored-content, undo/redo and blocked-network checks passed. No timing threshold or runtime optimization was introduced.
+
+| CPU rate / staged photos | Input median | Draft flush median | History median | Undo / redo |
+|---|---:|---:|---:|---:|
+| 1x / 0 | 9.5 ms | 10.0 ms | 7.7 ms | 23.1 / 22.4 ms |
+| 1x / 8 | 691.9 ms | 557.2 ms | 429.8 ms | 604.6 / 589.0 ms |
+| 4x / 0 | 45.5 ms | 43.3 ms | 35.3 ms | 113.6 / 107.0 ms |
+| 4x / 8 | 2620.5 ms | 2085.4 ms | 1647.9 ms | 2266.5 / 2242.5 ms |
+
+Input timing measures synchronous synthetic `input` event dispatch through the actual handler; draft flush separately awaits durability after that event. The figures reveal a substantial byte-dependent cost in this deliberately heavy fixture, not real IME latency or heap usage. Six history snapshots were retained. Check representative actual-phone photos before choosing an optimization, preserving immediate drafts and undo semantics. This measurement establishes the requested baseline; it does not certify acceptable phone performance.
+
+The first profiling fixture failed Redo because manually inserted figures had not passed through normal rendering/decorating. Preparing the baseline through `applyState` fixed the fixture without changing app sources. The successful run verified exact undo/redo text. Syntax, generated/project checks, 20 project/repository tests and `git diff --check` passed for this documentation/tooling stage. `docs/` and `scripts/` are already excluded from Pages; no new deployment exclusion is needed.

@@ -8,7 +8,7 @@ Work now focuses on the existing app. Further Daylight development and productio
 
 | Task | Reference |
 |---|---|
-| Latest functionality, UI, and test audit | [2026-10-28 project review](docs/archive/2026-10-28-project-review.md) · [Progress and handoff](docs/REVIEW_2026-10-28_PROGRESS.md) — five reproduced defects, coverage gaps, and prioritized improvements |
+| Latest functionality, UI, and test audit | [2026-10-28 project review](docs/archive/2026-10-28-project-review.md) · [Fixes and verification](docs/archive/2026-10-28-review-fixes.md) · [Audit checkpoint](docs/REVIEW_2026-10-28_PROGRESS.md) |
 | Fresh functionality, UI, and test audit | [2026-10-26 project review](docs/archive/2026-10-26-project-review.md) — seven reproduced defects, one measured UI improvement, and regression priorities |
 | Functionality, UI, and test findings | [2026-10-25 comprehensive review](docs/archive/2026-10-25-comprehensive-review.md) — reproduced issues, priorities, and proposed regression coverage |
 | Itinerary, timetable, PREP, ledger, draft recovery, installation, exports | [User guide](docs/USER_GUIDE.md) |
@@ -88,7 +88,7 @@ See [validation procedures](docs/OPERATIONS.md#validation) for coverage and indi
 
 ## Setup and deployment
 
-Follow [initial setup](docs/OPERATIONS.md#setup), [server updates](docs/OPERATIONS.md#updates), or [new-trip reuse](docs/OPERATIONS.md#new-trip). GitHub Pages serves the `main` branch root; `docs/` is excluded from Pages builds.
+Follow [initial setup](docs/OPERATIONS.md#setup), [server updates](docs/OPERATIONS.md#updates), or [new-trip reuse](docs/OPERATIONS.md#new-trip). Validated `main` commits publish through GitHub Actions; see [deployment](docs/OPERATIONS.md#deployment). `docs/` is excluded from Pages builds.
 
 Save current trip changes in the app. Editing configuration defaults does not replace an existing shared itinerary. Keep confirmed plans, PREP, and actual expenses in the app; research, alternatives, and booking evidence belong in `planning`. See the [data policy](docs/USER_GUIDE.md#planning-policy).
 

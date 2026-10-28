@@ -199,6 +199,8 @@ Auth tests alter HTTP responses, not auth functions; virtual time checks automat
 
 Input suites also check malformed HTTPS entry/import with unchanged history, named/pressed category icons through keyboard selection/reopening, and network-blocked read-only photo viewer focus, background isolation, scroll locking and focus restoration. Chromium captures these states; Firefox/WebKit run the same functional assertions.
 
+Optional photo-heavy measurement: `node scripts/profile-editing-browser.mjs <output.json>`. It compares zero/eight synthetic 1600px staged JPEGs at a 390px viewport with Chromium CPU rates 1x/4x. Five samples measure capture, fingerprint, synchronous synthetic input handling, awaited draft durability, history and undo/redo; content/durability checks must pass. It sets no timing gate, contacts no production API and stores no photos. CPU throttling is not physical-device evidence; [October 28 baseline](archive/2026-10-28-review-fixes.md#stage-3--documentation-and-measurement-d1i3) owns observations.
+
 Ledger accepts optional `LEDGER_FIXTURE_HTML` to run the same assertions against an earlier generated app. See the [U2 regression record](archive/2026-10-26-ledger-rate-validation-u2.md) for the dated validation results.
 
 Ledger tests compare real offline UI/downloads to fixed expectations: won/cent rounding, stored totals/CSV, fractional legacy KRW, conversion-total differences. Check BOM/commas/quotes/newlines/Korean and apostrophe escaping for =/+/-/@. Downloads remain in temp `westbound-ledger-*`; opening in Excel is untested.
