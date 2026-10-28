@@ -1,0 +1,70 @@
+[
+  {
+    "id": "rejected-label-hypothesis",
+    "panel": "panel-prep",
+    "role": "tabpanel",
+    "labelledby": "tab-prep",
+    "missing": []
+  },
+  {
+    "id": "rejected-label-hypothesis",
+    "panel": "panel-money",
+    "role": "tabpanel",
+    "labelledby": "tab-money",
+    "missing": []
+  },
+  {
+    "id": "rejected-label-hypothesis",
+    "panel": "panel-d1",
+    "role": "tabpanel",
+    "labelledby": "tab-d1",
+    "missing": []
+  },
+  {
+    "id": "F3",
+    "scenario": "Malformed map URL",
+    "input": "https://",
+    "accepted": true,
+    "href": "https://",
+    "confirmed": true
+  },
+  {
+    "id": "F3",
+    "scenario": "Malformed map URL",
+    "input": "https://[bad]",
+    "accepted": true,
+    "href": "https://[bad]",
+    "confirmed": true
+  },
+  {
+    "id": "F3",
+    "scenario": "Malformed map URL",
+    "input": "https://example.test:99999",
+    "accepted": true,
+    "href": "https://example.test:99999",
+    "confirmed": true
+  },
+  {
+    "id": "U2",
+    "scenario": "Selected category icon semantics",
+    "text": "📦",
+    "role": null,
+    "pressed": null,
+    "checked": null,
+    "confirmed": true
+  },
+  {
+    "id": "U1",
+    "scenario": "Readonly photo viewer Tab",
+    "inViewer": false,
+    "tag": "IMG",
+    "activeElementId": "",
+    "modalOpen": false,
+    "confirmed": true
+  },
+  {
+    "id": "export-close-control",
+    "scenario": "Escape closes viewer and restores photo focus",
+    "passed": true
+  }
+]

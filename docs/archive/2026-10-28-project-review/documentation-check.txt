@@ -1,0 +1,28 @@
+✔ 핵심 배포 파일이 존재한다 (4.7656ms)
+✔ 테스트 미리보기는 실제 index.html을 참조한다 (0.8831ms)
+✔ 스키마 마이그레이션은 저장된 일정 섹션을 기본값으로 교체하지 않는다 (1.3501ms)
+✔ Supabase 저장은 비공개 편집자 매핑과 낙관적 잠금을 사용한다 (0.9648ms)
+✔ 브라우저 초안은 IndexedDB에 보존되고 저장 시 revision을 확인한다 (2.199ms)
+✔ 초기 기본 일정은 최신 공유본 확인이 끝날 때까지 노출하지 않는다 (1.5637ms)
+✔ current trip preserves schema 6; new trips use currency-aware schema 7 (0.9192ms)
+✔ 편집 세션은 탭 간에 동기화되고 재연결 시 최신본을 확인한다 (1.973ms)
+✔ 사진은 초안에 스테이징되고 최종 저장에서만 업로드된다 (1.4977ms)
+✔ 공유용 HTML은 사진 포함과 독립 탭 런타임을 제공한다 (1.9322ms)
+✔ 오프라인 불러오기는 revision을 재확인하고 최종 기준점을 갱신한다 (1.4239ms)
+✔ 버전 목록은 메타데이터만 받고 본문은 선택 시 지연 로딩한다 (1.7279ms)
+✔ 가계부는 예산 호환 필드를 보존하고 전체 CSV와 필수 카테고리 보호를 제공한다 (1.8751ms)
+✔ 탭·모달은 키보드 접근성을 제공하고 CSS는 단일 cascade로 정리된다 (2.1993ms)
+✔ 외부 SDK는 고정 버전과 SRI를 사용하고 설정 뒤에 로드된다 (0.9968ms)
+✔ 기본 일정은 자유 HTML 대신 구조화된 링크와 비용 데이터를 사용한다 (1.2975ms)
+✔ 문서와 GitHub 검증 설정은 스키마 6 운영 방식과 일치한다 (21.375ms)
+✔ repository preserves SDK save results, conflict identity and abort signal (2.5639ms)
+✔ published read throws original SDK error and clears its timeout (1.1648ms)
+✔ version list reads only metadata; selected content has an ID and the same signal (0.8938ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 113.5933

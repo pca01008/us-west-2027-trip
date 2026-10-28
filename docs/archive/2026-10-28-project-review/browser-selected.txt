@@ -1,0 +1,111 @@
+
+PARTIAL browser suite: inputs
+[inputs] tab navigation / desktop / reduce
+Desktop tabs (reduce): header position, long-to-short switches, nested labels, reselect, keyboard, rapid switches, timetable and data preservation passed.
+[inputs] tab navigation / desktop / no-preference
+Desktop tabs (no-preference): header position, long-to-short switches, nested labels, reselect, keyboard, rapid switches, timetable and data preservation passed.
+[inputs] tab navigation / mobile / reduce
+Mobile tabs (reduce): header position, long-to-short switches, nested labels, reselect, keyboard, rapid switches, timetable and data preservation passed.
+[inputs] tab navigation / mobile / no-preference
+Mobile tabs (no-preference): header position, long-to-short switches, nested labels, reselect, keyboard, rapid switches, timetable and data preservation passed.
+[inputs] dialog keyboard focus / desktop
+[inputs] photo metadata validation / desktop / light
+[inputs] photo metadata validation / desktop / dark
+Dialog focus (desktop): keyboard open, Tab wrapping, Escape/Cancel/Apply, nested dialogs and replaced triggers passed.
+[inputs] dialog keyboard focus / mobile
+[inputs] photo metadata validation / mobile / light
+[inputs] photo metadata validation / mobile / dark
+Dialog focus (mobile): keyboard open, Tab wrapping, Escape/Cancel/Apply, nested dialogs and replaced triggers passed.
+[inputs] input, import and export / desktop
+Desktop: input, composition events, undo/redo, import, exports and reload passed.
+[inputs] input, import and export / mobile
+Mobile viewport/touch: input, composition events, undo/redo, import, exports and reload passed.
+Screenshots and exported fixtures: C:\Users\이승종\AppData\Local\Temp\westbound-inputs-fyJDDI
+inputs: passed; 48.9s / 180s
+
+PARTIAL browser suite: navigation
+[navigation-chromium] visitor date boundaries
+[navigation-chromium] section state, draft input and refresh
+[navigation-chromium] theme menu keyboard and focus
+[navigation-chromium] responsive geometry, themes and screenshots
+[navigation-chromium] desktop keyboard navigation, resize and print
+[navigation-chromium] unavailable font keeps the interface usable
+chromium: Navigation/date boundaries, drafts, theme focus, responsive layout and ledger CRUD passed. Screenshots: C:\Users\이승종\AppData\Local\Temp\westbound-navigation-chromium-diagnostics-B4Wp14
+navigation: passed; 16.1s / 180s
+
+PARTIAL browser suite: ledger
+[ledger] ledger startup / desktop
+[ledger] desktop / startup
+[ledger] desktop / mixed currency and unset budget
+[ledger] desktop / invalid settings rates remain visible without changing ledger state
+[ledger] desktop / rate and budget changes through settings
+[ledger] desktop / rounding at half won and aggregate before rounding
+[ledger] desktop / delete category preserves amounts and exports
+[ledger] desktop / CSV punctuation, multiline Korean and formula prefixes
+[ledger] desktop / empty ledger
+[ledger] desktop / dual currency input, source transitions and fixed values
+[ledger] desktop / 44px ledger targets with long names and high amounts
+desktop: mixed totals, rate changes, rounding, budget compatibility, ordering, deleted categories and 8 CSV downloads passed.
+[ledger] ledger startup / mobile
+[ledger] mobile / startup
+[ledger] mobile / mixed currency and unset budget
+[ledger] mobile / invalid settings rates remain visible without changing ledger state
+[ledger] mobile / rate and budget changes through settings
+[ledger] mobile / rounding at half won and aggregate before rounding
+[ledger] mobile / delete category preserves amounts and exports
+[ledger] mobile / CSV punctuation, multiline Korean and formula prefixes
+[ledger] mobile / empty ledger
+[ledger] mobile / dual currency input, source transitions and fixed values
+[ledger] mobile / 44px ledger targets with long names and high amounts
+mobile: mixed totals, rate changes, rounding, budget compatibility, ordering, deleted categories and 8 CSV downloads passed.
+Ledger downloads: C:\Users\이승종\AppData\Local\Temp\westbound-ledger-XGRMTy
+ledger: passed; 32.6s / 180s
+
+PARTIAL browser suite: prep
+[prep] checklist editing and save / desktop
+Desktop: authentication, auto-save/reload, queue, rollback/retry, revision conflict, editor, cancel, blank input and draft isolation passed.
+[prep] checklist editing and save / mobile
+Mobile: authentication, auto-save/reload, queue, rollback/retry, revision conflict, editor, cancel, blank input and draft isolation passed.
+[prep] checklist completion and reorder / desktop
+Desktop: completion order, strike-through, uncheck, retry, reload and all-complete cases passed.
+Desktop: new items remain unchecked after reorder, save conflict and reload; existing completion is preserved.
+[prep] checklist completion and reorder / mobile
+Mobile: completion order, strike-through, uncheck, retry, reload and all-complete cases passed.
+Mobile: new items remain unchecked after reorder, save conflict and reload; existing completion is preserved.
+[prep] uncertain checkbox / timeout / draft=false
+[prep] uncertain checkbox / transport / draft=false
+[prep] uncertain checkbox / sdk-error / draft=false
+[prep] uncertain checkbox / newer-remote / draft=false
+[prep] uncertain checkbox / before-commit / draft=false
+[prep] uncertain checkbox / unavailable / draft=false
+[prep] uncertain checkbox / timeout / draft=true
+[prep] uncertain checkbox / transport / draft=true
+[prep] uncertain checkbox / sdk-error / draft=true
+[prep] uncertain checkbox / newer-remote / draft=true
+[prep] uncertain checkbox / before-commit / draft=true
+[prep] uncertain checkbox / unavailable / draft=true
+[prep] uncertain list / timeout / draft=false
+[prep] uncertain list / transport / draft=false
+[prep] uncertain list / sdk-error / draft=false
+[prep] uncertain list / newer-remote / draft=false
+[prep] uncertain list / before-commit / draft=false
+[prep] uncertain list / unavailable / draft=false
+[prep] uncertain list / timeout / draft=true
+[prep] uncertain list / transport / draft=true
+[prep] uncertain list / sdk-error / draft=true
+[prep] uncertain list / newer-remote / draft=true
+[prep] uncertain list / before-commit / draft=true
+[prep] uncertain list / unavailable / draft=true
+[prep] offline checklist persistence
+Offline: local persistence/reload and storage failure rollback passed.
+Screenshots: C:\Users\이승종\AppData\Local\Temp\westbound-prep-fS5LTg
+prep: passed; 34.9s / 180s
+
+PARTIAL browser suite: pwa
+[pwa] install, offline reload and refresh / /trip/
+/trip/: installability, mobile tabs, offline reload, theme persistence, missing SDK, online refresh passed
+[pwa] install, offline reload and refresh / /
+/: installability, mobile tabs, offline reload, theme persistence, missing SDK, online refresh passed
+pwa: passed; 17.4s / 180s
+Browser timings: C:\Users\이승종\AppData\Local\Temp\westbound-browser-timing-8VsR4d
+PARTIAL: All 5 browser suites passed.

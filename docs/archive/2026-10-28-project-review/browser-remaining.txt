@@ -1,0 +1,461 @@
+
+PARTIAL browser suite: diagnostics
+Diagnostics: failure exit, scenario, multi-page screenshots, errors, trace, partial capture failure, startup and clean success passed.
+diagnostics: passed; 2.6s / 180s
+
+PARTIAL browser suite: drafts
+[drafts] pending input Undo/Redo and reload / desktop
+[drafts] Undo to clean baseline and reload / desktop
+[drafts] pending input Undo/Redo and reload / mobile
+[drafts] Undo to clean baseline and reload / mobile
+Pending input Undo/Redo: exact text, continuous edits, redo recovery and clean Undo reload passed on desktop/mobile.
+[drafts] first input .day1 h3 / reload
+[drafts] first input .day1 h3 / pagehide
+[drafts] first input .day1 h3 / hidden
+[drafts] first input .day1 h3 / signout
+[drafts] first input .day1 .remark / reload
+[drafts] first input .day1 .remark / pagehide
+[drafts] first input .day1 .remark / hidden
+[drafts] first input .day1 .remark / signout
+[drafts] first input .schedule-warning-text / reload
+[drafts] first input .schedule-warning-text / pagehide
+[drafts] first input .schedule-warning-text / hidden
+[drafts] first input .schedule-warning-text / signout
+[drafts] continuous input and first input after save
+First-input protection: title/detail/caution, reload/checkpoint, pagehide, hidden, sign-out, continuous input and saved baseline passed.
+[drafts] photo head / timeout / desktop
+Photo head timeout (desktop): request aborted, draft retained, retry passed.
+[drafts] photo head / cancel / desktop
+Photo head cancel (desktop): request aborted, draft retained, retry passed.
+[drafts] photo upload / timeout / desktop
+Photo upload timeout (desktop): request aborted, draft retained, retry passed.
+[drafts] photo upload / cancel / desktop
+Photo upload cancel (desktop): request aborted, draft retained, retry passed.
+[drafts] photo upload-body / timeout / desktop
+Photo upload-body timeout (desktop): request aborted, draft retained, retry passed.
+[drafts] photo upload-body / cancel / desktop
+Photo upload-body cancel (desktop): request aborted, draft retained, retry passed.
+[drafts] photo download / timeout / desktop
+Photo download timeout (desktop): request aborted, draft retained, retry passed.
+[drafts] photo download / cancel / desktop
+Photo download cancel (desktop): request aborted, draft retained, retry passed.
+[drafts] photo download-body / timeout / desktop
+Photo download-body timeout (desktop): request aborted, draft retained, retry passed.
+[drafts] photo download-body / cancel / desktop
+Photo download-body cancel (desktop): request aborted, draft retained, retry passed.
+[drafts] photo head / timeout / mobile
+Photo head timeout (mobile): request aborted, draft retained, retry passed.
+[drafts] photo head / cancel / mobile
+Photo head cancel (mobile): request aborted, draft retained, retry passed.
+[drafts] photo upload / timeout / mobile
+Photo upload timeout (mobile): request aborted, draft retained, retry passed.
+[drafts] photo upload / cancel / mobile
+Photo upload cancel (mobile): request aborted, draft retained, retry passed.
+[drafts] photo upload-body / timeout / mobile
+Photo upload-body timeout (mobile): request aborted, draft retained, retry passed.
+[drafts] photo upload-body / cancel / mobile
+Photo upload-body cancel (mobile): request aborted, draft retained, retry passed.
+[drafts] photo download / timeout / mobile
+Photo download timeout (mobile): request aborted, draft retained, retry passed.
+[drafts] photo download / cancel / mobile
+Photo download cancel (mobile): request aborted, draft retained, retry passed.
+[drafts] photo download-body / timeout / mobile
+Photo download-body timeout (mobile): request aborted, draft retained, retry passed.
+[drafts] photo download-body / cancel / mobile
+Photo download-body cancel (mobile): request aborted, draft retained, retry passed.
+[drafts] readonly export / timeout
+Readonly export timeout: draft retained; online photo fallback.
+[drafts] readonly export / cancel
+Readonly export cancel: draft retained; no download.
+[drafts] deferred draft PREP save / desktop
+Deferred draft (desktop): PREP list saves independently; original draft survives and restores after reload.
+[drafts] preview draft protection / desktop
+Preview (desktop): draft survives timers/pagehide/reload; edits and saves blocked; normal save after close passed.
+[drafts] preview explicit restore / desktop
+Preview (desktop): clean view and explicit restore confirmation passed.
+[drafts] preview exit save / desktop
+[drafts] preview exit discard / desktop
+[drafts] preview exit external / desktop
+[drafts] preview exit timeout / desktop
+[drafts] preview exit reset / desktop
+Preview (desktop): logout save/discard, external sign-out, timeout and reset all leave preview safely.
+[drafts] deferred recovery reload / 초안 복구 / desktop
+Deferred draft (desktop, reload, 초안 복구): cancel preserves original; explicit choice protects new work across reload.
+[drafts] deferred recovery reload / 초안 삭제 / desktop
+Deferred draft (desktop, reload, 초안 삭제): cancel preserves original; explicit choice protects new work across reload.
+[drafts] deferred recovery external / 초안 복구 / desktop
+Deferred draft (desktop, external, 초안 복구): cancel preserves original; explicit choice protects new work across reload.
+[drafts] deferred recovery external / 초안 삭제 / desktop
+Deferred draft (desktop, external, 초안 삭제): cancel preserves original; explicit choice protects new work across reload.
+[drafts] deferred recovery timeout / 초안 복구 / desktop
+Deferred draft (desktop, timeout, 초안 복구): cancel preserves original; explicit choice protects new work across reload.
+[drafts] deferred recovery timeout / 초안 삭제 / desktop
+Deferred draft (desktop, timeout, 초안 삭제): cancel preserves original; explicit choice protects new work across reload.
+[drafts] remote ordering / desktop
+Remote ordering (desktop): reversed refresh, Realtime, duplicates, preview and dirty reconnect preserve display/baseline/cache/draft.
+[drafts] shared inputs visible / desktop
+Shared inputs (desktop, visible): fields, focus/caret, category removal and subsequent add passed.
+[drafts] shared inputs reconnect / desktop
+Shared inputs (desktop, reconnect): fields, focus/caret, category removal and subsequent add passed.
+[drafts] shared inputs realtime / desktop
+Shared inputs (desktop, realtime): fields, focus/caret, category removal and subsequent add passed.
+[drafts] inputs during save / desktop
+Save inputs (desktop): all next-entry fields and focus survive delayed save, then submit normally.
+[drafts] deferred draft PREP save / mobile
+Deferred draft (mobile): PREP list saves independently; original draft survives and restores after reload.
+[drafts] preview draft protection / mobile
+Preview (mobile): draft survives timers/pagehide/reload; edits and saves blocked; normal save after close passed.
+[drafts] preview explicit restore / mobile
+Preview (mobile): clean view and explicit restore confirmation passed.
+[drafts] preview exit save / mobile
+[drafts] preview exit discard / mobile
+[drafts] preview exit external / mobile
+[drafts] preview exit timeout / mobile
+[drafts] preview exit reset / mobile
+Preview (mobile): logout save/discard, external sign-out, timeout and reset all leave preview safely.
+[drafts] deferred recovery reload / 초안 복구 / mobile
+Deferred draft (mobile, reload, 초안 복구): cancel preserves original; explicit choice protects new work across reload.
+[drafts] deferred recovery reload / 초안 삭제 / mobile
+Deferred draft (mobile, reload, 초안 삭제): cancel preserves original; explicit choice protects new work across reload.
+[drafts] deferred recovery external / 초안 복구 / mobile
+Deferred draft (mobile, external, 초안 복구): cancel preserves original; explicit choice protects new work across reload.
+[drafts] deferred recovery external / 초안 삭제 / mobile
+Deferred draft (mobile, external, 초안 삭제): cancel preserves original; explicit choice protects new work across reload.
+[drafts] deferred recovery timeout / 초안 복구 / mobile
+Deferred draft (mobile, timeout, 초안 복구): cancel preserves original; explicit choice protects new work across reload.
+[drafts] deferred recovery timeout / 초안 삭제 / mobile
+Deferred draft (mobile, timeout, 초안 삭제): cancel preserves original; explicit choice protects new work across reload.
+[drafts] remote ordering / mobile
+Remote ordering (mobile): reversed refresh, Realtime, duplicates, preview and dirty reconnect preserve display/baseline/cache/draft.
+[drafts] shared inputs visible / mobile
+Shared inputs (mobile, visible): fields, focus/caret, category removal and subsequent add passed.
+[drafts] shared inputs reconnect / mobile
+Shared inputs (mobile, reconnect): fields, focus/caret, category removal and subsequent add passed.
+[drafts] shared inputs realtime / mobile
+Shared inputs (mobile, realtime): fields, focus/caret, category removal and subsequent add passed.
+[drafts] inputs during save / mobile
+Save inputs (mobile): all next-entry fields and focus survive delayed save, then submit normally.
+[drafts] inactivity timeout
+Inactivity timeout: warning, session and draft policy passed.
+[drafts] inactivity continue
+Inactivity continue: warning, session and draft policy passed.
+[drafts] inactivity save
+Inactivity save: warning, session and draft policy passed.
+[drafts] inactivity discard
+Inactivity discard: warning, session and draft policy passed.
+[drafts] inactivity clean
+Inactivity clean: warning, session and draft policy passed.
+[drafts] inactivity deferred
+Inactivity deferred: warning, session and draft policy passed.
+[drafts] expired session / auth check
+Expired session auth check: retained draft and signed out.
+[drafts] expired session / startup
+Expired session startup: retained draft and signed out.
+[drafts] logout draft choices
+Logout: Escape/replaced preserve drafts; explicit discard removes them.
+[drafts] recovery dismissal and deletion
+Recovery: Escape/replaced retain the draft; explicit deletion removes it across reload.
+[drafts] recovered current draft / desktop
+Recovered current draft (desktop): checklist patch, reload and full-save conflict preserve remote budget.
+[drafts] recovered current draft / mobile
+Recovered current draft (mobile): checklist patch, reload and full-save conflict preserve remote budget.
+[drafts] recovered legacy draft / desktop
+Recovered legacy draft (desktop): checklist patch, reload and full-save conflict preserve remote budget.
+[drafts] recovered legacy draft / mobile
+Recovered legacy draft (mobile): checklist patch, reload and full-save conflict preserve remote budget.
+[drafts] full save timeout-before
+Full save timeout-before: reconciliation, draft retention, flag cleanup and explicit retry passed.
+[drafts] full save timeout-committed
+Full save timeout-committed: reconciliation, draft retention, flag cleanup and explicit retry passed.
+[drafts] full save timeout-newer
+Full save timeout-newer: reconciliation, draft retention, flag cleanup and explicit retry passed.
+[drafts] full save timeout-unverified
+Full save timeout-unverified: reconciliation, draft retention, flag cleanup and explicit retry passed.
+[drafts] full save throw
+Full save throw: reconciliation, draft retention, flag cleanup and explicit retry passed.
+[drafts] undo and redo persistence
+Undo/redo: clean reload, queued write cancellation, and dirty recovery passed.
+[drafts] independent and duplicated tabs
+Tabs: independent drafts, duplicated tabs, save/discard isolation, reload/closed-tab recovery and external logout passed.
+[drafts] legacy shared-key migration
+Legacy draft migration passed.
+[drafts] offline baseline after undo
+Offline undo preserves the saved baseline across reload.
+[drafts] subtitle-only import / mobile
+Subtitle-only import and version comparison passed on a mobile viewport.
+drafts: passed; 140.9s / 300s
+
+PARTIAL browser suite: storage
+[storage] checkpoint and IDB unavailable / desktop
+[storage] write open-error / desktop
+Storage open-error (desktop): warning, memory/export, durable reload, retry and shared save passed.
+[storage] write open-throw / desktop
+Storage open-throw (desktop): warning, memory/export, durable reload, retry and shared save passed.
+[storage] write quota / desktop
+Storage quota (desktop): warning, memory/export, durable reload, retry and shared save passed.
+[storage] write write-abort / desktop
+Storage write-abort (desktop): warning, memory/export, durable reload, retry and shared save passed.
+[storage] retry open open-error / desktop
+[storage] retry open open-throw / desktop
+[storage] claim quota / desktop
+[storage] claim write-abort / desktop
+[storage] claim delete-abort / desktop
+[storage] delete discardDraft / desktop
+[storage] delete discardAndLogout / desktop
+[storage] publish with failed cleanup / desktop
+[storage] recovery deletion / desktop
+[storage] logout memory recovery / desktop
+[storage] offline save failure / desktop
+Storage recovery/deletion/logout/offline (desktop): passed.
+[storage] write open-error / mobile
+Storage open-error (mobile): warning, memory/export, durable reload, retry and shared save passed.
+[storage] write open-throw / mobile
+Storage open-throw (mobile): warning, memory/export, durable reload, retry and shared save passed.
+[storage] write quota / mobile
+Storage quota (mobile): warning, memory/export, durable reload, retry and shared save passed.
+[storage] write write-abort / mobile
+Storage write-abort (mobile): warning, memory/export, durable reload, retry and shared save passed.
+[storage] retry open open-error / mobile
+[storage] retry open open-throw / mobile
+[storage] claim quota / mobile
+[storage] claim write-abort / mobile
+[storage] claim delete-abort / mobile
+[storage] delete discardDraft / mobile
+[storage] delete discardAndLogout / mobile
+[storage] publish with failed cleanup / mobile
+[storage] recovery deletion / mobile
+[storage] logout memory recovery / mobile
+[storage] offline save failure / mobile
+Storage recovery/deletion/logout/offline (mobile): passed.
+IndexedDB storage browser checks passed.
+storage: passed; 40.3s / 180s
+
+PARTIAL browser suite: imports
+[imports] photo resource comparison and import / desktop
+Photo comparison (desktop): replacement applied; unchanged embedded photos and URL variants remain equal.
+[imports] photo resource comparison and import / mobile
+Photo comparison (mobile): replacement applied; unchanged embedded photos and URL variants remain equal.
+[imports] import rejection, sanitization, migration and conflict / desktop
+[imports] in-flight import Cancel / desktop
+[imports] in-flight import Escape / desktop
+[imports] selection replaces in-flight Apply / desktop
+[imports] reversed file comparison reads / desktop
+[imports] session loss during Apply / desktop
+Imports (desktop): Cancel/Escape, replacement, reversed reads, session loss and duplicate Apply retain the draft.
+[imports] reject other trip / desktop
+[imports] reject not offline / desktop
+[imports] reject future version / desktop
+[imports] reject missing version / desktop
+[imports] reject negative version / desktop
+[imports] reject fractional version / desktop
+[imports] reject nonnumeric version / desktop
+[imports] reject missing data / desktop
+[imports] reject broken JSON / desktop
+[imports] reject null data / desktop
+[imports] reject missing HTML / desktop
+[imports] reject non-string HTML / desktop
+[imports] reject empty HTML / desktop
+[imports] reject future embedded version / desktop
+[imports] reject missing dual amounts / desktop
+[imports] reject damaged dual amount / desktop
+[imports] reject damaged legacy amount / desktop
+[imports] reject paragraph only / desktop
+[imports] reject missing ledger / desktop
+[imports] reject missing PREP / desktop
+[imports] reject missing day / desktop
+[imports] reject duplicate day / desktop
+[imports] reject duplicate ledger / desktop
+[imports] reject wrong day class / desktop
+[imports] reject conflicting day classes / desktop
+[imports] reject missing panel class / desktop
+[imports] reject nested day / desktop
+[imports] reject missing day heading / desktop
+[imports] reject missing day subtitle / desktop
+[imports] reject missing checklist / desktop
+[imports] reject missing checkbox / desktop
+[imports] reject missing time / desktop
+[imports] reject missing card / desktop
+[imports] reject missing title / desktop
+[imports] reject missing remark / desktop
+[imports] reject missing photo image / desktop
+Imports (desktop): 36 invalid files rejected; draft retained.
+[imports] render failure rollback and retry / desktop
+[imports] sanitize unsafe import / desktop
+Imports (desktop): malicious markup, duplicate IDs and invalid numbers sanitized; valid content retained.
+[imports] legacy v4 migration / desktop
+Imports (desktop): v4 fixture retains content, checks and stable identities.
+[imports] revision changed during import / desktop
+Imports (desktop): revision change requires another confirmation; only explicit save publishes.
+[imports] import rejection, sanitization, migration and conflict / mobile
+[imports] in-flight import Cancel / mobile
+[imports] in-flight import Escape / mobile
+[imports] selection replaces in-flight Apply / mobile
+[imports] reversed file comparison reads / mobile
+[imports] session loss during Apply / mobile
+Imports (mobile): Cancel/Escape, replacement, reversed reads, session loss and duplicate Apply retain the draft.
+[imports] reject other trip / mobile
+[imports] reject not offline / mobile
+[imports] reject future version / mobile
+[imports] reject missing version / mobile
+[imports] reject negative version / mobile
+[imports] reject fractional version / mobile
+[imports] reject nonnumeric version / mobile
+[imports] reject missing data / mobile
+[imports] reject broken JSON / mobile
+[imports] reject null data / mobile
+[imports] reject missing HTML / mobile
+[imports] reject non-string HTML / mobile
+[imports] reject empty HTML / mobile
+[imports] reject future embedded version / mobile
+[imports] reject missing dual amounts / mobile
+[imports] reject damaged dual amount / mobile
+[imports] reject damaged legacy amount / mobile
+[imports] reject paragraph only / mobile
+[imports] reject missing ledger / mobile
+[imports] reject missing PREP / mobile
+[imports] reject missing day / mobile
+[imports] reject duplicate day / mobile
+[imports] reject duplicate ledger / mobile
+[imports] reject wrong day class / mobile
+[imports] reject conflicting day classes / mobile
+[imports] reject missing panel class / mobile
+[imports] reject nested day / mobile
+[imports] reject missing day heading / mobile
+[imports] reject missing day subtitle / mobile
+[imports] reject missing checklist / mobile
+[imports] reject missing checkbox / mobile
+[imports] reject missing time / mobile
+[imports] reject missing card / mobile
+[imports] reject missing title / mobile
+[imports] reject missing remark / mobile
+[imports] reject missing photo image / mobile
+Imports (mobile): 36 invalid files rejected; draft retained.
+[imports] render failure rollback and retry / mobile
+[imports] sanitize unsafe import / mobile
+Imports (mobile): malicious markup, duplicate IDs and invalid numbers sanitized; valid content retained.
+[imports] legacy v4 migration / mobile
+Imports (mobile): v4 fixture retains content, checks and stable identities.
+[imports] revision changed during import / mobile
+Imports (mobile): revision change requires another confirmation; only explicit save publishes.
+Import browser checks passed.
+imports: passed; 20.9s / 180s
+
+PARTIAL browser suite: versions
+[versions] comparison: boundary move / desktop
+[versions] comparison: reordered move / desktop
+[versions] comparison: within-day reorder / desktop
+[versions] comparison: move with title edit / desktop
+[versions] comparison: unchanged / desktop
+[versions] 비교: close via button / desktop
+[versions] 비교: close via escape / desktop
+[versions] 미리보기: close via button / desktop
+[versions] 미리보기: close via escape / desktop
+[versions] reversed responses 비교 → 비교 / desktop
+[versions] reversed responses 비교 → 미리보기 / desktop
+[versions] reversed responses 미리보기 → 비교 / desktop
+[versions] reversed responses 미리보기 → 미리보기 / desktop
+[versions] sign-out during 비교 / desktop
+[versions] sign-out during 미리보기 / desktop
+[versions] sign-out during list / desktop
+[versions] closed/reopened list ignores old metadata / desktop
+[versions] preview interrupted during draft persistence: close / desktop
+[versions] preview interrupted during draft persistence: new selection / desktop
+[versions] preview interrupted during draft persistence: sign-out / desktop
+[versions] stalled 비교, ignores abort / desktop
+[versions] stalled 비교, honors abort / desktop
+[versions] stalled 미리보기, ignores abort / desktop
+[versions] stalled 미리보기, honors abort / desktop
+[versions] stalled list, ignores abort / desktop
+[versions] stalled list, honors abort / desktop
+[versions] HTTP failure shown inside versions and retry / desktop
+[versions] comparison: boundary move / mobile
+[versions] comparison: reordered move / mobile
+[versions] comparison: within-day reorder / mobile
+[versions] comparison: move with title edit / mobile
+[versions] comparison: unchanged / mobile
+[versions] 비교: close via button / mobile
+[versions] 비교: close via escape / mobile
+[versions] 미리보기: close via button / mobile
+[versions] 미리보기: close via escape / mobile
+[versions] reversed responses 비교 → 비교 / mobile
+[versions] reversed responses 비교 → 미리보기 / mobile
+[versions] reversed responses 미리보기 → 비교 / mobile
+[versions] reversed responses 미리보기 → 미리보기 / mobile
+[versions] sign-out during 비교 / mobile
+[versions] sign-out during 미리보기 / mobile
+[versions] sign-out during list / mobile
+[versions] closed/reopened list ignores old metadata / mobile
+[versions] preview interrupted during draft persistence: close / mobile
+[versions] preview interrupted during draft persistence: new selection / mobile
+[versions] preview interrupted during draft persistence: sign-out / mobile
+[versions] stalled 비교, ignores abort / mobile
+[versions] stalled 비교, honors abort / mobile
+[versions] stalled 미리보기, ignores abort / mobile
+[versions] stalled 미리보기, honors abort / mobile
+[versions] stalled list, ignores abort / mobile
+[versions] stalled list, honors abort / mobile
+[versions] HTTP failure shown inside versions and retry / mobile
+Versions: date/content/order comparisons, close/Escape, reversed selections, sign-out, stale lists, bounded reads and retries passed on desktop/mobile. Captures: C:\Users\이승종\AppData\Local\Temp\westbound-versions-ELkDya
+versions: passed; 34.8s / 180s
+
+PARTIAL browser suite: currency
+[currency] KRW/JPY entry, draft, CSV, offline and readonly exports
+[currency] EUR/USD entry, draft, CSV, offline and readonly exports
+Currency browser checks passed: KRW/JPY and EUR/USD, entry, draft reload, CSV, both HTML exports, currency mismatch write block.
+Synthetic output: C:\Users\이승종\AppData\Local\Temp\westbound-currency-oyiJfd
+currency: passed; 5.8s / 180s
+
+PARTIAL browser suite: ledger-compat
+future-main: unsupported document refused; existing IndexedDB draft retained; write, clear and save blocked.
+future-daylight: unsupported document refused; existing IndexedDB draft retained; write, clear and save blocked.
+damaged-money: unsupported document refused; existing IndexedDB draft retained; write, clear and save blocked.
+ledger-compat: passed; 1.3s / 180s
+
+PARTIAL browser suite: auth
+[auth] cross-tab sign-out, login failures and retry
+Auth: SDK cross-tab sign-out, reload, invalid password, HTTP 503, non-editor session, retry, draft recovery and save passed.
+[auth] token refresh / success
+Auth: automatic token refresh with continuous editing passed.
+[auth] token refresh / expired
+Auth: automatic refresh rejection, sign-out, reload and reauthentication passed.
+auth: passed; 6.1s / 180s
+
+PARTIAL browser suite: photos
+[photos] canvas encoding, upload and legacy conversion
+[
+  {
+    "mode": "native WebP",
+    "attachSave": "passed",
+    "legacyPng": "passed",
+    "existingFormats": "passed",
+    "dimensionsAndBytes": "passed"
+  },
+  {
+    "mode": "simulated iPhone WebP fallback",
+    "attachSave": "passed",
+    "legacyPng": "passed",
+    "existingFormats": "passed",
+    "dimensionsAndBytes": "passed"
+  }
+]
+photos: passed; 0.9s / 180s
+
+PARTIAL browser suite: theme
+[theme] theme preferences, tabs and dialogs
+[theme] editable export theme
+[theme] readonly export theme
+[theme] print and responsive theme
+Theme checks passed: preferences, sync, editing, dialogs, exports, print and responsive layout.
+Screenshots and exported fixtures: C:\Users\이승종\AppData\Local\Temp\westbound-theme-ROIa2A
+theme: passed; 6.5s / 180s
+
+PARTIAL browser suite: palette
+[palette] 390px light palette
+[palette] 390px dark palette
+[palette] 1440px light palette
+[palette] 1440px dark palette
+Palette checks passed: 24 mobile/desktop, light/dark, itinerary/PREP/ledger/timetable/print scenarios.
+Screenshots: C:\Users\이승종\AppData\Local\Temp\westbound-palette-YYZCIs
+palette: passed; 18.8s / 180s
+Browser timings: C:\Users\이승종\AppData\Local\Temp\westbound-browser-timing-UvOMIa
+PARTIAL: All 11 browser suites passed.

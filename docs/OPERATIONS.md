@@ -6,6 +6,7 @@ Source for setup, reuse, testing, deployment, DB health, and troubleshooting. Se
 
 - [Ledger schema 6](#ledger-schema-6)
 - [Initial setup](#setup)
+- [Codex Cloud setup and local handoff (Korean)](CODEX_CLOUD_GUIDE.ko.md)
 - [Updates](#updates)
 - [New trips](#new-trip)
 - [Validation](#validation)

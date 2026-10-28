@@ -1,0 +1,52 @@
+[
+  {
+    "antipattern": "broken-image",
+    "name": "Broken or placeholder image",
+    "description": "<img> tags with empty src, missing src, or placeholder values ship as broken-image boxes. Use real images, generated assets, or remove the tag.",
+    "severity": "warning",
+    "category": "quality",
+    "file": "D:\\Workspace\\travel\\website\\src\\html\\dialogs.html",
+    "line": 0,
+    "snippet": "<img> with no src attribute"
+  },
+  {
+    "antipattern": "side-tab",
+    "name": "Side-tab accent border",
+    "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely.",
+    "severity": "warning",
+    "category": "slop",
+    "file": "D:\\Workspace\\travel\\website\\src\\styles\\itinerary.css",
+    "line": 9,
+    "snippet": "border-left:3px solid var(--blue)"
+  },
+  {
+    "antipattern": "side-tab",
+    "name": "Side-tab accent border",
+    "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely.",
+    "severity": "warning",
+    "category": "slop",
+    "file": "D:\\Workspace\\travel\\website\\src\\styles\\modern.css",
+    "line": 192,
+    "snippet": ".timeline-row:before — absolute 4px pseudo-element stripe (left: 0)"
+  },
+  {
+    "antipattern": "side-tab",
+    "name": "Side-tab accent border",
+    "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely.",
+    "severity": "warning",
+    "category": "slop",
+    "file": "D:\\Workspace\\travel\\website\\src\\styles\\timetable.css",
+    "line": 27,
+    "snippet": "border-left:3px solid var(--tt-color)"
+  },
+  {
+    "antipattern": "side-tab",
+    "name": "Side-tab accent border",
+    "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely.",
+    "severity": "warning",
+    "category": "slop",
+    "file": "D:\\Workspace\\travel\\website\\src\\styles\\timetable.css",
+    "line": 46,
+    "snippet": "border-left:3px solid var(--tt-color)"
+  }
+]

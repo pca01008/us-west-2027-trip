@@ -8,6 +8,7 @@ Work now focuses on the existing app. Further Daylight development and productio
 
 | Task | Reference |
 |---|---|
+| Latest functionality, UI, and test audit | [2026-10-28 project review](docs/archive/2026-10-28-project-review.md) · [Progress and handoff](docs/REVIEW_2026-10-28_PROGRESS.md) — five reproduced defects, coverage gaps, and prioritized improvements |
 | Fresh functionality, UI, and test audit | [2026-10-26 project review](docs/archive/2026-10-26-project-review.md) — seven reproduced defects, one measured UI improvement, and regression priorities |
 | Functionality, UI, and test findings | [2026-10-25 comprehensive review](docs/archive/2026-10-25-comprehensive-review.md) — reproduced issues, priorities, and proposed regression coverage |
 | Itinerary, timetable, PREP, ledger, draft recovery, installation, exports | [User guide](docs/USER_GUIDE.md) |
@@ -17,6 +18,7 @@ Work now focuses on the existing app. Further Daylight development and productio
 | Current color palette and change workflow | [Color roles](docs/PROJECT_GUIDE.md#color-palette) · [Maintenance](docs/OPERATIONS.md#palette-maintenance) |
 | Pretendard font loading, offline copies, validation limits | [Typography](docs/PROJECT_GUIDE.md#typography) · [October 24 checks](docs/archive/2026-10-24-pretendard.md) |
 | Setup, new trips, testing, deployment, DB checks, troubleshooting | [Operations guide](docs/OPERATIONS.md) |
+| Codex Cloud setup, local handoff, and PR review | [Cloud workflow guide (Korean)](docs/CODEX_CLOUD_GUIDE.ko.md) |
 | Required checks and gated publication | [Operations](docs/OPERATIONS.md#validation) · [Remaining validation work](docs/VALIDATION_TODO.md) |
 | Separate research from website files | [Directory guide](docs/DIRECTORY_PLAN.md) |
 | Dual KRW/USD entry and automatic conversion | [Plan](docs/LEDGER_DUAL_CURRENCY_PLAN.md) — deployed; see the [implementation record](docs/archive/2026-10-24-ledger-dual-currency.md) |

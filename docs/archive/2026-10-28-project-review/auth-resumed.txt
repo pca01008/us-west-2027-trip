@@ -1,0 +1,46 @@
+[auth] audit: cancel pending login / button
+[auth] audit: cancel pending login / Escape
+[auth] audit: logout HTTP 503 still removes SDK session
+[auth] audit: edit-start completes after signout
+{
+  "recordedAt": "2026-10-28T07:11:24.606Z",
+  "node": "v24.22.1",
+  "browser": "151.0.7922.34",
+  "evidence": [
+    {
+      "id": "F2",
+      "scenario": "Cancel during password request",
+      "cancellation": "button",
+      "unexpected": "authenticated editing",
+      "publicWrites": 0,
+      "confirmed": true
+    },
+    {
+      "id": "F2",
+      "scenario": "Cancel during password request",
+      "cancellation": "Escape",
+      "unexpected": "authenticated editing",
+      "publicWrites": 0,
+      "confirmed": true
+    },
+    {
+      "id": "rejected-logout-hypothesis",
+      "scenario": "Logout HTTP 503",
+      "displayed": "편집자 로그아웃 완료",
+      "retainedSDKSession": false,
+      "passwordRequired": true,
+      "defect": false
+    },
+    {
+      "id": "F1",
+      "scenario": "Delayed edit-start read after peer signout",
+      "authenticated": false,
+      "editable": "true",
+      "publicWrites": 0,
+      "confirmed": true
+    }
+  ],
+  "fixtureErrors": [],
+  "pageErrors": [],
+  "unexpectedHTTP": []
+}
