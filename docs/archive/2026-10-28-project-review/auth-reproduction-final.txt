@@ -1,0 +1,31 @@
+[auth] audit: cancel pending login
+[auth] audit: failed logout retains SDK session
+[auth] audit: edit-start completes after signout
+{
+  "evidence": [
+    {
+      "id": "F2",
+      "scenario": "Cancel during password request",
+      "unexpected": "authenticated editing",
+      "confirmed": true
+    },
+    {
+      "id": "rejected-logout-hypothesis",
+      "scenario": "Logout HTTP 503",
+      "displayed": "편집자 로그아웃 완료",
+      "retainedSDKSession": false,
+      "passwordRequired": true,
+      "defect": false
+    },
+    {
+      "id": "F3",
+      "scenario": "Delayed edit-start read after peer signout",
+      "authenticated": false,
+      "editable": "true",
+      "confirmed": true
+    }
+  ],
+  "fixtureErrors": [],
+  "pageErrors": [],
+  "unexpectedHTTP": []
+}

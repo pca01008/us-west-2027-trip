@@ -1,0 +1,44 @@
+[
+  {
+    "id": "U1",
+    "panel": "panel-prep",
+    "role": "tabpanel",
+    "labelledby": "tab-prep",
+    "missing": []
+  },
+  {
+    "id": "U1",
+    "panel": "panel-money",
+    "role": "tabpanel",
+    "labelledby": "tab-money",
+    "missing": []
+  },
+  {
+    "id": "U1",
+    "panel": "panel-d1",
+    "role": "tabpanel",
+    "labelledby": "tab-d1",
+    "missing": []
+  },
+  {
+    "id": "F4",
+    "scenario": "Malformed map URL",
+    "accepted": true,
+    "href": "https://"
+  },
+  {
+    "id": "U3",
+    "scenario": "Selected category icon semantics",
+    "text": "📦",
+    "role": null,
+    "pressed": null,
+    "checked": null
+  },
+  {
+    "id": "",
+    "scenario": "Readonly photo viewer Tab",
+    "inViewer": false,
+    "tag": "IMG",
+    "modalOpen": false
+  }
+]

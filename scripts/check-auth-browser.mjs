@@ -127,7 +127,7 @@ async function assertProtected(page, expectedDraft) {
   assert.equal(await title(page).getAttribute('contenteditable'), 'false');
   assert.equal(await page.locator('#logoutBtn').isVisible(), false);
   assert.equal(await page.locator('#saveBtn').isDisabled(), true);
-  assert.deepEqual(await page.evaluate(async () => (await window.__authTest.readDraftRecord()).state), expectedDraft);
+  assert.deepEqual(await page.evaluate(async () => (await window.__authTest.readDraftRecord())?.state), expectedDraft);
   assert.equal(saves().length, 0, 'No save may be attempted before successful reauthentication and confirmation');
 }
 async function recoverAndSave(page, expectedText) {
@@ -142,6 +142,64 @@ async function recoverAndSave(page, expectedText) {
 }
 try {
   browser = await chromium.launch({ headless: true, ...(process.env.PWA_BROWSER_CHANNEL ? { channel: process.env.PWA_BROWSER_CHANNEL } : {}) });
+  for (const cancellation of ['button', 'Escape', 'new-purpose']) {
+    const { context, page } = await setup(`pending login canceled / ${cancellation}`);
+    let release, started;
+    const gate = new Promise(resolve => release = resolve), entered = new Promise(resolve => started = resolve);
+    await page.route('**/auth/v1/token?grant_type=password', async route => { started(); await gate; await route.continue(); });
+    await page.locator('#editBtn').click();
+    await page.locator('#editorPassword').fill('fixture-password');
+    await page.locator('#authSubmit').click(); await entered;
+    assert.equal(await page.locator('#authSubmit').isDisabled(), true);
+    if (cancellation === 'Escape') await page.keyboard.press('Escape');
+    else await page.locator('#authCancel').click();
+    assert.equal(await page.locator('#authDialog').isHidden(), true);
+    if (cancellation === 'new-purpose') {
+      await page.locator('#versionsBtn').click();
+      await page.waitForFunction(() => !document.querySelector('#authDialog').hidden);
+    }
+    const completed = page.waitForResponse(response => response.url().includes('grant_type=password'));
+    release(); await completed;
+    // Wait for the SDK and stale handler to settle, rather than racing a negative assertion.
+    await page.waitForFunction(() => window.__authEvents.includes('SIGNED_IN'));
+    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 100)));
+    assert.equal(await page.locator('body').evaluate(el => el.classList.contains('editing')), false);
+    assert.equal(await title(page).getAttribute('contenteditable'), 'false');
+    assert.equal(await page.locator('#authDialog').isVisible(), cancellation === 'new-purpose');
+    assert.equal(await page.locator('#versionDialog').isHidden(), true);
+    assert.equal(await page.locator('#authSubmit').isDisabled(), false);
+    assert.equal(saves().length, 0);
+    if(cancellation !== 'new-purpose') {
+      await page.locator('#editBtn').click();
+      await page.waitForFunction(() => document.body.classList.contains('editing'));
+    }
+    await diagnostics.close(context);
+    console.log(`Auth: delayed password success cannot resume canceled ${cancellation} action; explicit retry works.`);
+  }
+  {
+    const { context, page } = await setup('delayed edit-start read after SDK peer sign-out');
+    await login(page); await page.locator('#editBtn').click();
+    const savedDraft = await page.evaluate(async () => (await window.__authTest.readDraftRecord())?.state);
+    const original = await title(page).textContent();
+    const peer = await context.newPage(); await peer.goto(origin + '/sdk-tab');
+    let release, started;
+    const gate = new Promise(resolve => release = resolve), entered = new Promise(resolve => started = resolve);
+    await page.route('**/rest/v1/trip_documents?*', async route => {
+      const response = await route.fetch(); const lateRow = await response.json();
+      lateRow.content.html = lateRow.content.html.replace(original, 'STALE EDIT ENTRY');
+      started(); await gate; await route.fulfill({ json: lateRow });
+    });
+    await page.locator('#editBtn').click(); await entered;
+    await peer.evaluate(() => window.peer.auth.signOut({ scope: 'local' }));
+    await page.waitForFunction(() => !document.body.classList.contains('authenticated') && document.querySelector('#status').textContent.includes('종료'));
+    const completed = page.waitForResponse(response => response.url().includes('/rest/v1/trip_documents?'));
+    release(); await completed;
+    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 100)));
+    await assertProtected(page, savedDraft);
+    assert.equal(await title(page).textContent(), original, 'Stale response must not apply document state');
+    await peer.close(); await diagnostics.close(context);
+    console.log('Auth: delayed edit-start cannot apply state or enable editing after real SDK peer sign-out.');
+  }
   {
     const { context, page } = await setup("cross-tab sign-out, login failures and retry");
     await login(page);

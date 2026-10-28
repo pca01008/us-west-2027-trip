@@ -1,0 +1,73 @@
+Browser compatibility: firefox / navigation
+PARTIAL input group: navigation; full input coverage requires navigation, dialogs and editing.
+PARTIAL visual coverage: functional assertions only; PNG evidence belongs to the Chromium suite.
+[inputs] tab navigation / desktop / reduce
+Desktop tabs (reduce): header position, long-to-short switches, nested labels, reselect, keyboard, rapid switches, timetable and data preservation passed.
+[inputs] tab navigation / desktop / no-preference
+Desktop tabs (no-preference): header position, long-to-short switches, nested labels, reselect, keyboard, rapid switches, timetable and data preservation passed.
+[inputs] tab navigation / mobile / reduce
+Mobile tabs (reduce): header position, long-to-short switches, nested labels, reselect, keyboard, rapid switches, timetable and data preservation passed.
+[inputs] tab navigation / mobile / no-preference
+Mobile tabs (no-preference): header position, long-to-short switches, nested labels, reselect, keyboard, rapid switches, timetable and data preservation passed.
+Exported fixtures (functional mode; no PNG captures): C:\Users\이승종\AppData\Local\Temp\westbound-inputs-OH7N0P
+firefox / navigation: passed; 17.3s / 180s
+Browser compatibility: firefox / dialogs
+PARTIAL input group: dialogs; full input coverage requires navigation, dialogs and editing.
+PARTIAL visual coverage: functional assertions only; PNG evidence belongs to the Chromium suite.
+[inputs] dialog keyboard focus / desktop
+[inputs] photo metadata validation / desktop / light
+[inputs] photo metadata validation / desktop / dark
+Dialog focus (desktop): keyboard open, Tab wrapping, Escape/Cancel/Apply, nested dialogs and replaced triggers passed.
+[inputs] dialog keyboard focus / mobile
+[inputs] photo metadata validation / mobile / light
+[inputs] photo metadata validation / mobile / dark
+Dialog focus (mobile): keyboard open, Tab wrapping, Escape/Cancel/Apply, nested dialogs and replaced triggers passed.
+Exported fixtures (functional mode; no PNG captures): C:\Users\이승종\AppData\Local\Temp\westbound-inputs-OqhHso
+firefox / dialogs: passed; 31.1s / 180s
+Browser compatibility: firefox / editing
+PARTIAL input group: editing; full input coverage requires navigation, dialogs and editing.
+PARTIAL visual coverage: functional assertions only; PNG evidence belongs to the Chromium suite.
+[inputs] input, import and export / desktop
+Desktop: input, composition events, undo/redo, import, exports and reload passed.
+[inputs] input, import and export / mobile
+Mobile viewport/touch: input, composition events, undo/redo, import, exports and reload passed.
+Exported fixtures (functional mode; no PNG captures): C:\Users\이승종\AppData\Local\Temp\westbound-inputs-zobnze
+firefox / editing: passed; 19.4s / 180s
+Browser compatibility: webkit / navigation
+PARTIAL input group: navigation; full input coverage requires navigation, dialogs and editing.
+PARTIAL visual coverage: functional assertions only; PNG evidence belongs to the Chromium suite.
+WebKit theme fixtures use keyboard activation with applied/checked/closed assertions; pointer theme coverage belongs to Chromium/Firefox.
+[inputs] tab navigation / desktop / reduce
+Desktop tabs (reduce): header position, long-to-short switches, nested labels, reselect, keyboard, rapid switches, timetable and data preservation passed.
+[inputs] tab navigation / desktop / no-preference
+Desktop tabs (no-preference): header position, long-to-short switches, nested labels, reselect, keyboard, rapid switches, timetable and data preservation passed.
+[inputs] tab navigation / mobile / reduce
+Mobile tabs (reduce): header position, long-to-short switches, nested labels, reselect, keyboard, rapid switches, timetable and data preservation passed.
+[inputs] tab navigation / mobile / no-preference
+Mobile tabs (no-preference): header position, long-to-short switches, nested labels, reselect, keyboard, rapid switches, timetable and data preservation passed.
+Exported fixtures (functional mode; no PNG captures): C:\Users\이승종\AppData\Local\Temp\westbound-inputs-R00Tp5
+webkit / navigation: passed; 25.4s / 180s
+Browser compatibility: webkit / dialogs
+PARTIAL input group: dialogs; full input coverage requires navigation, dialogs and editing.
+PARTIAL visual coverage: functional assertions only; PNG evidence belongs to the Chromium suite.
+WebKit theme fixtures use keyboard activation with applied/checked/closed assertions; pointer theme coverage belongs to Chromium/Firefox.
+[inputs] dialog keyboard focus / desktop
+[inputs] photo metadata validation / desktop / light
+[inputs] photo metadata validation / desktop / dark
+Dialog focus (desktop): keyboard open, Tab wrapping, Escape/Cancel/Apply, nested dialogs and replaced triggers passed.
+[inputs] dialog keyboard focus / mobile
+[inputs] photo metadata validation / mobile / light
+[inputs] photo metadata validation / mobile / dark
+Dialog focus (mobile): keyboard open, Tab wrapping, Escape/Cancel/Apply, nested dialogs and replaced triggers passed.
+Exported fixtures (functional mode; no PNG captures): C:\Users\이승종\AppData\Local\Temp\westbound-inputs-wKqv8s
+webkit / dialogs: passed; 49.8s / 180s
+Browser compatibility: webkit / editing
+PARTIAL input group: editing; full input coverage requires navigation, dialogs and editing.
+PARTIAL visual coverage: functional assertions only; PNG evidence belongs to the Chromium suite.
+WebKit theme fixtures use keyboard activation with applied/checked/closed assertions; pointer theme coverage belongs to Chromium/Firefox.
+[inputs] input, import and export / desktop
+Desktop: input, composition events, undo/redo, import, exports and reload passed.
+[inputs] input, import and export / mobile
+Mobile viewport/touch: input, composition events, undo/redo, import, exports and reload passed.
+Exported fixtures (functional mode; no PNG captures): C:\Users\이승종\AppData\Local\Temp\westbound-inputs-29GT5X
+webkit / editing: passed; 21.4s / 180s

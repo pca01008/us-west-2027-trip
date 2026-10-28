@@ -52,7 +52,7 @@ test('브라우저 초안은 IndexedDB에 보존되고 저장 시 revision을 �
   const html = await readFile(path.join(root, 'index.html'), 'utf8');
   assert.match(html, /indexedDB\.open\(DRAFT_DB_NAME/);
   assert.match(html, /recoverOnlineDraft/);
-  assert.match(html, /beginEditing\(\)\{if\(!OFFLINE_MODE&&!documentSession\.snapshot\(\)\.pendingDraft\)/);
+  // Editor-entry transitions are covered by real-SDK auth and draft recovery tests.
   assert.match(html, /tripRepository\.saveDocument\(normalized,documentSession\.snapshot\(\)\.publishedRevision/);
   assert.match(html, /receivePublishedState\(payload\.new,'realtime'\)/);
   assert.match(html, /PUBLIC_CACHE_RECORD_KEY/);
@@ -103,7 +103,7 @@ test('편집 세션은 탭 간에 동기화되고 재연결 시 최신본을 확
   assert.match(warning, /clearSessionTimers\(\);if\(choice==='save'\)/);
   assert.match(warning, /else resetInactivityTimer\(\)/);
   assert.match(html, /finally\s*\{setEditorSession\(null\);signingOut=false;\}/);
-  assert.match(html, /if\(submit\.disabled\)return;submit\.disabled=true/);
+  // Pending-login cancellation and duplicate-submit state are exercised by the real-SDK browser suite.
 });
 
 test('사진은 초안에 스테이징되고 최종 저장에서만 업로드된다', async () => {

@@ -1,0 +1,28 @@
+{
+  "sha": "f6c6a88104a51324e46a82bc5a1ca4b8af7feee5",
+  "runId": 40421603642,
+  "jobId": 121917368849,
+  "artifactId": 12698370108,
+  "scope": "Synthetic Linux WebKit input fixture, desktop dialog keyboard scenario",
+  "failure": {
+    "action": "check dark theme radio",
+    "timeoutMs": 5000,
+    "lastLog": "performing click action"
+  },
+  "traceObserved": {
+    "dataTheme": "dark",
+    "dataThemePreference": "dark",
+    "darkRadioChecked": true,
+    "themeMenuHidden": true,
+    "pageErrors": [],
+    "fontResponseStatus": 200,
+    "fontResponseMilliseconds": 18.617
+  },
+  "interpretation": "The DOM changed before pointer acknowledgement timed out. This does not establish a production theme defect or an external transient. No blind rerun was used.",
+  "followup": "WebKit fixture uses real focus+Space, Escape for an unchanged selection, and applied/checked/closed postconditions. Chromium and Firefox retain pointer theme checks.",
+  "limits": [
+    "WebKit pointer-theme completion unverified",
+    "Linux WebKit PNG parity unverified",
+    "Physical Safari/phone verification pending"
+  ]
+}

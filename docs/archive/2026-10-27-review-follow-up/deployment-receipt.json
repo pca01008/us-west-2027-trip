@@ -1,0 +1,165 @@
+{
+  "deployedSha": "2e82ee984f1b9cd4a766029ccffcd66124aee322",
+  "candidateRun": {
+    "id": 40422860167,
+    "url": "https://github.com/pca01008/us-west-2027-trip/actions/runs/40422860167",
+    "result": "success"
+  },
+  "mainRun": {
+    "id": 40424580118,
+    "url": "https://github.com/pca01008/us-west-2027-trip/actions/runs/40424580118",
+    "result": "success"
+  },
+  "checks": {
+    "unit": 185,
+    "sql": 24,
+    "postgres": "17.11",
+    "chromiumSuites": 16,
+    "firefox": "functional input/dialog/draft/export passed; pointer themes",
+    "webkit": "functional input/dialog/draft/export passed; keyboard themes",
+    "browserStageSeconds": 583.6,
+    "timings": [
+      {
+        "suite": "diagnostics",
+        "elapsedSeconds": 1.4,
+        "deadlineSeconds": 180
+      },
+      {
+        "suite": "drafts",
+        "elapsedSeconds": 145.3,
+        "deadlineSeconds": 300
+      },
+      {
+        "suite": "storage",
+        "elapsedSeconds": 39.6,
+        "deadlineSeconds": 180
+      },
+      {
+        "suite": "inputs",
+        "elapsedSeconds": 46.8,
+        "deadlineSeconds": 180
+      },
+      {
+        "suite": "imports",
+        "elapsedSeconds": 21.4,
+        "deadlineSeconds": 180
+      },
+      {
+        "suite": "versions",
+        "elapsedSeconds": 33.3,
+        "deadlineSeconds": 180
+      },
+      {
+        "suite": "ledger",
+        "elapsedSeconds": 31.2,
+        "deadlineSeconds": 180
+      },
+      {
+        "suite": "currency",
+        "elapsedSeconds": 5.1,
+        "deadlineSeconds": 180
+      },
+      {
+        "suite": "ledger-compat",
+        "elapsedSeconds": 1.2,
+        "deadlineSeconds": 180
+      },
+      {
+        "suite": "prep",
+        "elapsedSeconds": 35.9,
+        "deadlineSeconds": 180
+      },
+      {
+        "suite": "auth",
+        "elapsedSeconds": 6.2,
+        "deadlineSeconds": 180
+      },
+      {
+        "suite": "photos",
+        "elapsedSeconds": 0.8,
+        "deadlineSeconds": 180
+      },
+      {
+        "suite": "theme",
+        "elapsedSeconds": 5.7,
+        "deadlineSeconds": 180
+      },
+      {
+        "suite": "palette",
+        "elapsedSeconds": 17.8,
+        "deadlineSeconds": 180
+      },
+      {
+        "suite": "navigation",
+        "elapsedSeconds": 16.6,
+        "deadlineSeconds": 180
+      },
+      {
+        "suite": "pwa",
+        "elapsedSeconds": 17.8,
+        "deadlineSeconds": 180
+      }
+    ]
+  },
+  "environment": {
+    "nativeRunner": "Ubuntu 24.04.5 x64",
+    "browserImage": "Ubuntu 24.04.4 x64; Playwright 1.62.1 Noble digest pinned",
+    "node": "24.22.1",
+    "npm": "11.19.1",
+    "chromium": "151.0.7922.34",
+    "firefox": "153.0",
+    "webkit": "26.5"
+  },
+  "pages": {
+    "source": "workflow",
+    "status": "built",
+    "url": "https://pca01008.github.io/us-west-2027-trip/",
+    "artifactId": 12698364449,
+    "artifactSha256": "c7d35b40c7dcf30433f83d9b0b0fa697336943f39c102607447257db86203365",
+    "deploymentId": "2e82ee984f1b9cd4a766029ccffcd66124aee322",
+    "reportedSuccessUtc": "2026-10-27T00:21:55.9143255Z",
+    "publicAssetsMatched": 8,
+    "excludedPaths404": 6,
+    "productionReadOnly": {
+      "passed": true,
+      "apiReads": 1,
+      "errors": 0,
+      "writes": 0
+    }
+  },
+  "protection": {
+    "requiredContexts": [
+      "required"
+    ],
+    "strict": true,
+    "enforceAdmins": true,
+    "verifiedBy": "GET after PUT; no unvalidated production push probe"
+  },
+  "previousBoundaryReceipt": {
+    "sha": "f6c6a88104a51324e46a82bc5a1ca4b8af7feee5",
+    "runId": 40419080270,
+    "appSourcesAndPublicAssetsUnchanged": true,
+    "inputsSeconds": [
+      59.1,
+      57.1,
+      55.4
+    ],
+    "draftsSeconds": [
+      174.8,
+      169.5,
+      165.3
+    ]
+  },
+  "localWindows": {
+    "cleanCandidateUnitTests": 185,
+    "unitSeconds": 24.372,
+    "webkitKeyboardTheme": "passed",
+    "chromiumInput": "passed"
+  },
+  "limits": [
+    "No clean local Ubuntu 24.04 full execution or fresh-terminal setup certification",
+    "No physical phones, real IME/keyboards/photo selection/installed offline/reconnect check",
+    "WebKit pointer-theme acknowledgement and Linux PNG parity unverified",
+    "No authenticated production saves, SQL writes, Storage uploads or real JWT/Realtime integration certification"
+  ]
+}

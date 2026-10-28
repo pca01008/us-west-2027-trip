@@ -6,6 +6,7 @@ Source for setup, reuse, testing, deployment, DB health, and troubleshooting. Se
 
 - [Ledger schema 6](#ledger-schema-6)
 - [Initial setup](#setup)
+- [Codex Cloud setup and local handoff (Korean)](CODEX_CLOUD_GUIDE.ko.md)
 - [Updates](#updates)
 - [New trips](#new-trip)
 - [Validation](#validation)
@@ -185,7 +186,7 @@ The paused Daylight artifact and an explicitly supplied pre-marker `VERSIONS_FIX
 | Import | `node scripts/check-imports-browser.mjs`: real files, same-ID full/thumbnail replacements, equivalent Storage URLs/embedded bytes, unchanged offline photo round trips, Cancel/Escape during Apply, replacement/reversed comparison reads, session loss, duplicate Apply, DOM/baseline/history/durable-draft retention; 36 rejected inputs including 19 malformed structures, forced render failure/Undo/Redo/retry, date moves/cancel, sanitization/IDs/numbers, v4 content/checks/empty-day repair, changing revision/explicit save. `tests/import-lifecycle.test.mjs` adds deferred file/read/materialization results and errors, sign-out, reconfirmation and retry; `IMPORTS_FIXTURE_HTML` optionally serves earlier generated HTML |
 | Versions | `node scripts/check-versions-browser.mjs`: 54 desktop/mobile scenarios covering date moves with unchanged/reordered events, within-day reordering, combined date/title edits, unchanged state, close/Escape, reversed compare/preview selections, sign-out, stale list reopening, interrupted draft persistence, stalled reads with/without transport cancellation, visible errors and retry; `VERSIONS_FIXTURE_HTML` optionally serves an earlier generated HTML for regression proof |
 | PREP | `node scripts/check-prep-browser.mjs`: immediate save, auth cancel/failure/retry, list edits/draft protection; 24 checkbox/list response-loss cases with/without drafts: timeout before commit, committed timeout/transport/SDK failure, later remote changes, unavailable verification, explicit retry without duplicate versions |
-| Auth SDK | `node scripts/check-auth-browser.mjs`: actual SDK login errors/503/noneditor, refresh/expiry, cross-tab logout, retained/recovered drafts/save |
+| Auth SDK | `node scripts/check-auth-browser.mjs`: actual SDK login errors/503/noneditor, delayed login Cancel/Esc/replacement purpose, delayed edit-start after peer sign-out, refresh/expiry, cross-tab logout, retained/recovered drafts/save |
 | Storage | `node scripts/check-storage-browser.mjs`: open/quota/aborted write/delete, memory/old records, notices/save/export/retry/reload/logout/offline |
 | Photos | `node scripts/check-photos-browser.mjs`: conversion/PNG fallback/staging |
 | Theme | `node scripts/check-theme-browser.mjs`: choice/blocked storage/device changes/export/print |
@@ -199,6 +200,10 @@ Navigation supports `TRIP_BROWSER_ENGINE=firefox`/`webkit`, default Chromium; in
 Scripts accept an absolute Playwright module path first. `$env:PWA_BROWSER_CHANNEL='chrome'` uses installed Chrome. PWA/Auth serve the pinned SDK locally with test URL/SRI substitution, requiring no CDN.
 
 Auth tests alter HTTP responses, not auth functions; virtual time checks automatic refresh/token expiry/rejection, TOKEN_REFRESHED/SIGNED_OUT, UI/session state and refreshed request tokens. A separate SDK-only tab tests actual cross-tab delivery. Production accounts/JWT/DB/Realtime are excluded; outbound HTTP/WebSockets blocked.
+
+Input suites also check malformed HTTPS entry/import with unchanged history, named/pressed category icons through keyboard selection/reopening, and network-blocked read-only photo viewer focus, background isolation, scroll locking and focus restoration. Chromium captures these states; Firefox/WebKit run the same functional assertions. Extra engines execute all three existing groups (`navigation`, `dialogs`, `editing`) in separate processes, each limited to 180 seconds with per-group timings. `--group=<name>` is explicitly partial; omitting it runs the complete input suite. No case/assertion is dropped, and full Chromium/CI stage budgets are unchanged.
+
+Optional photo-heavy measurement: `node scripts/profile-editing-browser.mjs <output.json>`. It compares zero/eight synthetic 1600px staged JPEGs at a 390px viewport with Chromium CPU rates 1x/4x. Five samples measure capture, fingerprint, synchronous synthetic input handling, awaited draft durability, history and undo/redo; content/durability checks must pass. It sets no timing gate, contacts no production API and stores no photos. CPU throttling is not physical-device evidence; [October 28 baseline](archive/2026-10-28-review-fixes.md#stage-3--documentation-and-measurement-d1i3) owns observations.
 
 Ledger accepts optional `LEDGER_FIXTURE_HTML` to run the same assertions against an earlier generated app. See the [U2 regression record](archive/2026-10-26-ledger-rate-validation-u2.md) for the dated validation results.
 
@@ -253,6 +258,8 @@ Commit/push only within authorization. Verify tracking state/intended remote bef
 Pages publication uses the Validate workflow: `required` → `pages-build` → main-push-only `deploy`. Checkout/build use the validated SHA; the artifact checker verifies asset bytes and excluded authoring/test paths. Workflow concurrency cancels superseded runs and deploy checks that its SHA is still main. Pages source must be `workflow`; inspect actual source before activation. Work-branch/manual runs cannot publish. `_config.yml` excludes `docs`, `src`, scripts/tests, packages and SQL from HTML deployment; repository access remains. Deploy manifest/PWA scripts/icons/assets with HTML/config. Keep relative install paths; omit manifest `id` so deployment-specific `start_url` identifies the app. Do not add `id: "./"`. Update names/description/Apple title for another trip.
 
 Recover by reverting the faulty release on a work branch, validating that candidate, then updating main through the same gate; never bypass validation or roll back live trip data. Branch protection capabilities and local Linux/device gaps remain in the dated evidence.
+
+Active settings verified October 27: Pages source `workflow`; main requires strict `required` checks including administrators, with force pushes/deletion disabled. A direct update must already have successful checks; no PR-review requirement is configured. Settings were confirmed by API, without attempting an unvalidated production push. [Release receipt](archive/2026-10-27-review-follow-up.md#production-result) records the deployed SHA and remaining local/device limits.
 
 Bump worker `VERSION` for cache-list/strategy/icon/image/font changes. Retain the bundled font and license when deploying or reusing the app; see [typography](PROJECT_GUIDE.md#typography) for loading/export behavior. SDK updates must synchronize pinned HTML URL/SRI and worker `SDK_URL`/`SDK_INTEGRITY`. Close old windows for activation; avoid forced refresh while editing. `scripts/generate-icons.ps1` generates PNGs matching `icons/icon.svg`.
 

@@ -2,6 +2,7 @@
     return prefix + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,9);
   }
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
+  function isValidHttpsUrl(value){try{const url=new URL(value);return /^https:\/\//i.test(value)&&url.protocol==='https:'&&Boolean(url.hostname);}catch(_){return false;}}
   function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function hashText(value) { let hash=2166136261; for (const c of String(value)) { hash^=c.charCodeAt(0); hash=Math.imul(hash,16777619); } return (hash>>>0).toString(36); }
   function assertSupportedSchema(raw){

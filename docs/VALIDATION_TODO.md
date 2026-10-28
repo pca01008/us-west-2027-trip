@@ -130,11 +130,11 @@ Immediate operating rule:
 
 - [x] Validate the candidate locally (Windows scope) and on its work branch before updating `main`. Preserve its SHA; clean local Linux full execution remains separate below.
 - [x] Inspect available GitHub branch rules and Pages source settings. Record actual capabilities; do not assume required checks or protection are enabled.
-- [ ] Where supported, require the stable aggregate check before merging to `main`, and inspect direct-push/bypass behavior. Document limitations honestly.
+- [x] Require aggregate `required` with strict/up-to-date checks on main, including administrators; GET confirms enforcement. Force pushes/deletion are disabled. No unvalidated production-push probe was attempted.
 
 Enforced publication target:
 
-- [ ] Change Pages publication to a controlled Actions deployment that depends on successful validation of the same commit. A manual work-branch Validate run must never publish production.
+- [x] Activate Actions publication dependent on the same commit's validation. Work-branch builds skip deploy; successful main run and public identity are recorded in the dated receipt.
 - [x] Prefer one workflow containing validation and dependent Pages build/deploy jobs. Gate publication to the intended `main` event/ref, with Pages permissions scoped to deployment jobs.
 - [x] Check out and package the validated commit, never a moving `main` reference. Avoid downloading an artifact whose source SHA is unverified.
 - [x] Preserve Jekyll/Pages behavior and `_config.yml` exclusions. Same-SHA artifact checks reject source, dependencies, tests and private/local exports.
@@ -154,7 +154,8 @@ Acceptance: a failing candidate cannot publish. A successful release identifies 
 - [x] Verify failure artifacts survive and successful runs do not accumulate unnecessary temporary files.
 - [x] Run existing Windows checks once for developer usability after changing shared scripts. Keep this result separate from Linux/CI equivalence.
 - [x] Check same-SHA Jekyll artifact bytes/exclusions and isolated navigation/PWA path fixtures without production writes.
-- [ ] After an actual authorized deployment, verify public asset identity and basic read-only behavior separately from automated fixture results.
+- [x] After deployment, match 8 public assets, confirm 6 excluded paths return 404, and verify fresh-session public reading/navigation without writes.
+- [ ] On both travelers' phones, check numeric/IME input, keyboard visibility, photo selection, installed offline launch and reconnect. Emulation does not count.
 
 ## P1 — Maintain documentation and evidence
 
@@ -182,6 +183,6 @@ Do not combine this work with UI redesign, currency migration, dependency upgrad
 - [ ] Required local Linux and GitHub checks use the same declared tools and test stages.
 - [x] Missing prerequisites and failed/unfinished checks cannot produce a full pass.
 - [x] Previously failing suites pass repeated Windows/CI runs with measured headroom; local Linux remains unverified above.
-- [ ] Production deploys only an artifact derived from the validated release commit.
+- [x] Production deploys only an artifact derived from the validated release commit; same-SHA build/deploy and public bytes are verified.
 - [x] Documentation describes implemented behavior; dated evidence distinguishes local, CI, deployment, and device verification.
 - [x] Remaining limits are explicit: runner performance still varies, mocked browser APIs do not prove production integrations, and emulation does not replace physical-device testing.

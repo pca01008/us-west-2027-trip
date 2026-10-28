@@ -1,0 +1,21 @@
+[inputs] tab navigation / desktop / reduce
+Desktop tabs (reduce): header position, long-to-short switches, nested labels, reselect, keyboard, rapid switches, timetable and data preservation passed.
+[inputs] tab navigation / desktop / no-preference
+Desktop tabs (no-preference): header position, long-to-short switches, nested labels, reselect, keyboard, rapid switches, timetable and data preservation passed.
+[inputs] tab navigation / mobile / reduce
+Mobile tabs (reduce): header position, long-to-short switches, nested labels, reselect, keyboard, rapid switches, timetable and data preservation passed.
+[inputs] tab navigation / mobile / no-preference
+Mobile tabs (no-preference): header position, long-to-short switches, nested labels, reselect, keyboard, rapid switches, timetable and data preservation passed.
+[inputs] dialog keyboard focus / desktop
+[inputs] photo metadata validation / desktop / light
+[inputs] photo metadata validation / desktop / dark
+Dialog focus (desktop): keyboard open, Tab wrapping, Escape/Cancel/Apply, nested dialogs and replaced triggers passed.
+[inputs] dialog keyboard focus / mobile
+[inputs] photo metadata validation / mobile / light
+[inputs] photo metadata validation / mobile / dark
+Dialog focus (mobile): keyboard open, Tab wrapping, Escape/Cancel/Apply, nested dialogs and replaced triggers passed.
+[inputs] input, import and export / desktop
+Desktop: input, composition events, undo/redo, import, exports and reload passed.
+[inputs] input, import and export / mobile
+Mobile viewport/touch: input, composition events, undo/redo, import, exports and reload passed.
+Screenshots and exported fixtures: C:\Users\이승종\AppData\Local\Temp\westbound-inputs-VVUpGS

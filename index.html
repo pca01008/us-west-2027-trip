@@ -1278,6 +1278,7 @@ const TIMETABLE_KINDS={activity:'관광',food:'식사',transit:'이동',stay:'�
     return prefix + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,9);
   }
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
+  function isValidHttpsUrl(value){try{const url=new URL(value);return /^https:\/\//i.test(value)&&url.protocol==='https:'&&Boolean(url.hostname);}catch(_){return false;}}
   function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function hashText(value) { let hash=2166136261; for (const c of String(value)) { hash^=c.charCodeAt(0); hash=Math.imul(hash,16777619); } return (hash>>>0).toString(36); }
   function assertSupportedSchema(raw){
@@ -2271,7 +2272,7 @@ function configureCurrencyLabels(){
   }
   async function moveExpense(id,direction){await requireEditor('ledger',()=>{const index=expenses.findIndex(item=>item.id===id),next=index+direction;if(index<0||next<0||next>=expenses.length)return;const [item]=expenses.splice(index,1);expenses.splice(next,0,item);renderLedger();finishMutation();});}
   async function deleteExpense(id){const item=expenses.find(x=>x.id===id);if(!item)return;const choice=await showChoice({title:'가계부 항목을 삭제할까요?',message:item.name+' 항목을 삭제합니다.',choices:[{label:'취소',value:'cancel'},{label:'삭제',value:'delete',className:'action-danger'}]});if(choice!=='delete')return;await requireEditor('ledger',async()=>{expenses=expenses.filter(x=>x.id!==id);renderLedger();finishMutation();});}
-  function renderIconPicker(){const picker=$('#categoryIconPicker');picker.innerHTML=ICON_CANDIDATES.map(icon=>'<button class="'+(icon===selectedCategoryIcon?'active':'')+'" data-category-icon="'+icon+'" type="button">'+icon+'</button>').join('');}
+  function renderIconPicker(){const names=['항공','숙박','식사','카페','자동차','택시','주유','주차','입장권','공연','자연','쇼핑','휴식','음료','선물','약','휴대폰','현금','상자','휴지통'],icons=ICON_CANDIDATES.includes(selectedCategoryIcon)?ICON_CANDIDATES:[...ICON_CANDIDATES,selectedCategoryIcon];const picker=$('#categoryIconPicker');picker.innerHTML=icons.map((icon,index)=>'<button class="'+(icon===selectedCategoryIcon?'active':'')+'" data-category-icon="'+escapeHtml(icon)+'" aria-label="'+(names[index]||'사용자 아이콘')+'" aria-pressed="'+(icon===selectedCategoryIcon)+'" type="button">'+escapeHtml(icon)+'</button>').join('');}
   function revertSettingsRate(){settingsRateTouched=false;$('#settingsExchangeRate').value=String(exchangeRate);setFieldError('settingsExchangeRate');}
   function openLedgerSettings(){renderLedger();revertSettingsRate();showDialog($('#ledgerSettingsDialog'));setStatus(documentSession.snapshot().pendingDraft?'가계부 설정 중 · 저장되지 않음':'가계부 설정');}
   function openCategoryDialog(id=null){editingCategoryId=id;const cat=id?getCategory(id):null;selectedCategoryIcon=cat?.icon||'📦';$('#categoryTitle').textContent=id?'카테고리 수정':'카테고리 추가';$('#categoryName').value=cat?.name||'';setFieldError('categoryName');renderIconPicker();showDialog($('#categoryDialog'));$('#categoryName').focus();}
@@ -2315,7 +2316,7 @@ const editExpenseId=event.target.closest('[data-edit-expense]')?.dataset.editExp
 const moveButton=event.target.closest('[data-move-expense]');if(moveButton&&!moveButton.disabled){moveExpense(moveButton.dataset.moveExpense,Number(moveButton.dataset.moveDirection));return;}
 const editId=event.target.dataset.categoryEdit;if(editId){requireEditor('ledger',()=>openCategoryDialog(editId));return;}
 const deleteId=event.target.dataset.categoryDelete;if(deleteId){requireEditor('ledger',()=>deleteCategory(deleteId));return;}
-const icon=event.target.dataset.categoryIcon;if(icon){selectedCategoryIcon=icon;renderIconPicker();}
+const icon=event.target.dataset.categoryIcon;if(icon){selectedCategoryIcon=icon;$('#categoryIconPicker').querySelectorAll('button').forEach(button=>{const selected=button.dataset.categoryIcon===icon;button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected));});}
 });
 document.addEventListener('input',handleExpenseInput);
 document.addEventListener('compositionend',handleExpenseInput);
@@ -2448,7 +2449,7 @@ function createPhotoResources({SUPABASE_URL,MEDIA_BUCKET,baseUrl}){
 }
 
 /** DOM serialization/repair boundary. Normalization needs an explicit fallback. */
-function createDocumentAdapter({$,$$,DEFAULT_BUDGET_KRW,DEFAULT_EXCHANGE_RATE,IMPORT_ALLOWED_MONEY_IDS,MEDIA_PATH_PATTERN,SCHEMA_VERSION,TIMETABLE_KINDS,SUPABASE_URL,TRIP_ID,TRIP_DAYS,afterApply,assertCurrencyPair,assertSupportedSchema,beforeApply,clone,currencyMetadata,drawExpenseInput,entryPending,hashText,normalizeCategories,normalizeExpenses,pendingCheckBefore,photoResources,readEntryBuffer,readLedger,renderCheckFeedback,renderDocument,replaceLedger,restoreEntryBuffer,scheduleKindMode,sumLedgerAmounts}) {
+function createDocumentAdapter({isValidHttpsUrl,$,$$,DEFAULT_BUDGET_KRW,DEFAULT_EXCHANGE_RATE,IMPORT_ALLOWED_MONEY_IDS,MEDIA_PATH_PATTERN,SCHEMA_VERSION,TIMETABLE_KINDS,SUPABASE_URL,TRIP_ID,TRIP_DAYS,afterApply,assertCurrencyPair,assertSupportedSchema,beforeApply,clone,currencyMetadata,drawExpenseInput,entryPending,hashText,normalizeCategories,normalizeExpenses,pendingCheckBefore,photoResources,readEntryBuffer,readLedger,renderCheckFeedback,renderDocument,replaceLedger,restoreEntryBuffer,scheduleKindMode,sumLedgerAmounts}) {
 let applyingHistory=false,moneyTemplateHtml="";
   function validateDocumentMarkup(markup,{legacy=false,ledger=false}={}) {
     const template=document.createElement('template');template.innerHTML=markup;
@@ -2502,7 +2503,7 @@ let applyingHistory=false,moneyTemplateHtml="";
       if (el.hasAttribute('contenteditable')) el.setAttribute('contenteditable','false');
       if(el.hasAttribute('style')&&!el.getAttribute('style').trim())el.removeAttribute('style');
     });
-    template.content.querySelectorAll('a[href]').forEach(a => { if (!/^https:\/\//i.test(a.getAttribute('href')||'')) a.removeAttribute('href'); });
+    template.content.querySelectorAll('a[href]').forEach(a => { if (!isValidHttpsUrl(a.getAttribute('href')||'')) a.removeAttribute('href'); });
     template.content.querySelectorAll('a[href]').forEach(a=>{a.target='_blank';a.rel='noopener noreferrer';});
     template.content.querySelectorAll('img').forEach(img => {
       // Only the validated src may choose an image resource.
@@ -2846,10 +2847,14 @@ let authPurpose = 'edit';
 let pendingAuthAction = null;
 let pendingAuthCancel = null;
 let saveInFlight = false;
+let editorEntryGeneration = 0;
+function invalidateEditorEntry(){editorEntryGeneration++;const cancel=pendingAuthCancel;pendingAuthAction=null;pendingAuthCancel=null;$('#authDialog').hidden=true;$('#authSubmit').disabled=false;if(cancel)cancel();}
+function entryIsCurrent(generation){return generation===editorEntryGeneration&&(OFFLINE_MODE||Boolean(sessionService.current()));}
 async function showInactivityWarning(){dialogs.startNoticeCountdown();const dirty=isDirty();const choice=await showChoice({title:'자동 로그아웃 예정',message:dirty?'자동 로그아웃 후에도 초안은 이 브라우저에 보관됩니다.':'1분 안에 선택하지 않으면 자동 로그아웃합니다.',countdown:true,choices:dirty?[{label:'저장 후 로그아웃',value:'save',className:'action-primary'},{label:'계속 사용',value:'continue'},{label:'폐기 후 로그아웃',value:'discard',className:'action-danger'}]:[{label:'계속 사용',value:'continue',className:'action-primary'},{label:'로그아웃',value:'logout',className:'action-danger'}]});clearSessionTimers();if(choice==='save'){if(await saveAndFinish('자동 로그아웃 전 저장')){await signOutEditor();setStatus('변경사항을 저장하고 로그아웃했습니다.');}else resetInactivityTimer();}else if(choice==='continue')resetInactivityTimer();else if(choice==='discard')await discardAndLogout();else if(choice==='logout')await logoutPreservingDraft('로그아웃했습니다.');}
 
   function closeEditorDialogs(){invalidateVersionRequest();closeScheduleTimeDialog();['checklistDialog','ledgerSettingsDialog','categoryDialog','expenseDialog','mapDialog','photoEditDialog','importDialog','exportDialog','versionDialog','versionCompareDialog','photoViewer'].forEach(id=>{const dialog=$('#'+id);if(dialog)dialog.hidden=true;});resetLedgerSelection();resetPhotoSelection();resetVersionSelection();resetImportSelection();}
   async function handleExternalSignOut(message='편집 세션이 다른 탭에서 종료되었습니다.') {
+    invalidateEditorEntry();
     invalidateVersionRequest();
     resetImportSelection();
     const hadDraft=isDirty()||draftWorkflow.isRecoveryDeferred();
@@ -2874,8 +2879,22 @@ async function showInactivityWarning(){dialogs.startNoticeCountdown();const dirt
   async function discardAndLogout(message='수정 내용을 폐기하고 로그아웃했습니다.'){if(!await discardDraft(message)){resetInactivityTimer();return false;}closeNotice('timeout');await signOutEditor();setStatus(message);return true;}
 
 function bindAuthentication(){
-  $('#authCancel').onclick=()=>{$('#authDialog').hidden=true;const cancel=pendingAuthCancel;pendingAuthAction=null;pendingAuthCancel=null;if(cancel)cancel();};
-  $('#authForm').onsubmit=async event=>{event.preventDefault();const submit=$('#authSubmit');if(submit.disabled)return;submit.disabled=true;$('#authError').textContent='';try{const {error}=await client.auth.signInWithPassword({email:EDITOR_EMAIL,password:$('#editorPassword').value});if(error){$('#authError').textContent=error.status>=500||error.name==='AuthRetryableFetchError'?'로그인 서버에 연결하지 못했습니다.':'비밀번호를 확인해 주세요.';return;}const session=await getEditorSession();if(!session){$('#authError').textContent='로그인 세션을 확인하지 못했습니다.';return;}$('#authDialog').hidden=true;await runPurpose(authPurpose);}catch(error){console.error(error);$('#authError').textContent='로그인 서버에 연결하지 못했습니다.';}finally{submit.disabled=false;}};
+  $('#authCancel').onclick=invalidateEditorEntry;
+  $('#authForm').onsubmit=async event=>{
+    event.preventDefault();const submit=$('#authSubmit');if(submit.disabled)return;
+    const generation=editorEntryGeneration,purpose=authPurpose;
+    submit.disabled=true;$('#authError').textContent='';
+    try{
+      const {error}=await client.auth.signInWithPassword({email:EDITOR_EMAIL,password:$('#editorPassword').value});
+      // The SDK may retain a successful login after Cancel; its requested action stays canceled.
+      if(generation!==editorEntryGeneration)return;
+      if(error){$('#authError').textContent=error.status>=500||error.name==='AuthRetryableFetchError'?'로그인 서버에 연결하지 못했습니다.':'비밀번호를 확인해 주세요.';return;}
+      const session=await getEditorSession();if(generation!==editorEntryGeneration)return;
+      if(!session){$('#authError').textContent='로그인 세션을 확인하지 못했습니다.';return;}
+      $('#authDialog').hidden=true;await runPurpose(purpose,generation);
+    }catch(error){if(generation===editorEntryGeneration){console.error(error);$('#authError').textContent='로그인 서버에 연결하지 못했습니다.';}}
+    finally{if(generation===editorEntryGeneration)submit.disabled=false;}
+  };
 }
 
   function isRevisionConflict(error){return error?.code==='40001'||/revision conflict/i.test(String(error?.message||''));}
@@ -2948,19 +2967,31 @@ function bindAuthentication(){
 
   async function saveAndFinish(note='수동 저장'){const state=captureState(),wasEditing=body.classList.contains('editing');setEditingUI(false);const saved=await persistState(state,{note});if(!saved){const message=$('#status').textContent;updateDirtyState();if(wasEditing)setEditingUI(true);setStatus(message);return false;}initializeHistory();updateDirtyState();resetInactivityTimer();setStatus(OFFLINE_MODE?'오프라인 작업본 생성 중':'공유 저장 완료');if(OFFLINE_MODE)await exportOfflineHtml(documentSession.snapshot().lastSavedState);return true;}
   async function requestFinishEditing(){documentSession.cancelHistory();recordHistory();if(!isDirty()){setEditingUI(false);resetInactivityTimer();return;}setEditingUI(false);const choice=await showChoice({title:'편집을 완료할까요?',message:OFFLINE_MODE?'저장하면 수정된 오프라인 작업본을 새 파일로 내려받습니다.':'저장해야 공개 링크에 변경 내용이 반영됩니다.',input:OFFLINE_MODE?null:{label:'버전 메모 (선택)','placeholder':'예: 라스베이거스 일정 확정'},choices:[{label:'저장하고 종료',value:'save',className:'action-primary'},{label:'계속 편집',value:'continue'},{label:'변경사항 폐기',value:'discard',className:'action-danger'}]});if(choice==='save')await saveAndFinish(dialogs.inputValue()||'편집 완료');else if(choice==='continue'){setEditingUI(true);resetInactivityTimer();}else if(choice==='discard')discardDraft();}
-  async function beginEditing(){if(!OFFLINE_MODE&&!documentSession.snapshot().pendingDraft){try{const published=await fetchPublishedState();if(published?.content?.html){const state=normalizeState(migratePublishedState(published.content));applyState(state);setPublishedBaseline(published,state);}}catch(error){if(blockUnsupportedDocument(error))return;console.warn(error);setStatus('최신 저장본 확인 실패 · 현재 화면에서 편집합니다.');}}setEditingUI(true);initializeHistory();resetInactivityTimer();setStatus(documentSession.snapshot().pendingDraft?'편집 중 · 저장되지 않음':'편집 모드');}
-  function requestAuthentication(purpose){authPurpose=purpose;$('#authTitle').textContent=purpose==='edit'?'편집자 확인':purpose==='versions'?'버전 관리자 확인':purpose==='import'?'편집본 불러오기 권한 확인':purpose==='ledger-settings'?'가계부 설정 권한 확인':purpose==='checklist'?'체크리스트 편집자 확인':purpose==='ledger'?'가계부 편집자 확인':'저장 권한 확인';$('#authError').textContent='';$('#editorPassword').value='';showDialog($('#authDialog'));$('#editorPassword').focus();}
-  async function runPurpose(purpose){
+  async function beginEditing(generation=editorEntryGeneration){
+    if(!entryIsCurrent(generation))return;
+    if(!OFFLINE_MODE&&!documentSession.snapshot().pendingDraft){
+      try{
+        const published=await fetchPublishedState();if(!entryIsCurrent(generation))return;
+        if(published?.content?.html){const state=normalizeState(migratePublishedState(published.content));applyState(state);setPublishedBaseline(published,state);}
+      }catch(error){if(!entryIsCurrent(generation))return;if(blockUnsupportedDocument(error))return;console.warn(error);setStatus('최신 저장본 확인 실패 · 현재 화면에서 편집합니다.');}
+    }
+    if(!entryIsCurrent(generation))return;
+    setEditingUI(true);initializeHistory();resetInactivityTimer();setStatus(documentSession.snapshot().pendingDraft?'편집 중 · 저장되지 않음':'편집 모드');
+  }
+  function requestAuthentication(purpose,generation){if(generation===undefined)editorEntryGeneration++;authPurpose=purpose;$('#authSubmit').disabled=false;$('#authTitle').textContent=purpose==='edit'?'편집자 확인':purpose==='versions'?'버전 관리자 확인':purpose==='import'?'편집본 불러오기 권한 확인':purpose==='ledger-settings'?'가계부 설정 권한 확인':purpose==='checklist'?'체크리스트 편집자 확인':purpose==='ledger'?'가계부 편집자 확인':'저장 권한 확인';$('#authError').textContent='';$('#editorPassword').value='';showDialog($('#authDialog'));$('#editorPassword').focus();}
+  async function runPurpose(purpose,generation=editorEntryGeneration){
+    if(!entryIsCurrent(generation))return;
     if(documentSession.snapshot().documentWriteBlock&&purpose!=='versions'){pendingAuthAction=null;pendingAuthCancel?.();pendingAuthCancel=null;setStatus(documentSession.snapshot().documentWriteBlock);return;}
     const cancel=()=>{const action=pendingAuthCancel;pendingAuthAction=null;pendingAuthCancel=null;if(action)action();};
     if(body.classList.contains('previewing')&&purpose!=='versions'){cancel();setStatus('미리보기를 닫은 뒤 편집해 주세요.');return;}
     if(draftWorkflow.isRecoveryDeferred()&&['edit','ledger','ledger-settings','import','save'].includes(purpose)){
       await recoverOnlineDraft();
+      if(!entryIsCurrent(generation))return;
       if(draftWorkflow.isRecoveryDeferred()){cancel();return;}
     }
-    resetInactivityTimer();if(purpose==='edit')await beginEditing();if(purpose==='versions')await openVersions();if(purpose==='save')await confirmSave();if(purpose==='ledger-settings')openLedgerSettings();if((purpose==='ledger'||purpose==='checklist'||purpose==='import')&&pendingAuthAction){const action=pendingAuthAction;pendingAuthAction=null;pendingAuthCancel=null;await action();}
+    resetInactivityTimer();if(purpose==='edit')await beginEditing(generation);if(purpose==='versions')await openVersions();if(purpose==='save')await confirmSave();if(purpose==='ledger-settings')openLedgerSettings();if((purpose==='ledger'||purpose==='checklist'||purpose==='import')&&pendingAuthAction){const action=pendingAuthAction;pendingAuthAction=null;pendingAuthCancel=null;await action();}
   }
-  async function requireEditor(purpose,action=null,cancelAction=null){if(action)pendingAuthAction=action;if(cancelAction)pendingAuthCancel=cancelAction;if(OFFLINE_MODE){await runPurpose(purpose);return;}if(!client){pendingAuthAction=null;const cancel=pendingAuthCancel;pendingAuthCancel=null;if(cancel)cancel();await showChoice({title:'편집할 수 없습니다.',message:'잠시 후 다시 시도해 주세요.',choices:[{label:'확인',value:'ok',className:'action-primary'}]});return;}if(await getEditorSession()){await runPurpose(purpose);return;}requestAuthentication(purpose);}
+  async function requireEditor(purpose,action=null,cancelAction=null){invalidateEditorEntry();const generation=editorEntryGeneration;pendingAuthAction=action;pendingAuthCancel=cancelAction;if(OFFLINE_MODE){await runPurpose(purpose,generation);return;}if(!client){pendingAuthAction=null;const cancel=pendingAuthCancel;pendingAuthCancel=null;if(cancel)cancel();await showChoice({title:'편집할 수 없습니다.',message:'잠시 후 다시 시도해 주세요.',choices:[{label:'확인',value:'ok',className:'action-primary'}]});return;}const session=await getEditorSession();if(generation!==editorEntryGeneration)return;if(session){await runPurpose(purpose,generation);return;}requestAuthentication(purpose,generation);}
 
 
   function isDirty(){return documentSession.dirty(captureState());}
@@ -3017,7 +3048,7 @@ function isOperationBusy(){return operationBusy;}
 function isOperationCancelled(){return operationCancelled;}
 
 function currentOperationSignal(){return operationController?.signal;}
-return Object.freeze({setOperationBusy,cancelCurrentOperation,isOperationBusy,isOperationCancelled,currentOperationSignal,resetDraft,confirmSave,showInactivityWarning,closeEditorDialogs,handleExternalSignOut,logoutPreservingDraft,requestManualLogout,discardDraft,discardAndLogout,bindAuthentication,isRevisionConflict,compactDiffMessage,resolveSaveConflict,persistState,saveAndFinish,requestFinishEditing,beginEditing,requestAuthentication,runPurpose,requireEditor,isDirty,updateDirtyState,setEditable,recordHistory,queueHistory,initializeHistory,updateHistoryControls,moveHistory,setEditingUI,finishMutation,isSaveInFlight,bindEditingControls});
+return Object.freeze({invalidateEditorEntry,setOperationBusy,cancelCurrentOperation,isOperationBusy,isOperationCancelled,currentOperationSignal,resetDraft,confirmSave,showInactivityWarning,closeEditorDialogs,handleExternalSignOut,logoutPreservingDraft,requestManualLogout,discardDraft,discardAndLogout,bindAuthentication,isRevisionConflict,compactDiffMessage,resolveSaveConflict,persistState,saveAndFinish,requestFinishEditing,beginEditing,requestAuthentication,runPurpose,requireEditor,isDirty,updateDirtyState,setEditable,recordHistory,queueHistory,initializeHistory,updateHistoryControls,moveHistory,setEditingUI,finishMutation,isSaveInFlight,bindEditingControls});
 }
 
 function createScheduleController({$,$$,TIMETABLE_KINDS,TRIP_DAYS,body,configDateParts,decorateButtonIcons,documentSession,editScheduleClock,escapeHtml,focusAndSelect,hashText,iconSvg,isOperationBusy,mapPlaceName,openMapDialog,parseTimetableTime,prefersReducedMotion,readScheduleTime,recordHistory,resetInactivityTimer,scheduleClockMask,scheduleClockValue,scheduleKindMode,scheduleTimeValue,selectActiveScheduleRow,showDialog,timetableClock,timetableKind,uid}) {
@@ -3296,7 +3327,7 @@ async function fetchAsDataUrl(url){
   }
 return Object.freeze({blobToDataUrl,dataUrlToBlob,photoExtension,compressImage,hashBlob,publicMediaUrl,isDuplicateUpload,withPhotoRequest,immutableBlobExists,uploadImmutableBlob,uploadPhotoBlobs,fetchAsDataUrl});
 }
-function createPhotosController({$,OFFLINE_MODE,blobToDataUrl,body,compressImage,dataUrlToBlob,decorateMapLink,decoratePhotoFigure,escapeHtml,finishMutation,isOperationBusy,isOperationCancelled,mapPlaceName,normalizeState,recordHistory,setFieldError,setOperationBusy,setStatus,showChoice,showDialog,uid,updatePhotoMoveButtons,uploadPhotoBlobs}) {
+function createPhotosController({isValidHttpsUrl,$,OFFLINE_MODE,blobToDataUrl,body,compressImage,dataUrlToBlob,decorateMapLink,decoratePhotoFigure,escapeHtml,finishMutation,isOperationBusy,isOperationCancelled,mapPlaceName,normalizeState,recordHistory,setFieldError,setOperationBusy,setStatus,showChoice,showDialog,uid,updatePhotoMoveButtons,uploadPhotoBlobs}) {
 let activeScheduleRow = null;
 let activePhotoFigure = null;
 
@@ -3347,7 +3378,7 @@ let activePhotoFigure = null;
   function openPhotoEditDialog(figure){activePhotoFigure=figure;const img=figure?.querySelector('img'),caption=figure?.querySelector('figcaption');if(!img)return;$('#photoCaption').value=caption?.textContent.trim()||'';$('#photoAlt').value=img.alt||'';setFieldError('photoCaption');setFieldError('photoAlt');showDialog($('#photoEditDialog'));$('#photoCaption').focus();$('#photoCaption').select();}
   function savePhotoMetadata(){const figure=activePhotoFigure,img=figure?.querySelector('img');if(!figure||!img)return;const caption=$('#photoCaption').value.trim(),alt=$('#photoAlt').value.trim();setFieldError('photoCaption',caption?'':'사진 설명을 입력해 주세요.');setFieldError('photoAlt',alt?'':'대체 텍스트를 입력해 주세요.');if(!caption||!alt){$(caption?'#photoAlt':'#photoCaption').focus();return;}let text=figure.querySelector('figcaption');if(!text){text=document.createElement('figcaption');figure.appendChild(text);}text.textContent=caption;img.alt=alt;img.setAttribute('aria-label',caption+' 크게 보기');$('#photoEditDialog').hidden=true;activePhotoFigure=null;recordHistory();}
   function openMapDialog(row){activeScheduleRow=row;const map=row.querySelector('.schedule-map a');$('#mapName').value=mapPlaceName(map);$('#mapUrl').value=map?.href||'';setFieldError('mapName');setFieldError('mapUrl');showDialog($('#mapDialog'));$('#mapName').focus();}
-  function saveMap(){const name=$('#mapName').value.trim(),url=$('#mapUrl').value.trim();setFieldError('mapName',name?'':'장소명을 입력해 주세요.');setFieldError('mapUrl',/^https:\/\//i.test(url)?'':'https 지도 링크를 입력해 주세요.');if(!name||!/^https:\/\//i.test(url)){$(name?'#mapUrl':'#mapName').focus();return;}const card=activeScheduleRow?.querySelector('.card');if(!card)return;let map=card.querySelector('.schedule-map');if(!map){map=document.createElement('div');map.className='schedule-map';card.insertBefore(map,card.querySelector('.schedule-media-tools'));}map.innerHTML='<a href="'+escapeHtml(url)+'" rel="noopener noreferrer" target="_blank" data-place-name="'+escapeHtml(name)+'"></a><button class="schedule-map-delete" type="button">삭제</button>';decorateMapLink(map);$('#mapDialog').hidden=true;recordHistory();}
+  function saveMap(){const name=$('#mapName').value.trim(),url=$('#mapUrl').value.trim();setFieldError('mapName',name?'':'장소명을 입력해 주세요.');setFieldError('mapUrl',isValidHttpsUrl(url)?'':'https 지도 링크를 입력해 주세요.');if(!name||!isValidHttpsUrl(url)){$(name?'#mapUrl':'#mapName').focus();return;}const card=activeScheduleRow?.querySelector('.card');if(!card)return;let map=card.querySelector('.schedule-map');if(!map){map=document.createElement('div');map.className='schedule-map';card.insertBefore(map,card.querySelector('.schedule-media-tools'));}map.innerHTML='<a href="'+escapeHtml(url)+'" rel="noopener noreferrer" target="_blank" data-place-name="'+escapeHtml(name)+'"></a><button class="schedule-map-delete" type="button">삭제</button>';decorateMapLink(map);$('#mapDialog').hidden=true;recordHistory();}
 
 function selectActiveScheduleRow(row){activeScheduleRow=row;}
 function resetPhotoSelection(){activeScheduleRow=null;activePhotoFigure=null;}
@@ -3448,20 +3479,23 @@ function createExportsController({$,$$,CONFIG,EXPORT_BASE_NAME,blobToDataUrl,cap
   function appendReadonlyRuntime(root){
     const script=document.createElement('script');script.id='readonlyRuntime';script.textContent=`(()=>{
       const q=(selector,scope=document)=>scope.querySelector(selector),qa=(selector,scope=document)=>Array.from(scope.querySelectorAll(selector));
-      let lastPhotoTrigger=null;
+      let lastPhotoTrigger=null,isolated=[];
       function sync(){
         qa('main .day').forEach(panel=>{const active=true;panel.classList.toggle('is-active',active);panel.hidden=!active;panel.setAttribute('aria-hidden',String(!active));});
       }
-      function closeViewer(){const viewer=q('#photoViewer');if(!viewer)return;viewer.hidden=true;viewer.setAttribute('aria-hidden','true');lastPhotoTrigger?.focus();lastPhotoTrigger=null;}
+      function closeViewer(){const viewer=q('#photoViewer');if(!viewer)return;viewer.hidden=true;viewer.setAttribute('aria-hidden','true');document.body.classList.remove('modal-open');isolated.forEach(([element,inert,hidden])=>{element.inert=inert;if(hidden===null)element.removeAttribute('aria-hidden');else element.setAttribute('aria-hidden',hidden);});isolated=[];lastPhotoTrigger?.focus();lastPhotoTrigger=null;}
+      function openViewer(img){const viewer=q('#photoViewer'),viewerImage=q('#photoViewerImage');if(!viewer||!viewerImage||!viewer.hidden)return;lastPhotoTrigger=img;viewerImage.src=img.dataset.fullUrl||img.src;viewerImage.alt=img.alt||'일정 사진';viewer.hidden=false;viewer.setAttribute('aria-hidden','false');document.body.classList.add('modal-open');q('#photoViewerClose')?.focus();isolated=qa('body > *').filter(element=>element!==viewer&&!['SCRIPT','STYLE'].includes(element.tagName)).map(element=>{const previous=[element,element.inert,element.getAttribute('aria-hidden')];element.inert=true;element.setAttribute('aria-hidden','true');return previous;});}
       document.addEventListener('click',event=>{
         const img=event.target.closest?.('.schedule-photo:not(.map-capture) img');
-        if(img){const viewer=q('#photoViewer'),viewerImage=q('#photoViewerImage');if(viewer&&viewerImage){lastPhotoTrigger=img;viewerImage.src=img.dataset.fullUrl||img.src;viewerImage.alt=img.alt||'일정 사진';viewer.hidden=false;viewer.setAttribute('aria-hidden','false');q('#photoViewerClose')?.focus();}}
+        if(img)openViewer(img);
         if(event.target.closest?.('#photoViewerClose'))closeViewer();
       });
       document.addEventListener('keydown',event=>{
-        if(event.key==='Escape'&&!q('#photoViewer')?.hidden){closeViewer();return;}
+        const viewer=q('#photoViewer');
+        if(viewer&&!viewer.hidden){if(event.key==='Escape'){event.preventDefault();closeViewer();return;}if(event.key==='Tab'){event.preventDefault();q('#photoViewerClose')?.focus();return;}}
         const img=event.target.closest?.('.schedule-photo:not(.map-capture) img');if(img&&(event.key==='Enter'||event.key===' ')){event.preventDefault();img.click();}
       });
+      document.addEventListener('focusin',event=>{const viewer=q('#photoViewer');if(viewer&&!viewer.hidden&&!viewer.contains(event.target))q('#photoViewerClose')?.focus();});
       q('#photoViewer')?.setAttribute('aria-hidden','true');sync();
     })();`;
     root.querySelector('body')?.appendChild(script);
@@ -4026,7 +4060,7 @@ showChoice:(...args)=>showChoice(...args),
 updateDirtyState:(...args)=>updateDirtyState(...args)});
 let {writeDraftRecord,clearDraftRecord,currentDraftRecord,flushDraftPersistence,queueDraftPersistence,clearCleanDraft,recoverOnlineDraft,deferRecovery,isRecoveryDeferred,cancelPendingWrites}=draftWorkflow;
 const photoResources=createPhotoResources({SUPABASE_URL,MEDIA_BUCKET,baseUrl:location.href});
-const documentAdapter=createDocumentAdapter({photoResources,TIMETABLE_KINDS,$:$,
+const documentAdapter=createDocumentAdapter({isValidHttpsUrl,photoResources,TIMETABLE_KINDS,$:$,
 $$:$$,
 DEFAULT_BUDGET_KRW:DEFAULT_BUDGET_KRW,
 DEFAULT_EXCHANGE_RATE:DEFAULT_EXCHANGE_RATE,
@@ -4064,7 +4098,7 @@ const dialogs=createDialogs({$, $$, body});
 const {closeNotice,showChoice,focusableIn,setFieldError,rememberDialogOrigin,showDialog,closeTopDialog,registerDialogState,initializeDialogAccessibility}=dialogs;
 const sessionService=createSession({client,offline:OFFLINE_MODE,editorEmail:EDITOR_EMAIL,activityKey:SESSION_ACTIVITY_KEY,channelName:SESSION_CHANNEL_NAME,sessionMs:SESSION_MS,warningMs:WARNING_MS,
   onChange:session=>{body.classList.toggle('authenticated',Boolean(session)&&!OFFLINE_MODE);if(!session){invalidateVersionRequest();resetImportSelection();}},
-  onInvalidate:()=>{invalidateVersionRequest();resetImportSelection();},onWarning:()=>showInactivityWarning(),onExpire:message=>logoutPreservingDraft(message),onExternalSignOut:message=>handleExternalSignOut(message),
+  onInvalidate:()=>{invalidateEditorEntry();invalidateVersionRequest();resetImportSelection();},onWarning:()=>showInactivityWarning(),onExpire:message=>logoutPreservingDraft(message),onExternalSignOut:message=>handleExternalSignOut(message),
   canTrackActivity:()=>$('#noticeDialog').hidden,onSharedActivity:()=>{if(!$('#noticeDialog').hidden&&!$('#sessionCountdown').hidden)closeNotice('continue');},onClearTimers:()=>dialogs.clearCountdown()});
 const {clearSessionTimers,scheduleSessionTimers,editorEmailMatches,setEditorSession,acceptSharedActivity,resetInactivityTimer,getEditorSession,signOutEditor}=sessionService;
 const ledgerController=createLedgerController({$:$,
@@ -4229,7 +4263,7 @@ tripRepository:tripRepository,
 updateContextControls:(...args)=>updateContextControls(...args),
 updateEditableEmpty:(...args)=>updateEditableEmpty(...args),
 writeDraftRecord:(...args)=>writeDraftRecord(...args)});
-let {setOperationBusy,cancelCurrentOperation,isOperationBusy,isOperationCancelled,currentOperationSignal,resetDraft,confirmSave,showInactivityWarning,closeEditorDialogs,handleExternalSignOut,logoutPreservingDraft,requestManualLogout,discardDraft,discardAndLogout,bindAuthentication,isRevisionConflict,compactDiffMessage,resolveSaveConflict,persistState,saveAndFinish,requestFinishEditing,beginEditing,requestAuthentication,runPurpose,requireEditor,isDirty,updateDirtyState,setEditable,recordHistory,queueHistory,initializeHistory,updateHistoryControls,moveHistory,setEditingUI,finishMutation,isSaveInFlight,bindEditingControls}=editingController;
+let {invalidateEditorEntry,setOperationBusy,cancelCurrentOperation,isOperationBusy,isOperationCancelled,currentOperationSignal,resetDraft,confirmSave,showInactivityWarning,closeEditorDialogs,handleExternalSignOut,logoutPreservingDraft,requestManualLogout,discardDraft,discardAndLogout,bindAuthentication,isRevisionConflict,compactDiffMessage,resolveSaveConflict,persistState,saveAndFinish,requestFinishEditing,beginEditing,requestAuthentication,runPurpose,requireEditor,isDirty,updateDirtyState,setEditable,recordHistory,queueHistory,initializeHistory,updateHistoryControls,moveHistory,setEditingUI,finishMutation,isSaveInFlight,bindEditingControls}=editingController;
 
 const navigationController=createNavigationController({$:$,
 $$:$$,
@@ -4371,7 +4405,7 @@ showDialog:(...args)=>showDialog(...args),
 tripRepository:tripRepository});
 let {formatBytes,invalidateVersionRequest,beginVersionRequest,isCurrentVersionRequest,setVersionLoadStatus,closeVersions,readVersionRequest,showVersionLoadError,loadVersionContent,previewVersion,compareVersion,restoreSelectedVersion,openVersions,resetVersionSelection,bindVersionsControls}=versionsController;
 
-const photosController=createPhotosController({$:$,
+const photosController=createPhotosController({isValidHttpsUrl,$:$,
 OFFLINE_MODE:OFFLINE_MODE,
 blobToDataUrl:(...args)=>blobToDataUrl(...args),
 body:body,

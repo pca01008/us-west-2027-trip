@@ -24,7 +24,7 @@ showChoice:(...args)=>showChoice(...args),
 updateDirtyState:(...args)=>updateDirtyState(...args)});
 let {writeDraftRecord,clearDraftRecord,currentDraftRecord,flushDraftPersistence,queueDraftPersistence,clearCleanDraft,recoverOnlineDraft,deferRecovery,isRecoveryDeferred,cancelPendingWrites}=draftWorkflow;
 const photoResources=createPhotoResources({SUPABASE_URL,MEDIA_BUCKET,baseUrl:location.href});
-const documentAdapter=createDocumentAdapter({photoResources,TIMETABLE_KINDS,$:$,
+const documentAdapter=createDocumentAdapter({isValidHttpsUrl,photoResources,TIMETABLE_KINDS,$:$,
 $$:$$,
 DEFAULT_BUDGET_KRW:DEFAULT_BUDGET_KRW,
 DEFAULT_EXCHANGE_RATE:DEFAULT_EXCHANGE_RATE,
@@ -62,7 +62,7 @@ const dialogs=createDialogs({$, $$, body});
 const {closeNotice,showChoice,focusableIn,setFieldError,rememberDialogOrigin,showDialog,closeTopDialog,registerDialogState,initializeDialogAccessibility}=dialogs;
 const sessionService=createSession({client,offline:OFFLINE_MODE,editorEmail:EDITOR_EMAIL,activityKey:SESSION_ACTIVITY_KEY,channelName:SESSION_CHANNEL_NAME,sessionMs:SESSION_MS,warningMs:WARNING_MS,
   onChange:session=>{body.classList.toggle('authenticated',Boolean(session)&&!OFFLINE_MODE);if(!session){invalidateVersionRequest();resetImportSelection();}},
-  onInvalidate:()=>{invalidateVersionRequest();resetImportSelection();},onWarning:()=>showInactivityWarning(),onExpire:message=>logoutPreservingDraft(message),onExternalSignOut:message=>handleExternalSignOut(message),
+  onInvalidate:()=>{invalidateEditorEntry();invalidateVersionRequest();resetImportSelection();},onWarning:()=>showInactivityWarning(),onExpire:message=>logoutPreservingDraft(message),onExternalSignOut:message=>handleExternalSignOut(message),
   canTrackActivity:()=>$('#noticeDialog').hidden,onSharedActivity:()=>{if(!$('#noticeDialog').hidden&&!$('#sessionCountdown').hidden)closeNotice('continue');},onClearTimers:()=>dialogs.clearCountdown()});
 const {clearSessionTimers,scheduleSessionTimers,editorEmailMatches,setEditorSession,acceptSharedActivity,resetInactivityTimer,getEditorSession,signOutEditor}=sessionService;
 const ledgerController=createLedgerController({$:$,
@@ -227,7 +227,7 @@ tripRepository:tripRepository,
 updateContextControls:(...args)=>updateContextControls(...args),
 updateEditableEmpty:(...args)=>updateEditableEmpty(...args),
 writeDraftRecord:(...args)=>writeDraftRecord(...args)});
-let {setOperationBusy,cancelCurrentOperation,isOperationBusy,isOperationCancelled,currentOperationSignal,resetDraft,confirmSave,showInactivityWarning,closeEditorDialogs,handleExternalSignOut,logoutPreservingDraft,requestManualLogout,discardDraft,discardAndLogout,bindAuthentication,isRevisionConflict,compactDiffMessage,resolveSaveConflict,persistState,saveAndFinish,requestFinishEditing,beginEditing,requestAuthentication,runPurpose,requireEditor,isDirty,updateDirtyState,setEditable,recordHistory,queueHistory,initializeHistory,updateHistoryControls,moveHistory,setEditingUI,finishMutation,isSaveInFlight,bindEditingControls}=editingController;
+let {invalidateEditorEntry,setOperationBusy,cancelCurrentOperation,isOperationBusy,isOperationCancelled,currentOperationSignal,resetDraft,confirmSave,showInactivityWarning,closeEditorDialogs,handleExternalSignOut,logoutPreservingDraft,requestManualLogout,discardDraft,discardAndLogout,bindAuthentication,isRevisionConflict,compactDiffMessage,resolveSaveConflict,persistState,saveAndFinish,requestFinishEditing,beginEditing,requestAuthentication,runPurpose,requireEditor,isDirty,updateDirtyState,setEditable,recordHistory,queueHistory,initializeHistory,updateHistoryControls,moveHistory,setEditingUI,finishMutation,isSaveInFlight,bindEditingControls}=editingController;
 
 const navigationController=createNavigationController({$:$,
 $$:$$,
@@ -369,7 +369,7 @@ showDialog:(...args)=>showDialog(...args),
 tripRepository:tripRepository});
 let {formatBytes,invalidateVersionRequest,beginVersionRequest,isCurrentVersionRequest,setVersionLoadStatus,closeVersions,readVersionRequest,showVersionLoadError,loadVersionContent,previewVersion,compareVersion,restoreSelectedVersion,openVersions,resetVersionSelection,bindVersionsControls}=versionsController;
 
-const photosController=createPhotosController({$:$,
+const photosController=createPhotosController({isValidHttpsUrl,$:$,
 OFFLINE_MODE:OFFLINE_MODE,
 blobToDataUrl:(...args)=>blobToDataUrl(...args),
 body:body,

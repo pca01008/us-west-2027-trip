@@ -114,6 +114,10 @@ Sources have explicit include order, not browser ES-module loading. Factories ow
 
 Domain calculations receive explicit currency/category/date inputs. The document adapter retains the DOM-based saved format; it does not maintain a parallel live document. Session snapshots are copied, and named transitions distinguish publication, recovered baselines, PREP reconciliation and preview. Storage reports committed/verified outcomes; workflow code decides recovery and discard. The repository preserves SDK errors/status/signals and never decides retries. Full saves and PREP patches retain separate policies; uncertain writes are verified once rather than automatically resent. Version requests retain their own cancellation/generation guard, separate from the editing operation handle used by photos/exports.
 
+Editor entry uses a generation invalidated by Cancel, replacement requests and sign-out. Authentication captures its purpose; awaited login/session/recovery/document reads must still belong to the current entry before continuing. Cancel stops the requested action even if the SDK completes authentication. Sign-out invalidates entry synchronously before asynchronous cleanup.
+
+Map entry and document sanitization share HTTPS URL parsing with a required hostname; valid original queries/fragments remain unchanged. Category icon buttons expose one `aria-pressed` selection with short names, updating in place to retain keyboard focus. Read-only exports include a standalone photo modal with focus confinement, restored background inert/ARIA state, scroll locking and trigger-focus return; it needs no network runtime.
+
 ### Typography
 
 The existing app uses self-hosted [Pretendard](https://github.com/orioncactus/pretendard) Variable 1.3.9 (`assets/PretendardVariable-1.3.9.woff2`, 2,057,688 bytes), licensed under [SIL OFL 1.1](../assets/OFL-Pretendard.txt). `--font-ui` supplies the shared family and system fallbacks; controls inherit it, and the time editor uses tabular digits. Preload and `font-display:swap` keep text visible while loading. Icons and colors are independent of the font.

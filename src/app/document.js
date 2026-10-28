@@ -1,5 +1,5 @@
 /** DOM serialization/repair boundary. Normalization needs an explicit fallback. */
-function createDocumentAdapter({$,$$,DEFAULT_BUDGET_KRW,DEFAULT_EXCHANGE_RATE,IMPORT_ALLOWED_MONEY_IDS,MEDIA_PATH_PATTERN,SCHEMA_VERSION,TIMETABLE_KINDS,SUPABASE_URL,TRIP_ID,TRIP_DAYS,afterApply,assertCurrencyPair,assertSupportedSchema,beforeApply,clone,currencyMetadata,drawExpenseInput,entryPending,hashText,normalizeCategories,normalizeExpenses,pendingCheckBefore,photoResources,readEntryBuffer,readLedger,renderCheckFeedback,renderDocument,replaceLedger,restoreEntryBuffer,scheduleKindMode,sumLedgerAmounts}) {
+function createDocumentAdapter({isValidHttpsUrl,$,$$,DEFAULT_BUDGET_KRW,DEFAULT_EXCHANGE_RATE,IMPORT_ALLOWED_MONEY_IDS,MEDIA_PATH_PATTERN,SCHEMA_VERSION,TIMETABLE_KINDS,SUPABASE_URL,TRIP_ID,TRIP_DAYS,afterApply,assertCurrencyPair,assertSupportedSchema,beforeApply,clone,currencyMetadata,drawExpenseInput,entryPending,hashText,normalizeCategories,normalizeExpenses,pendingCheckBefore,photoResources,readEntryBuffer,readLedger,renderCheckFeedback,renderDocument,replaceLedger,restoreEntryBuffer,scheduleKindMode,sumLedgerAmounts}) {
 let applyingHistory=false,moneyTemplateHtml="";
   function validateDocumentMarkup(markup,{legacy=false,ledger=false}={}) {
     const template=document.createElement('template');template.innerHTML=markup;
@@ -53,7 +53,7 @@ let applyingHistory=false,moneyTemplateHtml="";
       if (el.hasAttribute('contenteditable')) el.setAttribute('contenteditable','false');
       if(el.hasAttribute('style')&&!el.getAttribute('style').trim())el.removeAttribute('style');
     });
-    template.content.querySelectorAll('a[href]').forEach(a => { if (!/^https:\/\//i.test(a.getAttribute('href')||'')) a.removeAttribute('href'); });
+    template.content.querySelectorAll('a[href]').forEach(a => { if (!isValidHttpsUrl(a.getAttribute('href')||'')) a.removeAttribute('href'); });
     template.content.querySelectorAll('a[href]').forEach(a=>{a.target='_blank';a.rel='noopener noreferrer';});
     template.content.querySelectorAll('img').forEach(img => {
       // Only the validated src may choose an image resource.
