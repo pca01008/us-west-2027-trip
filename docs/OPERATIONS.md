@@ -197,6 +197,8 @@ Scripts accept an absolute Playwright module path first. `$env:PWA_BROWSER_CHANN
 
 Auth tests alter HTTP responses, not auth functions; virtual time checks automatic refresh/token expiry/rejection, TOKEN_REFRESHED/SIGNED_OUT, UI/session state and refreshed request tokens. A separate SDK-only tab tests actual cross-tab delivery. Production accounts/JWT/DB/Realtime are excluded; outbound HTTP/WebSockets blocked.
 
+Input suites also check malformed HTTPS entry/import with unchanged history, named/pressed category icons through keyboard selection/reopening, and network-blocked read-only photo viewer focus, background isolation, scroll locking and focus restoration. Chromium captures these states; Firefox/WebKit run the same functional assertions.
+
 Ledger accepts optional `LEDGER_FIXTURE_HTML` to run the same assertions against an earlier generated app. See the [U2 regression record](archive/2026-10-26-ledger-rate-validation-u2.md) for the dated validation results.
 
 Ledger tests compare real offline UI/downloads to fixed expectations: won/cent rounding, stored totals/CSV, fractional legacy KRW, conversion-total differences. Check BOM/commas/quotes/newlines/Korean and apostrophe escaping for =/+/-/@. Downloads remain in temp `westbound-ledger-*`; opening in Excel is untested.

@@ -102,7 +102,7 @@ function configureCurrencyLabels(){
   }
   async function moveExpense(id,direction){await requireEditor('ledger',()=>{const index=expenses.findIndex(item=>item.id===id),next=index+direction;if(index<0||next<0||next>=expenses.length)return;const [item]=expenses.splice(index,1);expenses.splice(next,0,item);renderLedger();finishMutation();});}
   async function deleteExpense(id){const item=expenses.find(x=>x.id===id);if(!item)return;const choice=await showChoice({title:'가계부 항목을 삭제할까요?',message:item.name+' 항목을 삭제합니다.',choices:[{label:'취소',value:'cancel'},{label:'삭제',value:'delete',className:'action-danger'}]});if(choice!=='delete')return;await requireEditor('ledger',async()=>{expenses=expenses.filter(x=>x.id!==id);renderLedger();finishMutation();});}
-  function renderIconPicker(){const picker=$('#categoryIconPicker');picker.innerHTML=ICON_CANDIDATES.map(icon=>'<button class="'+(icon===selectedCategoryIcon?'active':'')+'" data-category-icon="'+icon+'" type="button">'+icon+'</button>').join('');}
+  function renderIconPicker(){const names=['항공','숙박','식사','카페','자동차','택시','주유','주차','입장권','공연','자연','쇼핑','휴식','음료','선물','약','휴대폰','현금','상자','휴지통'],icons=ICON_CANDIDATES.includes(selectedCategoryIcon)?ICON_CANDIDATES:[...ICON_CANDIDATES,selectedCategoryIcon];const picker=$('#categoryIconPicker');picker.innerHTML=icons.map((icon,index)=>'<button class="'+(icon===selectedCategoryIcon?'active':'')+'" data-category-icon="'+escapeHtml(icon)+'" aria-label="'+(names[index]||'사용자 아이콘')+'" aria-pressed="'+(icon===selectedCategoryIcon)+'" type="button">'+escapeHtml(icon)+'</button>').join('');}
   function revertSettingsRate(){settingsRateTouched=false;$('#settingsExchangeRate').value=String(exchangeRate);setFieldError('settingsExchangeRate');}
   function openLedgerSettings(){renderLedger();revertSettingsRate();showDialog($('#ledgerSettingsDialog'));setStatus(documentSession.snapshot().pendingDraft?'가계부 설정 중 · 저장되지 않음':'가계부 설정');}
   function openCategoryDialog(id=null){editingCategoryId=id;const cat=id?getCategory(id):null;selectedCategoryIcon=cat?.icon||'📦';$('#categoryTitle').textContent=id?'카테고리 수정':'카테고리 추가';$('#categoryName').value=cat?.name||'';setFieldError('categoryName');renderIconPicker();showDialog($('#categoryDialog'));$('#categoryName').focus();}
@@ -146,7 +146,7 @@ const editExpenseId=event.target.closest('[data-edit-expense]')?.dataset.editExp
 const moveButton=event.target.closest('[data-move-expense]');if(moveButton&&!moveButton.disabled){moveExpense(moveButton.dataset.moveExpense,Number(moveButton.dataset.moveDirection));return;}
 const editId=event.target.dataset.categoryEdit;if(editId){requireEditor('ledger',()=>openCategoryDialog(editId));return;}
 const deleteId=event.target.dataset.categoryDelete;if(deleteId){requireEditor('ledger',()=>deleteCategory(deleteId));return;}
-const icon=event.target.dataset.categoryIcon;if(icon){selectedCategoryIcon=icon;renderIconPicker();}
+const icon=event.target.dataset.categoryIcon;if(icon){selectedCategoryIcon=icon;$('#categoryIconPicker').querySelectorAll('button').forEach(button=>{const selected=button.dataset.categoryIcon===icon;button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected));});}
 });
 document.addEventListener('input',handleExpenseInput);
 document.addEventListener('compositionend',handleExpenseInput);

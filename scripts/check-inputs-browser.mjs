@@ -47,7 +47,7 @@ const server = createServer(async (req, res) => {
     let content = await readBrowserFixture(new URL(relative, root));
     if (relative === 'index.html') content = injectBrowserFixture(source.replace('data-offline="false"', 'data-offline="true"')
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
-      .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, ''), 'window.__inputsTest={captureState,applyState,normalizeState,recordHistory,exportOfflineHtml,exportStaticHtml};');
+      .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, ''), 'window.__inputsTest={captureState,applyState,normalizeState,recordHistory,exportOfflineHtml,exportStaticHtml,history:()=>{const {historyIndex,historyLength}=documentSession.snapshot();return {historyIndex,historyLength};}};');
     const ext = relative.split('.').at(-1);
     res.writeHead(200, { 'Content-Type': { html: 'text/html; charset=utf-8', js: 'text/javascript; charset=utf-8', webp: 'image/webp', png: 'image/png', svg: 'image/svg+xml', woff2: 'font/woff2' }[ext], 'Cache-Control': 'no-store' });
     res.end(content);
@@ -152,10 +152,26 @@ try {
     for(const close of ['Escape','#categoryCancel','#categorySave']){
       const trigger=page.locator(close==='#categorySave'?'[data-category-edit="food"]':'#settingsAddCategory').filter({visible:true});
       await open(trigger,'#categoryDialog','#categoryName');
-      if(close==='#categorySave')await page.locator('#categoryName').fill('Updated food');
+      const picker=page.locator('#categoryIconPicker');
+      assert.equal(await picker.locator('[aria-pressed="true"]').count(),1);
+      assert.equal(await picker.locator('button:not([aria-label]),button[aria-label=""]').count(),0);
+      if(close==='#categorySave'){
+        const previous=picker.locator('[aria-pressed="true"]');const oldIcon=await previous.getAttribute('data-category-icon');
+        const chosen=picker.getByRole('button',{name:'카페',exact:true});await chosen.focus();await chosen.press('Space');
+        await focused(chosen);assert.equal(await chosen.getAttribute('aria-pressed'),'true');
+        assert.equal(await picker.locator(`[data-category-icon="${oldIcon}"]`).getAttribute('aria-pressed'),'false');
+        assert.equal(await picker.locator('[aria-pressed="true"]').count(),1);
+        await page.locator('#categoryName').fill('Updated food');
+      }
       if(close==='Escape')await page.keyboard.press(close);else await page.locator(close).press('Enter');
       await page.locator('#categoryDialog').waitFor({state:'hidden'});await focused(trigger);
       assert.equal(await page.locator('#ledgerSettingsDialog').isVisible(),true,'Closing a child keeps its parent open');
+      if(close==='#categorySave'){
+        await open(trigger,'#categoryDialog','#categoryName');
+        assert.equal(await picker.getByRole('button',{name:'카페',exact:true}).getAttribute('aria-pressed'),'true');
+        assert.equal(await picker.locator('[aria-pressed="true"]').count(),1);
+        await page.keyboard.press('Escape');await focused(trigger);
+      }
     }
     for(const theme of ['light','dark']){
       // Set the theme before opening the parent; the background theme control is outside its focus trap.
@@ -231,7 +247,16 @@ try {
     const map=page.locator('.day1 [data-media="map"]').first();await open(map,'#mapDialog','#mapName');
     await page.locator('#mapName').fill(' ');await page.locator('#mapUrl').fill('http://example.test');await page.locator('#mapSave').click();await fieldError('mapName','#mapDialog');
     await page.locator('#mapName').fill('Test place');await page.locator('#mapSave').click();await fieldError('mapUrl','#mapDialog');
-    await page.locator('#mapUrl').fill('https://example.test/map');assert.equal(await page.locator('#mapUrlError').isHidden(),true);await page.locator('#mapSave').click();await focused(map);
+    const mapSnapshot=await page.evaluate(()=>({state:window.__inputsTest.normalizeState(window.__inputsTest.captureState()),history:window.__inputsTest.history()}));
+    for(const url of ['https://','https://[bad]','https://example.test:99999']){
+      await page.locator('#mapUrl').fill(url);await page.locator('#mapSave').click();await fieldError('mapUrl','#mapDialog');
+      assert.deepEqual(await page.evaluate(()=>({state:window.__inputsTest.normalizeState(window.__inputsTest.captureState()),history:window.__inputsTest.history()})),mapSnapshot,'Invalid map submission preserves document and history');
+      assert.equal(await page.evaluate(url=>{const api=window.__inputsTest,state=api.captureState(),template=document.createElement('template');template.innerHTML=state.html;const map=document.createElement('div');map.className='schedule-map';const link=document.createElement('a');link.href=url;link.textContent='Imported map';map.append(link);template.content.querySelector('.day1 .card').append(map);state.html=template.innerHTML;template.innerHTML=api.normalizeState(state,true).html;return template.content.querySelector('.day1 .schedule-map a').hasAttribute('href');},url),false,'Import strips malformed HTTPS links');
+    }
+    const validMap='https://example.test/map?q=서울&mode=walk#route';
+    await page.locator('#mapUrl').fill(validMap);assert.equal(await page.locator('#mapUrlError').isHidden(),true);await page.locator('#mapSave').click();await focused(map);
+    assert.equal(await page.locator('.day1 .schedule-map a').first().getAttribute('href'),validMap);
+    assert.equal(await page.evaluate(()=>{const api=window.__inputsTest,state=api.normalizeState(api.captureState(),true),template=document.createElement('template');template.innerHTML=state.html;return template.content.querySelector('.day1 .schedule-map a').getAttribute('href');}),validMap,'Import preserves valid query and fragment');
     await diagnostics.close(context);console.log(`Dialog focus (${mobile?'mobile':'desktop'}): keyboard open, Tab wrapping, Escape/Cancel/Apply, nested dialogs and replaced triggers passed.`);
   }
   for (const mobile of [false, true]) {
@@ -352,6 +377,28 @@ try {
         assert.equal(await restored.locator('.remark').isVisible(), true);
         await restored.locator('.remark').click(); await restored.locator('.remark').pressSequentially('Restored');
         assert.equal(await restored.locator('.remark').textContent(), 'Restored');
+      } else {
+        const outbound=[];
+        await artifact.route('**/*',route=>{if(/^(file:|data:)/.test(route.request().url()))return route.continue();outbound.push(route.request().url());return route.abort();});
+        await artifact.reload();
+        const photo=artifact.locator('.schedule-photo:not(.map-capture) img').first(),close=artifact.locator('#photoViewerClose');
+        for(const [open,exit] of [['Enter','Escape'],['Space','Close']]){
+          await photo.focus();await photo.press(open);
+          assert.equal(await artifact.locator('#photoViewer').isVisible(),true);
+          assert.equal(await artifact.locator('body').evaluate(el=>el.classList.contains('modal-open')),true);
+          assert.equal(await artifact.locator('main').evaluate(el=>el.inert&&el.getAttribute('aria-hidden')==='true'),true);
+          assert.equal(await artifact.locator('body').evaluate(el=>getComputedStyle(el).overflow),'hidden');
+          for(const key of ['Tab','Shift+Tab','Tab']){await artifact.keyboard.press(key);assert.equal(await close.evaluate(el=>document.activeElement===el),true);}
+          await photo.evaluate(el=>el.focus());assert.equal(await close.evaluate(el=>document.activeElement===el),true,'Background cannot take focus');
+          await capture(artifact,{path:path.join(output,`${mobile?'mobile':'desktop'}-readonly-viewer.png`)});
+          if(exit==='Escape')await artifact.keyboard.press(exit);else await close.click();
+          assert.equal(await artifact.locator('#photoViewer').isHidden(),true);
+          assert.equal(await photo.evaluate(el=>document.activeElement===el),true);
+          assert.equal(await artifact.locator('main').evaluate(el=>el.inert),false);
+          assert.equal(await artifact.locator('main').getAttribute('aria-hidden'),null);
+          assert.equal(await artifact.locator('body').evaluate(el=>el.classList.contains('modal-open')),false);
+        }
+        assert.deepEqual(outbound,[],'Read-only photo viewer works with every network request blocked');
       }
       await artifact.close();
     }

@@ -24,7 +24,7 @@ showChoice:(...args)=>showChoice(...args),
 updateDirtyState:(...args)=>updateDirtyState(...args)});
 let {writeDraftRecord,clearDraftRecord,currentDraftRecord,flushDraftPersistence,queueDraftPersistence,clearCleanDraft,recoverOnlineDraft,deferRecovery,isRecoveryDeferred,cancelPendingWrites}=draftWorkflow;
 const photoResources=createPhotoResources({SUPABASE_URL,MEDIA_BUCKET,baseUrl:location.href});
-const documentAdapter=createDocumentAdapter({photoResources,TIMETABLE_KINDS,$:$,
+const documentAdapter=createDocumentAdapter({isValidHttpsUrl,photoResources,TIMETABLE_KINDS,$:$,
 $$:$$,
 DEFAULT_BUDGET_KRW:DEFAULT_BUDGET_KRW,
 DEFAULT_EXCHANGE_RATE:DEFAULT_EXCHANGE_RATE,
@@ -369,7 +369,7 @@ showDialog:(...args)=>showDialog(...args),
 tripRepository:tripRepository});
 let {formatBytes,invalidateVersionRequest,beginVersionRequest,isCurrentVersionRequest,setVersionLoadStatus,closeVersions,readVersionRequest,showVersionLoadError,loadVersionContent,previewVersion,compareVersion,restoreSelectedVersion,openVersions,resetVersionSelection,bindVersionsControls}=versionsController;
 
-const photosController=createPhotosController({$:$,
+const photosController=createPhotosController({isValidHttpsUrl,$:$,
 OFFLINE_MODE:OFFLINE_MODE,
 blobToDataUrl:(...args)=>blobToDataUrl(...args),
 body:body,

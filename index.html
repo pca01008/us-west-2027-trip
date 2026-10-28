@@ -1278,6 +1278,7 @@ const TIMETABLE_KINDS={activity:'관광',food:'식사',transit:'이동',stay:'�
     return prefix + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,9);
   }
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
+  function isValidHttpsUrl(value){try{const url=new URL(value);return /^https:\/\//i.test(value)&&url.protocol==='https:'&&Boolean(url.hostname);}catch(_){return false;}}
   function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function hashText(value) { let hash=2166136261; for (const c of String(value)) { hash^=c.charCodeAt(0); hash=Math.imul(hash,16777619); } return (hash>>>0).toString(36); }
   function assertSupportedSchema(raw){
@@ -2271,7 +2272,7 @@ function configureCurrencyLabels(){
   }
   async function moveExpense(id,direction){await requireEditor('ledger',()=>{const index=expenses.findIndex(item=>item.id===id),next=index+direction;if(index<0||next<0||next>=expenses.length)return;const [item]=expenses.splice(index,1);expenses.splice(next,0,item);renderLedger();finishMutation();});}
   async function deleteExpense(id){const item=expenses.find(x=>x.id===id);if(!item)return;const choice=await showChoice({title:'가계부 항목을 삭제할까요?',message:item.name+' 항목을 삭제합니다.',choices:[{label:'취소',value:'cancel'},{label:'삭제',value:'delete',className:'action-danger'}]});if(choice!=='delete')return;await requireEditor('ledger',async()=>{expenses=expenses.filter(x=>x.id!==id);renderLedger();finishMutation();});}
-  function renderIconPicker(){const picker=$('#categoryIconPicker');picker.innerHTML=ICON_CANDIDATES.map(icon=>'<button class="'+(icon===selectedCategoryIcon?'active':'')+'" data-category-icon="'+icon+'" type="button">'+icon+'</button>').join('');}
+  function renderIconPicker(){const names=['항공','숙박','식사','카페','자동차','택시','주유','주차','입장권','공연','자연','쇼핑','휴식','음료','선물','약','휴대폰','현금','상자','휴지통'],icons=ICON_CANDIDATES.includes(selectedCategoryIcon)?ICON_CANDIDATES:[...ICON_CANDIDATES,selectedCategoryIcon];const picker=$('#categoryIconPicker');picker.innerHTML=icons.map((icon,index)=>'<button class="'+(icon===selectedCategoryIcon?'active':'')+'" data-category-icon="'+escapeHtml(icon)+'" aria-label="'+(names[index]||'사용자 아이콘')+'" aria-pressed="'+(icon===selectedCategoryIcon)+'" type="button">'+escapeHtml(icon)+'</button>').join('');}
   function revertSettingsRate(){settingsRateTouched=false;$('#settingsExchangeRate').value=String(exchangeRate);setFieldError('settingsExchangeRate');}
   function openLedgerSettings(){renderLedger();revertSettingsRate();showDialog($('#ledgerSettingsDialog'));setStatus(documentSession.snapshot().pendingDraft?'가계부 설정 중 · 저장되지 않음':'가계부 설정');}
   function openCategoryDialog(id=null){editingCategoryId=id;const cat=id?getCategory(id):null;selectedCategoryIcon=cat?.icon||'📦';$('#categoryTitle').textContent=id?'카테고리 수정':'카테고리 추가';$('#categoryName').value=cat?.name||'';setFieldError('categoryName');renderIconPicker();showDialog($('#categoryDialog'));$('#categoryName').focus();}
@@ -2315,7 +2316,7 @@ const editExpenseId=event.target.closest('[data-edit-expense]')?.dataset.editExp
 const moveButton=event.target.closest('[data-move-expense]');if(moveButton&&!moveButton.disabled){moveExpense(moveButton.dataset.moveExpense,Number(moveButton.dataset.moveDirection));return;}
 const editId=event.target.dataset.categoryEdit;if(editId){requireEditor('ledger',()=>openCategoryDialog(editId));return;}
 const deleteId=event.target.dataset.categoryDelete;if(deleteId){requireEditor('ledger',()=>deleteCategory(deleteId));return;}
-const icon=event.target.dataset.categoryIcon;if(icon){selectedCategoryIcon=icon;renderIconPicker();}
+const icon=event.target.dataset.categoryIcon;if(icon){selectedCategoryIcon=icon;$('#categoryIconPicker').querySelectorAll('button').forEach(button=>{const selected=button.dataset.categoryIcon===icon;button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected));});}
 });
 document.addEventListener('input',handleExpenseInput);
 document.addEventListener('compositionend',handleExpenseInput);
@@ -2448,7 +2449,7 @@ function createPhotoResources({SUPABASE_URL,MEDIA_BUCKET,baseUrl}){
 }
 
 /** DOM serialization/repair boundary. Normalization needs an explicit fallback. */
-function createDocumentAdapter({$,$$,DEFAULT_BUDGET_KRW,DEFAULT_EXCHANGE_RATE,IMPORT_ALLOWED_MONEY_IDS,MEDIA_PATH_PATTERN,SCHEMA_VERSION,TIMETABLE_KINDS,SUPABASE_URL,TRIP_ID,TRIP_DAYS,afterApply,assertCurrencyPair,assertSupportedSchema,beforeApply,clone,currencyMetadata,drawExpenseInput,entryPending,hashText,normalizeCategories,normalizeExpenses,pendingCheckBefore,photoResources,readEntryBuffer,readLedger,renderCheckFeedback,renderDocument,replaceLedger,restoreEntryBuffer,scheduleKindMode,sumLedgerAmounts}) {
+function createDocumentAdapter({isValidHttpsUrl,$,$$,DEFAULT_BUDGET_KRW,DEFAULT_EXCHANGE_RATE,IMPORT_ALLOWED_MONEY_IDS,MEDIA_PATH_PATTERN,SCHEMA_VERSION,TIMETABLE_KINDS,SUPABASE_URL,TRIP_ID,TRIP_DAYS,afterApply,assertCurrencyPair,assertSupportedSchema,beforeApply,clone,currencyMetadata,drawExpenseInput,entryPending,hashText,normalizeCategories,normalizeExpenses,pendingCheckBefore,photoResources,readEntryBuffer,readLedger,renderCheckFeedback,renderDocument,replaceLedger,restoreEntryBuffer,scheduleKindMode,sumLedgerAmounts}) {
 let applyingHistory=false,moneyTemplateHtml="";
   function validateDocumentMarkup(markup,{legacy=false,ledger=false}={}) {
     const template=document.createElement('template');template.innerHTML=markup;
@@ -2502,7 +2503,7 @@ let applyingHistory=false,moneyTemplateHtml="";
       if (el.hasAttribute('contenteditable')) el.setAttribute('contenteditable','false');
       if(el.hasAttribute('style')&&!el.getAttribute('style').trim())el.removeAttribute('style');
     });
-    template.content.querySelectorAll('a[href]').forEach(a => { if (!/^https:\/\//i.test(a.getAttribute('href')||'')) a.removeAttribute('href'); });
+    template.content.querySelectorAll('a[href]').forEach(a => { if (!isValidHttpsUrl(a.getAttribute('href')||'')) a.removeAttribute('href'); });
     template.content.querySelectorAll('a[href]').forEach(a=>{a.target='_blank';a.rel='noopener noreferrer';});
     template.content.querySelectorAll('img').forEach(img => {
       // Only the validated src may choose an image resource.
@@ -3326,7 +3327,7 @@ async function fetchAsDataUrl(url){
   }
 return Object.freeze({blobToDataUrl,dataUrlToBlob,photoExtension,compressImage,hashBlob,publicMediaUrl,isDuplicateUpload,withPhotoRequest,immutableBlobExists,uploadImmutableBlob,uploadPhotoBlobs,fetchAsDataUrl});
 }
-function createPhotosController({$,OFFLINE_MODE,blobToDataUrl,body,compressImage,dataUrlToBlob,decorateMapLink,decoratePhotoFigure,escapeHtml,finishMutation,isOperationBusy,isOperationCancelled,mapPlaceName,normalizeState,recordHistory,setFieldError,setOperationBusy,setStatus,showChoice,showDialog,uid,updatePhotoMoveButtons,uploadPhotoBlobs}) {
+function createPhotosController({isValidHttpsUrl,$,OFFLINE_MODE,blobToDataUrl,body,compressImage,dataUrlToBlob,decorateMapLink,decoratePhotoFigure,escapeHtml,finishMutation,isOperationBusy,isOperationCancelled,mapPlaceName,normalizeState,recordHistory,setFieldError,setOperationBusy,setStatus,showChoice,showDialog,uid,updatePhotoMoveButtons,uploadPhotoBlobs}) {
 let activeScheduleRow = null;
 let activePhotoFigure = null;
 
@@ -3377,7 +3378,7 @@ let activePhotoFigure = null;
   function openPhotoEditDialog(figure){activePhotoFigure=figure;const img=figure?.querySelector('img'),caption=figure?.querySelector('figcaption');if(!img)return;$('#photoCaption').value=caption?.textContent.trim()||'';$('#photoAlt').value=img.alt||'';setFieldError('photoCaption');setFieldError('photoAlt');showDialog($('#photoEditDialog'));$('#photoCaption').focus();$('#photoCaption').select();}
   function savePhotoMetadata(){const figure=activePhotoFigure,img=figure?.querySelector('img');if(!figure||!img)return;const caption=$('#photoCaption').value.trim(),alt=$('#photoAlt').value.trim();setFieldError('photoCaption',caption?'':'사진 설명을 입력해 주세요.');setFieldError('photoAlt',alt?'':'대체 텍스트를 입력해 주세요.');if(!caption||!alt){$(caption?'#photoAlt':'#photoCaption').focus();return;}let text=figure.querySelector('figcaption');if(!text){text=document.createElement('figcaption');figure.appendChild(text);}text.textContent=caption;img.alt=alt;img.setAttribute('aria-label',caption+' 크게 보기');$('#photoEditDialog').hidden=true;activePhotoFigure=null;recordHistory();}
   function openMapDialog(row){activeScheduleRow=row;const map=row.querySelector('.schedule-map a');$('#mapName').value=mapPlaceName(map);$('#mapUrl').value=map?.href||'';setFieldError('mapName');setFieldError('mapUrl');showDialog($('#mapDialog'));$('#mapName').focus();}
-  function saveMap(){const name=$('#mapName').value.trim(),url=$('#mapUrl').value.trim();setFieldError('mapName',name?'':'장소명을 입력해 주세요.');setFieldError('mapUrl',/^https:\/\//i.test(url)?'':'https 지도 링크를 입력해 주세요.');if(!name||!/^https:\/\//i.test(url)){$(name?'#mapUrl':'#mapName').focus();return;}const card=activeScheduleRow?.querySelector('.card');if(!card)return;let map=card.querySelector('.schedule-map');if(!map){map=document.createElement('div');map.className='schedule-map';card.insertBefore(map,card.querySelector('.schedule-media-tools'));}map.innerHTML='<a href="'+escapeHtml(url)+'" rel="noopener noreferrer" target="_blank" data-place-name="'+escapeHtml(name)+'"></a><button class="schedule-map-delete" type="button">삭제</button>';decorateMapLink(map);$('#mapDialog').hidden=true;recordHistory();}
+  function saveMap(){const name=$('#mapName').value.trim(),url=$('#mapUrl').value.trim();setFieldError('mapName',name?'':'장소명을 입력해 주세요.');setFieldError('mapUrl',isValidHttpsUrl(url)?'':'https 지도 링크를 입력해 주세요.');if(!name||!isValidHttpsUrl(url)){$(name?'#mapUrl':'#mapName').focus();return;}const card=activeScheduleRow?.querySelector('.card');if(!card)return;let map=card.querySelector('.schedule-map');if(!map){map=document.createElement('div');map.className='schedule-map';card.insertBefore(map,card.querySelector('.schedule-media-tools'));}map.innerHTML='<a href="'+escapeHtml(url)+'" rel="noopener noreferrer" target="_blank" data-place-name="'+escapeHtml(name)+'"></a><button class="schedule-map-delete" type="button">삭제</button>';decorateMapLink(map);$('#mapDialog').hidden=true;recordHistory();}
 
 function selectActiveScheduleRow(row){activeScheduleRow=row;}
 function resetPhotoSelection(){activeScheduleRow=null;activePhotoFigure=null;}
@@ -3478,20 +3479,23 @@ function createExportsController({$,$$,CONFIG,EXPORT_BASE_NAME,blobToDataUrl,cap
   function appendReadonlyRuntime(root){
     const script=document.createElement('script');script.id='readonlyRuntime';script.textContent=`(()=>{
       const q=(selector,scope=document)=>scope.querySelector(selector),qa=(selector,scope=document)=>Array.from(scope.querySelectorAll(selector));
-      let lastPhotoTrigger=null;
+      let lastPhotoTrigger=null,isolated=[];
       function sync(){
         qa('main .day').forEach(panel=>{const active=true;panel.classList.toggle('is-active',active);panel.hidden=!active;panel.setAttribute('aria-hidden',String(!active));});
       }
-      function closeViewer(){const viewer=q('#photoViewer');if(!viewer)return;viewer.hidden=true;viewer.setAttribute('aria-hidden','true');lastPhotoTrigger?.focus();lastPhotoTrigger=null;}
+      function closeViewer(){const viewer=q('#photoViewer');if(!viewer)return;viewer.hidden=true;viewer.setAttribute('aria-hidden','true');document.body.classList.remove('modal-open');isolated.forEach(([element,inert,hidden])=>{element.inert=inert;if(hidden===null)element.removeAttribute('aria-hidden');else element.setAttribute('aria-hidden',hidden);});isolated=[];lastPhotoTrigger?.focus();lastPhotoTrigger=null;}
+      function openViewer(img){const viewer=q('#photoViewer'),viewerImage=q('#photoViewerImage');if(!viewer||!viewerImage||!viewer.hidden)return;lastPhotoTrigger=img;viewerImage.src=img.dataset.fullUrl||img.src;viewerImage.alt=img.alt||'일정 사진';viewer.hidden=false;viewer.setAttribute('aria-hidden','false');document.body.classList.add('modal-open');q('#photoViewerClose')?.focus();isolated=qa('body > *').filter(element=>element!==viewer&&!['SCRIPT','STYLE'].includes(element.tagName)).map(element=>{const previous=[element,element.inert,element.getAttribute('aria-hidden')];element.inert=true;element.setAttribute('aria-hidden','true');return previous;});}
       document.addEventListener('click',event=>{
         const img=event.target.closest?.('.schedule-photo:not(.map-capture) img');
-        if(img){const viewer=q('#photoViewer'),viewerImage=q('#photoViewerImage');if(viewer&&viewerImage){lastPhotoTrigger=img;viewerImage.src=img.dataset.fullUrl||img.src;viewerImage.alt=img.alt||'일정 사진';viewer.hidden=false;viewer.setAttribute('aria-hidden','false');q('#photoViewerClose')?.focus();}}
+        if(img)openViewer(img);
         if(event.target.closest?.('#photoViewerClose'))closeViewer();
       });
       document.addEventListener('keydown',event=>{
-        if(event.key==='Escape'&&!q('#photoViewer')?.hidden){closeViewer();return;}
+        const viewer=q('#photoViewer');
+        if(viewer&&!viewer.hidden){if(event.key==='Escape'){event.preventDefault();closeViewer();return;}if(event.key==='Tab'){event.preventDefault();q('#photoViewerClose')?.focus();return;}}
         const img=event.target.closest?.('.schedule-photo:not(.map-capture) img');if(img&&(event.key==='Enter'||event.key===' ')){event.preventDefault();img.click();}
       });
+      document.addEventListener('focusin',event=>{const viewer=q('#photoViewer');if(viewer&&!viewer.hidden&&!viewer.contains(event.target))q('#photoViewerClose')?.focus();});
       q('#photoViewer')?.setAttribute('aria-hidden','true');sync();
     })();`;
     root.querySelector('body')?.appendChild(script);
@@ -4056,7 +4060,7 @@ showChoice:(...args)=>showChoice(...args),
 updateDirtyState:(...args)=>updateDirtyState(...args)});
 let {writeDraftRecord,clearDraftRecord,currentDraftRecord,flushDraftPersistence,queueDraftPersistence,clearCleanDraft,recoverOnlineDraft,deferRecovery,isRecoveryDeferred,cancelPendingWrites}=draftWorkflow;
 const photoResources=createPhotoResources({SUPABASE_URL,MEDIA_BUCKET,baseUrl:location.href});
-const documentAdapter=createDocumentAdapter({photoResources,TIMETABLE_KINDS,$:$,
+const documentAdapter=createDocumentAdapter({isValidHttpsUrl,photoResources,TIMETABLE_KINDS,$:$,
 $$:$$,
 DEFAULT_BUDGET_KRW:DEFAULT_BUDGET_KRW,
 DEFAULT_EXCHANGE_RATE:DEFAULT_EXCHANGE_RATE,
@@ -4401,7 +4405,7 @@ showDialog:(...args)=>showDialog(...args),
 tripRepository:tripRepository});
 let {formatBytes,invalidateVersionRequest,beginVersionRequest,isCurrentVersionRequest,setVersionLoadStatus,closeVersions,readVersionRequest,showVersionLoadError,loadVersionContent,previewVersion,compareVersion,restoreSelectedVersion,openVersions,resetVersionSelection,bindVersionsControls}=versionsController;
 
-const photosController=createPhotosController({$:$,
+const photosController=createPhotosController({isValidHttpsUrl,$:$,
 OFFLINE_MODE:OFFLINE_MODE,
 blobToDataUrl:(...args)=>blobToDataUrl(...args),
 body:body,

@@ -73,20 +73,23 @@ function createExportsController({$,$$,CONFIG,EXPORT_BASE_NAME,blobToDataUrl,cap
   function appendReadonlyRuntime(root){
     const script=document.createElement('script');script.id='readonlyRuntime';script.textContent=`(()=>{
       const q=(selector,scope=document)=>scope.querySelector(selector),qa=(selector,scope=document)=>Array.from(scope.querySelectorAll(selector));
-      let lastPhotoTrigger=null;
+      let lastPhotoTrigger=null,isolated=[];
       function sync(){
         qa('main .day').forEach(panel=>{const active=true;panel.classList.toggle('is-active',active);panel.hidden=!active;panel.setAttribute('aria-hidden',String(!active));});
       }
-      function closeViewer(){const viewer=q('#photoViewer');if(!viewer)return;viewer.hidden=true;viewer.setAttribute('aria-hidden','true');lastPhotoTrigger?.focus();lastPhotoTrigger=null;}
+      function closeViewer(){const viewer=q('#photoViewer');if(!viewer)return;viewer.hidden=true;viewer.setAttribute('aria-hidden','true');document.body.classList.remove('modal-open');isolated.forEach(([element,inert,hidden])=>{element.inert=inert;if(hidden===null)element.removeAttribute('aria-hidden');else element.setAttribute('aria-hidden',hidden);});isolated=[];lastPhotoTrigger?.focus();lastPhotoTrigger=null;}
+      function openViewer(img){const viewer=q('#photoViewer'),viewerImage=q('#photoViewerImage');if(!viewer||!viewerImage||!viewer.hidden)return;lastPhotoTrigger=img;viewerImage.src=img.dataset.fullUrl||img.src;viewerImage.alt=img.alt||'일정 사진';viewer.hidden=false;viewer.setAttribute('aria-hidden','false');document.body.classList.add('modal-open');q('#photoViewerClose')?.focus();isolated=qa('body > *').filter(element=>element!==viewer&&!['SCRIPT','STYLE'].includes(element.tagName)).map(element=>{const previous=[element,element.inert,element.getAttribute('aria-hidden')];element.inert=true;element.setAttribute('aria-hidden','true');return previous;});}
       document.addEventListener('click',event=>{
         const img=event.target.closest?.('.schedule-photo:not(.map-capture) img');
-        if(img){const viewer=q('#photoViewer'),viewerImage=q('#photoViewerImage');if(viewer&&viewerImage){lastPhotoTrigger=img;viewerImage.src=img.dataset.fullUrl||img.src;viewerImage.alt=img.alt||'일정 사진';viewer.hidden=false;viewer.setAttribute('aria-hidden','false');q('#photoViewerClose')?.focus();}}
+        if(img)openViewer(img);
         if(event.target.closest?.('#photoViewerClose'))closeViewer();
       });
       document.addEventListener('keydown',event=>{
-        if(event.key==='Escape'&&!q('#photoViewer')?.hidden){closeViewer();return;}
+        const viewer=q('#photoViewer');
+        if(viewer&&!viewer.hidden){if(event.key==='Escape'){event.preventDefault();closeViewer();return;}if(event.key==='Tab'){event.preventDefault();q('#photoViewerClose')?.focus();return;}}
         const img=event.target.closest?.('.schedule-photo:not(.map-capture) img');if(img&&(event.key==='Enter'||event.key===' ')){event.preventDefault();img.click();}
       });
+      document.addEventListener('focusin',event=>{const viewer=q('#photoViewer');if(viewer&&!viewer.hidden&&!viewer.contains(event.target))q('#photoViewerClose')?.focus();});
       q('#photoViewer')?.setAttribute('aria-hidden','true');sync();
     })();`;
     root.querySelector('body')?.appendChild(script);
