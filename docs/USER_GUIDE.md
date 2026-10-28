@@ -48,6 +48,7 @@ Start editing enables itinerary edits. Finishing with changes offers Save and ex
 - Editing supports undo/redo, including text entered immediately before Undo. New edits after Undo replace the redo branch.
 - Cross-tab sign-out or expired authentication preserves this tab's draft and shows the last saved state. Sign in and recover/delete the draft before editing/importing. Dismissing recovery retains the draft without starting new work.
 - Authentication persists after editing. Manual/automatic sign-out affects the current browser session and synchronizes across its tabs. A warning appears after 29 idle minutes; automatic sign-out occurs at 30. Drafts remain recoverable unless Discard and sign out is explicitly selected.
+- Cancel/Esc cancels the requested editor action, including a pending login. A successful delayed login may retain authentication; start the action again explicitly. Sign-out invalidates pending editor entry before a delayed document response can apply.
 - After photo upload, a shared-document save without a response within 12 seconds is canceled and the latest document is fetched. Verified saves complete; otherwise the draft remains. Check connectivity and retry, resolving conflicts when needed.
 
 If someone saves first, compare the latest document and draft before reapplying. Drafts are not backups across devices. Save important changes or export an offline working copy.
