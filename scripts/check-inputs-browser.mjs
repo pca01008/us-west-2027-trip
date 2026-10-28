@@ -13,7 +13,12 @@ import { readBrowserFixture } from './browser-fixtures.mjs';
 
 const diagnostics = await createBrowserDiagnostics('inputs');
 const args=process.argv.slice(2),functionalOnly=args.includes('--functional');
-assert.ok(args.every(arg=>!arg.startsWith('--')||arg==='--functional'),'Unknown input-suite option');
+const groupArg=args.find(arg=>arg.startsWith('--group=')),group=groupArg?.slice(8)||'all';
+assert.ok(['all','navigation','dialogs','editing'].includes(group),'Unknown input-suite group');
+assert.ok(args.filter(arg=>arg.startsWith('--group=')).length<=1,'Duplicate input-suite group');
+assert.ok(args.every(arg=>!arg.startsWith('--')||arg==='--functional'||arg===groupArg),'Unknown input-suite option');
+const runGroup=name=>group==='all'||group===name;
+if(group!=='all')console.log('PARTIAL input group: '+group+'; full input coverage requires navigation, dialogs and editing.');
 const modulePath=args.find(arg=>!arg.startsWith('--'));
 // Extra-engine smoke verifies behavior; Chromium owns rendered PNG evidence.
 async function capture(page,options){if(!functionalOnly)await page.screenshot(options);}
@@ -69,7 +74,7 @@ try {
   browser = await playwright[engine].launch({ headless: true, ...(engine==='chromium'&&process.env.PWA_BROWSER_CHANNEL ? {channel:process.env.PWA_BROWSER_CHANNEL} : {}) });
   // Use real pointer and keyboard activation: label forwarding used to focus
   // an off-screen radio before change, losing the sticky tab position.
-  for(const mobile of [false,true])for(const reducedMotion of ['reduce','no-preference']) {
+  if(runGroup('navigation'))for(const mobile of [false,true])for(const reducedMotion of ['reduce','no-preference']) {
     diagnostics.scenario(`tab navigation / ${mobile ? "mobile" : "desktop"} / ${reducedMotion}`);
     const context=await diagnostics.context(browser, {viewport:{width:mobile?390:1440,height:mobile?844:900},...(engine==='firefox'?{}:{isMobile:mobile}),hasTouch:mobile,reducedMotion});
     await context.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
@@ -119,7 +124,7 @@ try {
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
     await diagnostics.close(context);console.log((mobile?'Mobile':'Desktop')+' tabs ('+reducedMotion+'): header position, long-to-short switches, nested labels, reselect, keyboard, rapid switches, timetable and data preservation passed.');
   }
-  for (const mobile of [false, true]) {
+  if(runGroup('dialogs'))for (const mobile of [false, true]) {
     diagnostics.scenario(`dialog keyboard focus / ${mobile ? 'mobile' : 'desktop'}`);
     const context=await diagnostics.context(browser,{viewport:{width:mobile?390:1440,height:900},reducedMotion:'reduce'});
     await context.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
@@ -259,7 +264,7 @@ try {
     assert.equal(await page.evaluate(()=>{const api=window.__inputsTest,state=api.normalizeState(api.captureState(),true),template=document.createElement('template');template.innerHTML=state.html;return template.content.querySelector('.day1 .schedule-map a').getAttribute('href');}),validMap,'Import preserves valid query and fragment');
     await diagnostics.close(context);console.log(`Dialog focus (${mobile?'mobile':'desktop'}): keyboard open, Tab wrapping, Escape/Cancel/Apply, nested dialogs and replaced triggers passed.`);
   }
-  for (const mobile of [false, true]) {
+  if(runGroup('editing'))for (const mobile of [false, true]) {
     diagnostics.scenario(`input, import and export / ${mobile ? "mobile" : "desktop"}`);
     const context = await diagnostics.context(browser, { viewport: { width: mobile ? 390 : 1440, height: 900 }, ...(engine==='firefox'?{}:{isMobile:mobile}), hasTouch: mobile, reducedMotion: 'reduce', acceptDownloads: true });
     await context.route('**/*', route => /^(file:|data:)/.test(route.request().url()) || route.request().url().startsWith(origin) ? route.continue() : route.abort());
