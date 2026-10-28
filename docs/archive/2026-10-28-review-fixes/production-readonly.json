@@ -1,0 +1,29 @@
+{
+  "recordedAt": "2026-10-28T11:41:18.881Z",
+  "sha": "42a05a0d3bf2e70fbec7203349229fe033b56ced",
+  "browser": "151.0.7922.34",
+  "viewport": "390x844",
+  "publicReadStatuses": [
+    200
+  ],
+  "panels": [
+    {
+      "control": "#nav-schedule",
+      "visible": true,
+      "overflow": false
+    },
+    {
+      "control": "#tab-prep",
+      "visible": true,
+      "overflow": false
+    },
+    {
+      "control": "#tab-money",
+      "visible": true,
+      "overflow": false
+    }
+  ],
+  "writes": [],
+  "errors": [],
+  "scope": "Fresh Chromium public read/navigation only; no authenticated saves or physical-device certification."
+}
