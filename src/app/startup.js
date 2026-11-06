@@ -1,8 +1,9 @@
 const {parseTimetableTime,scheduleTimeValue,scheduleClockMask,scheduleClockValue,editScheduleClock,scheduleKindMode,timetableKind,layoutTimetableEvents,timetableWindow} = createTimetableCore();
-const draftStorage=createDraftStorage({DRAFT_DB_NAME:DRAFT_DB_NAME,DRAFT_RECORD_KEY:DRAFT_RECORD_KEY,DRAFT_SESSION_KEY:DRAFT_SESSION_KEY,LEGACY_CACHE_KEY:LEGACY_CACHE_KEY,LEGACY_DRAFT_RECORD_KEY:LEGACY_DRAFT_RECORD_KEY,PUBLIC_CACHE_RECORD_KEY:PUBLIC_CACHE_RECORD_KEY,TRIP_ID:TRIP_ID,clone:clone,showDraftStorageWarning:(...args)=>showDraftStorageWarning(...args)});
+const cloneSnapshot=typeof structuredClone==='function'?structuredClone:clone;
+const draftStorage=createDraftStorage({DRAFT_DB_NAME:DRAFT_DB_NAME,DRAFT_RECORD_KEY:DRAFT_RECORD_KEY,DRAFT_SESSION_KEY:DRAFT_SESSION_KEY,LEGACY_CACHE_KEY:LEGACY_CACHE_KEY,LEGACY_DRAFT_RECORD_KEY:LEGACY_DRAFT_RECORD_KEY,PUBLIC_CACHE_RECORD_KEY:PUBLIC_CACHE_RECORD_KEY,TRIP_ID:TRIP_ID,clone:cloneSnapshot,showDraftStorageWarning:(...args)=>showDraftStorageWarning(...args)});
 const {draftCheckpointKey,readDraftCheckpoint,removeDraftCheckpoint,openDraftDatabase,acquireDraftLock,prepareDraftStorage,readDraftRecord,readPublicCache,invalidateWrites,retainDraft}=draftStorage;
 const {decimalParts,roundRatio,safeMinor,parseLedgerInput,parseLedgerRate,convertLedgerAmount,ledgerSumParts,sumLedgerAmounts,formatLedgerSum,expenseMoney,emptyExpenseInput,calculateExpenseInput,normalizeExpense,normalizeExpenses,formatCurrencyAmount} = createLedgerDomain({LEDGER_CURRENCIES,currencyLabel,formatCurrencyMinor,safeDataId,hashText,findCategoryId});
-const documentSession=createDocumentSession({clone,historyDelay:()=>runtimeOptions.historyDelay(),normalize:(...args)=>normalizeState(...args),fingerprint:(...args)=>fingerprint(...args)});
+const documentSession=createDocumentSession({clone:cloneSnapshot,historyDelay:()=>runtimeOptions.historyDelay(),normalize:(...args)=>normalizeState(...args),fingerprint:(...args)=>fingerprint(...args)});
 const draftWorkflow=createDraftWorkflow({OFFLINE_MODE:OFFLINE_MODE,
 SCHEMA_VERSION:SCHEMA_VERSION,
 TRIP_ID:TRIP_ID,
@@ -15,7 +16,6 @@ draftStorage:draftStorage,
 fingerprint:(...args)=>fingerprint(...args),
 getEditorSession:(...args)=>getEditorSession(...args),
 initializeHistory:(...args)=>initializeHistory(...args),
-isDirty:(...args)=>isDirty(...args),
 migratePublishedState:(...args)=>migratePublishedState(...args),
 normalizeState:(...args)=>normalizeState(...args),
 readDraftRecord:(...args)=>readDraftRecord(...args),

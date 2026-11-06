@@ -283,6 +283,8 @@ Deferred drafts may have `pendingDraft=false` because they are not applied. Chec
 
 Versions load metadata first, content on demand. Preview preserves the original draft before entry; autosave/pagehide/refresh during preview retain original work. Editing/normal saves are blocked. Restore confirms publication and creates a new version. Undo holds up to 100 in-memory states; the server retains 50 versions.
 
+An input event captures the document once for dirty checking and immediate draft persistence. The session caches the normalized fingerprint of its private baseline and current undo entry. Baseline changes, history navigation, and history reconciliation invalidate those keys. The draft checkpoint and IndexedDB format stay the same.
+
 `buildDiff()` matches events by stable ID and compares their day index as well as content and flattened order. Across-day moves show the configured old date → new date, even when overall order is unchanged. Within-day reordering remains an order change. Versions, imports and save conflicts share this comparison.
 
 Photo summaries compare full-image and thumbnail resources separately from IDs, captions, alt text and order. Decoded embedded bytes use synchronous SHA-256 to match immutable Storage filenames without network reads. Public Storage URL query/fragment changes are ignored. Asset and legacy-path exports record their source plus embedded digest; the source remains equivalent only while the bytes match. Replaced bytes invalidate that link. Old asset-only exports without this link may show an image change because their original bytes cannot be inferred locally. See the [F5 verification record](archive/2026-10-26-photo-comparison.md).

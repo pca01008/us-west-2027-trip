@@ -151,12 +151,21 @@ function bindAuthentication(){
 
 
   function isDirty(){return documentSession.dirty(captureState());}
-  function updateDirtyState({preserveDraft=false}={}){const {wasDirty,pendingDraft}=documentSession.updateDirty(captureState());$('#saveBtn').disabled=!pendingDraft;setStatus(body.classList.contains('editing')?(pendingDraft?'편집 중 · 저장되지 않음':'편집 모드'):(pendingDraft?'저장 대기 중':(OFFLINE_MODE?'오프라인 작업본':'보기 모드')));if(pendingDraft)queueDraftPersistence();else if(wasDirty&&!preserveDraft&&!body.classList.contains('hydrating'))clearCleanDraft();syncChecklistControls();}
+  function updateDirtyState({preserveDraft=false,state=captureState(),stateFingerprint}={}){const {wasDirty,pendingDraft}=documentSession.updateDirty(state,stateFingerprint);$('#saveBtn').disabled=!pendingDraft;setStatus(body.classList.contains('editing')?(pendingDraft?'편집 중 · 저장되지 않음':'편집 모드'):(pendingDraft?'저장 대기 중':(OFFLINE_MODE?'오프라인 작업본':'보기 모드')));if(pendingDraft)queueDraftPersistence();else if(wasDirty&&!preserveDraft&&!body.classList.contains('hydrating'))clearCleanDraft();syncChecklistControls();return pendingDraft;}
   function setEditable(on){$$('main [contenteditable],.checklist label>span:not(.check-actions),.schedule-warning-text,main .day:not(.prepday):not(.moneyday) .day-head p').forEach(el=>el.contentEditable=on?'true':'false');$('#exchangeRate').disabled=true;$$('.check-actions,.time,.time [contenteditable]').forEach(el=>el.contentEditable='false');$$('.prepday [contenteditable]').forEach(el=>el.contentEditable='false');syncChecklistControls();if(!on)closeScheduleTimeDialog();}
-  function recordHistory(){if(!body.classList.contains('editing')||documentAdapter.isApplying())return;if(!documentSession.recordLocalChange(captureState()))return;updateHistoryControls();updateDirtyState();}
-  function queueHistory(){updateDirtyState();if(documentSession.snapshot().pendingDraft)void flushDraftPersistence();documentSession.queueHistory(recordHistory);}
+  function recordHistory(){
+    if(!body.classList.contains('editing')||documentAdapter.isApplying())return;
+    const state=captureState(),stateFingerprint=fingerprint(state);
+    if(!documentSession.recordLocalChange(state,stateFingerprint))return;
+    updateHistoryControls();updateDirtyState({state,stateFingerprint});
+  }
+  function queueHistory(){
+    const state=captureState();
+    if(updateDirtyState({state}))void flushDraftPersistence(state);
+    documentSession.queueHistory(recordHistory);
+  }
   function initializeHistory(){documentSession.initializeHistory(captureState());updateHistoryControls();}
-  function updateHistoryControls(){const {historyIndex,historyLength}=documentSession.snapshot();$('#undoBtn').disabled=historyIndex<=0;$('#redoBtn').disabled=historyIndex<0||historyIndex>=historyLength-1;}
+  function updateHistoryControls(){const {historyIndex,historyLength}=documentSession.flags();$('#undoBtn').disabled=historyIndex<=0;$('#redoBtn').disabled=historyIndex<0||historyIndex>=historyLength-1;}
   function moveHistory(offset){documentSession.cancelHistory();recordHistory();const next=documentSession.moveHistory(offset);if(!next)return;applyState(next);updateHistoryControls();updateDirtyState();resetInactivityTimer();}
 
 

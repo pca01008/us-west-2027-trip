@@ -1295,7 +1295,7 @@ const TIMETABLE_KINDS={activity:'관광',food:'식사',transit:'이동',stay:'�
     documentSession.blockWrites(error.code==='DOCUMENT_CURRENCY'?error.message:error.code==='DOCUMENT_SCHEMA'?'앱을 새로고침해 주세요':'지출 데이터를 읽지 못했습니다. 작업본을 보관하고 최근 저장 버전을 확인해 주세요.');
     draftWorkflow.cancelPendingWrites();setStatus(documentSession.snapshot().documentWriteBlock);return true;
   }
-  function setStatus(message) { if ($('#status')) $('#status').textContent = documentSession.snapshot().documentWriteBlock||message; }
+  function setStatus(message) { if ($('#status')) $('#status').textContent = documentSession.flags().documentWriteBlock||message; }
   function finishHydration() {
     if (!body.classList.contains('hydrating')) return;
     body.classList.remove('hydrating');
@@ -1790,11 +1790,11 @@ return Object.freeze({draftCheckpointKey,readDraftCheckpoint,removeDraftCheckpoi
 }
 
 /** Draft scheduling and recovery policy; storage mechanics have a separate owner. */
-function createDraftWorkflow({OFFLINE_MODE,SCHEMA_VERSION,TRIP_ID,applyState,body,captureState,clone,documentSession,draftStorage,fingerprint,getEditorSession,initializeHistory,isDirty,migratePublishedState,normalizeState,readDraftRecord,setStatus,showChoice,updateDirtyState}) {
+function createDraftWorkflow({OFFLINE_MODE,SCHEMA_VERSION,TRIP_ID,applyState,body,captureState,clone,documentSession,draftStorage,fingerprint,getEditorSession,initializeHistory,migratePublishedState,normalizeState,readDraftRecord,setStatus,showChoice,updateDirtyState}) {
 let deferredDraftRecovery=false,draftWriteTimer=null;
 // Workflow guards run before the storage call, preserving synchronous checkpoints.
 function writeDraftRecord(record){
-  if(documentSession.snapshot().documentWriteBlock||deferredDraftRecovery)return Promise.resolve(false);
+  if(documentSession.flags().documentWriteBlock||deferredDraftRecovery)return Promise.resolve(false);
   return draftStorage.writeDraftRecord(record);
 }
 async function clearDraftRecord(){
@@ -1813,19 +1813,24 @@ async function clearDraftRecord(){
   // Recovery only moves records whose owner is no longer open.
 
 
-  function currentDraftRecord() {
-    return {tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:documentSession.snapshot().previewReturnState?clone(documentSession.snapshot().previewReturnState):captureState(),baseState:documentSession.snapshot().draftBaselineUnknown?null:clone(documentSession.snapshot().lastSavedState),baseRevision:documentSession.snapshot().publishedRevision,baseUpdatedAt:documentSession.snapshot().publishedUpdatedAt,savedAt:new Date().toISOString(),dirty:true};
+  function currentDraftRecord(state,baseline=documentSession.snapshot()) {
+    return {tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:baseline.previewReturnState||state||captureState(),baseState:baseline.draftBaselineUnknown?null:baseline.lastSavedState,baseRevision:baseline.publishedRevision,baseUpdatedAt:baseline.publishedUpdatedAt,savedAt:new Date().toISOString(),dirty:true};
   }
-  async function flushDraftPersistence() {
-    clearTimeout(draftWriteTimer);
-    if(!documentSession.snapshot().lastSavedState||!isDirty())return false;
-    return writeDraftRecord(currentDraftRecord());
+  async function flushDraftPersistence(dirtyState) {
+    clearTimeout(draftWriteTimer);draftWriteTimer=null;
+    if(!documentSession.flags().hasBaseline)return false;
+    const baseline=documentSession.snapshot();
+    // The input handler already evaluated this capture. Lifecycle callers read fresh state.
+    const state=dirtyState||baseline.previewReturnState||captureState();
+    if(!dirtyState&&!documentSession.dirty(state))return false;
+    return writeDraftRecord(currentDraftRecord(state,baseline));
   }
   function queueDraftPersistence() {
     clearTimeout(draftWriteTimer);
-    if(!documentSession.snapshot().pendingDraft||!documentSession.snapshot().lastSavedState||body.classList.contains('hydrating'))return;
+    const {pendingDraft,hasBaseline}=documentSession.flags();
+    if(!pendingDraft||!hasBaseline||body.classList.contains('hydrating'))return;
     draftWriteTimer=setTimeout(()=>{
-      if(documentSession.snapshot().pendingDraft)void writeDraftRecord(currentDraftRecord());
+      if(documentSession.flags().pendingDraft)void writeDraftRecord(currentDraftRecord());
     },700);
   }
 
@@ -2354,23 +2359,28 @@ function createDocumentSession({clone, normalize, fingerprint, historyDelay=()=>
   let pendingRemoteState=null, draftBaselineUnknown=false, previewReturnState=null;
   let pendingDraft=false, documentWriteBlock='', history=[], historyIndex=-1, historyTimer=null;
 
+  let baselineFingerprint,historyFingerprint;
+
+  function flags(){
+    return {hasBaseline:Boolean(lastSavedState),pendingDraft,documentWriteBlock,historyIndex,historyLength:history.length};
+  }
   function snapshot() {
     return Object.freeze({lastSavedState:clone(lastSavedState),publishedRevision,publishedUpdatedAt,
       pendingRemoteState:clone(pendingRemoteState),draftBaselineUnknown,previewReturnState:clone(previewReturnState),
-      pendingDraft,documentWriteBlock,historyIndex,historyLength:history.length});
+      ...flags()});
   }
-  function establishBaseline(state){lastSavedState=clone(state);}
+  function establishBaseline(state){lastSavedState=clone(state);baselineFingerprint=undefined;}
   function acceptPublished(row,state){
-    lastSavedState=clone(state);publishedRevision=Math.max(0,Number(row?.revision)||0);
+    establishBaseline(state);publishedRevision=Math.max(0,Number(row?.revision)||0);
     publishedUpdatedAt=String(row?.updated_at||row?.updatedAt||'');
     pendingRemoteState=null;draftBaselineUnknown=false;
   }
   function prepareOverwrite(row,state){acceptPublished(row,state);}
   function adoptImportBaseline(state,revision,updatedAt){
-    lastSavedState=clone(state);draftBaselineUnknown=false;publishedRevision=revision;publishedUpdatedAt=updatedAt;
+    establishBaseline(state);draftBaselineUnknown=false;publishedRevision=revision;publishedUpdatedAt=updatedAt;
   }
   function restoreDraftBaseline({baseline,revision,updatedAt,unknown,remote}){
-    lastSavedState=clone(baseline);publishedRevision=Math.max(0,Number(revision)||0);
+    establishBaseline(baseline);publishedRevision=Math.max(0,Number(revision)||0);
     publishedUpdatedAt=String(updatedAt||'');draftBaselineUnknown=unknown;pendingRemoteState=clone(remote);
   }
   function canAdoptRemote(row){return Number(row?.revision)>publishedRevision&&Number(row.revision)>=(Number(pendingRemoteState?.row?.revision)||0);}
@@ -2379,9 +2389,14 @@ function createDocumentSession({clone, normalize, fingerprint, historyDelay=()=>
     pendingRemoteState={row:clone(row),state:clone(state)};return true;
   }
   function markClean(){pendingDraft=false;}
-  function acceptOfflineSave(state){lastSavedState=clone(state);pendingDraft=false;}
-  function dirty(current){return Boolean(lastSavedState&&fingerprint(previewReturnState||current)!==fingerprint(lastSavedState));}
-  function updateDirty(current){const wasDirty=pendingDraft;pendingDraft=dirty(current);return {wasDirty,pendingDraft};}
+  function acceptOfflineSave(state){establishBaseline(state);pendingDraft=false;}
+  function dirty(current,currentFingerprint){
+    if(!lastSavedState)return false;
+    const workingFingerprint=previewReturnState?fingerprint(previewReturnState):(currentFingerprint??fingerprint(current));
+    baselineFingerprint??=fingerprint(lastSavedState);
+    return workingFingerprint!==baselineFingerprint;
+  }
+  function updateDirty(current,currentFingerprint){const wasDirty=pendingDraft;pendingDraft=dirty(current,currentFingerprint);return {wasDirty,pendingDraft};}
   function enterPreview(current){if(!previewReturnState)previewReturnState=clone(current);}
   function leavePreview(){const state=previewReturnState;previewReturnState=null;return clone(state);}
   function blockWrites(message){documentWriteBlock=message;}
@@ -2389,26 +2404,30 @@ function createDocumentSession({clone, normalize, fingerprint, historyDelay=()=>
   // PREP may adopt only its own changes while unrelated edits keep their old revision.
   function acceptPrepResult({nextBase,saved,result,noOtherDraft,offline,localBaseline}){
     if(noOtherDraft&&!offline){
-      lastSavedState=normalize(localBaseline);publishedRevision=Number(result.revision);
+      establishBaseline(normalize(localBaseline));publishedRevision=Number(result.revision);
       publishedUpdatedAt=result.updated_at;pendingRemoteState=null;draftBaselineUnknown=false;
     }else{
-      lastSavedState=clone(nextBase);
+      establishBaseline(nextBase);
       if(offline||(!draftBaselineUnknown&&fingerprint(nextBase)===fingerprint(saved))){
         publishedRevision=Number(result.revision);publishedUpdatedAt=result.updated_at;pendingRemoteState=null;
       }else pendingRemoteState={row:{...result,content:clone(saved)},state:clone(saved)};
     }
   }
-  function initializeHistory(current){history=[clone(current)];historyIndex=0;}
-  function recordLocalChange(next){
-    if(historyIndex>=0&&fingerprint(history[historyIndex])===fingerprint(next))return false;
+  function initializeHistory(current){history=[clone(current)];historyIndex=0;historyFingerprint=undefined;}
+  function recordLocalChange(next,nextFingerprint=fingerprint(next)){
+    if(historyIndex>=0){
+      historyFingerprint??=fingerprint(history[historyIndex]);
+      if(historyFingerprint===nextFingerprint)return false;
+    }
+    historyFingerprint=nextFingerprint;
     history=history.slice(0,historyIndex+1);history.push(clone(next));if(history.length>100)history.shift();
     historyIndex=history.length-1;return true;
   }
-  function moveHistory(offset){const next=historyIndex+offset;if(next<0||next>=history.length)return null;historyIndex=next;return clone(history[next]);}
-  function reconcileHistory(transform){history=history.map(state=>{try{return transform(clone(state));}catch(_){return state;}});}
+  function moveHistory(offset){const next=historyIndex+offset;if(next<0||next>=history.length)return null;historyIndex=next;historyFingerprint=undefined;return clone(history[next]);}
+  function reconcileHistory(transform){historyFingerprint=undefined;history=history.map(state=>{try{return transform(clone(state));}catch(_){return state;}});}
   function cancelHistory(){clearTimeout(historyTimer);historyTimer=null;}
   function queueHistory(record){cancelHistory();historyTimer=setTimeout(record,historyDelay());}
-  return Object.freeze({snapshot,establishBaseline,acceptPublished,prepareOverwrite,adoptImportBaseline,
+  return Object.freeze({snapshot,flags,establishBaseline,acceptPublished,prepareOverwrite,adoptImportBaseline,
     restoreDraftBaseline,canAdoptRemote,rememberRemote,markClean,acceptOfflineSave,dirty,updateDirty,enterPreview,leavePreview,blockWrites,
     acceptPrepResult,initializeHistory,recordLocalChange,moveHistory,reconcileHistory,cancelHistory,queueHistory});
 }
@@ -3018,12 +3037,21 @@ function bindAuthentication(){
 
 
   function isDirty(){return documentSession.dirty(captureState());}
-  function updateDirtyState({preserveDraft=false}={}){const {wasDirty,pendingDraft}=documentSession.updateDirty(captureState());$('#saveBtn').disabled=!pendingDraft;setStatus(body.classList.contains('editing')?(pendingDraft?'편집 중 · 저장되지 않음':'편집 모드'):(pendingDraft?'저장 대기 중':(OFFLINE_MODE?'오프라인 작업본':'보기 모드')));if(pendingDraft)queueDraftPersistence();else if(wasDirty&&!preserveDraft&&!body.classList.contains('hydrating'))clearCleanDraft();syncChecklistControls();}
+  function updateDirtyState({preserveDraft=false,state=captureState(),stateFingerprint}={}){const {wasDirty,pendingDraft}=documentSession.updateDirty(state,stateFingerprint);$('#saveBtn').disabled=!pendingDraft;setStatus(body.classList.contains('editing')?(pendingDraft?'편집 중 · 저장되지 않음':'편집 모드'):(pendingDraft?'저장 대기 중':(OFFLINE_MODE?'오프라인 작업본':'보기 모드')));if(pendingDraft)queueDraftPersistence();else if(wasDirty&&!preserveDraft&&!body.classList.contains('hydrating'))clearCleanDraft();syncChecklistControls();return pendingDraft;}
   function setEditable(on){$$('main [contenteditable],.checklist label>span:not(.check-actions),.schedule-warning-text,main .day:not(.prepday):not(.moneyday) .day-head p').forEach(el=>el.contentEditable=on?'true':'false');$('#exchangeRate').disabled=true;$$('.check-actions,.time,.time [contenteditable]').forEach(el=>el.contentEditable='false');$$('.prepday [contenteditable]').forEach(el=>el.contentEditable='false');syncChecklistControls();if(!on)closeScheduleTimeDialog();}
-  function recordHistory(){if(!body.classList.contains('editing')||documentAdapter.isApplying())return;if(!documentSession.recordLocalChange(captureState()))return;updateHistoryControls();updateDirtyState();}
-  function queueHistory(){updateDirtyState();if(documentSession.snapshot().pendingDraft)void flushDraftPersistence();documentSession.queueHistory(recordHistory);}
+  function recordHistory(){
+    if(!body.classList.contains('editing')||documentAdapter.isApplying())return;
+    const state=captureState(),stateFingerprint=fingerprint(state);
+    if(!documentSession.recordLocalChange(state,stateFingerprint))return;
+    updateHistoryControls();updateDirtyState({state,stateFingerprint});
+  }
+  function queueHistory(){
+    const state=captureState();
+    if(updateDirtyState({state}))void flushDraftPersistence(state);
+    documentSession.queueHistory(recordHistory);
+  }
   function initializeHistory(){documentSession.initializeHistory(captureState());updateHistoryControls();}
-  function updateHistoryControls(){const {historyIndex,historyLength}=documentSession.snapshot();$('#undoBtn').disabled=historyIndex<=0;$('#redoBtn').disabled=historyIndex<0||historyIndex>=historyLength-1;}
+  function updateHistoryControls(){const {historyIndex,historyLength}=documentSession.flags();$('#undoBtn').disabled=historyIndex<=0;$('#redoBtn').disabled=historyIndex<0||historyIndex>=historyLength-1;}
   function moveHistory(offset){documentSession.cancelHistory();recordHistory();const next=documentSession.moveHistory(offset);if(!next)return;applyState(next);updateHistoryControls();updateDirtyState();resetInactivityTimer();}
 
 
@@ -4079,10 +4107,11 @@ document.addEventListener('click',event=>{const retry=event.target.closest('[dat
 return Object.freeze({checklistItems,checklistShape,patchCheck,patchChecklist,syncChecklistControls,renderCheckFeedback,commitChecklistPatch,authorizeCheck,requestCheckToggle,queueCheck,checklistEditorDirty,openChecklistEditor,closeChecklistEditor,renderChecklistEditor,addChecklistItem,saveChecklistEditor,decorateChecklist,updateChecklistMoveButtons,addCheckRow,moveCheck,pendingCheckCount,pendingCheckBefore,isChecklistSaving,isChecklistEditorSaving,checklistEditorSnapshot,bindChecklistControls});
 }
 const {parseTimetableTime,scheduleTimeValue,scheduleClockMask,scheduleClockValue,editScheduleClock,scheduleKindMode,timetableKind,layoutTimetableEvents,timetableWindow} = createTimetableCore();
-const draftStorage=createDraftStorage({DRAFT_DB_NAME:DRAFT_DB_NAME,DRAFT_RECORD_KEY:DRAFT_RECORD_KEY,DRAFT_SESSION_KEY:DRAFT_SESSION_KEY,LEGACY_CACHE_KEY:LEGACY_CACHE_KEY,LEGACY_DRAFT_RECORD_KEY:LEGACY_DRAFT_RECORD_KEY,PUBLIC_CACHE_RECORD_KEY:PUBLIC_CACHE_RECORD_KEY,TRIP_ID:TRIP_ID,clone:clone,showDraftStorageWarning:(...args)=>showDraftStorageWarning(...args)});
+const cloneSnapshot=typeof structuredClone==='function'?structuredClone:clone;
+const draftStorage=createDraftStorage({DRAFT_DB_NAME:DRAFT_DB_NAME,DRAFT_RECORD_KEY:DRAFT_RECORD_KEY,DRAFT_SESSION_KEY:DRAFT_SESSION_KEY,LEGACY_CACHE_KEY:LEGACY_CACHE_KEY,LEGACY_DRAFT_RECORD_KEY:LEGACY_DRAFT_RECORD_KEY,PUBLIC_CACHE_RECORD_KEY:PUBLIC_CACHE_RECORD_KEY,TRIP_ID:TRIP_ID,clone:cloneSnapshot,showDraftStorageWarning:(...args)=>showDraftStorageWarning(...args)});
 const {draftCheckpointKey,readDraftCheckpoint,removeDraftCheckpoint,openDraftDatabase,acquireDraftLock,prepareDraftStorage,readDraftRecord,readPublicCache,invalidateWrites,retainDraft}=draftStorage;
 const {decimalParts,roundRatio,safeMinor,parseLedgerInput,parseLedgerRate,convertLedgerAmount,ledgerSumParts,sumLedgerAmounts,formatLedgerSum,expenseMoney,emptyExpenseInput,calculateExpenseInput,normalizeExpense,normalizeExpenses,formatCurrencyAmount} = createLedgerDomain({LEDGER_CURRENCIES,currencyLabel,formatCurrencyMinor,safeDataId,hashText,findCategoryId});
-const documentSession=createDocumentSession({clone,historyDelay:()=>runtimeOptions.historyDelay(),normalize:(...args)=>normalizeState(...args),fingerprint:(...args)=>fingerprint(...args)});
+const documentSession=createDocumentSession({clone:cloneSnapshot,historyDelay:()=>runtimeOptions.historyDelay(),normalize:(...args)=>normalizeState(...args),fingerprint:(...args)=>fingerprint(...args)});
 const draftWorkflow=createDraftWorkflow({OFFLINE_MODE:OFFLINE_MODE,
 SCHEMA_VERSION:SCHEMA_VERSION,
 TRIP_ID:TRIP_ID,
@@ -4095,7 +4124,6 @@ draftStorage:draftStorage,
 fingerprint:(...args)=>fingerprint(...args),
 getEditorSession:(...args)=>getEditorSession(...args),
 initializeHistory:(...args)=>initializeHistory(...args),
-isDirty:(...args)=>isDirty(...args),
 migratePublishedState:(...args)=>migratePublishedState(...args),
 normalizeState:(...args)=>normalizeState(...args),
 readDraftRecord:(...args)=>readDraftRecord(...args),
