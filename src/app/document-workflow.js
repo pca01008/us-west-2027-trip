@@ -80,5 +80,5 @@ window.addEventListener('beforeunload',event=>{if(!isDirty()&&!isSaveInFlight()&
 function closePreview(){const previous=documentSession.snapshot().previewReturnState;if(previous)applyState(previous);documentSession.leavePreview();body.classList.remove('previewing');updateDirtyState();setStatus(documentSession.snapshot().pendingDraft?'저장 대기 중':'보기 모드');resetInactivityTimer();}
 function enterHistoricalPreview(state){documentSession.enterPreview(captureState());body.classList.add('previewing');setEditingUI(false);applyState(state);}
 function applyImportSnapshot(incoming,baseline,revision,updatedAt){applyState(incoming);documentSession.adoptImportBaseline(baseline,revision,updatedAt);initializeHistory();updateDirtyState();}
-return Object.freeze({closePreview,enterHistoricalPreview,applyImportSnapshot,writePublicCache,setPublishedBaseline,refreshPublishedState,hydrate,bindDocumentControls});
+return Object.freeze({closePreview,enterHistoricalPreview,applyImportSnapshot,writePublicCache,setPublishedBaseline,receivePublishedState,refreshPublishedState,hydrate,bindDocumentControls});
 }

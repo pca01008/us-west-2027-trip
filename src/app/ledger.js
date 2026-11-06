@@ -86,7 +86,7 @@ function configureCurrencyLabels(){
   function openExpenseDialog(id){
     const item=expenses.find(entry=>entry.id===id);if(!item)return;editingExpenseId=id;expenseEditSnapshot=JSON.stringify(item);
     expenseEditInput={krw:item.amountSource==='usd'?'':String(item.amountKrw),usd:item.amountSource==='krw'?'':String(item.amountUsd),original:clone(item),touched:false,composing:false};
-    $('#expenseEditDate').value=item.date||todayLocal();setExpenseCategoryOptions($('#expenseEditCategory'),item.categoryId,item.categoryId===DELETED_CATEGORY_ID);$('#expenseEditName').value=item.name;setFieldError('expenseEditName');drawExpenseInput(true);showDialog($('#expenseDialog'));$('#expenseEditName').focus();
+    $('#expenseEditDate').value=item.date;setExpenseCategoryOptions($('#expenseEditCategory'),item.categoryId,item.categoryId===DELETED_CATEGORY_ID);$('#expenseEditName').value=item.name;setFieldError('expenseEditName');drawExpenseInput(true);showDialog($('#expenseDialog'));$('#expenseEditName').focus();
   }
   async function saveExpenseChanges(){
     if(!$('#expenseEditName').value.trim()){setFieldError('expenseEditName','항목을 입력해 주세요.');$('#expenseEditName').focus();return;}
@@ -96,7 +96,7 @@ function configureCurrencyLabels(){
       const target=expenses.find(entry=>entry.id===id),remote=documentSession.snapshot().pendingRemoteState?.state?.expenses.find(entry=>entry.id===id);
       if(!target||JSON.stringify(target)!==snapshot||(documentSession.snapshot().pendingRemoteState&&JSON.stringify(remote)!==snapshot)){setStatus('내역이 변경되었습니다. 취소 후 최신 내역을 다시 확인해 주세요.');return;}
       const money=drawExpenseInput(true,true);if(!money)return;
-      Object.assign(target,{name:$('#expenseEditName').value.trim(),date:$('#expenseEditDate').value||todayLocal(),categoryId:$('#expenseEditCategory').value||'misc',...money});
+      Object.assign(target,{name:$('#expenseEditName').value.trim(),date:$('#expenseEditDate').value,categoryId:$('#expenseEditCategory').value||'misc',...money});
       $('#expenseDialog').hidden=true;editingExpenseId=null;expenseEditInput=emptyExpenseInput();renderLedger();finishMutation();
     });
   }

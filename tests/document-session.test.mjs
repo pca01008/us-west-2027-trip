@@ -31,3 +31,22 @@ test('switching previews preserves the working copy and never changes the publis
   assert.equal(api.snapshot().lastSavedState.title,'published');
   assert.equal(api.dirty({title:'published'}),false);
 });
+
+test('cached comparisons follow new baselines and transformed history',()=>{
+  const api=create(),previous={html:'Original staged photo'},next={html:'Updated staged photo'};
+  api.acceptPublished({revision:1},previous);
+  assert.equal(api.dirty(next),true);
+  api.acceptPrepResult({nextBase:next,saved:next,result:{revision:2},noOtherDraft:false,offline:false});
+  assert.equal(api.dirty(next),false);
+  assert.equal(api.dirty(previous),true);
+  api.restoreDraftBaseline({baseline:previous,revision:1,unknown:false,remote:null});
+  assert.equal(api.dirty(previous),false);
+
+  api.initializeHistory(previous);
+  assert.equal(api.recordLocalChange(previous),false);
+  api.reconcileHistory(()=>next);
+  assert.equal(api.recordLocalChange(next),false);
+  assert.equal(api.recordLocalChange(previous),true);
+  assert.equal(api.moveHistory(-1).html,next.html);
+  assert.equal(api.recordLocalChange(next),false);
+});

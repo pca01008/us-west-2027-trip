@@ -1,6 +1,10 @@
 <template id="moneyPanelTemplate">
   <section class="panel day moneyday">
     <div class="day-head"><h2>가계부</h2><p>여행 경비 기록</p></div>
+    <div class="money-totals">
+      <div class="money-total"><small>원화 합계</small><strong id="totalKrw">₩0</strong></div>
+      <div class="money-total"><small>달러 합계</small><strong id="totalUsd">$0.00</strong></div>
+    </div>
     <div class="expense-entry">
       <div class="expense-entry-head"><strong>경비 추가</strong></div>
       <div class="add-expense">
@@ -16,10 +20,6 @@
       <div class="exchange-rate-heading"><span class="exchange-rate-icon" aria-hidden="true">↔</span><div><strong>적용 환율</strong></div></div>
       <label class="exchange-rate-control"><span>1 USD</span><b>=</b><input aria-label="1 USD 기준 원화 환율" id="exchangeRate" inputmode="decimal" type="text" value=""><span>KRW</span></label>
       <span class="exchange-rate-updated" id="exchangeRateUpdated">수동 환율</span>
-    </div>
-    <div class="money-totals">
-      <div class="money-total"><small>원화 합계</small><strong id="totalKrw">₩0</strong></div>
-      <div class="money-total"><small>달러 합계</small><strong id="totalUsd">$0.00</strong></div>
     </div>
     <div class="category-summary" id="categorySummary"></div>
     <div class="category-manager edit-only mode-only">

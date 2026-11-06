@@ -14,7 +14,7 @@
     documentSession.blockWrites(error.code==='DOCUMENT_CURRENCY'?error.message:error.code==='DOCUMENT_SCHEMA'?'앱을 새로고침해 주세요':'지출 데이터를 읽지 못했습니다. 작업본을 보관하고 최근 저장 버전을 확인해 주세요.');
     draftWorkflow.cancelPendingWrites();setStatus(documentSession.snapshot().documentWriteBlock);return true;
   }
-  function setStatus(message) { if ($('#status')) $('#status').textContent = documentSession.snapshot().documentWriteBlock||message; }
+  function setStatus(message) { if ($('#status')) $('#status').textContent = documentSession.flags().documentWriteBlock||message; }
   function finishHydration() {
     if (!body.classList.contains('hydrating')) return;
     body.classList.remove('hydrating');

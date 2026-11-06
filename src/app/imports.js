@@ -1,9 +1,13 @@
-function createImportsController({$,SCHEMA_VERSION,TRIP_ID,applyImportSnapshot,buildDiff,clone,documentSession,fetchPublishedState,migratePublishedState,normalizeState,publicMediaUrl,renderDiff,requireEditor,sessionService,setStatus,showChoice,showDialog}) {
+function createImportsController({$,SCHEMA_VERSION,TRIP_ID,applyImportSnapshot,buildDiff,clone,documentSession,exportOfflineHtml,fetchPublishedState,migratePublishedState,normalizeState,publicMediaUrl,renderDiff,requireEditor,sessionService,setStatus,showChoice,showDialog}) {
 let pendingImport = null;
 let importRequest = null;
-function renderImportDiff(groups,message=''){const count=renderDiff($('#importSummary'),$('#importDiff'),groups,message||(groups.length?'불러오면 현재 화면의 초안으로 적용됩니다.':'최신 저장본과 동일합니다.'));if(importRequest)importRequest.hasDifferences=Boolean(count);$('#importApply').disabled=!count||Boolean(importRequest?.applying);}
+function renderImportDiff(groups,message=''){const count=renderDiff($('#importSummary'),$('#importDiff'),groups,message||(groups.length?'불러오면 현재 화면의 초안으로 적용됩니다.':'최신 저장본과 동일합니다.'));if(importRequest)importRequest.hasDifferences=Boolean(count);
+  const replacingDraft=Boolean(count&&documentSession.snapshot().pendingDraft);
+  $('#importDraftWarning').hidden=!replacingDraft;
+  $('#importDraftExport').hidden=!replacingDraft;
+  $('#importApply').disabled=!count||Boolean(importRequest?.applying);}
 function isCurrentImportRequest(request,selection=null){return importRequest===request&&Boolean(sessionService.current())&&!sessionService.isSigningOut()&&(!selection||(pendingImport===selection&&!$('#importDialog').hidden));}
-function resetImportSelection(){importRequest=null;pendingImport=null;$('#importDialog').hidden=true;$('#importApply').disabled=true;$('#importFileInput').value='';}
+function resetImportSelection(){importRequest=null;pendingImport=null;$('#importDialog').hidden=true;$('#importApply').disabled=true;$('#importDraftExport').disabled=false;$('#importFileInput').value='';}
 
 async function chooseImportFile(){await requireEditor('import',()=>{resetImportSelection();$('#importFileInput').click();});}
 
@@ -35,7 +39,7 @@ async function materializeImportedPhotos(state){const normalized=normalizeState(
 async function applyImportedDraft(){
     const request=importRequest,selection=pendingImport;
     if(!request||!selection||!isCurrentImportRequest(request,selection)||request.applying||!request.hasDifferences)return;
-    request.applying=true;$('#importApply').disabled=true;
+    request.applying=true;$('#importApply').disabled=true;$('#importDraftExport').disabled=true;
     try{
       const published=await fetchPublishedState();
       if(!isCurrentImportRequest(request,selection))return;
@@ -52,13 +56,18 @@ async function applyImportedDraft(){
       applyImportSnapshot(incoming,selection.current,selection.baselineRevision,selection.baselineUpdatedAt);
       resetImportSelection();setStatus('편집본 불러옴 · 저장되지 않음');
     }catch(error){if(!isCurrentImportRequest(request,selection))return;console.error(error);setStatus('편집본 적용 실패');await showChoice({title:'편집본 적용 실패',message:error.message,choices:[{label:'확인',value:'ok',className:'action-primary'}]});}
-    finally{if(isCurrentImportRequest(request,selection)){request.applying=false;$('#importApply').disabled=!request.hasDifferences;}}
+    finally{if(isCurrentImportRequest(request,selection)){request.applying=false;$('#importApply').disabled=!request.hasDifferences;$('#importDraftExport').disabled=false;}}
   }
 
 function bindImportsControls(){
 $('#importBtn').onclick=chooseImportFile;
 $('#importFileInput').onchange=e=>{if(e.target.files[0])readImportFile(e.target.files[0]);};
 $('#importCancel').onclick=resetImportSelection;
+$('#importDraftExport').onclick=()=>{
+  if(!importRequest||importRequest.applying||!pendingImport||!isCurrentImportRequest(importRequest,pendingImport)||$('#importDraftExport').hidden)return;
+  resetImportSelection();
+  void exportOfflineHtml();
+};
 $('#importApply').onclick=applyImportedDraft;
 }
 function pendingImportSnapshot(){return clone(pendingImport);}

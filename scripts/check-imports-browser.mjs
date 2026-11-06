@@ -89,6 +89,8 @@ try {
     await upload(page,embedded);await page.locator('#importDialog').waitFor();
     assert.deepEqual(await page.locator('#importDiff li').allTextContents(),[],'Unchanged asset photos survive actual offline embedding');
     assert.equal(await page.locator('#importApply').isEnabled(),false);
+    assert.equal(await page.locator('#importDraftWarning').isHidden(),true);
+    assert.equal(await page.locator('#importDraftExport').isHidden(),true);
     await page.locator('#importCancel').click();
     const incoming=await page.evaluate(async snapshot=>{
       const api=window.__importTest;
@@ -112,11 +114,32 @@ try {
       }
       return change(snapshot,replacement);
     },initial);
+    await selectTripTab(page,'d1');await page.locator('#editBtn').click();
+    const title=page.locator('.day1 .timeline-row h3').first();
+    await title.fill('가져오기 전 내 초안');
+    await page.evaluate(()=>window.__importTest.flushDraftPersistence());
+    const localDraft=await stored(page);
+    await upload(page,incoming);await page.locator('#importDialog').waitFor();
+    assert.equal(await page.locator('#importDraftWarning').isVisible(),true);
+    await page.locator('#importCancel').click();
+    assert.equal(await title.textContent(),'가져오기 전 내 초안');
+    assert.deepEqual(await stored(page),localDraft);
+    await upload(page,incoming);await page.locator('#importDialog').waitFor();
+    const download=page.waitForEvent('download');
+    await page.locator('#importDraftExport').click();
+    const backup=await download;
+    assert.match(backup.suggestedFilename(),/_EDITABLE_.*\.html$/);
+    const backupSource=await readFile(await backup.path(),'utf8');
+    assert.match(backupSource,/가져오기 전 내 초안/);
+    assert.equal(await page.locator('#importDialog').isHidden(),true);
+    assert.equal(await title.textContent(),'가져오기 전 내 초안');
+    assert.deepEqual((await stored(page)).state,localDraft.state);
     await upload(page,incoming);await page.locator('#importDialog').waitFor();
     assert.deepEqual(await page.locator('#importDiff li').allTextContents(),['DAY 1 일정 3 사진 이미지 변경']);
     assert.equal(await page.locator('#importApply').isEnabled(),true,'Image-only replacement must enable Apply');
     await apply(page);
     const applied=await state(page),draft=await stored(page);
+    assert.doesNotMatch(applied.html,/가져오기 전 내 초안/);
     assert.deepEqual(await page.evaluate(({a,b})=>window.__importTest.buildDiff(a,b),{a:incoming,b:applied}),[]);
     assert.ok(draft?.state.html.includes('data:image/png;base64,'),'The changed photo is retained in the durable draft');
     assert.equal(saves,0);assert.deepEqual(row,baseline,'Import never writes the shared document');
@@ -336,7 +359,11 @@ try {
         <div class="schedule-photos"><figure class="schedule-photo" data-photo-id="duplicate-photo"><img src="${photo}" srcset="https://invalid.example/import-probe-srcset 1x" data-full-url="${photo}" alt="정상 사진"><figcaption>사진 하나</figcaption></figure><figure class="schedule-photo" data-photo-id="duplicate-photo" data-full-path="../bad" data-thumb-path="../bad"><img src="${photo}" data-full-url="${photo}" alt="두 번째 사진"><figcaption>사진 둘</figcaption></figure></div></div>`);
       t.content.querySelector('.moneyday').replaceChildren();
       raw.schemaVersion=5;raw.html=t.innerHTML;raw.exchangeRate='not-a-number';raw.budgetKrw=-1;
-      raw.expenses=[{id:'duplicate-expense',name:'정상 지출',amount:'12.5',currency:'USD'},{id:'duplicate-expense',name:'기존 지출',amount:'1',currency:'INVALID',date:'bad'}];
+      const longId='x'.repeat(96);
+      raw.expenses=['same id','same/id',longId+'a',longId+'b','expense-duplicate-1'].map((id,index)=>({
+        id,name:'지출 '+index,amount:index===0?'12.5':'1',currency:index===0?'USD':'INVALID',
+        date:index===2?'2027-02-28':index===1?'2027-02-30':''
+      }));
       return raw;
     });
     await upload(page,hostile);await page.locator('#importDialog').waitFor({state:'visible'});
@@ -345,6 +372,8 @@ try {
       const t=document.createElement('template');t.innerHTML=window.__importTest.pending().state.html;
       return ['row','check','photo'].map(kind=>Array.from(t.content.querySelectorAll('[data-'+kind+'-id]')).map(el=>el.getAttribute('data-'+kind+'-id')));
     });
+    const previewExpenses=await page.evaluate(()=>window.__importTest.pending().state.expenses);
+    assert.deepEqual(previewExpenses.map(expense=>expense.id),['same-id','expense-duplicate-1-1','x'.repeat(96),'expense-duplicate-3','expense-duplicate-1']);
     for(const ids of previewIds)assert.equal(ids.length,new Set(ids).size,'Comparison IDs must already be unique');
     await apply(page);
     await page.locator('.bad-link').first().click();
@@ -371,7 +400,9 @@ try {
     assert.equal(inspection.photos.length,2);for(const photo of inspection.photos){assert.match(photo.src,/^data:image\/png;base64,/);assert.equal(photo.full,photo.src);assert.deepEqual(photo.paths,[undefined,undefined]);}
     assert.deepEqual(inspection.photos.map(p=>p.caption),['사진 하나','사진 둘']);
     assert.match(clean.html,/정상 일정 유지/);assert.equal(clean.exchangeRate,inspection.defaults[0]);assert.equal(clean.budgetKrw,inspection.defaults[1]);
-    assert.deepEqual(clean.expenses.map(e=>e.amountUsd),[12.5,1]);assert.notEqual(clean.expenses[0].id,clean.expenses[1].id);
+    assert.deepEqual(clean.expenses,previewExpenses,'Applying the preview preserves repaired expense IDs');
+    assert.deepEqual(clean.expenses.map(e=>e.amountUsd),[12.5,1,1,1,1]);
+    assert.deepEqual(clean.expenses.map(e=>e.date),['','','2027-02-28','','']);
     assert.equal(inspection.executed,false);assert.deepEqual(attempted,[],'Unsafe media must not even issue a request');
     assert.equal(saves,0);assert.deepEqual(row,serverBefore);
     assert.deepEqual(await page.evaluate(async()=>window.__importTest.normalizeState((await window.__importTest.readDraftRecord()).state)),clean);

@@ -5,8 +5,8 @@ import { loadFactory } from './helpers/factories.mjs';
 const clone=value=>JSON.parse(JSON.stringify(value));
 
 function fixture() {
-  let now=0,sequence=0,current={html:'Original'},cleanups=0;
-  const timers=new Map(),controls=new Map(),drafts=[];
+  let now=0,sequence=0,current={html:'Original'},cleanups=0,captures=0;
+  const timers=new Map(),controls=new Map(),drafts=[],flushed=[];
   const globals={
     setTimeout(callback,delay){const id=++sequence;timers.set(id,{at:now+delay,callback});return id;},
     clearTimeout(id){timers.delete(id);}
@@ -16,9 +16,9 @@ function fixture() {
   const editor=loadFactory('editing',{
     $:selector=>{if(!controls.has(selector))controls.set(selector,{});return controls.get(selector);},
     body:{classList:{contains:name=>name==='editing'}},
-    captureState:()=>clone(current),applyState:state=>{current=clone(state);},
-    documentAdapter:{isApplying:()=>false},documentSession:session,
-    queueDraftPersistence:()=>drafts.push(clone(current)),flushDraftPersistence:async()=>{},
+    captureState:()=>{captures++;return clone(current);},applyState:state=>{current=clone(state);},
+    documentAdapter:{isApplying:()=>false},documentSession:session,fingerprint:JSON.stringify,
+    queueDraftPersistence:()=>drafts.push(clone(current)),flushDraftPersistence:async state=>flushed.push(clone(state)),
     clearCleanDraft:()=>{cleanups++;},syncChecklistControls:()=>{},
     setStatus:()=>{},resetInactivityTimer:()=>{}
   });
@@ -27,7 +27,7 @@ function fixture() {
     now+=ms;
     for(const [id,timer] of timers)if(timer.at<=now){timers.delete(id);timer.callback();}
   }
-  return {editor,session,tick,controls,drafts,
+  return {editor,session,tick,controls,drafts,flushed,captures:()=>captures,
     input(text){current={html:text};editor.queueHistory();},
     text:()=>current.html,cleanups:()=>cleanups,timers:()=>timers.size};
 }
@@ -77,4 +77,14 @@ test('new input after Undo replaces the redo branch without losing the new text'
   f.editor.moveHistory(-1);assert.equal(f.text(),'First');
   f.editor.moveHistory(1);assert.equal(f.text(),'Replacement');
   assert.equal(f.session.snapshot().historyLength,3);
+});
+
+test('input uses one capture and immediately sends it to draft persistence',()=>{
+  const f=fixture(),before=f.captures();
+  f.input('First input');
+  assert.equal(f.captures()-before,1);
+  assert.deepEqual(f.flushed,[{html:'First input'}]);
+  assert.equal(f.session.snapshot().historyLength,1);
+  f.tick(400);
+  assert.equal(f.session.snapshot().historyLength,2);
 });

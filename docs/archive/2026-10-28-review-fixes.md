@@ -2,6 +2,8 @@
 
 Implementation follow-up to the [review](2026-10-28-project-review.md). The review remains historical evidence of the original defects. Current trip stays schema 6/KRW/USD; no production document or SQL changes.
 
+Status: published as `42a05a0`; see [production result](#production-result). Physical-device checks were explicitly deferred by the user.
+
 ## Stage 1 — editor entry (F1/F2)
 
 Authentication captures its requested purpose and generation. Cancel/Esc, replacement requests and sign-out invalidate pending entry; stale login/session/recovery/document continuations cannot resume it. SDK authentication may complete after cancellation, but the canceled action requires an explicit retry.
@@ -41,9 +43,9 @@ The first profiling fixture failed Redo because manually inserted figures had no
 
 Integrated current main (`ea8567f`) through merge `a311c00`, preserving its separate intentional-gate workflow and required-validation command. Final Windows checks on that integrated tree: [186/186 unit tests](2026-10-28-review-fixes/final-unit.txt), [all 16 Chromium suites](2026-10-28-review-fixes/final-chromium.txt), generated output/project/diff checks, and 128 local documentation targets passed. Firefox/WebKit functional coverage above uses the same final app/input-test sources. No application source changed after Stage 2.
 
-Live API GET before release confirmed Pages source `workflow`, strict main `required` checks including administrators and disabled force pushes. Work-branch Linux/SQL/browser validation and main deployment must still succeed before a publication claim. No production data/SQL/authenticated save/upload is part of this release.
+Live API GET confirmed Pages source `workflow`, strict main `required` checks including administrators and disabled force pushes. The subsequent required CI and deployment results are recorded below. No production data/SQL/authenticated save/upload is part of this release.
 
-Remaining limits: clean local Ubuntu 24.04 verification; both travelers' physical phone/IME/keyboard/photo picker/installed offline/reconnect checks; physical screen readers; WebKit pointer-theme acknowledgement and Linux PNG parity. Existing CI scopes do not replace those checks. The user was asked for phone results; none were available during implementation. I1/I2 remain optional and I3 actual-phone profiling remains outstanding.
+Remaining limits: clean local Ubuntu 24.04 verification; both travelers' physical phone/IME/keyboard/photo picker/installed offline/reconnect checks; physical screen readers; WebKit pointer-theme acknowledgement and Linux PNG parity. Existing CI scopes do not replace those checks. The user explicitly chose automatic validation/deployment now and physical-device checks later. I1/I2 remain optional and I3 actual-phone profiling remains outstanding.
 
 ## Release-gate follow-up
 
@@ -53,4 +55,14 @@ PR run [40656272443](https://github.com/pca01008/us-west-2027-trip/actions/runs/
 
 The extra-engine runner now splits the input suite at existing navigation/dialog/editing-export boundaries. Each group retains a 180s process limit and every original/new assertion; all six engine/group combinations are required and report timings/warnings. Chromium still runs the full input suite by default, and full CI stage/job budgets are unchanged. This is a targeted fixture execution change, with no app source/output changes and no blind rerun or retry policy. The user explicitly chose automatic validation/deployment now and physical-device checks later.
 
-Local verification of the split: [all six groups passed](2026-10-28-review-fixes/grouped-engines-windows.txt); Firefox navigation/dialogs/editing 17.3/31.1/19.4s, WebKit 25.4/49.8/21.4s, each under 180s. [Chromium default full input](2026-10-28-review-fixes/grouped-chromium.txt) and [186 unit tests](2026-10-28-review-fixes/grouped-unit.txt) passed, along with syntax/generated/project/diff checks. These timings are Windows evidence; the corrected PR run must establish Linux results.
+Local verification of the split: [all six groups passed](2026-10-28-review-fixes/grouped-engines-windows.txt); Firefox navigation/dialogs/editing 17.3/31.1/19.4s, WebKit 25.4/49.8/21.4s, each under 180s. [Chromium default full input](2026-10-28-review-fixes/grouped-chromium.txt) and [186 unit tests](2026-10-28-review-fixes/grouped-unit.txt) passed, along with syntax/generated/project/diff checks. These timings are Windows evidence; corrected PR/main runs below establish Linux results.
+
+## Production result
+
+Released **`42a05a0d3bf2e70fbec7203349229fe033b56ced`** through [PR #2](https://github.com/pca01008/us-west-2027-trip/pull/2). Corrected PR [40657801641](https://github.com/pca01008/us-west-2027-trip/actions/runs/40657801641) and main [40659497080](https://github.com/pca01008/us-west-2027-trip/actions/runs/40659497080) passed 186 unit/static tests, 24 PostgreSQL checks, all six Firefox/WebKit groups and all 16 Chromium suites. Required aggregation and Pages asset-byte/exclusion validation passed in both runs; main deployed successfully at 09:08:13 UTC on October 28.
+
+Main used Node 24.22.1/npm 11.19.1/Playwright 1.62.1, PostgreSQL 17.11, Ubuntu 24.04.5 native jobs and the pinned Ubuntu 24.04.4 browser image. Main input/drafts: 82.2s/180s and 218.2s/300s. Longest WebKit group: 97.5s/180s (corrected PR: 46.4s/180s). These are independent successful runs; the earlier failed PR remains a failure. All assertions and prior per-process/full-CI limit values were retained.
+
+After publication, [8 public files matched local bytes](2026-10-28-review-fixes/production-assets.json) and 6 excluded paths returned 404. [Fresh Chromium at 390×844](2026-10-28-review-fixes/production-readonly.json) read the public document successfully and navigated schedule/PREP/ledger without overflow, page errors or writes. No live trip content or screenshots were stored. Pages GET confirms `workflow`/`built`; strict main protection remains enabled including administrators, with force pushes/deletion disabled.
+
+[Machine-readable receipt](2026-10-28-review-fixes/deployment-receipt.json) records source identities, jobs, artifacts, timings, deployment and remaining limits. This final receipt/Operations update is documentation-only on the work branch; production main stays at the validated merge commit. See [validation backlog](../VALIDATION_TODO.md) for remaining local/device checks.

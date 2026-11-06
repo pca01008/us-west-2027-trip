@@ -107,6 +107,39 @@ try {
       await page.goto(origin);
       await page.waitForFunction(() => window.__ledgerTest && !document.body.classList.contains('hydrating'));
       await selectTripTab(page, 'money', mobile);
+      if (mobile) {
+        diagnostics.scenario('mobile / totals, entry and readable metadata at narrow widths');
+        await fixture(mixed,{exchangeRateUpdated:'2026-11-06T00:00:00Z'});
+        for(const width of [320,390]){
+          await page.setViewportSize({width,height:844});
+          for(const theme of ['light','dark']){
+            await selectTheme(page,theme);
+            await selectTripTab(page,'money',true);
+            await page.waitForFunction(()=>{
+              const total=document.querySelector('.money-totals').getBoundingClientRect();
+              const entry=document.querySelector('.expense-entry').getBoundingClientRect();
+              const nav=document.querySelector('.bottom-nav').getBoundingClientRect();
+              return total.top>=0&&total.bottom<=Math.min(entry.top,nav.top);
+            });
+            assert.equal(await page.locator('#exchangeRateUpdated').evaluate(el=>getComputedStyle(el).fontSize),'12px');
+            await textContrast(page.locator('#exchangeRateUpdated'),`mobile ${width}/${theme}/rate date`);
+            assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),width);
+            await page.screenshot({path:path.join(output,`money-${width}-${theme}.png`)});
+          }
+          // A shorter viewport approximates the space left above a virtual keyboard.
+          await page.setViewportSize({width,height:480});
+          const amount=page.locator('#expenseKrw');
+          await amount.fill('18000');
+          await activate(page.locator('[data-edit-expense]').first());
+          await page.locator('#expenseEditName').fill('좁은 화면 수정');
+          await activate(page.locator('#expenseEditCancel'));
+          assert.equal(await amount.inputValue(),'18000');
+          assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),width);
+          await amount.fill('');
+        }
+        await page.setViewportSize({width:390,height:900});
+        await selectTheme(page,'light');
+      }
       scenario = 'mixed currency and unset budget'; diagnostics.scenario(`${mode} / ${scenario}`);
       await fixture(mixed);
       await totals(['₩28,370', '$21.40']);
@@ -253,6 +286,25 @@ try {
       assert.equal(await text('#expenses .remark'), '아직 기록된 경비가 없습니다.');
       assert.equal(await text('#categorySummary'), '아직 카테고리별 내역이 없습니다.');
       await csv([]);
+      scenario = 'undated expense edits preserve dates'; diagnostics.scenario(`${mode} / ${scenario}`);
+      await fixture([
+        expense('undated','날짜 없음',10,'USD',''),
+        expense('invalid-date','잘못된 날짜',10,'USD','2027-02-30'),
+        expense('dated','날짜 있음',10,'USD','2027-02-28')
+      ]);
+      const editDate=page.locator('#expenseEditDate');
+      for(const id of ['undated','invalid-date','dated']){
+        const date=id==='dated'?'2027-02-28':'';
+        const edit=page.locator(`[data-edit-expense="${id}"]`);
+        for(const change of ['none','name','category']){
+          await activate(edit);assert.equal(await editDate.inputValue(),date);
+          if(change==='name')await page.locator('#expenseEditName').fill('이름 수정 '+id);
+          if(change==='category')await page.locator('#expenseEditCategory').selectOption('misc');
+          await activate(page.locator('#expenseEditSave'));
+          assert.equal(await page.locator(`[data-expense-id="${id}"] time`).getAttribute('datetime'),date);
+        }
+      }
+      await fixture([]);
       scenario = 'dual currency input, source transitions and fixed values'; diagnostics.scenario(`${mode} / ${scenario}`);
       await settings(1400);
       const krw=page.locator('#expenseKrw'),usd=page.locator('#expenseUsd');
@@ -310,7 +362,11 @@ try {
       await page.evaluate(()=>{const api=window.__ledgerTest,state=api.captureState();state.expenses.shift();api.applyStatePreservingInputs(state);});
       await activate(page.locator('#expenseEditSave'));assert.equal((await saved()).length,2);
       assert.match(await text('#status'),/내역이 변경/);await page.keyboard.press('Escape');
-      const exportedExpenses=await saved(),renderedAmounts=await page.locator('.expense-amount').allTextContents();
+      // Clearing an existing date survives both forms of export.
+      await activate(page.locator('[data-edit-expense]').first());
+      await editDate.fill('');await activate(page.locator('#expenseEditSave'));
+      const exportedExpenses=await saved();assert.equal(exportedExpenses[0].date,'');
+      const renderedAmounts=await page.locator('.expense-amount').allTextContents();
       for(const kind of ['editable','readonly']){
         const pending=page.waitForEvent('download');
         await page.evaluate(kind=>kind==='editable'?window.__ledgerTest.exportOfflineHtml():window.__ledgerTest.exportStaticHtml(),kind);

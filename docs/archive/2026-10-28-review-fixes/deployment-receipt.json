@@ -1,0 +1,250 @@
+{
+  "deployedSha": "42a05a0d3bf2e70fbec7203349229fe033b56ced",
+  "pullRequest": "https://github.com/pca01008/us-west-2027-trip/pull/2",
+  "stageCommits": {
+    "baseline": "53b7a10",
+    "editorEntry": "5bc536a",
+    "linksAccessibility": "01a29af",
+    "documentationMeasurement": "87249d4",
+    "mainIntegration": "a311c00",
+    "finalVerification": "58b987c",
+    "engineExecution": "a2c5c65"
+  },
+  "candidateRun": {
+    "id": 40654033648,
+    "result": "success",
+    "sourceSha": "58b987cc4305604a000232c814618c888c06ef38",
+    "artifactId": 12801726848
+  },
+  "failedPrRun": {
+    "id": 40656272443,
+    "result": "failure",
+    "sourceSha": "59beb1111df234b2f0a522af6579cfa86a245123",
+    "cause": "WebKit whole input process reached 180-second limit during exported read-only reload; subsequent page/screenshot closure followed termination.",
+    "diagnosticArtifact": 12802440066,
+    "correction": "Split extra-engine navigation/dialog/editing-export groups; retain all assertions and 180-second process limits."
+  },
+  "correctedPrRun": {
+    "id": 40657801641,
+    "result": "success",
+    "headSha": "a2c5c655e06f3bc19ad06fc944cb04fd81c035c8",
+    "sourceSha": "6e39e16c9169458f4106eaf127e053a7ad0d2aac",
+    "artifactId": 12803251618,
+    "artifactSha256": "d74b642e5971ee5c9b4e4a35ebce9a229f2ab89da0f3a0565afc5204aef85390"
+  },
+  "mainRun": {
+    "id": 40659497080,
+    "url": "https://github.com/pca01008/us-west-2027-trip/actions/runs/40659497080",
+    "result": "success",
+    "jobs": [
+      {
+        "id": 122718665750,
+        "name": "sql",
+        "result": "success"
+      },
+      {
+        "id": 122718666056,
+        "name": "validate",
+        "result": "success"
+      },
+      {
+        "id": 122718946318,
+        "name": "browser",
+        "result": "success"
+      },
+      {
+        "id": 122726328350,
+        "name": "required",
+        "result": "success"
+      },
+      {
+        "id": 122726385363,
+        "name": "pages-build",
+        "result": "success"
+      },
+      {
+        "id": 122726581064,
+        "name": "deploy",
+        "result": "success"
+      }
+    ],
+    "artifactId": 12804556281,
+    "artifactSha256": "594731287dfd9b72b03c4ef485f32f9298b59627df3741f76876a7b61453368a",
+    "deployedAt": "2026-10-28T09:08:13Z"
+  },
+  "checks": {
+    "unit": 186,
+    "sql": 24,
+    "postgres": "17.11",
+    "chromiumSuites": 16,
+    "extraEngineGroups": 6,
+    "node": "24.22.1",
+    "npm": "11.19.1",
+    "playwright": "1.62.1",
+    "nativeOS": "Ubuntu 24.04.5",
+    "browserOS": "Ubuntu 24.04.4",
+    "browsers": {
+      "chromium": "151.0.7922.34",
+      "firefox": "153.0",
+      "webkit": "26.5"
+    }
+  },
+  "engineGroups": [
+    {
+      "engine": "firefox",
+      "group": "navigation",
+      "elapsedSeconds": 22.1,
+      "deadlineSeconds": 180
+    },
+    {
+      "engine": "firefox",
+      "group": "dialogs",
+      "elapsedSeconds": 48.6,
+      "deadlineSeconds": 180
+    },
+    {
+      "engine": "firefox",
+      "group": "editing",
+      "elapsedSeconds": 25.5,
+      "deadlineSeconds": 180
+    },
+    {
+      "engine": "webkit",
+      "group": "navigation",
+      "elapsedSeconds": 51.9,
+      "deadlineSeconds": 180
+    },
+    {
+      "engine": "webkit",
+      "group": "dialogs",
+      "elapsedSeconds": 97.5,
+      "deadlineSeconds": 180
+    },
+    {
+      "engine": "webkit",
+      "group": "editing",
+      "elapsedSeconds": 88.5,
+      "deadlineSeconds": 180
+    }
+  ],
+  "chromiumTimings": [
+    {
+      "suite": "diagnostics",
+      "elapsedSeconds": 2.3,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "drafts",
+      "elapsedSeconds": 218.2,
+      "deadlineSeconds": 300
+    },
+    {
+      "suite": "storage",
+      "elapsedSeconds": 64,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "inputs",
+      "elapsedSeconds": 82.2,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "imports",
+      "elapsedSeconds": 37.9,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "versions",
+      "elapsedSeconds": 51.9,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "ledger",
+      "elapsedSeconds": 56.6,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "currency",
+      "elapsedSeconds": 9,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "ledger-compat",
+      "elapsedSeconds": 2,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "prep",
+      "elapsedSeconds": 56.9,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "auth",
+      "elapsedSeconds": 14.3,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "photos",
+      "elapsedSeconds": 1.3,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "theme",
+      "elapsedSeconds": 8.8,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "palette",
+      "elapsedSeconds": 31.7,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "navigation",
+      "elapsedSeconds": 25.6,
+      "deadlineSeconds": 180
+    },
+    {
+      "suite": "pwa",
+      "elapsedSeconds": 20.1,
+      "deadlineSeconds": 180
+    }
+  ],
+  "production": {
+    "assets": "production-assets.json",
+    "readonly": "production-readonly.json",
+    "matchedAssets": 8,
+    "excludedPaths404": 6,
+    "viewport": "390x844",
+    "panels": 3,
+    "errors": 0,
+    "writes": 0
+  },
+  "promotionNote": "Direct nonforced main push was rejected despite successful manual checks. Protections were retained; PR checks and expected-head merge were used.",
+  "deviceDecision": "User explicitly chose automatic validation/deployment now and physical-device checks later.",
+  "scope": "Schema 6/KRW/USD and production data retained; no production SQL, authenticated save or photo-upload mutations.",
+  "remaining": [
+    "Clean local Ubuntu 24.04 verification",
+    "Physical phone/IME/keyboard/photo picker/installed offline/reconnect checks",
+    "Physical screen readers",
+    "WebKit pointer-theme acknowledgement and Linux PNG parity",
+    "Optional I1/I2 changes; actual-phone I3 profiling before optimization"
+  ],
+  "documentationReceipt": "Documentation-only follow-up stays on the work branch; production main stays at the validated merge commit.",
+  "settings": {
+    "checkedAt": "2026-10-28T11:42:42.484Z",
+    "pages": {
+      "build_type": "workflow",
+      "status": "built",
+      "url": "https://pca01008.github.io/us-west-2027-trip/"
+    },
+    "mainProtection": {
+      "strict": true,
+      "contexts": [
+        "required"
+      ],
+      "enforceAdmins": true,
+      "allowForcePushes": false,
+      "allowDeletions": false
+    }
+  }
+}

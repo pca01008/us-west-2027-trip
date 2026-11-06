@@ -1,9 +1,9 @@
 /** Draft scheduling and recovery policy; storage mechanics have a separate owner. */
-function createDraftWorkflow({OFFLINE_MODE,SCHEMA_VERSION,TRIP_ID,applyState,body,captureState,clone,documentSession,draftStorage,fingerprint,getEditorSession,initializeHistory,isDirty,migratePublishedState,normalizeState,readDraftRecord,setStatus,showChoice,updateDirtyState}) {
+function createDraftWorkflow({OFFLINE_MODE,SCHEMA_VERSION,TRIP_ID,applyState,body,captureState,clone,documentSession,draftStorage,fingerprint,getEditorSession,initializeHistory,migratePublishedState,normalizeState,readDraftRecord,setStatus,showChoice,updateDirtyState}) {
 let deferredDraftRecovery=false,draftWriteTimer=null;
 // Workflow guards run before the storage call, preserving synchronous checkpoints.
 function writeDraftRecord(record){
-  if(documentSession.snapshot().documentWriteBlock||deferredDraftRecovery)return Promise.resolve(false);
+  if(documentSession.flags().documentWriteBlock||deferredDraftRecovery)return Promise.resolve(false);
   return draftStorage.writeDraftRecord(record);
 }
 async function clearDraftRecord(){
@@ -22,19 +22,24 @@ async function clearDraftRecord(){
   // Recovery only moves records whose owner is no longer open.
 
 
-  function currentDraftRecord() {
-    return {tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:documentSession.snapshot().previewReturnState?clone(documentSession.snapshot().previewReturnState):captureState(),baseState:documentSession.snapshot().draftBaselineUnknown?null:clone(documentSession.snapshot().lastSavedState),baseRevision:documentSession.snapshot().publishedRevision,baseUpdatedAt:documentSession.snapshot().publishedUpdatedAt,savedAt:new Date().toISOString(),dirty:true};
+  function currentDraftRecord(state,baseline=documentSession.snapshot()) {
+    return {tripId:TRIP_ID,schemaVersion:SCHEMA_VERSION,state:baseline.previewReturnState||state||captureState(),baseState:baseline.draftBaselineUnknown?null:baseline.lastSavedState,baseRevision:baseline.publishedRevision,baseUpdatedAt:baseline.publishedUpdatedAt,savedAt:new Date().toISOString(),dirty:true};
   }
-  async function flushDraftPersistence() {
-    clearTimeout(draftWriteTimer);
-    if(!documentSession.snapshot().lastSavedState||!isDirty())return false;
-    return writeDraftRecord(currentDraftRecord());
+  async function flushDraftPersistence(dirtyState) {
+    clearTimeout(draftWriteTimer);draftWriteTimer=null;
+    if(!documentSession.flags().hasBaseline)return false;
+    const baseline=documentSession.snapshot();
+    // The input handler already evaluated this capture. Lifecycle callers read fresh state.
+    const state=dirtyState||baseline.previewReturnState||captureState();
+    if(!dirtyState&&!documentSession.dirty(state))return false;
+    return writeDraftRecord(currentDraftRecord(state,baseline));
   }
   function queueDraftPersistence() {
     clearTimeout(draftWriteTimer);
-    if(!documentSession.snapshot().pendingDraft||!documentSession.snapshot().lastSavedState||body.classList.contains('hydrating'))return;
+    const {pendingDraft,hasBaseline}=documentSession.flags();
+    if(!pendingDraft||!hasBaseline||body.classList.contains('hydrating'))return;
     draftWriteTimer=setTimeout(()=>{
-      if(documentSession.snapshot().pendingDraft)void writeDraftRecord(currentDraftRecord());
+      if(documentSession.flags().pendingDraft)void writeDraftRecord(currentDraftRecord());
     },700);
   }
 

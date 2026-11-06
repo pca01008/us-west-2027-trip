@@ -178,7 +178,7 @@ IndexedDB holds public state, per-tab drafts, staged photos, baseline state/revi
 
 The PWA fetches static UI/configuration network-first with cache fallback on failure or after four seconds. Shared reads have an independent eight-second timeout. The service worker excludes Supabase Auth, database, and photo Storage traffic. Installation does not cache all photos.
 
-Refresh and Realtime share one adoption rule: remote revisions must exceed the published baseline and cannot precede the newest pending candidate. Duplicate notifications leave history and cache untouched. Starting a refresh or receiving a newer Realtime update invalidates earlier refresh results and errors. Editing, drafts, previews, and checklist saves defer application while retaining only the newest remote candidate; a later refresh can adopt that candidate after deferral ends. Historical preview remains independent of the published revision and cache. Lost notifications do not undo successful database writes.
+Editor entry, refresh, and Realtime share one adoption rule: remote revisions must exceed the published baseline and cannot precede the newest pending candidate. Duplicate notifications leave history and cache untouched. Starting a refresh or receiving a newer Realtime update invalidates earlier refresh results and errors. Editing, drafts, previews, and checklist saves defer application while retaining only the newest remote candidate; a later refresh can adopt that candidate after deferral ends. Historical preview remains independent of the published revision and cache. Lost notifications do not undo successful database writes.
 
 <a id="state"></a>
 
@@ -228,7 +228,7 @@ Supabase stores a complete state object as JSON, rather than HTML alone:
 
 Itinerary/checklist markup is already complex DOM. Saving `<main>` as a string preserves flexible cards, text, dates, and photos with less implementation work than separate tables, but requires `schemaVersion`/`normalizeState()` compatibility when markup changes. Ledger arrays make arithmetic and category aggregation reliable. The separate `checks` array preserves live checkbox properties that `innerHTML` alone may miss.
 
-View-mode checks call `requireEditor('checklist')`; canceled authentication restores the original checkbox. Authenticated saves patch stable IDs onto the latest document using revision checks, excluding other drafts. Offline checks remain local. [Usage](USER_GUIDE.md) is authoritative.
+View-mode checks call `requireEditor('checklist')`; canceled authentication restores the original checkbox. Authenticated saves patch stable IDs onto the latest document using revision checks, excluding other drafts. An outstanding PREP editor read cannot open the dialog after logout, cancellation, or a newer editor request. Offline checks remain local. [Usage](USER_GUIDE.md) is authoritative.
 
 `commitChecklistPatch` verifies ambiguous writes with one bounded public read: checkboxes match stable ID/value; list edits match ordered IDs/text/importance, allowing subsequent completion changes. Verified snapshots retain newer remote content and completion flags. Unverified outcomes retain confirmed local state/list inputs with an uncertain-result message, never automatically resending. Explicit retries skip an unchanged patch. Unrelated drafts/history remain private; differing remote content stays pending under the existing conflict baseline.
 
@@ -283,6 +283,8 @@ Deferred drafts may have `pendingDraft=false` because they are not applied. Chec
 
 Versions load metadata first, content on demand. Preview preserves the original draft before entry; autosave/pagehide/refresh during preview retain original work. Editing/normal saves are blocked. Restore confirms publication and creates a new version. Undo holds up to 100 in-memory states; the server retains 50 versions.
 
+An input event captures the document once for dirty checking and immediate draft persistence. The session caches the normalized fingerprint of its private baseline and current undo entry. Baseline changes, history navigation, and history reconciliation invalidate those keys. The draft checkpoint and IndexedDB format stay the same.
+
 `buildDiff()` matches events by stable ID and compares their day index as well as content and flattened order. Across-day moves show the configured old date → new date, even when overall order is unchanged. Within-day reordering remains an order change. Versions, imports and save conflicts share this comparison.
 
 Photo summaries compare full-image and thumbnail resources separately from IDs, captions, alt text and order. Decoded embedded bytes use synchronous SHA-256 to match immutable Storage filenames without network reads. Public Storage URL query/fragment changes are ignored. Asset and legacy-path exports record their source plus embedded digest; the source remains equivalent only while the bytes match. Replaced bytes invalidate that link. Old asset-only exports without this link may show an image change because their original bytes cannot be inferred locally. See the [F5 verification record](archive/2026-10-26-photo-comparison.md).
@@ -294,6 +296,8 @@ Idle warning occurs at 29 minutes; at 30, `scheduleSessionTimers()` or expiry in
 <a id="ledger-timetable"></a>
 
 ## Ledger and timetable
+
+Imported expenses normalize impossible dates to blank. ID repair reserves normalized IDs and assigns deterministic unused IDs to duplicates without changing expense amounts.
 
 `amountKrw`/`amountUsd` are fixed amounts. For the current trip, `amountSource=krw` calculates only USD; `usd` calculates only KRW; `both` means manual. In schema 7 these slots mean base/quote respectively (see [currency binding](#currency-binding)). Automatic pairs store the positive calculation rate in `appliedExchangeRate`; manual pairs store null. Old `amount`/`currency` are not written. Lists, totals, CSV, and comparisons use new fields.
 
