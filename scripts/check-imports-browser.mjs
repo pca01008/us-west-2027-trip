@@ -89,6 +89,8 @@ try {
     await upload(page,embedded);await page.locator('#importDialog').waitFor();
     assert.deepEqual(await page.locator('#importDiff li').allTextContents(),[],'Unchanged asset photos survive actual offline embedding');
     assert.equal(await page.locator('#importApply').isEnabled(),false);
+    assert.equal(await page.locator('#importDraftWarning').isHidden(),true);
+    assert.equal(await page.locator('#importDraftExport').isHidden(),true);
     await page.locator('#importCancel').click();
     const incoming=await page.evaluate(async snapshot=>{
       const api=window.__importTest;
@@ -112,11 +114,32 @@ try {
       }
       return change(snapshot,replacement);
     },initial);
+    await selectTripTab(page,'d1');await page.locator('#editBtn').click();
+    const title=page.locator('.day1 .timeline-row h3').first();
+    await title.fill('가져오기 전 내 초안');
+    await page.evaluate(()=>window.__importTest.flushDraftPersistence());
+    const localDraft=await stored(page);
+    await upload(page,incoming);await page.locator('#importDialog').waitFor();
+    assert.equal(await page.locator('#importDraftWarning').isVisible(),true);
+    await page.locator('#importCancel').click();
+    assert.equal(await title.textContent(),'가져오기 전 내 초안');
+    assert.deepEqual(await stored(page),localDraft);
+    await upload(page,incoming);await page.locator('#importDialog').waitFor();
+    const download=page.waitForEvent('download');
+    await page.locator('#importDraftExport').click();
+    const backup=await download;
+    assert.match(backup.suggestedFilename(),/_EDITABLE_.*\.html$/);
+    const backupSource=await readFile(await backup.path(),'utf8');
+    assert.match(backupSource,/가져오기 전 내 초안/);
+    assert.equal(await page.locator('#importDialog').isHidden(),true);
+    assert.equal(await title.textContent(),'가져오기 전 내 초안');
+    assert.deepEqual((await stored(page)).state,localDraft.state);
     await upload(page,incoming);await page.locator('#importDialog').waitFor();
     assert.deepEqual(await page.locator('#importDiff li').allTextContents(),['DAY 1 일정 3 사진 이미지 변경']);
     assert.equal(await page.locator('#importApply').isEnabled(),true,'Image-only replacement must enable Apply');
     await apply(page);
     const applied=await state(page),draft=await stored(page);
+    assert.doesNotMatch(applied.html,/가져오기 전 내 초안/);
     assert.deepEqual(await page.evaluate(({a,b})=>window.__importTest.buildDiff(a,b),{a:incoming,b:applied}),[]);
     assert.ok(draft?.state.html.includes('data:image/png;base64,'),'The changed photo is retained in the durable draft');
     assert.equal(saves,0);assert.deepEqual(row,baseline,'Import never writes the shared document');

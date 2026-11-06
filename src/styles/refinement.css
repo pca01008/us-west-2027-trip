@@ -39,7 +39,6 @@
   #addExpense{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:124px;min-height:44px;font-family:inherit;font-size:13px;font-weight:800;line-height:1.4;white-space:nowrap}
   .expense-entry .add-expense{grid-template-columns:120px 140px minmax(120px,1fr) minmax(180px,1fr) 124px}
   @media(max-width:900px){.expense-entry .add-expense{grid-template-columns:repeat(2,minmax(0,1fr))}.expense-entry .add-expense #addExpense{grid-column:1/-1;width:100%}}
-  @media(max-width:520px){.expense-entry .add-expense{grid-template-columns:minmax(0,1fr)}}
   @media(forced-colors:active){#themeMenu input:checked{appearance:auto}.bottom-nav button[aria-current]{outline:2px solid Highlight}}
   @media print{body{padding-bottom:0}.bottom-nav,#expenseCsvExport{display:none}}
   html[data-artifact-type="readonly"] body{padding-bottom:0}
@@ -60,4 +59,9 @@
   .expense-amount small{display:inline;margin:0;font-size:12px;font-weight:500}
   .expense-side,.money-total strong{min-width:0;overflow-wrap:anywhere}
   @media(max-width:1100px){.expense-entry .add-expense{grid-template-columns:repeat(2,minmax(0,1fr))}.expense-entry #addExpense{grid-column:1/-1;width:100%;margin-top:0}}
-  @media(max-width:480px){.expense-entry .add-expense,.expense-edit-grid{grid-template-columns:minmax(0,1fr)}.expense-edit-grid .wide{grid-column:auto}.expense-side{max-width:100%;flex-wrap:wrap;gap:10px}.expense-amount{flex-basis:100%;text-align:left}.expense-actions{margin-left:auto}.expense-action{white-space:nowrap}}
+  @media(max-width:520px){
+    .expense-entry{padding:12px}
+    .expense-entry .add-expense{padding:0;border:0;background:none}
+    .expense-entry .expense-name{grid-column:1/-1}
+  }
+  @media(max-width:480px){.expense-edit-grid{grid-template-columns:minmax(0,1fr)}.expense-edit-grid .wide{grid-column:auto}.expense-side{max-width:100%;flex-wrap:wrap;gap:10px}.expense-amount{flex-basis:100%;text-align:left}.expense-actions{margin-left:auto}.expense-action{white-space:nowrap}}

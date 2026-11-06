@@ -218,6 +218,7 @@ main{max-width:860px;min-height:calc(100dvh - 120px);padding:16px 0}
 .timeline-row>.card{padding:17px 4px}
 .card h3{margin:0 0 5px;color:#1b2940;font-size:16px;font-weight:850;letter-spacing:-.02em}
 .remark{color:#6a788b;font-size:12.5px;line-height:1.55}
+.card .remark{font-size:.875rem}
 .checklist{padding:17px 18px 20px}
 .checklist h3{
   margin:0 2px 11px;

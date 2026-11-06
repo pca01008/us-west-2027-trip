@@ -107,6 +107,39 @@ try {
       await page.goto(origin);
       await page.waitForFunction(() => window.__ledgerTest && !document.body.classList.contains('hydrating'));
       await selectTripTab(page, 'money', mobile);
+      if (mobile) {
+        diagnostics.scenario('mobile / totals, entry and readable metadata at narrow widths');
+        await fixture(mixed,{exchangeRateUpdated:'2026-11-06T00:00:00Z'});
+        for(const width of [320,390]){
+          await page.setViewportSize({width,height:844});
+          for(const theme of ['light','dark']){
+            await selectTheme(page,theme);
+            await selectTripTab(page,'money',true);
+            await page.waitForFunction(()=>{
+              const total=document.querySelector('.money-totals').getBoundingClientRect();
+              const entry=document.querySelector('.expense-entry').getBoundingClientRect();
+              const nav=document.querySelector('.bottom-nav').getBoundingClientRect();
+              return total.top>=0&&total.bottom<=Math.min(entry.top,nav.top);
+            });
+            assert.equal(await page.locator('#exchangeRateUpdated').evaluate(el=>getComputedStyle(el).fontSize),'12px');
+            await textContrast(page.locator('#exchangeRateUpdated'),`mobile ${width}/${theme}/rate date`);
+            assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),width);
+            await page.screenshot({path:path.join(output,`money-${width}-${theme}.png`)});
+          }
+          // A shorter viewport approximates the space left above a virtual keyboard.
+          await page.setViewportSize({width,height:480});
+          const amount=page.locator('#expenseKrw');
+          await amount.fill('18000');
+          await activate(page.locator('[data-edit-expense]').first());
+          await page.locator('#expenseEditName').fill('좁은 화면 수정');
+          await activate(page.locator('#expenseEditCancel'));
+          assert.equal(await amount.inputValue(),'18000');
+          assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),width);
+          await amount.fill('');
+        }
+        await page.setViewportSize({width:390,height:900});
+        await selectTheme(page,'light');
+      }
       scenario = 'mixed currency and unset budget'; diagnostics.scenario(`${mode} / ${scenario}`);
       await fixture(mixed);
       await totals(['₩28,370', '$21.40']);

@@ -96,6 +96,7 @@ The current trip uses KRW/USD. Other trips may show a different configured pair;
 - Clear one manual amount to calculate from the remaining value. Clearing an automatic pair's source clears both; clearing only its result restores the calculation.
 - Manual amounts must be positive. Calculated results may round to zero. Correct invalid input before adding.
 - Remote saving, app resume, and reconnection preserve unadded input/cursor position. Deleted categories fall back to available ones. Input has no draft protection until Add.
+- Ledger totals appear above the entry form. The current rate and its update date appear below the form.
 - New expenses default to today. Editing an undated expense keeps its date blank until you choose one. Clearing a date marks the expense as undated.
 - Ledger settings manages the manual rate and categories. Rate edits apply only with Apply and close (also Enter/Esc). Invalid input keeps the dialog open with a field error; correct it or use Revert rate to restore the current rate. Category deletion moves its expenses to Deleted category. Empty category names or expense descriptions in editing dialogs show an error beside the input; correct the field and apply again.
 - KRW totals sum every expense's KRW amount; USD totals sum every USD amount. These express the same spending; do not add them together. Category totals follow the same rule. KRW totals no longer count only original KRW entries. Budget controls and expense filters are absent.
@@ -124,6 +125,7 @@ Undo is temporary editing history; versions are server history. Restore saves th
 - Export offers Offline working copy and Print/share copy.
 - Offline copies embed photos and support editing without internet. Above 100MB, a warning precedes download.
 - Saving offline downloads a new working copy. Online Import edited copy compares against the latest public document. Applying creates a draft; separate Save publishes it.
+- If applying would replace an unsaved draft, the comparison shows a warning. Choose Export draft to download an offline working copy, then select the import file again.
 - Cancel or Escape stops a pending import. Selecting another file or signing out also cancels it; delayed results cannot replace your draft or reopen an error. Apply is unavailable while its read is running.
 - Wrong-trip, incomplete, corrupt, and unsupported files are rejected without replacing the current draft. If application fails, the previous screen and unsaved edits remain available; retry or download a fresh working copy. Old copies retain itinerary/checks. Shared changes during comparison require reviewing refreshed differences before applying.
 - Print/share copies are read-only snapshots without editor tools or Supabase. Photos embed when possible; remaining online photos/map links need internet.
