@@ -83,8 +83,14 @@ function calculateExpenseInput(form,rate){
     }catch(error){return {errors:{[source]:error.message}};}
   }
 
+function normalizeExpenseDate(value){
+    if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value)||value.startsWith('0000-'))return '';
+    const date=new Date(value+'T00:00:00Z');
+    return Number.isFinite(date.getTime())&&date.toISOString().startsWith(value+'T')?value:'';
+  }
+
 function normalizeExpense(item,index,cats,rate,version) {
-    const base={id:safeDataId(item?.id,'legacy-'+index+'-'+hashText(JSON.stringify(item||{}))),name:String(item?.name||'').trim().slice(0,80),date:/^\d{4}-\d{2}-\d{2}$/.test(item?.date||'')?item.date:'',categoryId:findCategoryId(item?.categoryId||item?.category||'misc',cats)};
+    const base={id:safeDataId(item?.id,'legacy-'+index+'-'+hashText(JSON.stringify(item||{}))),name:String(item?.name||'').trim().slice(0,80),date:normalizeExpenseDate(item?.date),categoryId:findCategoryId(item?.categoryId||item?.category||'misc',cats)};
     if(version>=6||['amountKrw','amountUsd','amountSource','appliedExchangeRate'].some(key=>Object.hasOwn(item||{},key))){
       const money=expenseMoney(item),source=money.amountSource;
       if(!['krw','usd','both'].includes(source))throw new Error('지출의 금액 출처를 복구해 주세요.');
@@ -107,7 +113,19 @@ function normalizeExpense(item,index,cats,rate,version) {
 
 function normalizeExpenses(input,cats,rate,version){
     if(input!==undefined&&!Array.isArray(input))throw new Error('지출 목록을 복구해 주세요.');
-    const seen=new Set();return (input||[]).map((item,index)=>{const expense=normalizeExpense(item,index,cats,rate,version);if(seen.has(expense.id))expense.id+='-duplicate-'+index;seen.add(expense.id);return expense;});
+    const expenses=(input||[]).map((item,index)=>normalizeExpense(item,index,cats,rate,version));
+    const reserved=new Set(expenses.map(expense=>expense.id)),seen=new Set();
+    for(const [index,expense] of expenses.entries()){
+      if(seen.has(expense.id)){
+        const base='expense-duplicate-'+index;
+        let id=base,suffix=0;
+        while(reserved.has(id))id=base+'-'+(++suffix);
+        expense.id=id;
+        reserved.add(id);
+      }
+      seen.add(expense.id);
+    }
+    return expenses;
   }
 function formatCurrencyAmount(value,slot){
     const part=decimalParts(Number(value)||0);

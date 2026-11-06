@@ -295,6 +295,8 @@ Idle warning occurs at 29 minutes; at 30, `scheduleSessionTimers()` or expiry in
 
 ## Ledger and timetable
 
+Imported expenses normalize impossible dates to blank. ID repair reserves normalized IDs and assigns deterministic unused IDs to duplicates without changing expense amounts.
+
 `amountKrw`/`amountUsd` are fixed amounts. For the current trip, `amountSource=krw` calculates only USD; `usd` calculates only KRW; `both` means manual. In schema 7 these slots mean base/quote respectively (see [currency binding](#currency-binding)). Automatic pairs store the positive calculation rate in `appliedExchangeRate`; manual pairs store null. Old `amount`/`currency` are not written. Lists, totals, CSV, and comparisons use new fields.
 
 `decimalParts`/`roundRatio` use BigInt rational arithmetic and positive half-up rounding. They check safe currency minor units (KRW integers/USD cents in the current trip) and JSON Number round-trip precision. New input validation is separate from legacy reading: original decimal precision survives; only the opposite currency rounds to its minor unit. Corrupt new amounts throw errors instead of becoming zero or being recomputed at today's rate.

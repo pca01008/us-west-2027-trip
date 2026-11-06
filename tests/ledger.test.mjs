@@ -58,6 +58,19 @@ test('legacy migration preserves original precision and is deterministic and ide
   assert.equal(api.formatLedgerSum([{amountUsd:.1},{amountUsd:.2}],'usd'),'$0.30');
 });
 
+test('date normalization preserves blank and valid dates and clears invalid values',()=>{
+  const dates=['',null,'bad','2027-02-29','2027-04-31','2027-13-01','0000-01-01','2028-02-29','0001-01-01'];
+  const expenses=api.normalizeExpenses(dates.map(date=>({date,amount:10,currency:'USD'})),[],1400,5);
+  assert.deepEqual(plain(expenses.map(expense=>expense.date)),['','','','','','','','2028-02-29','0001-01-01']);
+});
+
+test('expense ID repair reserves existing and future IDs and is idempotent',()=>{
+  const ids=['x','x-duplicate-2','x','expense-duplicate-2','expense-duplicate-2-1','x'];
+  const expenses=plain(api.normalizeExpenses(ids.map(id=>({id,amount:10,currency:'USD'})),[],1400,5));
+  assert.deepEqual(expenses.map(expense=>expense.id),['x','x-duplicate-2','expense-duplicate-2-2','expense-duplicate-2','expense-duplicate-2-1','expense-duplicate-5']);
+  assert.deepEqual(plain(api.normalizeExpenses(expenses,[],1600,6)),expenses);
+});
+
 test('schema 6 rejects missing, damaged and contradictory money instead of silently migrating', () => {
   const valid={amountKrw:14000,amountUsd:10,amountSource:'usd',appliedExchangeRate:1400};
   for(const patch of [{amountKrw:null},{amountUsd:0},{amountSource:'invalid'},{appliedExchangeRate:null},{amountKrw:1.5},{amountKrw:15000},{amountSource:'both'},{amountSource:'both',appliedExchangeRate:null,amountUsd:1.001}])

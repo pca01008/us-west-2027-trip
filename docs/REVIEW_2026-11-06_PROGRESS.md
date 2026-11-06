@@ -5,9 +5,9 @@
 The user authorized sequential fixes, verified commits, a final verification commit, push, and normal GitHub Pages deployment. This section supersedes the historical audit-only handoff below.
 
 - Start: branch `codex/modularize-travel-app` at `7a42630`, tracking origin. The README and two audit Markdown files were already pending from the audit and belong with this follow-up.
-- Stage 1 complete (commit subject: fix: guard editor reads across revisions and logout): F2 shares published adoption with refresh and Realtime. F3 guards PREP reads by editor request and dialog lifetime. T1 covers reversed responses, pending candidates, and late PREP reads after logout, expiry, and newer opens.
+- Stage 1 committed as `789809f`: F2 shares published adoption with refresh and Realtime. F3 guards PREP reads by editor request and dialog lifetime. T1 covers reversed responses, pending candidates, and late PREP reads after logout, expiry, and newer opens.
 - Stage 1 checks: generated build, project integrity, whitespace, and 191/191 host Node tests passed. Real-SDK Chromium auth and Chromium PREP passed.
-- Next after stage 1 commit: F1/T2. Keep new-expense date default, preserve an empty edit date, validate date normalization, and reserve unique IDs with sanitizer-safe suffixes.
+- Stage 2 verified (F1/T2, commit subject: fix: preserve expense dates and repair duplicate IDs): existing blank dates survive edits, invalid calendar dates normalize to blank, and normalized IDs are reserved before duplicate repair. Ledger/project Node checks (26) and desktop/mobile Chromium ledger and import suites passed.
 - Stage 3: U3. Impeccable context loaded for the retained Operate UI. User confirmed both travelers reviewed and approved the U1/U2 proposal.
 - Follow AGENTS.md for elevated metadata writes. Pages deploys after validated PR merge to main. Windows host runs need the pinned Playwright browser path; strict SQL/Linux validation is available via Validate CI. Physical-device checks need the travelers' devices.
 

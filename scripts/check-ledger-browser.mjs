@@ -253,6 +253,25 @@ try {
       assert.equal(await text('#expenses .remark'), '아직 기록된 경비가 없습니다.');
       assert.equal(await text('#categorySummary'), '아직 카테고리별 내역이 없습니다.');
       await csv([]);
+      scenario = 'undated expense edits preserve dates'; diagnostics.scenario(`${mode} / ${scenario}`);
+      await fixture([
+        expense('undated','날짜 없음',10,'USD',''),
+        expense('invalid-date','잘못된 날짜',10,'USD','2027-02-30'),
+        expense('dated','날짜 있음',10,'USD','2027-02-28')
+      ]);
+      const editDate=page.locator('#expenseEditDate');
+      for(const id of ['undated','invalid-date','dated']){
+        const date=id==='dated'?'2027-02-28':'';
+        const edit=page.locator(`[data-edit-expense="${id}"]`);
+        for(const change of ['none','name','category']){
+          await activate(edit);assert.equal(await editDate.inputValue(),date);
+          if(change==='name')await page.locator('#expenseEditName').fill('이름 수정 '+id);
+          if(change==='category')await page.locator('#expenseEditCategory').selectOption('misc');
+          await activate(page.locator('#expenseEditSave'));
+          assert.equal(await page.locator(`[data-expense-id="${id}"] time`).getAttribute('datetime'),date);
+        }
+      }
+      await fixture([]);
       scenario = 'dual currency input, source transitions and fixed values'; diagnostics.scenario(`${mode} / ${scenario}`);
       await settings(1400);
       const krw=page.locator('#expenseKrw'),usd=page.locator('#expenseUsd');
@@ -310,7 +329,11 @@ try {
       await page.evaluate(()=>{const api=window.__ledgerTest,state=api.captureState();state.expenses.shift();api.applyStatePreservingInputs(state);});
       await activate(page.locator('#expenseEditSave'));assert.equal((await saved()).length,2);
       assert.match(await text('#status'),/내역이 변경/);await page.keyboard.press('Escape');
-      const exportedExpenses=await saved(),renderedAmounts=await page.locator('.expense-amount').allTextContents();
+      // Clearing an existing date survives both forms of export.
+      await activate(page.locator('[data-edit-expense]').first());
+      await editDate.fill('');await activate(page.locator('#expenseEditSave'));
+      const exportedExpenses=await saved();assert.equal(exportedExpenses[0].date,'');
+      const renderedAmounts=await page.locator('.expense-amount').allTextContents();
       for(const kind of ['editable','readonly']){
         const pending=page.waitForEvent('download');
         await page.evaluate(kind=>kind==='editable'?window.__ledgerTest.exportOfflineHtml():window.__ledgerTest.exportStaticHtml(),kind);
