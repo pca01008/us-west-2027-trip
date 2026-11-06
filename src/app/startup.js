@@ -133,7 +133,7 @@ updateDirtyState:(...args)=>updateDirtyState(...args),
 updateEditableEmpty:(...args)=>updateEditableEmpty(...args),
 writeDraftRecord:(...args)=>writeDraftRecord(...args),
 writePublicCache:(...args)=>writePublicCache(...args)});
-let {checklistItems,checklistShape,patchCheck,patchChecklist,syncChecklistControls,renderCheckFeedback,commitChecklistPatch,authorizeCheck,requestCheckToggle,queueCheck,checklistEditorDirty,openChecklistEditor,renderChecklistEditor,addChecklistItem,saveChecklistEditor,decorateChecklist,updateChecklistMoveButtons,addCheckRow,moveCheck,pendingCheckCount,pendingCheckBefore,isChecklistSaving,isChecklistEditorSaving,checklistEditorSnapshot,bindChecklistControls}=checklistController;
+let {checklistItems,checklistShape,patchCheck,patchChecklist,syncChecklistControls,renderCheckFeedback,commitChecklistPatch,authorizeCheck,requestCheckToggle,queueCheck,checklistEditorDirty,openChecklistEditor,closeChecklistEditor,renderChecklistEditor,addChecklistItem,saveChecklistEditor,decorateChecklist,updateChecklistMoveButtons,addCheckRow,moveCheck,pendingCheckCount,pendingCheckBefore,isChecklistSaving,isChecklistEditorSaving,checklistEditorSnapshot,bindChecklistControls}=checklistController;
 
 const scheduleController=createScheduleController({$:$,
 $$:$$,
@@ -185,6 +185,7 @@ clearSessionTimers:(...args)=>clearSessionTimers(...args),
 client:client,
 closeNotice:(...args)=>closeNotice(...args),
 closePreview:(...args)=>closePreview(...args),
+closeChecklistEditor:closeChecklistEditor,
 closeScheduleTimeDialog:(...args)=>closeScheduleTimeDialog(...args),
 currentDraftRecord:(...args)=>currentDraftRecord(...args),
 dialogs:dialogs,
@@ -203,7 +204,8 @@ isChecklistSaving:(...args)=>isChecklistSaving(...args),
 materializeStagedPhotos:(...args)=>materializeStagedPhotos(...args),
 migratePublishedState:(...args)=>migratePublishedState(...args),
 normalizeState:(...args)=>normalizeState(...args),
-openChecklistEditor:(...args)=>openChecklistEditor(...args),
+openChecklistEditor:openChecklistEditor,
+receivePublishedState:(...args)=>receivePublishedState(...args),
 openLedgerSettings:(...args)=>openLedgerSettings(...args),
 openVersions:(...args)=>openVersions(...args),
 pendingCheckCount:(...args)=>pendingCheckCount(...args),
@@ -310,7 +312,7 @@ resetInactivityTimer:(...args)=>resetInactivityTimer(...args),
 setEditingUI:(...args)=>setEditingUI(...args),
 tripRepository:tripRepository,
 updateDirtyState:(...args)=>updateDirtyState(...args)});
-let {closePreview,enterHistoricalPreview,applyImportSnapshot,writePublicCache,setPublishedBaseline,refreshPublishedState,hydrate,bindDocumentControls}=documentController;
+let {closePreview,enterHistoricalPreview,applyImportSnapshot,writePublicCache,setPublishedBaseline,receivePublishedState,refreshPublishedState,hydrate,bindDocumentControls}=documentController;
 const photoService=createPhotoService({client,TRIP_ID,MEDIA_BUCKET,SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,operationSignal:()=>currentOperationSignal(),requestTimeout:value=>runtimeOptions.photoTimeout(value)});
 let {blobToDataUrl,dataUrlToBlob,photoExtension,compressImage,hashBlob,publicMediaUrl,isDuplicateUpload,withPhotoRequest,immutableBlobExists,uploadImmutableBlob,uploadPhotoBlobs,fetchAsDataUrl}=photoService;
 const comparison=createComparison({TRIP_DAYS,CURRENCY_CODES,currencyLabel});

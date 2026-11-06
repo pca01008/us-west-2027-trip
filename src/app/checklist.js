@@ -143,14 +143,26 @@ let checklistEditorSaving = false;
     });
   }
   function checklistEditorDirty(){return !$('#checklistDialog').hidden&&checklistShape(checklistEditorItems)!==checklistShape(checklistEditorBase);}
-  async function openChecklistEditor() {
-    if(pendingChecks.size||checklistSaving)return;
-    checklistEditorBase=checklistItems(captureState());
-    if(!OFFLINE_MODE&&checklistShape(checklistEditorBase)===checklistShape(checklistItems(documentSession.snapshot().lastSavedState))){
-      try{const latest=await fetchPublishedState();if(latest?.content?.html)checklistEditorBase=checklistItems(normalizeState(migratePublishedState(latest.content)));}catch(_){}
+  let checklistOpenGeneration=0;
+  function closeChecklistEditor(){
+    checklistOpenGeneration++;
+    $('#checklistDialog').hidden=true;
+    syncChecklistControls();
+  }
+  async function openChecklistEditor(isCurrent) {
+    if(pendingChecks.size||checklistSaving)return false;
+    const generation=++checklistOpenGeneration;
+    let base=checklistItems(captureState());
+    if(!OFFLINE_MODE&&checklistShape(base)===checklistShape(checklistItems(documentSession.snapshot().lastSavedState))){
+      try{
+        const latest=await fetchPublishedState();
+        if(latest?.content?.html)base=checklistItems(normalizeState(migratePublishedState(latest.content)));
+      }catch(_){}
     }
+    if(generation!==checklistOpenGeneration||!isCurrent())return false;
+    checklistEditorBase=base;
     checklistEditorItems=clone(checklistEditorBase);newChecklistItemIds.clear();
-    $('#checklistEditorError').textContent='';renderChecklistEditor();showDialog($('#checklistDialog'));syncChecklistControls();
+    $('#checklistEditorError').textContent='';renderChecklistEditor();showDialog($('#checklistDialog'));syncChecklistControls();return true;
   }
   function renderChecklistEditor() {
     $('#checklistEditorRows').innerHTML=checklistEditorItems.map((item,index)=>'<div class="checklist-editor-row"><input type="checkbox" disabled aria-label="완료 상태"'+(item.checked?' checked':'')+'><textarea class="checklist-text" rows="2" data-check-index="'+index+'" aria-label="항목 '+(index+1)+'" placeholder="새 체크 항목">'+escapeHtml(item.text)+'</textarea><div class="checklist-row-actions"><button type="button" data-check-action="up" data-index="'+index+'" aria-label="위로 이동"'+(index===0?' disabled':'')+'>↑</button><button type="button" data-check-action="down" data-index="'+index+'" aria-label="아래로 이동"'+(index===checklistEditorItems.length-1?' disabled':'')+'>↓</button><button type="button" data-check-action="delete" data-index="'+index+'">삭제</button></div></div>').join('');
@@ -216,7 +228,7 @@ let checklistEditorSaving = false;
 
 
 
-async function addCheckRow(){if($('.day-radio:checked')?.id!=='prep')return;await requireEditor('checklist',async()=>{await openChecklistEditor();addChecklistItem();});}
+async function addCheckRow(){if($('.day-radio:checked')?.id!=='prep')return;await requireEditor('checklist',async isCurrent=>{if(await openChecklistEditor(isCurrent))addChecklistItem();});}
 
 function moveCheck(id,direction){if(!body.classList.contains('editing'))return;const labels=$$('.prepday .checklist label'),index=labels.findIndex(label=>label.dataset.checkId===id),next=index+direction;if(index<0||next<0||next>=labels.length)return;const label=labels[index],target=labels[next];if(direction<0)target.before(label);else target.after(label);updateChecklistMoveButtons();recordHistory();}
 function pendingCheckCount(){return pendingChecks.size;}
@@ -234,12 +246,12 @@ const checkMove=event.target.closest('[data-move-check]');if(checkMove&&!checkMo
 document.addEventListener('change',async event=>{if(event.target.matches('.prepday .checklist input[type="checkbox"]')){await requestCheckToggle(event.target);return;}});
 document.addEventListener('click',event=>{if((pendingChecks.size||checklistSaving)&&event.target.closest('.editor-bar')){event.preventDefault();event.stopImmediatePropagation();}},true);
 $('#checklistAdd').onclick=addChecklistItem;
-$('#checklistCancel').onclick=()=>{if(!checklistEditorSaving){$('#checklistDialog').hidden=true;syncChecklistControls();}};
+$('#checklistCancel').onclick=()=>{if(!checklistEditorSaving)closeChecklistEditor();};
 $('#checklistSave').onclick=()=>void saveChecklistEditor();
 $('#checklistEditorRows').addEventListener('input',event=>{const index=Number(event.target.dataset.checkIndex);if(event.target.matches('.checklist-text')&&checklistEditorItems[index])checklistEditorItems[index].text=event.target.value;resetInactivityTimer();});
 $('#checklistEditorRows').addEventListener('click',event=>{const button=event.target.closest('[data-check-action]');if(!button||button.disabled)return;const index=Number(button.dataset.index),action=button.dataset.checkAction;if(action==='delete')checklistEditorItems.splice(index,1);else{const next=index+(action==='up'?-1:1);[checklistEditorItems[index],checklistEditorItems[next]]=[checklistEditorItems[next],checklistEditorItems[index]];}renderChecklistEditor();const rows=$$('#checklistEditorRows .checklist-editor-row');rows[Math.min(index,rows.length-1)]?.querySelector('.checklist-text')?.focus();});
 document.addEventListener('click',event=>{const retry=event.target.closest('[data-retry-check]');if(!retry)return;const item=checkFeedback.get(retry.dataset.retryCheck);if(item)void authorizeCheck(retry.dataset.retryCheck,item.value);});
 }
 
-return Object.freeze({checklistItems,checklistShape,patchCheck,patchChecklist,syncChecklistControls,renderCheckFeedback,commitChecklistPatch,authorizeCheck,requestCheckToggle,queueCheck,checklistEditorDirty,openChecklistEditor,renderChecklistEditor,addChecklistItem,saveChecklistEditor,decorateChecklist,updateChecklistMoveButtons,addCheckRow,moveCheck,pendingCheckCount,pendingCheckBefore,isChecklistSaving,isChecklistEditorSaving,checklistEditorSnapshot,bindChecklistControls});
+return Object.freeze({checklistItems,checklistShape,patchCheck,patchChecklist,syncChecklistControls,renderCheckFeedback,commitChecklistPatch,authorizeCheck,requestCheckToggle,queueCheck,checklistEditorDirty,openChecklistEditor,closeChecklistEditor,renderChecklistEditor,addChecklistItem,saveChecklistEditor,decorateChecklist,updateChecklistMoveButtons,addCheckRow,moveCheck,pendingCheckCount,pendingCheckBefore,isChecklistSaving,isChecklistEditorSaving,checklistEditorSnapshot,bindChecklistControls});
 }

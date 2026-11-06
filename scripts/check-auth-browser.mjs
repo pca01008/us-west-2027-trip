@@ -200,6 +200,45 @@ try {
     await peer.close(); await diagnostics.close(context);
     console.log('Auth: delayed edit-start cannot apply state or enable editing after real SDK peer sign-out.');
   }
+  for (const cancellation of ['peer sign-out', 'manual logout', 'expired session', 'new PREP open']) {
+    const { context, page } = await setup(`delayed PREP read / ${cancellation}`);
+    if (cancellation === 'expired session') { await page.clock.install(); ttl = 150; }
+    await login(page); await page.locator('#editBtn').click();
+    await selectTripTab(page, 'prep');
+    const peer = cancellation === 'peer sign-out' ? await context.newPage() : null;
+    if (peer) await peer.goto(origin + '/sdk-tab');
+    let release, started;
+    const gate = new Promise(resolve => release = resolve), entered = new Promise(resolve => started = resolve);
+    await page.route('**/rest/v1/trip_documents?*', async route => {
+      const response = await route.fetch(); started(); await gate; await route.fulfill({ response });
+    }, { times: 1 });
+    // Await the editor handler itself to prove the delayed response was consumed.
+    const opening = page.locator('#editBtn').evaluate(button => button.onclick());
+    await entered;
+    try {
+      if (peer) await peer.evaluate(() => window.peer.auth.signOut({ scope: 'local' }));
+      if (cancellation === 'manual logout') await page.locator('#logoutBtn').click();
+      if (cancellation === 'expired session') {
+        refreshMode = 'expired'; await page.clock.fastForward(180_000);
+        await page.waitForFunction(() => window.__authEvents.includes('SIGNED_OUT'));
+      }
+      if (cancellation === 'new PREP open') {
+        await page.locator('#editBtn').click();
+        await page.locator('.checklist-text').last().fill('New request owns the dialog');
+      } else {
+        await page.waitForFunction(() => !document.body.classList.contains('authenticated'));
+      }
+    } finally { release(); }
+    await opening;
+    if (cancellation === 'new PREP open') {
+      assert.equal(await page.locator('.checklist-text').last().inputValue(), 'New request owns the dialog');
+    } else {
+      assert.equal(await page.locator('#checklistDialog').isHidden(), true);
+    }
+    assert.equal(saves().length, 0);
+    await diagnostics.close(context);
+    console.log(`Auth: delayed PREP read respects ${cancellation}.`);
+  }
   {
     const { context, page } = await setup("cross-tab sign-out, login failures and retry");
     await login(page);

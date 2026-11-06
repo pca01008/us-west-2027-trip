@@ -1954,7 +1954,7 @@ window.addEventListener('beforeunload',event=>{if(!isDirty()&&!isSaveInFlight()&
 function closePreview(){const previous=documentSession.snapshot().previewReturnState;if(previous)applyState(previous);documentSession.leavePreview();body.classList.remove('previewing');updateDirtyState();setStatus(documentSession.snapshot().pendingDraft?'저장 대기 중':'보기 모드');resetInactivityTimer();}
 function enterHistoricalPreview(state){documentSession.enterPreview(captureState());body.classList.add('previewing');setEditingUI(false);applyState(state);}
 function applyImportSnapshot(incoming,baseline,revision,updatedAt){applyState(incoming);documentSession.adoptImportBaseline(baseline,revision,updatedAt);initializeHistory();updateDirtyState();}
-return Object.freeze({closePreview,enterHistoricalPreview,applyImportSnapshot,writePublicCache,setPublishedBaseline,refreshPublishedState,hydrate,bindDocumentControls});
+return Object.freeze({closePreview,enterHistoricalPreview,applyImportSnapshot,writePublicCache,setPublishedBaseline,receivePublishedState,refreshPublishedState,hydrate,bindDocumentControls});
 }
 
 function createClocksController({$,CONFIG,DESTINATION_REFERENCE_LABEL,DESTINATION_TIME_ZONE,HOME_REFERENCE_LABEL,HOME_TIME_ZONE,PREVIEW_NOW,TRIP_DAYS,TRIP_END,TRIP_FIRST_DATE,TRIP_LAST_DATE,TRIP_START,VISITOR_TIME_ZONE,configEscape,rememberScheduleDay}) {
@@ -2842,7 +2842,7 @@ function createSession({client,offline,editorEmail,activityKey,channelName,sessi
   return Object.freeze({editorEmailMatches,clearSessionTimers,scheduleSessionTimers,setEditorSession,acceptSharedActivity,resetInactivityTimer,getEditorSession,signOutEditor,initialize,dispose,current:()=>editorSession,isSigningOut:()=>signingOut});
 }
 
-function createEditingController({$,$$,EDITOR_EMAIL,OFFLINE_MODE,SCHEMA_VERSION,TRIP_ID,applyState,applyStatePreservingInputs,blockUnsupportedDocument,body,buildDiff,captureState,clearCleanDraft,clearDraftRecord,clearSessionTimers,client,closeNotice,closePreview,closeScheduleTimeDialog,currentDraftRecord,dialogs,documentAdapter,documentSession,draftStorage,draftWorkflow,exportOfflineHtml,fetchPublishedState,fingerprint,flushDraftPersistence,getEditorSession,insertPlainText,invalidateVersionRequest,isChecklistSaving,materializeStagedPhotos,migratePublishedState,normalizeState,openChecklistEditor,openLedgerSettings,openVersions,pendingCheckCount,queueDraftPersistence,recoverOnlineDraft,resetImportSelection,resetInactivityTimer,resetLedgerSelection,resetPhotoSelection,resetVersionSelection,runtimeOptions,sessionService,setEditorSession,setPublishedBaseline,setStatus,showChoice,showDialog,signOutEditor,syncChecklistControls,tripRepository,updateContextControls,updateEditableEmpty,writeDraftRecord}) {
+function createEditingController({$,$$,EDITOR_EMAIL,OFFLINE_MODE,SCHEMA_VERSION,TRIP_ID,applyState,applyStatePreservingInputs,blockUnsupportedDocument,body,buildDiff,captureState,clearCleanDraft,clearDraftRecord,clearSessionTimers,client,closeNotice,closePreview,closeChecklistEditor,closeScheduleTimeDialog,currentDraftRecord,dialogs,documentAdapter,documentSession,draftStorage,draftWorkflow,exportOfflineHtml,fetchPublishedState,fingerprint,flushDraftPersistence,getEditorSession,insertPlainText,invalidateVersionRequest,isChecklistSaving,materializeStagedPhotos,migratePublishedState,normalizeState,receivePublishedState,openChecklistEditor,openLedgerSettings,openVersions,pendingCheckCount,queueDraftPersistence,recoverOnlineDraft,resetImportSelection,resetInactivityTimer,resetLedgerSelection,resetPhotoSelection,resetVersionSelection,runtimeOptions,sessionService,setEditorSession,setPublishedBaseline,setStatus,showChoice,showDialog,signOutEditor,syncChecklistControls,tripRepository,updateContextControls,updateEditableEmpty,writeDraftRecord}) {
 let authPurpose = 'edit';
 let pendingAuthAction = null;
 let pendingAuthCancel = null;
@@ -2852,7 +2852,7 @@ function invalidateEditorEntry(){editorEntryGeneration++;const cancel=pendingAut
 function entryIsCurrent(generation){return generation===editorEntryGeneration&&(OFFLINE_MODE||Boolean(sessionService.current()));}
 async function showInactivityWarning(){dialogs.startNoticeCountdown();const dirty=isDirty();const choice=await showChoice({title:'자동 로그아웃 예정',message:dirty?'자동 로그아웃 후에도 초안은 이 브라우저에 보관됩니다.':'1분 안에 선택하지 않으면 자동 로그아웃합니다.',countdown:true,choices:dirty?[{label:'저장 후 로그아웃',value:'save',className:'action-primary'},{label:'계속 사용',value:'continue'},{label:'폐기 후 로그아웃',value:'discard',className:'action-danger'}]:[{label:'계속 사용',value:'continue',className:'action-primary'},{label:'로그아웃',value:'logout',className:'action-danger'}]});clearSessionTimers();if(choice==='save'){if(await saveAndFinish('자동 로그아웃 전 저장')){await signOutEditor();setStatus('변경사항을 저장하고 로그아웃했습니다.');}else resetInactivityTimer();}else if(choice==='continue')resetInactivityTimer();else if(choice==='discard')await discardAndLogout();else if(choice==='logout')await logoutPreservingDraft('로그아웃했습니다.');}
 
-  function closeEditorDialogs(){invalidateVersionRequest();closeScheduleTimeDialog();['checklistDialog','ledgerSettingsDialog','categoryDialog','expenseDialog','mapDialog','photoEditDialog','importDialog','exportDialog','versionDialog','versionCompareDialog','photoViewer'].forEach(id=>{const dialog=$('#'+id);if(dialog)dialog.hidden=true;});resetLedgerSelection();resetPhotoSelection();resetVersionSelection();resetImportSelection();}
+  function closeEditorDialogs(){invalidateVersionRequest();closeChecklistEditor();closeScheduleTimeDialog();['ledgerSettingsDialog','categoryDialog','expenseDialog','mapDialog','photoEditDialog','importDialog','exportDialog','versionDialog','versionCompareDialog','photoViewer'].forEach(id=>{const dialog=$('#'+id);if(dialog)dialog.hidden=true;});resetLedgerSelection();resetPhotoSelection();resetVersionSelection();resetImportSelection();}
   async function handleExternalSignOut(message='편집 세션이 다른 탭에서 종료되었습니다.') {
     invalidateEditorEntry();
     invalidateVersionRequest();
@@ -2972,10 +2972,10 @@ function bindAuthentication(){
     if(!OFFLINE_MODE&&!documentSession.snapshot().pendingDraft){
       try{
         const published=await fetchPublishedState();if(!entryIsCurrent(generation))return;
-        if(published?.content?.html){const state=normalizeState(migratePublishedState(published.content));applyState(state);setPublishedBaseline(published,state);}
+        receivePublishedState(published,'editor-entry');
       }catch(error){if(!entryIsCurrent(generation))return;if(blockUnsupportedDocument(error))return;console.warn(error);setStatus('최신 저장본 확인 실패 · 현재 화면에서 편집합니다.');}
     }
-    if(!entryIsCurrent(generation))return;
+    if(!entryIsCurrent(generation)||body.classList.contains('previewing')||documentSession.snapshot().documentWriteBlock)return;
     setEditingUI(true);initializeHistory();resetInactivityTimer();setStatus(documentSession.snapshot().pendingDraft?'편집 중 · 저장되지 않음':'편집 모드');
   }
   function requestAuthentication(purpose,generation){if(generation===undefined)editorEntryGeneration++;authPurpose=purpose;$('#authSubmit').disabled=false;$('#authTitle').textContent=purpose==='edit'?'편집자 확인':purpose==='versions'?'버전 관리자 확인':purpose==='import'?'편집본 불러오기 권한 확인':purpose==='ledger-settings'?'가계부 설정 권한 확인':purpose==='checklist'?'체크리스트 편집자 확인':purpose==='ledger'?'가계부 편집자 확인':'저장 권한 확인';$('#authError').textContent='';$('#editorPassword').value='';showDialog($('#authDialog'));$('#editorPassword').focus();}
@@ -2989,7 +2989,7 @@ function bindAuthentication(){
       if(!entryIsCurrent(generation))return;
       if(draftWorkflow.isRecoveryDeferred()){cancel();return;}
     }
-    resetInactivityTimer();if(purpose==='edit')await beginEditing(generation);if(purpose==='versions')await openVersions();if(purpose==='save')await confirmSave();if(purpose==='ledger-settings')openLedgerSettings();if((purpose==='ledger'||purpose==='checklist'||purpose==='import')&&pendingAuthAction){const action=pendingAuthAction;pendingAuthAction=null;pendingAuthCancel=null;await action();}
+    resetInactivityTimer();if(purpose==='edit')await beginEditing(generation);if(purpose==='versions')await openVersions();if(purpose==='save')await confirmSave();if(purpose==='ledger-settings')openLedgerSettings();if((purpose==='ledger'||purpose==='checklist'||purpose==='import')&&pendingAuthAction){const action=pendingAuthAction;pendingAuthAction=null;pendingAuthCancel=null;await action(()=>entryIsCurrent(generation));}
   }
   async function requireEditor(purpose,action=null,cancelAction=null){invalidateEditorEntry();const generation=editorEntryGeneration;pendingAuthAction=action;pendingAuthCancel=cancelAction;if(OFFLINE_MODE){await runPurpose(purpose,generation);return;}if(!client){pendingAuthAction=null;const cancel=pendingAuthCancel;pendingAuthCancel=null;if(cancel)cancel();await showChoice({title:'편집할 수 없습니다.',message:'잠시 후 다시 시도해 주세요.',choices:[{label:'확인',value:'ok',className:'action-primary'}]});return;}const session=await getEditorSession();if(generation!==editorEntryGeneration)return;if(session){await runPurpose(purpose,generation);return;}requestAuthentication(purpose,generation);}
 
@@ -3934,14 +3934,26 @@ let checklistEditorSaving = false;
     });
   }
   function checklistEditorDirty(){return !$('#checklistDialog').hidden&&checklistShape(checklistEditorItems)!==checklistShape(checklistEditorBase);}
-  async function openChecklistEditor() {
-    if(pendingChecks.size||checklistSaving)return;
-    checklistEditorBase=checklistItems(captureState());
-    if(!OFFLINE_MODE&&checklistShape(checklistEditorBase)===checklistShape(checklistItems(documentSession.snapshot().lastSavedState))){
-      try{const latest=await fetchPublishedState();if(latest?.content?.html)checklistEditorBase=checklistItems(normalizeState(migratePublishedState(latest.content)));}catch(_){}
+  let checklistOpenGeneration=0;
+  function closeChecklistEditor(){
+    checklistOpenGeneration++;
+    $('#checklistDialog').hidden=true;
+    syncChecklistControls();
+  }
+  async function openChecklistEditor(isCurrent) {
+    if(pendingChecks.size||checklistSaving)return false;
+    const generation=++checklistOpenGeneration;
+    let base=checklistItems(captureState());
+    if(!OFFLINE_MODE&&checklistShape(base)===checklistShape(checklistItems(documentSession.snapshot().lastSavedState))){
+      try{
+        const latest=await fetchPublishedState();
+        if(latest?.content?.html)base=checklistItems(normalizeState(migratePublishedState(latest.content)));
+      }catch(_){}
     }
+    if(generation!==checklistOpenGeneration||!isCurrent())return false;
+    checklistEditorBase=base;
     checklistEditorItems=clone(checklistEditorBase);newChecklistItemIds.clear();
-    $('#checklistEditorError').textContent='';renderChecklistEditor();showDialog($('#checklistDialog'));syncChecklistControls();
+    $('#checklistEditorError').textContent='';renderChecklistEditor();showDialog($('#checklistDialog'));syncChecklistControls();return true;
   }
   function renderChecklistEditor() {
     $('#checklistEditorRows').innerHTML=checklistEditorItems.map((item,index)=>'<div class="checklist-editor-row"><input type="checkbox" disabled aria-label="완료 상태"'+(item.checked?' checked':'')+'><textarea class="checklist-text" rows="2" data-check-index="'+index+'" aria-label="항목 '+(index+1)+'" placeholder="새 체크 항목">'+escapeHtml(item.text)+'</textarea><div class="checklist-row-actions"><button type="button" data-check-action="up" data-index="'+index+'" aria-label="위로 이동"'+(index===0?' disabled':'')+'>↑</button><button type="button" data-check-action="down" data-index="'+index+'" aria-label="아래로 이동"'+(index===checklistEditorItems.length-1?' disabled':'')+'>↓</button><button type="button" data-check-action="delete" data-index="'+index+'">삭제</button></div></div>').join('');
@@ -4007,7 +4019,7 @@ let checklistEditorSaving = false;
 
 
 
-async function addCheckRow(){if($('.day-radio:checked')?.id!=='prep')return;await requireEditor('checklist',async()=>{await openChecklistEditor();addChecklistItem();});}
+async function addCheckRow(){if($('.day-radio:checked')?.id!=='prep')return;await requireEditor('checklist',async isCurrent=>{if(await openChecklistEditor(isCurrent))addChecklistItem();});}
 
 function moveCheck(id,direction){if(!body.classList.contains('editing'))return;const labels=$$('.prepday .checklist label'),index=labels.findIndex(label=>label.dataset.checkId===id),next=index+direction;if(index<0||next<0||next>=labels.length)return;const label=labels[index],target=labels[next];if(direction<0)target.before(label);else target.after(label);updateChecklistMoveButtons();recordHistory();}
 function pendingCheckCount(){return pendingChecks.size;}
@@ -4025,14 +4037,14 @@ const checkMove=event.target.closest('[data-move-check]');if(checkMove&&!checkMo
 document.addEventListener('change',async event=>{if(event.target.matches('.prepday .checklist input[type="checkbox"]')){await requestCheckToggle(event.target);return;}});
 document.addEventListener('click',event=>{if((pendingChecks.size||checklistSaving)&&event.target.closest('.editor-bar')){event.preventDefault();event.stopImmediatePropagation();}},true);
 $('#checklistAdd').onclick=addChecklistItem;
-$('#checklistCancel').onclick=()=>{if(!checklistEditorSaving){$('#checklistDialog').hidden=true;syncChecklistControls();}};
+$('#checklistCancel').onclick=()=>{if(!checklistEditorSaving)closeChecklistEditor();};
 $('#checklistSave').onclick=()=>void saveChecklistEditor();
 $('#checklistEditorRows').addEventListener('input',event=>{const index=Number(event.target.dataset.checkIndex);if(event.target.matches('.checklist-text')&&checklistEditorItems[index])checklistEditorItems[index].text=event.target.value;resetInactivityTimer();});
 $('#checklistEditorRows').addEventListener('click',event=>{const button=event.target.closest('[data-check-action]');if(!button||button.disabled)return;const index=Number(button.dataset.index),action=button.dataset.checkAction;if(action==='delete')checklistEditorItems.splice(index,1);else{const next=index+(action==='up'?-1:1);[checklistEditorItems[index],checklistEditorItems[next]]=[checklistEditorItems[next],checklistEditorItems[index]];}renderChecklistEditor();const rows=$$('#checklistEditorRows .checklist-editor-row');rows[Math.min(index,rows.length-1)]?.querySelector('.checklist-text')?.focus();});
 document.addEventListener('click',event=>{const retry=event.target.closest('[data-retry-check]');if(!retry)return;const item=checkFeedback.get(retry.dataset.retryCheck);if(item)void authorizeCheck(retry.dataset.retryCheck,item.value);});
 }
 
-return Object.freeze({checklistItems,checklistShape,patchCheck,patchChecklist,syncChecklistControls,renderCheckFeedback,commitChecklistPatch,authorizeCheck,requestCheckToggle,queueCheck,checklistEditorDirty,openChecklistEditor,renderChecklistEditor,addChecklistItem,saveChecklistEditor,decorateChecklist,updateChecklistMoveButtons,addCheckRow,moveCheck,pendingCheckCount,pendingCheckBefore,isChecklistSaving,isChecklistEditorSaving,checklistEditorSnapshot,bindChecklistControls});
+return Object.freeze({checklistItems,checklistShape,patchCheck,patchChecklist,syncChecklistControls,renderCheckFeedback,commitChecklistPatch,authorizeCheck,requestCheckToggle,queueCheck,checklistEditorDirty,openChecklistEditor,closeChecklistEditor,renderChecklistEditor,addChecklistItem,saveChecklistEditor,decorateChecklist,updateChecklistMoveButtons,addCheckRow,moveCheck,pendingCheckCount,pendingCheckBefore,isChecklistSaving,isChecklistEditorSaving,checklistEditorSnapshot,bindChecklistControls});
 }
 const {parseTimetableTime,scheduleTimeValue,scheduleClockMask,scheduleClockValue,editScheduleClock,scheduleKindMode,timetableKind,layoutTimetableEvents,timetableWindow} = createTimetableCore();
 const draftStorage=createDraftStorage({DRAFT_DB_NAME:DRAFT_DB_NAME,DRAFT_RECORD_KEY:DRAFT_RECORD_KEY,DRAFT_SESSION_KEY:DRAFT_SESSION_KEY,LEGACY_CACHE_KEY:LEGACY_CACHE_KEY,LEGACY_DRAFT_RECORD_KEY:LEGACY_DRAFT_RECORD_KEY,PUBLIC_CACHE_RECORD_KEY:PUBLIC_CACHE_RECORD_KEY,TRIP_ID:TRIP_ID,clone:clone,showDraftStorageWarning:(...args)=>showDraftStorageWarning(...args)});
@@ -4169,7 +4181,7 @@ updateDirtyState:(...args)=>updateDirtyState(...args),
 updateEditableEmpty:(...args)=>updateEditableEmpty(...args),
 writeDraftRecord:(...args)=>writeDraftRecord(...args),
 writePublicCache:(...args)=>writePublicCache(...args)});
-let {checklistItems,checklistShape,patchCheck,patchChecklist,syncChecklistControls,renderCheckFeedback,commitChecklistPatch,authorizeCheck,requestCheckToggle,queueCheck,checklistEditorDirty,openChecklistEditor,renderChecklistEditor,addChecklistItem,saveChecklistEditor,decorateChecklist,updateChecklistMoveButtons,addCheckRow,moveCheck,pendingCheckCount,pendingCheckBefore,isChecklistSaving,isChecklistEditorSaving,checklistEditorSnapshot,bindChecklistControls}=checklistController;
+let {checklistItems,checklistShape,patchCheck,patchChecklist,syncChecklistControls,renderCheckFeedback,commitChecklistPatch,authorizeCheck,requestCheckToggle,queueCheck,checklistEditorDirty,openChecklistEditor,closeChecklistEditor,renderChecklistEditor,addChecklistItem,saveChecklistEditor,decorateChecklist,updateChecklistMoveButtons,addCheckRow,moveCheck,pendingCheckCount,pendingCheckBefore,isChecklistSaving,isChecklistEditorSaving,checklistEditorSnapshot,bindChecklistControls}=checklistController;
 
 const scheduleController=createScheduleController({$:$,
 $$:$$,
@@ -4221,6 +4233,7 @@ clearSessionTimers:(...args)=>clearSessionTimers(...args),
 client:client,
 closeNotice:(...args)=>closeNotice(...args),
 closePreview:(...args)=>closePreview(...args),
+closeChecklistEditor:closeChecklistEditor,
 closeScheduleTimeDialog:(...args)=>closeScheduleTimeDialog(...args),
 currentDraftRecord:(...args)=>currentDraftRecord(...args),
 dialogs:dialogs,
@@ -4239,7 +4252,8 @@ isChecklistSaving:(...args)=>isChecklistSaving(...args),
 materializeStagedPhotos:(...args)=>materializeStagedPhotos(...args),
 migratePublishedState:(...args)=>migratePublishedState(...args),
 normalizeState:(...args)=>normalizeState(...args),
-openChecklistEditor:(...args)=>openChecklistEditor(...args),
+openChecklistEditor:openChecklistEditor,
+receivePublishedState:(...args)=>receivePublishedState(...args),
 openLedgerSettings:(...args)=>openLedgerSettings(...args),
 openVersions:(...args)=>openVersions(...args),
 pendingCheckCount:(...args)=>pendingCheckCount(...args),
@@ -4346,7 +4360,7 @@ resetInactivityTimer:(...args)=>resetInactivityTimer(...args),
 setEditingUI:(...args)=>setEditingUI(...args),
 tripRepository:tripRepository,
 updateDirtyState:(...args)=>updateDirtyState(...args)});
-let {closePreview,enterHistoricalPreview,applyImportSnapshot,writePublicCache,setPublishedBaseline,refreshPublishedState,hydrate,bindDocumentControls}=documentController;
+let {closePreview,enterHistoricalPreview,applyImportSnapshot,writePublicCache,setPublishedBaseline,receivePublishedState,refreshPublishedState,hydrate,bindDocumentControls}=documentController;
 const photoService=createPhotoService({client,TRIP_ID,MEDIA_BUCKET,SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,operationSignal:()=>currentOperationSignal(),requestTimeout:value=>runtimeOptions.photoTimeout(value)});
 let {blobToDataUrl,dataUrlToBlob,photoExtension,compressImage,hashBlob,publicMediaUrl,isDuplicateUpload,withPhotoRequest,immutableBlobExists,uploadImmutableBlob,uploadPhotoBlobs,fetchAsDataUrl}=photoService;
 const comparison=createComparison({TRIP_DAYS,CURRENCY_CODES,currencyLabel});

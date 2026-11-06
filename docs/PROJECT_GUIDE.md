@@ -178,7 +178,7 @@ IndexedDB holds public state, per-tab drafts, staged photos, baseline state/revi
 
 The PWA fetches static UI/configuration network-first with cache fallback on failure or after four seconds. Shared reads have an independent eight-second timeout. The service worker excludes Supabase Auth, database, and photo Storage traffic. Installation does not cache all photos.
 
-Refresh and Realtime share one adoption rule: remote revisions must exceed the published baseline and cannot precede the newest pending candidate. Duplicate notifications leave history and cache untouched. Starting a refresh or receiving a newer Realtime update invalidates earlier refresh results and errors. Editing, drafts, previews, and checklist saves defer application while retaining only the newest remote candidate; a later refresh can adopt that candidate after deferral ends. Historical preview remains independent of the published revision and cache. Lost notifications do not undo successful database writes.
+Editor entry, refresh, and Realtime share one adoption rule: remote revisions must exceed the published baseline and cannot precede the newest pending candidate. Duplicate notifications leave history and cache untouched. Starting a refresh or receiving a newer Realtime update invalidates earlier refresh results and errors. Editing, drafts, previews, and checklist saves defer application while retaining only the newest remote candidate; a later refresh can adopt that candidate after deferral ends. Historical preview remains independent of the published revision and cache. Lost notifications do not undo successful database writes.
 
 <a id="state"></a>
 
@@ -228,7 +228,7 @@ Supabase stores a complete state object as JSON, rather than HTML alone:
 
 Itinerary/checklist markup is already complex DOM. Saving `<main>` as a string preserves flexible cards, text, dates, and photos with less implementation work than separate tables, but requires `schemaVersion`/`normalizeState()` compatibility when markup changes. Ledger arrays make arithmetic and category aggregation reliable. The separate `checks` array preserves live checkbox properties that `innerHTML` alone may miss.
 
-View-mode checks call `requireEditor('checklist')`; canceled authentication restores the original checkbox. Authenticated saves patch stable IDs onto the latest document using revision checks, excluding other drafts. Offline checks remain local. [Usage](USER_GUIDE.md) is authoritative.
+View-mode checks call `requireEditor('checklist')`; canceled authentication restores the original checkbox. Authenticated saves patch stable IDs onto the latest document using revision checks, excluding other drafts. An outstanding PREP editor read cannot open the dialog after logout, cancellation, or a newer editor request. Offline checks remain local. [Usage](USER_GUIDE.md) is authoritative.
 
 `commitChecklistPatch` verifies ambiguous writes with one bounded public read: checkboxes match stable ID/value; list edits match ordered IDs/text/importance, allowing subsequent completion changes. Verified snapshots retain newer remote content and completion flags. Unverified outcomes retain confirmed local state/list inputs with an uncertain-result message, never automatically resending. Explicit retries skip an unchanged patch. Unrelated drafts/history remain private; differing remote content stays pending under the existing conflict baseline.
 

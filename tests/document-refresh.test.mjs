@@ -22,7 +22,16 @@ function fixture(){
     recoverOnlineDraft:async()=>{},finishHydration:()=>{},getEditorSession:async()=>{},setEditingUI:()=>{},resetInactivityTimer:()=>{},
     tripRepository:{subscribe:callback=>{remote=callback;}}
   },{navigator:{onLine:true},console:{warn:()=>{}}});
-  return {controller,session,classes,reads,cache,statuses,errors,checklist,current:()=>clone(current),emit:value=>remote({new:value}),
+  const controls=new Map();
+  const editor=loadFactory('editing',{
+    $:selector=>{if(!controls.has(selector))controls.set(selector,{});return controls.get(selector);},
+    $$:()=>[],body:{classList:{contains:key=>classes.has(key),toggle:(key,on)=>on?classes.add(key):classes.delete(key)}},
+    documentSession:session,sessionService:{current:()=>({})},
+    fetchPublishedState:()=>{const read=deferred();reads.push(read);return read.promise;},
+    receivePublishedState:controller.receivePublishedState,captureState:()=>clone(current),
+    setStatus:()=>{},resetInactivityTimer:()=>{},syncChecklistControls:()=>{},updateContextControls:()=>{}
+  });
+  return {controller,editor,session,classes,reads,cache,statuses,errors,checklist,current:()=>clone(current),emit:value=>remote({new:value}),
     async hydrate(){const task=controller.hydrate();reads.at(-1).resolve(row(10));await task;cache.length=0;statuses.length=0;}};
 }
 function assertPublished(f,revision){
@@ -88,4 +97,36 @@ test('a deferred revision can be adopted by refresh after closing historical pre
   const f=fixture();await f.hydrate();f.controller.enterHistoricalPreview({html:'Historical revision 3'});f.emit(row(12));
   f.controller.closePreview();const task=f.controller.refreshPublishedState('reconnect');f.reads.at(-1).resolve(row(12));await task;
   assertPublished(f,12);assert.equal(f.session.snapshot().pendingRemoteState,null);
+});
+
+for(const source of ['refresh','Realtime'])for(const latestFirst of [true,false]){
+  test(`editor entry versus ${source} (newer response ${latestFirst?'first':'last'})`,async()=>{
+    const f=fixture();await f.hydrate();
+    const entry=f.editor.beginEditing(),read=f.reads.at(-1);
+    async function deliverLatest(){
+      if(source==='Realtime'){f.emit(row(12));return;}
+      const refresh=f.controller.refreshPublishedState();f.reads.at(-1).resolve(row(12));await refresh;
+    }
+    if(latestFirst)await deliverLatest();
+    read.resolve(row(11));await entry;
+    if(!latestFirst)await deliverLatest();
+    assertPublished(f,latestFirst?12:11);
+    assert.deepEqual(f.cache.map(item=>item.revision),[latestFirst?12:11]);
+    assert.equal(f.session.snapshot().pendingRemoteState?.row.revision,latestFirst?undefined:12);
+    assert.equal(f.classes.has('editing'),true);
+  });
+}
+
+test('editor entry skips an equal revision and a revision older than a pending candidate',async()=>{
+  const f=fixture();await f.hydrate();
+  f.session.rememberRemote(row(12),row(12).content);
+  for(const response of [row(10,'Same revision with different text'),row(11)]){
+    const entry=f.editor.beginEditing();f.reads.at(-1).resolve(response);await entry;
+    assert.deepEqual(f.current(),row(10).content);
+    assert.equal(f.session.snapshot().pendingRemoteState.row.revision,12);
+    assert.equal(f.cache.length,0);
+    f.classes.delete('editing');
+  }
+  const entry=f.editor.beginEditing();f.reads.at(-1).resolve(row(12));await entry;
+  assertPublished(f,12);
 });
