@@ -1,6 +1,6 @@
 # Project review — 2026-11-06
 
-Status: audit complete; proposed fixes are not implemented. See [checkpoint](../REVIEW_2026-11-06_PROGRESS.md) for resumption, local evidence, and verification limits.
+Historical baseline audit of `7a42630`. See the [implementation follow-up](2026-11-06-review-fixes.md) for changes and current verification.
 
 ## Scope
 
