@@ -38,7 +38,7 @@ Viewing requires no login; editing requires a designated Supabase editor account
 - The initial screen uses the device date: PREP before travel, that day's itinerary during travel, ledger afterward.
 - Date selection and daily itinerary/timetable controls appear only in itinerary. Selected day/view survive menu changes in the current session. Opening itinerary before/after travel initially selects day one. Date tabs support arrows, Home, and End.
 - Navigation preserves edits and expense inputs. Clock/shared-document updates preserve the selected menu/day.
-- The header shows Seoul and US West clocks with an automatic offset. Existing toolbar controls handle editing, saving, versions, importing, and exporting.
+- The header shows travel dates and Seoul and US West clocks with an automatic offset. On phones, the theme button sits beside the title to bring task controls higher on the opening screen.
 
 ## Editing, drafts, and sign-out
 

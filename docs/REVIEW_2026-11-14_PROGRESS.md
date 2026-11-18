@@ -1,6 +1,6 @@
 # November 14 project review checkpoint
 
-Status: validating visual parity as of November 18, 2026.
+Status: validating the Stage 5 refinements as of November 18, 2026.
 Requested start: 2026-11-14 04:00 Asia/Seoul, once, in the existing chat.
 Workspace: `D:\Workspace\travel\website`.
 
@@ -43,8 +43,14 @@ Persist concise operational facts after each meaningful finding, before long val
 | 1. Undo and field names | Passed | `350cce8`. Build freshness, 195 unit tests, static checks, Chromium editing group and full drafts suite. Titles/cautions survive Undo, Redo, and reload. Named fields and reading roles verified in desktop/mobile fixtures and exports. |
 | 2. Cache and cancellation | Passed | `b8ac701`. Build freshness, 195 unit tests, static checks, and full Chromium photos/drafts suites. Two-tab writes, fresh offline display, revision ties, legacy migration and failure/retry passed. All four photo-preparation cancellation boundaries retain prior attachments and allow retry. |
 | 3. Keyboard interaction | Passed | `05c3ff5`. Build freshness, 195 unit tests, static checks, Chromium input suite, Firefox input groups, and WebKit groups. The combined Windows WebKit run reached its dialog teardown deadline after assertions passed. Standalone dialog and editing runs exited successfully. Chromium's accessibility tree confirmed modal isolation and the edit-to-reading role change. |
-| 4. Visual verification | Passed | Compared `a178b19` to `05c3ff5` with `check-palette-browser.mjs`. `baselineCompared: true`, 24/24 identical computed styles and PNGs, zero page errors. Reviewed light desktop itinerary, dark mobile ledger, desktop category error, and mobile photo error. Theme and export checks passed. |
-| 5. Optional refinements | Pending | Evaluate mobile task access and font cost before changing either |
+| 4. Visual verification | Passed | `9ecaf98`. Compared `a178b19` to `05c3ff5` with `check-palette-browser.mjs`. `baselineCompared: true`, 24/24 identical computed styles and PNGs, zero page errors. Reviewed light desktop itinerary, dark mobile ledger, desktop category error, and mobile photo error. Theme and export checks passed. |
+| 5. Optional refinements | Passed | Implemented U4 at up to 520px. Navigation, themes, exports, print, and 200% zoom passed. Measured PERF1 and retained the existing font. See measurements below. |
 | Final validation and release | Pending | Final checks, commit, push, PR/merge, CI, Pages, public verification |
 
-Next action: evaluate mobile header density and cold font loading after the Stage 4 commit.
+## Stage 5 measurements
+
+At 320 × 900 and 390 × 900, the title and theme button share one row. Header height dropped from 473px to 407px. The first PREP checkbox moved from 682px to 616px and the ledger date field from 823px to 757px. The tests cover both clocks, storage warnings, menu bounds, keyboard focus, touch navigation and 200% zoom. Reviewed PREP and ledger before/after in both themes. The post-change palette run had `baselineCompared: false`, 24 captures and zero page errors. All 14 desktop or print PNGs matched Stage 4 by hash. The detector flagged existing typography, decoration and the viewer image that receives its source on open.
+
+Cold font measurement used three samples per condition, Chromium at 390 × 900, a simulated 1.6 Mbps connection with 150ms latency and 4× CPU slowdown. Median first contentful paint and ledger date-field focus were 712ms and 1,798ms with the font, and 572ms and 1,462ms with its request blocked. The 2,057,688-byte font finished at 11.07s while the interface was already usable. The measured first-load cost supports keeping the existing complete font and embedded exports pending representative phone measurements.
+
+Next action: validate the integrated release candidate after the Stage 5 commit.

@@ -995,6 +995,16 @@ input:disabled,select:disabled{opacity:.7}
   #themeMenu input:checked{background:var(--accent);border-color:var(--accent)}
   #themeMenu input:checked:after{content:"";width:5px;height:9px;border:solid var(--on-accent);border-width:0 2px 2px 0;transform:translateY(-1px) rotate(45deg)}
   #themeMenu input:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+  @media screen and (max-width:520px){
+    .hero-shell{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px}
+    .hero-top{display:contents}
+    .hero-copy{grid-area:1/1;min-width:0;overflow-wrap:anywhere}
+    .theme-toolbar{grid-area:1/2;align-self:start;margin:0}
+    .hero-meta,.world-clocks,.trip-progress{grid-column:1/-1}
+    .hero-meta{margin-top:14px}
+    .theme-toolbar:has(#themeStorageStatus:not([hidden])){grid-area:auto/1/auto/-1}
+    .hero-shell:has(#themeStorageStatus:not([hidden])) .hero-copy{grid-area:auto/1/auto/-1;margin-top:8px}
+  }
   .expenses-head{gap:10px;flex-wrap:wrap}
   #expenseCsvExport{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:8px 10px;margin-left:auto;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);font:inherit;font-size:12px;font-weight:750;white-space:nowrap;cursor:pointer}
   #expenseCsvExport:hover{background:var(--surface-alt)}

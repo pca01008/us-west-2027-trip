@@ -90,8 +90,34 @@ try {
   assert.equal(await page.locator('#themeToggle').evaluate(el => el === document.activeElement), true);
   await page.locator('#themeToggle').click();await page.keyboard.press('Tab');
   assert.equal(await page.locator('#themeMenu').isHidden(), true);assert.equal(await page.locator('#themeToggle').evaluate(el => el === document.activeElement), false);
-  await page.locator('#themeToggle').click();await page.locator('.world-clocks').click();assert.equal(await page.locator('#themeMenu').isHidden(), true);
+  await page.locator('#themeToggle').click();await page.locator('.hero-copy .title').click({position:{x:4,y:4}});assert.equal(await page.locator('#themeMenu').isHidden(), true);
   await page.locator('#themeToggle').click();await page.locator('#themeToggle').click();assert.equal(await page.locator('#themeMenu').isHidden(), true);
+  diagnostics.scenario('compact phone header and first task controls');
+  for(const width of [320,390]){
+    await page.setViewportSize({width,height:900});
+    for(const [section,selector] of [['prep','.prepday input[type="checkbox"]'],['money','#expenseDate']]){
+      await selectTripTab(page,section,true);
+      const geometry=await page.evaluate(selector=>{
+        window.scrollTo({top:0,behavior:'instant'});
+        const bounds=selector=>document.querySelector(selector).getBoundingClientRect();
+        const heading=bounds('.hero-copy .title'),theme=bounds('#themeToggle'),clocks=bounds('.world-clocks');
+        return {sameRow:heading.top<theme.bottom&&heading.right<=theme.left,
+          clocksBelow:clocks.top>=bounds('.hero-meta').bottom,
+          clockText:['#homeClock','#destinationClock'].map(selector=>document.querySelector(selector).textContent),
+          control:bounds(selector).bottom,nav:bounds('.bottom-nav').top};
+      },selector);
+      assert.equal(geometry.sameRow,true,`theme beside heading / ${width}px`);
+      assert.equal(geometry.clocksBelow,true);
+      for(const clock of geometry.clockText)assert.match(clock,/^\d{2}:\d{2}$/);
+      assert.ok(geometry.control<=geometry.nav,`${section} first control visible above navigation / ${width}px`);
+    }
+    await page.locator('#themeStorageStatus').evaluate(el=>{el.textContent='설정을 저장할 수 없어 이번 실행에만 적용됩니다.';el.hidden=false;});
+    assert.ok(await page.locator('#themeStorageStatus').evaluate(el=>{
+      const warning=el.getBoundingClientRect(),title=document.querySelector('.hero-copy .title').getBoundingClientRect();
+      return warning.left>=0&&warning.right<=innerWidth&&warning.bottom<=title.top;
+    }),'Theme storage warning fits above the heading');
+    await page.locator('#themeStorageStatus').evaluate(el=>el.hidden=true);
+  }
   diagnostics.scenario('responsive geometry, themes and screenshots');
   for (const theme of ['light','dark']) {
     await selectTheme(page, theme);
@@ -159,6 +185,10 @@ try {
   assert.ok(await page.locator('#addExpense').evaluate(el=>el.getBoundingClientRect().bottom<=document.querySelector('.bottom-nav').getBoundingClientRect().top));
   await page.setViewportSize({width:640,height:450});await page.evaluate(()=>document.documentElement.style.zoom='2');
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  assert.ok(await page.locator('.hero-copy .title').evaluate(el=>{
+    const title=el.getBoundingClientRect(),theme=document.querySelector('#themeToggle').getBoundingClientRect();
+    return title.right<=theme.left||theme.bottom<=title.top;
+  }),'Theme control stays clear of the heading at 200% zoom');
   await page.evaluate(()=>document.documentElement.style.zoom='');
   await page.setViewportSize({width:390,height:844});
   await page.locator('[data-remove-expense]').click();await page.locator('#noticeDialog').getByRole('button',{name:'삭제',exact:true}).click();
