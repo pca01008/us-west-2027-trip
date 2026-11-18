@@ -1,6 +1,6 @@
 # November 14 project review checkpoint
 
-Status: local release validation complete as of November 18, 2026.
+Status: released and verified on November 18, 2026.
 Requested start: 2026-11-14 04:00 Asia/Seoul, once, in the existing chat.
 Workspace: `D:\Workspace\travel\website`.
 
@@ -45,7 +45,7 @@ Persist concise operational facts after each meaningful finding, before long val
 | 3. Keyboard interaction | Passed | `05c3ff5`. Build freshness, 195 unit tests, static checks, Chromium input suite, Firefox input groups, and WebKit groups. The combined Windows WebKit run reached its dialog teardown deadline after assertions passed. Standalone dialog and editing runs exited successfully. Chromium's accessibility tree confirmed modal isolation and the edit-to-reading role change. |
 | 4. Visual verification | Passed | `9ecaf98`. Compared `a178b19` to `05c3ff5` with `check-palette-browser.mjs`. `baselineCompared: true`, 24/24 identical computed styles and PNGs, zero page errors. Reviewed light desktop itinerary, dark mobile ledger, desktop category error, and mobile photo error. Theme and export checks passed. |
 | 5. Optional refinements | Passed | `f69a71d`. Implemented U4 at up to 520px. Navigation, themes, exports, print, and 200% zoom passed. Measured PERF1 and retained the existing font. See measurements below. |
-| Final validation and release | Local validation passed | Merged current `origin/main` (`11712c1`) into the candidate without a source diff. Commit and push, then verify the protected PR and Pages workflows. |
+| Final validation and release | Passed | `2104d0b` integrated the original main. After two WebKit follow-ups, `73ec54d` passed the protected PR gate and Pages artifact build. PR 4 merged and deployed as `cdd43db`. |
 
 ## Stage 5 measurements
 
@@ -69,4 +69,6 @@ Schedule creation now finishes its focus and caret handoff after dialog isolatio
 
 The close-before-insertion correction passed the Ubuntu WebKit editing and dialog groups on desktop and mobile. The broad Chromium input suite and all 195 unit tests passed again, along with generated and static checks. The temporary Linux environment supplied focused diagnostic evidence; the complete required verification still runs in the protected PR.
 
-Next action: push the verified WebKit correction and follow the updated PR checks through Pages.
+The corrected [PR validation](https://github.com/pca01008/us-west-2027-trip/actions/runs/44248120430) passed Ubuntu unit/static, PostgreSQL 17, all six Firefox/WebKit groups, all 16 Chromium suites, and Pages artifact checks. [PR 4](https://github.com/pca01008/us-west-2027-trip/pull/4) merged the verified head as `cdd43db0b5ce70fc84b629526ed9b13fdae5eef9`. The merged tree matches `73ec54d`.
+
+The main workflow passed and Pages finished publishing at 06:40:25 UTC. The public site served the released bytes and accepted anonymous read-only navigation. See the [deployment receipt](archive/2026-11-18-review-fixes-release.md).
