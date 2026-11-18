@@ -40,6 +40,7 @@ let applyingHistory=false,moneyTemplateHtml="";
     template.content.querySelectorAll('script,style,iframe,object,embed,link,meta,form,.memo,.map,.schedule-media-tools,.photo-actions,.row-actions,.photo-delete,.row-delete,.check-delete,.check-actions,.check-feedback,.warning-delete').forEach(el=>el.remove());
     template.content.querySelectorAll('.is-active').forEach(el=>el.classList.remove('is-active'));
     template.content.querySelectorAll('.panel.day').forEach(el=>el.removeAttribute('aria-hidden'));
+    stripScheduleFieldEditing(template.content);
     template.content.querySelectorAll('[data-schedule-kind]').forEach(el=>{if(!el.classList.contains('timeline-row')||scheduleKindMode(el.dataset.scheduleKind)==='auto')el.removeAttribute('data-schedule-kind');});
     if(imported){
       const allowed=new Set(['SECTION','DIV','H2','H3','P','ARTICLE','SPAN','SMALL','STRONG','B','I','LABEL','INPUT','BR','FIGURE','FIGCAPTION','IMG','A','UL','LI']);
@@ -154,6 +155,7 @@ let applyingHistory=false,moneyTemplateHtml="";
 function captureState() {
     const {expenses,categories,exchangeRate,exchangeRateUpdated,budgetKrw}=readLedger();
     const main=$('main').cloneNode(true);
+    stripScheduleFieldEditing(main);
     main.querySelectorAll('[contenteditable]').forEach(el=>el.setAttribute('contenteditable','false'));
     main.querySelectorAll('.schedule-media-tools,.photo-actions,.row-actions,.photo-delete,.schedule-map-delete,.row-delete,.check-delete,.check-actions,.check-feedback,.warning-delete').forEach(el=>el.remove());
     main.querySelector('#ledgerMigrationNotice')?.remove();

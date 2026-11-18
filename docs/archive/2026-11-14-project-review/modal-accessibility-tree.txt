@@ -1,0 +1,138 @@
+- banner:
+  - button "테마"
+  - text: TEST TRIP
+  - heading "테스트 여행" [level=1]
+  - text: TRAVEL DATES
+  - strong: 2027. 01. 21 - 01. 31
+  - text: ROUTE
+  - strong: 테스트 도시 A → B
+  - text: HOME 11.14 토
+  - time: 09:41
+  - text: DESTINATION 11.13 금
+  - time: 16:41
+  - text: 목적지는 출발지보다 17시간 느림
+  - strong: D-68
+  - text: 출발 전
+  - progressbar "여행 진행률"
+- tablist "여행 날짜":
+  - button "이전 날짜": ‹
+  - tab "1/21 목 · DAY 1" [selected]
+  - tab "1/22 금 · DAY 2"
+  - tab "1/23 토 · DAY 3"
+  - tab "1/24 일 · DAY 4"
+  - tab "1/25 월 · DAY 5"
+  - tab "1/26 화 · DAY 6"
+  - tab "1/27 수 · DAY 7"
+  - tab "1/28 목 · DAY 8"
+  - tab "1/29 금 · DAY 9"
+  - tab "1/30 토 · DAY 10"
+  - tab "1/31 일 · DAY 11"
+  - button "다음 날짜": ›
+- navigation "주 메뉴":
+  - button "일정"
+  - button "준비"
+  - button "가계부"
+- button "편집 완료"
+- button "실행 취소" [disabled]
+- button "다시 실행"
+- button "일정 시간 추가"
+- button "초기화"
+- button "변경사항 저장" [disabled]
+- status: OFFLINE · 편집 모드
+- dialog "어떤 용도로 내보낼까요?":
+  - heading "어떤 용도로 내보낼까요?" [level=2]
+  - button "오프라인 작업본 오프라인 편집·다시 불러오기 가능":
+    - strong: 오프라인 작업본
+    - text: 오프라인 편집·다시 불러오기 가능
+  - button "인쇄·공유용 사본 읽기 전용·사진 포함":
+    - strong: 인쇄·공유용 사본
+    - text: 읽기 전용·사진 포함
+  - button "취소"
+- group "일정 보기 방식":
+  - button "일별 일정" [pressed]
+  - button "시간표" [disabled]
+- text: 편집 완료 후 시간표 보기
+- main:
+  - tabpanel "1/21 목 · DAY 1":
+    - heading "1/21 목요일 · DAY 1" [level=2]
+    - paragraph: 테스트 일정 1
+    - text: 08:00
+    - article:
+      - heading "일정 1-1" [level=3]
+      - text: 자동 검사에 사용하는 가상 일정입니다. 일정 분류
+      - combobox "일정 분류":
+        - option "자동 (기타)" [selected]
+        - option "관광"
+        - option "식사"
+        - option "이동"
+        - option "숙소·휴식"
+        - option "기타"
+      - button "시간 설정"
+      - button "사진 첨부"
+      - button "지도 첨부"
+      - button "주의사항 추가"
+    - button "일정을 위로 이동" [disabled]
+    - button "일정을 아래로 이동"
+    - button "일정 삭제": ×
+    - text: 09:00
+    - article:
+      - heading "일정 1-2" [level=3]
+      - text: 자동 검사에 사용하는 가상 일정입니다. 일정 분류
+      - combobox "일정 분류":
+        - option "자동 (기타)" [selected]
+        - option "관광"
+        - option "식사"
+        - option "이동"
+        - option "숙소·휴식"
+        - option "기타"
+      - button "시간 설정"
+      - button "사진 첨부"
+      - button "지도 첨부"
+      - button "주의사항 추가"
+    - button "일정을 위로 이동"
+    - button "일정을 아래로 이동"
+    - button "일정 삭제": ×
+    - text: 10:00
+    - article:
+      - heading "일정 1-3" [level=3]
+      - text: 자동 검사에 사용하는 가상 일정입니다.
+      - figure "테스트 사진":
+        - button "테스트 사진 크게 보기"
+        - text: 테스트 사진
+        - button "사진을 앞으로 이동" [disabled]
+        - button "사진을 뒤로 이동" [disabled]
+        - button "사진 정보 편집"
+        - button "사진 삭제": ×
+      - text: 일정 분류
+      - combobox "일정 분류":
+        - option "자동 (기타)" [selected]
+        - option "관광"
+        - option "식사"
+        - option "이동"
+        - option "숙소·휴식"
+        - option "기타"
+      - button "시간 설정"
+      - button "사진 첨부"
+      - button "지도 첨부"
+      - button "주의사항 추가"
+    - button "일정을 위로 이동"
+    - button "일정을 아래로 이동"
+    - button "일정 삭제": ×
+    - text: 11:00
+    - article:
+      - heading "일정 1-4" [level=3]
+      - text: 자동 검사에 사용하는 가상 일정입니다. 일정 분류
+      - combobox "일정 분류":
+        - option "자동 (기타)" [selected]
+        - option "관광"
+        - option "식사"
+        - option "이동"
+        - option "숙소·휴식"
+        - option "기타"
+      - button "시간 설정"
+      - button "사진 첨부"
+      - button "지도 첨부"
+      - button "주의사항 추가"
+    - button "일정을 위로 이동"
+    - button "일정을 아래로 이동" [disabled]
+    - button "일정 삭제": ×

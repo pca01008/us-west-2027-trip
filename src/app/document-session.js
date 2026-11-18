@@ -70,8 +70,15 @@ function createDocumentSession({clone, normalize, fingerprint, historyDelay=()=>
   }
   function moveHistory(offset){const next=historyIndex+offset;if(next<0||next>=history.length)return null;historyIndex=next;historyFingerprint=undefined;return clone(history[next]);}
   function reconcileHistory(transform){historyFingerprint=undefined;history=history.map(state=>{try{return transform(clone(state));}catch(_){return state;}});}
-  function cancelHistory(){clearTimeout(historyTimer);historyTimer=null;}
-  function queueHistory(record){cancelHistory();historyTimer=setTimeout(record,historyDelay());}
+  function cancelHistory(){
+    const pending=historyTimer!==null;
+    clearTimeout(historyTimer);historyTimer=null;
+    return pending;
+  }
+  function queueHistory(record){
+    cancelHistory();
+    historyTimer=setTimeout(()=>{historyTimer=null;record();},historyDelay());
+  }
   return Object.freeze({snapshot,flags,establishBaseline,acceptPublished,prepareOverwrite,adoptImportBaseline,
     restoreDraftBaseline,canAdoptRemote,rememberRemote,markClean,acceptOfflineSave,dirty,updateDirty,enterPreview,leavePreview,blockWrites,
     acceptPrepResult,initializeHistory,recordLocalChange,moveHistory,reconcileHistory,cancelHistory,queueHistory});

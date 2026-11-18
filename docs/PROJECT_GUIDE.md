@@ -170,7 +170,7 @@ For a component edit, inspect its feature layer, then matching `theme`/`refineme
 
 ## Startup and cache
 
-`hydrate()` builds defaults, applies the shared document for the same `tripId`, writes the IndexedDB public cache, subscribes to Realtime, and checks authentication. Failed reads use public cache, then configuration defaults.
+`hydrate()` builds defaults, applies the shared document for the same `tripId`, writes the IndexedDB public cache, subscribes to Realtime, and checks authentication. Failed reads use public cache, then configuration defaults. Each public-cache write compares revisions in one read/write transaction. The first valid cached record wins equal revisions, including revision zero for unversioned legacy data. A newer record stays available in the writing tab if its transaction fails. Once durable, it is available to new tabs.
 
 `selectInitialTab()` uses the device's `VISITOR_TIME_ZONE` date and stops overriding navigation after user selection. Clocks refresh every minute; progress every hour.
 
@@ -283,7 +283,9 @@ Deferred drafts may have `pendingDraft=false` because they are not applied. Chec
 
 Versions load metadata first, content on demand. Preview preserves the original draft before entry; autosave/pagehide/refresh during preview retain original work. Editing/normal saves are blocked. Restore confirms publication and creates a new version. Undo holds up to 100 in-memory states; the server retains 50 versions.
 
-An input event captures the document once for dirty checking and immediate draft persistence. The session caches the normalized fingerprint of its private baseline and current undo entry. Baseline changes, history navigation, and history reconciliation invalidate those keys. The draft checkpoint and IndexedDB format stay the same.
+An input event captures the document once for dirty checking and immediate draft persistence. Structural itinerary and media actions commit any pending history before mutating the DOM, then record the result. Inline itinerary fields expose named multiline textboxes while editing. Snapshot and export serialization remove those editor-only attributes so reading mode retains native semantics.
+
+The session caches the normalized fingerprint of its private baseline and current undo entry. Baseline changes, history navigation, and history reconciliation invalidate those keys.
 
 `buildDiff()` matches events by stable ID and compares their day index as well as content and flattened order. Across-day moves show the configured old date → new date, even when overall order is unchanged. Within-day reordering remains an order change. Versions, imports and save conflicts share this comparison.
 
@@ -319,7 +321,7 @@ Timetable is a read-only projection. Start-only events have no inferred end; exp
 
 ## Dialog focus
 
-`showDialog()` records the active trigger before showing or focusing a modal. The dialog stack traps Tab and closes its top entry on Escape. Closing restores the trigger; ID/action selectors resolve replacement expense/category/time/photo controls after rendering. A child returns focus within its remaining parent. Hidden, unregistered dialogs do not steal focus. Modal openings use this helper; the mutation observer handles closes.
+`showDialog()` records the trigger before showing a modal. Only the top dialog accepts focus. The stack applies `inert` to sibling regions and restores their previous attributes on close. Tab stays in the top dialog and Escape closes it. A child returns focus to its parent. Trigger selectors resolve replacement expense/category/time/photo controls after rendering. The mutation observer handles closes, including simultaneous closes on sign-out. Schedule creation releases the dialog and its inert background before adding editable content so its focused title accepts typing in WebKit. Export cloning restores original inert attributes and hides dialogs.
 
 Settings rate input stays separate from the ledger until Apply and close, Enter, or Escape validates and applies it. Blur validates without applying; rendering preserves edited input. Invalid submission retains the input, shows a local alert and focuses the field. Revert rate restores the current rate without closing or undoing category edits. Rate parsing rejects decimal values that lose precision on JSON Number round trips; exact fractions and trailing zeros remain supported. Unchanged application leaves the rate timestamp/history untouched.
 
@@ -334,8 +336,8 @@ Attached photos use Storage; repository accommodation/map assets use Pages. Brow
 1. Select an event's photos; reject originals above 20MB each.
 2. Decode and resize to at most 1600px on the long edge; verify WebP output or fall back to JPEG with white behind transparency.
 3. Create at most 480px thumbnails likewise; reject compressed files above 5MB.
-4. SHA-256 hash the compressed bytes; stage data URLs in IndexedDB.
-5. Final confirmed Save uploads to hash paths, then replaces only successful staged items with Storage paths/public URLs in a new document version.
+4. Convert both images to data URLs and stage them in the draft. Check cancellation after each encode and conversion. Create the gallery when the first photo attaches.
+5. Final confirmed Save hashes the compressed bytes and uploads to hash paths, then replaces staged items with Storage paths/public URLs in the saved version.
 
 Discarding before upload leaves no server objects. Upload UI provides progress/cancel; public data stays unchanged until save succeeds. Failed/canceled uploads can leave already uploaded objects; retry reuses hashes.
 

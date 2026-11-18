@@ -1,0 +1,370 @@
+{
+  "date": "2026-11-14",
+  "scope": "Synthetic Chromium development review",
+  "checks": [
+    {
+      "id": "layout",
+      "width": 1440,
+      "theme": "light",
+      "section": "d1",
+      "headerHeight": 365.90625,
+      "firstTaskTop": 665.09375,
+      "overflow": false
+    },
+    {
+      "id": "layout",
+      "width": 390,
+      "theme": "light",
+      "section": "prep",
+      "headerHeight": 473.046875,
+      "firstTaskTop": 682.3125,
+      "overflow": false
+    },
+    {
+      "id": "layout",
+      "width": 390,
+      "theme": "dark",
+      "section": "money",
+      "headerHeight": 473.046875,
+      "firstTaskTop": 822.8125,
+      "overflow": false
+    },
+    {
+      "id": "F1",
+      "scenario": "Type, delete within history debounce, Undo",
+      "original": "일정 1-1",
+      "expected": "Last input immediately before deletion",
+      "actual": "일정 1-1"
+    },
+    {
+      "id": "U2",
+      "scenario": "Accessible names on itinerary editing fields",
+      "fields": [
+        {
+          "tag": "P",
+          "className": "",
+          "text": "테스트 일정 1",
+          "role": null,
+          "label": null,
+          "labelledby": null
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "text": "일정 1-1",
+          "role": null,
+          "label": null,
+          "labelledby": null,
+          "placeholder": "일정 제목"
+        },
+        {
+          "tag": "DIV",
+          "className": "remark",
+          "text": "자동 검사에 사용하는 가상 일정입니다.",
+          "role": null,
+          "label": null,
+          "labelledby": null,
+          "placeholder": "장소 또는 메모"
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "text": "일정 1-2",
+          "role": null,
+          "label": null,
+          "labelledby": null,
+          "placeholder": "일정 제목"
+        },
+        {
+          "tag": "DIV",
+          "className": "remark",
+          "text": "자동 검사에 사용하는 가상 일정입니다.",
+          "role": null,
+          "label": null,
+          "labelledby": null,
+          "placeholder": "장소 또는 메모"
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "text": "일정 1-3",
+          "role": null,
+          "label": null,
+          "labelledby": null,
+          "placeholder": "일정 제목"
+        },
+        {
+          "tag": "DIV",
+          "className": "remark",
+          "text": "자동 검사에 사용하는 가상 일정입니다.",
+          "role": null,
+          "label": null,
+          "labelledby": null,
+          "placeholder": "장소 또는 메모"
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "text": "일정 1-4",
+          "role": null,
+          "label": null,
+          "labelledby": null,
+          "placeholder": "일정 제목"
+        },
+        {
+          "tag": "DIV",
+          "className": "remark",
+          "text": "자동 검사에 사용하는 가상 일정입니다.",
+          "role": null,
+          "label": null,
+          "labelledby": null,
+          "placeholder": "장소 또는 메모"
+        }
+      ]
+    },
+    {
+      "id": "U2-AX",
+      "scenario": "Chromium computed accessibility nodes",
+      "computedNames": [
+        {
+          "selector": ".day1 .day-head p",
+          "nodes": [
+            {
+              "nodeId": "210",
+              "ignored": false,
+              "role": {
+                "type": "role",
+                "value": "paragraph"
+              },
+              "chromeRole": {
+                "type": "internalRole",
+                "value": 133
+              },
+              "name": {
+                "type": "computedString",
+                "value": "",
+                "sources": [
+                  {
+                    "type": "relatedElement",
+                    "attribute": "aria-labelledby"
+                  },
+                  {
+                    "type": "attribute",
+                    "attribute": "aria-label"
+                  },
+                  {
+                    "type": "placeholder",
+                    "attribute": "aria-placeholder"
+                  },
+                  {
+                    "type": "attribute",
+                    "attribute": "title"
+                  }
+                ]
+              },
+              "value": {
+                "type": "string",
+                "value": "테스트 일정 1"
+              },
+              "properties": [
+                {
+                  "name": "focusable",
+                  "value": {
+                    "type": "booleanOrUndefined",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "editable",
+                  "value": {
+                    "type": "token",
+                    "value": "richtext"
+                  }
+                }
+              ],
+              "parentId": "204",
+              "childIds": [
+                "211"
+              ],
+              "backendDOMNodeId": 210
+            }
+          ]
+        },
+        {
+          "selector": ".day1 .card h3",
+          "nodes": [
+            {
+              "nodeId": "822",
+              "ignored": false,
+              "role": {
+                "type": "role",
+                "value": "heading"
+              },
+              "chromeRole": {
+                "type": "internalRole",
+                "value": 96
+              },
+              "name": {
+                "type": "computedString",
+                "value": "",
+                "sources": [
+                  {
+                    "type": "relatedElement",
+                    "attribute": "aria-labelledby"
+                  },
+                  {
+                    "type": "attribute",
+                    "attribute": "aria-label"
+                  },
+                  {
+                    "type": "placeholder",
+                    "attribute": "aria-placeholder"
+                  },
+                  {
+                    "type": "attribute",
+                    "attribute": "title"
+                  }
+                ]
+              },
+              "value": {
+                "type": "string",
+                "value": "일정 1-1"
+              },
+              "properties": [
+                {
+                  "name": "focusable",
+                  "value": {
+                    "type": "booleanOrUndefined",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "editable",
+                  "value": {
+                    "type": "token",
+                    "value": "richtext"
+                  }
+                },
+                {
+                  "name": "level",
+                  "value": {
+                    "type": "integer",
+                    "value": 3
+                  }
+                }
+              ],
+              "parentId": "821",
+              "childIds": [
+                "3322"
+              ],
+              "backendDOMNodeId": 822
+            }
+          ]
+        },
+        {
+          "selector": ".day1 .remark",
+          "nodes": [
+            {
+              "nodeId": "823",
+              "ignored": false,
+              "role": {
+                "type": "role",
+                "value": "generic"
+              },
+              "chromeRole": {
+                "type": "internalRole",
+                "value": 88
+              },
+              "name": {
+                "type": "computedString",
+                "value": "",
+                "sources": [
+                  {
+                    "type": "relatedElement",
+                    "attribute": "aria-labelledby"
+                  },
+                  {
+                    "type": "attribute",
+                    "attribute": "aria-label"
+                  },
+                  {
+                    "type": "placeholder",
+                    "attribute": "aria-placeholder"
+                  },
+                  {
+                    "type": "attribute",
+                    "attribute": "title"
+                  }
+                ]
+              },
+              "value": {
+                "type": "string",
+                "value": "자동 검사에 사용하는 가상 일정입니다."
+              },
+              "properties": [
+                {
+                  "name": "focusable",
+                  "value": {
+                    "type": "booleanOrUndefined",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "editable",
+                  "value": {
+                    "type": "token",
+                    "value": "richtext"
+                  }
+                }
+              ],
+              "parentId": "821",
+              "childIds": [
+                "3323"
+              ],
+              "backendDOMNodeId": 823
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "U1",
+      "scenario": "Background focus while a modal is open",
+      "activeElement": "tab-money",
+      "dialogContainsFocus": false,
+      "backgroundInert": false,
+      "backgroundAriaHidden": false
+    },
+    {
+      "id": "U1-Tab",
+      "scenario": "Tab after focus moved outside modal",
+      "activeElement": "editBtn",
+      "dialogContainsFocus": false
+    },
+    {
+      "id": "U3",
+      "scenario": "Keyboard reorder of an expense",
+      "activeTag": "BODY",
+      "activeId": "",
+      "order": [
+        "Expense B",
+        "Expense A"
+      ]
+    },
+    {
+      "id": "F2",
+      "scenario": "Cancel during thumbnail encoding",
+      "attachedAfterCancel": 1,
+      "mutated": 1,
+      "status": "사진 작업 취소 · 1개 초안 유지"
+    },
+    {
+      "id": "F3",
+      "scenario": "Newer public cache from tab B overwritten by delayed older adoption in tab A",
+      "before": 20,
+      "after": 10
+    }
+  ],
+  "pageErrors": [],
+  "browser": "151.0.7922.34"
+}

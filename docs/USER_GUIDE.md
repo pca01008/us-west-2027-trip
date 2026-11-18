@@ -22,7 +22,7 @@ The app is publicly readable. Keep original confirmations and personal informati
 
 ## Screens and navigation
 
-Section and Edit controls retain focus after pointer activation, including Safari/WebKit; closing a dialog returns focus to its opening control.
+Section and Edit controls retain focus after pointer activation, including Safari/WebKit. Focus stays in the active dialog and returns to the opening control when it closes.
 
 These instructions describe this branch's existing-app refinement. See the [implementation record](archive/2026-10-24-legacy-ui-refinement.md) for publication status and validation limits. Further Daylight development and production migration are paused.
 
@@ -38,14 +38,15 @@ Viewing requires no login; editing requires a designated Supabase editor account
 - The initial screen uses the device date: PREP before travel, that day's itinerary during travel, ledger afterward.
 - Date selection and daily itinerary/timetable controls appear only in itinerary. Selected day/view survive menu changes in the current session. Opening itinerary before/after travel initially selects day one. Date tabs support arrows, Home, and End.
 - Navigation preserves edits and expense inputs. Clock/shared-document updates preserve the selected menu/day.
-- The header shows Seoul and US West clocks with an automatic offset. Existing toolbar controls handle editing, saving, versions, importing, and exporting.
+- The header shows travel dates and Seoul and US West clocks with an automatic offset. On phones, the theme button sits beside the title to bring task controls higher on the opening screen.
 
 ## Editing, drafts, and sign-out
 
 Start editing enables itinerary edits. Finishing with changes offers Save and exit, Continue editing, or Discard changes. Reset restores the last saved state.
 
 - Itinerary/ledger edits remain in tab-specific browser drafts until explicitly saved publicly. Text edits are protected immediately, including before undo history updates. Recovery is offered after refresh/tab closure when signed in; otherwise start editing and sign in first. Esc defers recovery and keeps the draft; Delete draft removes it. Deferred drafts must be recovered/deleted before new editing. Other tabs' drafts are not overwritten/deleted. Undoing all changes removes the recovery draft.
-- Editing supports undo/redo, including text entered immediately before Undo. New edits after Undo replace the redo branch.
+- Undo restores the latest text even if you immediately delete an event or caution. New edits after Undo replace the redo branch.
+- In editing mode, assistive technology can identify the day summary, event title, place or note, and caution as text fields.
 - Cross-tab sign-out or expired authentication preserves this tab's draft and shows the last saved state. Sign in and recover/delete the draft before editing/importing. Dismissing recovery retains the draft without starting new work.
 - Authentication persists after editing. Manual/automatic sign-out affects the current browser session and synchronizes across its tabs. A warning appears after 29 idle minutes; automatic sign-out occurs at 30. Drafts remain recoverable unless Discard and sign out is explicitly selected.
 - Cancel/Esc cancels the requested editor action, including a pending login. A successful delayed login may retain authentication; start the action again explicitly. Sign-out invalidates pending editor entry before a delayed document response can apply.
@@ -66,7 +67,7 @@ Draft-storage failure means recent edits may exist only in the current tab. Save
 ## Itinerary and time input
 
 - Events form a timeline of times, lines, markers, and cards. Editing supports per-event photos and HTTPS map links.
-- Type into new title, location/note, and caution fields without deleting placeholders. Placeholders are not saved. Viewing shows Untitled for an empty title and hides empty notes/cautions. Existing text remains. Textual time labels and photo captions are selected on opening their editor for replacement.
+- After adding an event time, focus moves to the new title. Type into title, location/note, and caution fields without deleting placeholders. Placeholders are not saved. Viewing shows Untitled for an empty title and hides empty notes/cautions. Existing text remains. Textual time labels and photo captions are selected on opening their editor for replacement.
 - Add event time or Set time in daily-itinerary editing opens start and optional end inputs. Enter four digits over the faded `09:00`; the colon is skipped. All four digits are required because the example is not a value. Empty end means start-only; both empty mean unspecified. Overwrite digits/selected positions; deleting restores placeholders. Textual mode supports morning, afternoon, unspecified, etc. Time-zone labels such as KST remain separate and apply to both ends. End before start means next day. Cancel leaves the event unchanged; applied edits support undo/redo.
 - Event category defaults to Auto using title/secondary tags. Manually select sightseeing, food, transport, accommodation, rest, or other to override category/color. Manual selection survives title changes; Auto reclassifies the current title. Categories survive saving, recovery, undo/redo, and offline copies, and appear in version/import comparisons.
 
@@ -83,7 +84,7 @@ Draft-storage failure means recent edits may exist only in the current tab. Save
 - Maps store a place name and a valid HTTPS URL with a hostname. Missing names or invalid links show an error beside the input and focus the field. Valid queries, fragments and short links are retained; malformed imported links are disabled. Links remain visible offline; opening them needs internet.
 - Photo count is unlimited. New photos stay in drafts until final save. Uploads use WebP at up to 1600px full size/480px thumbnails, with JPEG fallback if WebP encoding is unsupported. Compressed files must be at most 5MB; thumbnails load lazily. Select original files up to 20MB each.
 - Photo description and alt text cannot be blank. Apply shows errors beside each invalid field and focuses the first; correcting a field clears its error.
-- Existence checks time out after 10 seconds; uploads/export downloads after 60 seconds per request. Cancel operation aborts photo requests. Failure/cancellation preserves the draft. Offline export fails if required photos cannot download; print/share falls back to their online URLs.
+- Existence checks time out after 10 seconds; uploads/export downloads after 60 seconds per request. Cancel operation aborts requests and stops adding photos still being prepared. Already attached photos stay in the draft. Offline export fails if required photos cannot download; print/share falls back to their online URLs.
 - Document deletion does not immediately delete stored photo files, allowing earlier-version restoration.
 - Print/share photo viewers support Enter/Space, confined Tab/Shift+Tab, Esc/Close and focus return. While open, the background is inactive and scrolling is locked, including offline.
 
@@ -98,6 +99,7 @@ The current trip uses KRW/USD. Other trips may show a different configured pair;
 - Remote saving, app resume, and reconnection preserve unadded input/cursor position. Deleted categories fall back to available ones. Input has no draft protection until Add.
 - Ledger totals appear above the entry form. The current rate and its update date appear below the form.
 - New expenses default to today. Editing an undated expense keeps its date blank until you choose one. Clearing a date marks the expense as undated.
+- Move an expense with its up/down buttons. Keyboard focus follows the expense and switches direction at the first or last row. After deletion, focus moves to the nearest remaining expense or the new expense field.
 - Ledger settings manages the manual rate and categories. Rate edits apply only with Apply and close (also Enter/Esc). Invalid input keeps the dialog open with a field error; correct it or use Revert rate to restore the current rate. Category deletion moves its expenses to Deleted category. Empty category names or expense descriptions in editing dialogs show an error beside the input; correct the field and apply again.
 - KRW totals sum every expense's KRW amount; USD totals sum every USD amount. These express the same spending; do not add them together. Category totals follow the same rule. KRW totals no longer count only original KRW entries. Budget controls and expense filters are absent.
 - Expense rows and category totals display KRW (USD), with the second amount in teal. Currency symbols and parentheses distinguish the amounts in both themes and print; automatic-calculation labels remain beside the relevant amount.
@@ -139,7 +141,7 @@ Install from HTTPS for the configured name/icon and standalone mode in supported
 - Android Chrome: menu → Add to Home screen → Install; names vary by version.
 - iPhone Safari: Share → Add to Home Screen; enable Open as Web App if offered.
 - First open online and wait for the page/latest shared document. Installation alone does not retain all photos offline.
-- Static UI/configuration uses network first, falling back to cache on failure/after four seconds. Shared reads time out after eight seconds and fall back to IndexedDB public cache with saved time, or clearly identified defaults if no cache exists.
+- Static UI/configuration uses network first, falling back to cache on failure/after four seconds. Shared reads time out after eight seconds and fall back to the latest shared revision cached by this browser, or clearly identified defaults if no cache exists.
 - The service worker excludes Supabase authentication, itinerary API, and photo Storage. Login, server saves, external maps, and uploaded photos need internet. Export an offline copy for reliable photo retention.
 - Normal reconnection synchronizes. If startup could not load the SDK, reopen/refresh after reconnecting.
 - Browser cleanup can remove caches; they are not permanent backups.

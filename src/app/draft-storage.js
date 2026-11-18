@@ -155,39 +155,66 @@ async function clearDraftRecord() {
     return cleared;
   }
 
+function publicRevision(revision){
+    const number=Number(revision);
+    return Number.isFinite(number)?Math.max(0,number):0;
+  }
+
+function preferPublicCache(first,second){
+    if(!first?.state?.html)return second;
+    if(!second?.state?.html)return first;
+    return publicRevision(first.revision)>=publicRevision(second.revision)?first:second;
+  }
+
 async function writePublicCache(state,metadata={}) {
+    if(!state?.html)return false;
     const record={
       state:clone(state),
-      revision:Math.max(0,Number(metadata.revision??0)||0),
+      revision:publicRevision(metadata.revision),
       updatedAt:String(metadata.updatedAt??''),
-      cachedAt:String(metadata.cachedAt||new Date().toISOString())
+      cachedAt:String(metadata.cachedAt??new Date().toISOString())
     };
-    memoryPublicCache=clone(record);
+    memoryPublicCache=preferPublicCache(memoryPublicCache,record);
     const database=await openDraftDatabase();if(!database)return false;
-    return new Promise(resolve=>{
-      const transaction=database.transaction('records','readwrite');
-      transaction.objectStore('records').put(record,PUBLIC_CACHE_RECORD_KEY);
-      transaction.oncomplete=()=>{try{localStorage.removeItem(LEGACY_CACHE_KEY);}catch(_){}resolve(true);};
-      transaction.onerror=()=>{console.warn('공개본 캐시를 저장하지 못했습니다.',transaction.error);resolve(false);};
-      transaction.onabort=()=>resolve(false);
-    });
+    try{
+      return await new Promise((resolve,reject)=>{
+        const transaction=database.transaction('records','readwrite'),records=transaction.objectStore('records');
+        const request=records.get(PUBLIC_CACHE_RECORD_KEY);
+        let winner;
+        request.onsuccess=()=>{
+          // IndexedDB serializes competing writers. The first valid copy wins ties,
+          // including revision zero from legacy caches with no published revision.
+          winner=preferPublicCache(request.result,record);
+          if(winner===record)try{records.put(record,PUBLIC_CACHE_RECORD_KEY);}catch(error){transaction.abort();reject(error);}
+        };
+        transaction.oncomplete=()=>{
+          memoryPublicCache=preferPublicCache(winner,memoryPublicCache);
+          try{localStorage.removeItem(LEGACY_CACHE_KEY);}catch(_){}
+          resolve(true);
+        };
+        transaction.onabort=()=>reject(transaction.error||new Error('Public cache transaction aborted'));
+      });
+    }catch(error){console.warn('공개본 캐시를 저장하지 못했습니다.',error);return false;}
   }
 
 async function readPublicCache() {
     const database=await openDraftDatabase();
     if(database){
-      const stored=await new Promise(resolve=>{
-        const transaction=database.transaction('records','readonly');
-        const request=transaction.objectStore('records').get(PUBLIC_CACHE_RECORD_KEY);
-        request.onsuccess=()=>resolve(request.result||null);request.onerror=()=>resolve(null);
-      });
-      if(stored?.state?.html){memoryPublicCache=clone(stored);return stored;}
+      try{
+        const stored=await new Promise((resolve,reject)=>{
+          const transaction=database.transaction('records','readonly');
+          const request=transaction.objectStore('records').get(PUBLIC_CACHE_RECORD_KEY);
+          request.onsuccess=()=>resolve(request.result||null);
+          transaction.onabort=()=>reject(transaction.error||new Error('Public cache read aborted'));
+        });
+        memoryPublicCache=preferPublicCache(stored,memoryPublicCache);
+      }catch(error){console.warn('공개본 캐시를 읽지 못했습니다.',error);}
     }
     if(memoryPublicCache?.state?.html)return clone(memoryPublicCache);
     try{
       const parsed=JSON.parse(localStorage.getItem(LEGACY_CACHE_KEY)||'null');
       const legacy=parsed?.state?.html?parsed:parsed?.html?{state:parsed,revision:0,updatedAt:'',cachedAt:''}:null;
-      if(legacy){memoryPublicCache=clone(legacy);void writePublicCache(legacy.state,legacy);return legacy;}
+      if(legacy){await writePublicCache(legacy.state,legacy);return clone(memoryPublicCache);}
     }catch(error){console.warn('기존 공개본 캐시를 읽지 못했습니다.',error);}
     return null;
   }

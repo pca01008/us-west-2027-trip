@@ -1,10 +1,10 @@
-function createScheduleController({$,$$,TIMETABLE_KINDS,TRIP_DAYS,body,configDateParts,decorateButtonIcons,documentSession,editScheduleClock,escapeHtml,focusAndSelect,hashText,iconSvg,isOperationBusy,mapPlaceName,openMapDialog,parseTimetableTime,prefersReducedMotion,readScheduleTime,recordHistory,resetInactivityTimer,scheduleClockMask,scheduleClockValue,scheduleKindMode,scheduleTimeValue,selectActiveScheduleRow,showDialog,timetableClock,timetableKind,uid}) {
+function createScheduleController({$,$$,TIMETABLE_KINDS,TRIP_DAYS,body,checkpointPendingHistory,closeDialog,configDateParts,decorateButtonIcons,editScheduleClock,escapeHtml,focusAndSelect,hashText,iconSvg,isOperationBusy,mapPlaceName,openMapDialog,parseTimetableTime,prefersReducedMotion,readScheduleTime,recordHistory,resetInactivityTimer,scheduleClockMask,scheduleClockValue,scheduleKindMode,scheduleTimeValue,selectActiveScheduleRow,showDialog,timetableClock,timetableKind,uid}) {
 let scheduleTimeTarget = null;
   function addTimeRow(){const id=$('.day-radio:checked')?.id||'';if(!/^d\d+$/.test(id))return;openScheduleTimeDialog(null,$('.day'+id.slice(1)));}
-  function closeScheduleTimeDialog(){$('#scheduleTimeDialog').hidden=true;scheduleTimeTarget=null;}
+  function closeScheduleTimeDialog(){scheduleTimeTarget=null;closeDialog($('#scheduleTimeDialog'));}
   function openScheduleTimeDialog(row,panel=row?.closest('.day')) {
     if(!body.classList.contains('editing')||!panel)return;
-    documentSession.cancelHistory();recordHistory();
+    checkpointPendingHistory();
     scheduleTimeTarget={row,panel};
     const {time,zone}=readScheduleTime(row),parsed=parseTimetableTime(time);
     $('#scheduleTimeTitle').textContent=row?'일정 시간 설정':'새 일정 시간';
@@ -72,7 +72,10 @@ let scheduleTimeTarget = null;
     if(result.error){$('#scheduleTimeError').textContent=result.error;$('#scheduleTimeError').hidden=false;const input=$(result.field==='end'?'#scheduleTimeEnd':'#scheduleTimeStart');input.setAttribute('aria-invalid','true');input.focus();return;}
     const {panel}=scheduleTimeTarget;let {row}=scheduleTimeTarget;const isNew=!row,zone=$('#scheduleTimeZone').value.trim();
     if(!panel.isConnected||row&&!row.isConnected){closeScheduleTimeDialog();return;}
-    if(isNew){row=document.createElement('div');row.className='timeline-row';row.dataset.rowId=uid('row');row.innerHTML='<div class="time" contenteditable="false"></div><div class="rail"><i class="dot"></i></div><article class="card"><h3 contenteditable="true"></h3><div class="remark" contenteditable="true"></div></article>';panel.appendChild(row);}
+    // Release the background before inserting editable fields. Linux WebKit
+    // can focus a field created under inert yet fail to insert typed text.
+    closeScheduleTimeDialog();
+    if(isNew){row=document.createElement('div');row.className='timeline-row';row.dataset.rowId=uid('row');row.innerHTML='<div class="time" contenteditable="false"></div><div class="rail"><i class="dot"></i></div><article class="card"><h3></h3><div class="remark"></div></article>';panel.appendChild(row);row.querySelectorAll(SCHEDULE_FIELD_SELECTOR).forEach(field=>setScheduleFieldEditing(field,true));}
     const original=readScheduleTime(row);
     if(isNew||original.time!==result.time||original.zone!==zone){
       const parsed=parseTimetableTime(result.time),timeNode=row.querySelector('.time');
@@ -80,11 +83,22 @@ let scheduleTimeTarget = null;
       else timeNode.textContent=result.time;
       if(zone){const small=document.createElement('small');small.textContent=zone;timeNode.appendChild(small);}
     }
-    closeScheduleTimeDialog();decorateScheduleRows();recordHistory();resetInactivityTimer();
-    if(isNew)requestAnimationFrame(()=>focusAndSelect(row.querySelector('h3')));
+    decorateScheduleRows();recordHistory();resetInactivityTimer();
+    // Finish the handoff before another keyboard event can change the selection.
+    if(isNew)queueMicrotask(()=>{
+      if(row.isConnected&&body.classList.contains('editing'))focusAndSelect(row.querySelector('h3'));
+    });
   }
-  function addScheduleWarning(row){const card=row?.querySelector('.card');if(!card)return;const warning=document.createElement('div');warning.className='schedule-warning';warning.innerHTML='<span class="schedule-warning-text" contenteditable="true"></span><button class="warning-delete" type="button">삭제</button>';card.insertBefore(warning,card.querySelector('.schedule-media-tools'));decorateEditablePlaceholders(card);warning.querySelector('.schedule-warning-text').focus();recordHistory();}
-  function moveScheduleRow(row,direction){if(!body.classList.contains('editing')||!row)return;const panel=row.parentElement,rows=Array.from(panel.querySelectorAll(':scope > .timeline-row')),index=rows.indexOf(row),next=index+direction;if(index<0||next<0||next>=rows.length)return;if(direction<0)rows[next].before(row);else rows[next].after(row);updateScheduleMoveButtons();recordHistory();row.scrollIntoView({block:'nearest',behavior:prefersReducedMotion()?'auto':'smooth'});}
+  function addScheduleWarning(row){
+    const card=row?.querySelector('.card');if(!card)return;
+    checkpointPendingHistory();
+    const warning=document.createElement('div');warning.className='schedule-warning';
+    warning.innerHTML='<span class="schedule-warning-text"></span><button class="warning-delete" type="button">삭제</button>';
+    card.insertBefore(warning,card.querySelector('.schedule-media-tools'));
+    const field=warning.querySelector('.schedule-warning-text');
+    setScheduleFieldEditing(field,true);decorateEditablePlaceholders(card);field.focus();recordHistory();
+  }
+  function moveScheduleRow(row,direction){if(!body.classList.contains('editing')||!row)return;const panel=row.parentElement,rows=Array.from(panel.querySelectorAll(':scope > .timeline-row')),index=rows.indexOf(row),next=index+direction;if(index<0||next<0||next>=rows.length)return;checkpointPendingHistory();if(direction<0)rows[next].before(row);else rows[next].after(row);updateScheduleMoveButtons();recordHistory();row.scrollIntoView({block:'nearest',behavior:prefersReducedMotion()?'auto':'smooth'});}
 
 
 
@@ -128,7 +142,7 @@ function updateScheduleKindControl(row){
 function changeScheduleKind(select){
     const row=select.closest('.timeline-row');if(!row)return;
     if(!body.classList.contains('editing')){updateScheduleKindControl(row);return;}
-    documentSession.cancelHistory();recordHistory();
+    checkpointPendingHistory();
     const mode=scheduleKindMode(select.value);if(mode==='auto')delete row.dataset.scheduleKind;else row.dataset.scheduleKind=mode;
     updateScheduleKindControl(row);recordHistory();resetInactivityTimer();
   }
@@ -166,8 +180,8 @@ $('#addTimeBtn').onclick=addTimeRow;
 document.addEventListener('click',event=>{if(isOperationBusy())return;
 const media=event.target.closest('[data-media]');if(media&&body.classList.contains('editing')){selectActiveScheduleRow(media.closest('.timeline-row'));if(media.dataset.media==='time')openScheduleTimeDialog(media.closest('.timeline-row'));else if(media.dataset.media==='photo')$('#photoInput').click();else if(media.dataset.media==='map')openMapDialog(media.closest('.timeline-row'));else addScheduleWarning(media.closest('.timeline-row'));return;}
 const rowMove=event.target.closest('[data-move-row]');if(rowMove&&!rowMove.disabled){moveScheduleRow(rowMove.closest('.timeline-row'),Number(rowMove.dataset.moveRow));return;}
-if(event.target.closest('[data-delete-row]')&&body.classList.contains('editing')){event.target.closest('.timeline-row')?.remove();updateScheduleMoveButtons();recordHistory();return;}
-if(event.target.classList.contains('warning-delete')&&body.classList.contains('editing')){event.target.closest('.schedule-warning')?.remove();recordHistory();return;}
+if(event.target.closest('[data-delete-row]')&&body.classList.contains('editing')){checkpointPendingHistory();event.target.closest('.timeline-row')?.remove();updateScheduleMoveButtons();recordHistory();return;}
+if(event.target.classList.contains('warning-delete')&&body.classList.contains('editing')){checkpointPendingHistory();event.target.closest('.schedule-warning')?.remove();recordHistory();return;}
 });
 $('#scheduleTimeCancel').onclick=closeScheduleTimeDialog;
 $('#scheduleTimeSave').onclick=saveScheduleTime;
@@ -182,4 +196,27 @@ $('#scheduleTimeDialog').addEventListener('keydown',event=>{if(event.key==='Ente
 
 
 return Object.freeze({addTimeRow,closeScheduleTimeDialog,openScheduleTimeDialog,scheduleTimeFormValue,renderScheduleClock,setScheduleClock,changeScheduleClock,undoScheduleClock,initializeScheduleClocks,updateScheduleTimePreview,saveScheduleTime,addScheduleWarning,moveScheduleRow,decorateDates,decorateMapLink,updatePhotoMoveButtons,decoratePhotoFigure,updateScheduleMoveButtons,updateScheduleKindControl,changeScheduleKind,updateEditableEmpty,decorateEditablePlaceholders,decorateScheduleRows,bindScheduleControls});
+}
+const SCHEDULE_FIELD_LABELS = [
+  ['main > .day:not(.prepday):not(.moneyday) .day-head > p','하루 요약'],
+  ['.timeline-row .card > h3','일정 제목'],
+  ['.timeline-row .card > .remark','장소 또는 메모'],
+  ['.timeline-row .schedule-warning-text','주의사항'],
+];
+const SCHEDULE_FIELD_SELECTOR = SCHEDULE_FIELD_LABELS.map(([selector])=>selector).join(',');
+
+function setScheduleFieldEditing(field,on){
+  field.contentEditable=on?'true':'false';
+  if(on){
+    field.setAttribute('role','textbox');
+    field.setAttribute('aria-label',SCHEDULE_FIELD_LABELS.find(([selector])=>field.matches(selector))[1]);
+    field.setAttribute('aria-multiline','true');
+  }else{
+    for(const attribute of ['role','aria-label','aria-multiline'])field.removeAttribute(attribute);
+  }
+}
+
+function stripScheduleFieldEditing(root){
+  // Snapshots have no main ancestor. Only editor roles are transient.
+  root.querySelectorAll('[contenteditable][role="textbox"]').forEach(field=>setScheduleFieldEditing(field,false));
 }

@@ -100,8 +100,34 @@ function configureCurrencyLabels(){
       $('#expenseDialog').hidden=true;editingExpenseId=null;expenseEditInput=emptyExpenseInput();renderLedger();finishMutation();
     });
   }
-  async function moveExpense(id,direction){await requireEditor('ledger',()=>{const index=expenses.findIndex(item=>item.id===id),next=index+direction;if(index<0||next<0||next>=expenses.length)return;const [item]=expenses.splice(index,1);expenses.splice(next,0,item);renderLedger();finishMutation();});}
-  async function deleteExpense(id){const item=expenses.find(x=>x.id===id);if(!item)return;const choice=await showChoice({title:'가계부 항목을 삭제할까요?',message:item.name+' 항목을 삭제합니다.',choices:[{label:'취소',value:'cancel'},{label:'삭제',value:'delete',className:'action-danger'}]});if(choice!=='delete')return;await requireEditor('ledger',async()=>{expenses=expenses.filter(x=>x.id!==id);renderLedger();finishMutation();});}
+  function restoreExpenseFocus(id,direction){
+    // Authentication and confirmation dialogs release their inert background on close.
+    queueMicrotask(()=>{
+      const row=id?$('#expenses [data-expense-id="'+CSS.escape(id)+'"]'):null;
+      const sameDirection=row?.querySelector('[data-move-direction="'+direction+'"]:not(:disabled)');
+      const otherDirection=direction&&row?.querySelector('[data-move-expense]:not(:disabled)');
+      (sameDirection||otherDirection||row?.querySelector('[data-edit-expense]')||$('#expenseName')).focus();
+    });
+  }
+  async function moveExpense(id,direction){
+    await requireEditor('ledger',()=>{
+      const index=expenses.findIndex(item=>item.id===id),next=index+direction;
+      if(index<0||next<0||next>=expenses.length)return;
+      const [item]=expenses.splice(index,1);expenses.splice(next,0,item);
+      renderLedger();finishMutation();restoreExpenseFocus(id,direction);
+    });
+  }
+  async function deleteExpense(id){
+    const item=expenses.find(x=>x.id===id);if(!item)return;
+    const choice=await showChoice({title:'가계부 항목을 삭제할까요?',message:item.name+' 항목을 삭제합니다.',choices:[{label:'취소',value:'cancel'},{label:'삭제',value:'delete',className:'action-danger'}]});
+    if(choice!=='delete')return;
+    await requireEditor('ledger',()=>{
+      const index=expenses.findIndex(item=>item.id===id);if(index<0)return;
+      expenses.splice(index,1);
+      const neighbor=expenses[index]||expenses[index-1];
+      renderLedger();finishMutation();restoreExpenseFocus(neighbor?.id);
+    });
+  }
   function renderIconPicker(){const names=['항공','숙박','식사','카페','자동차','택시','주유','주차','입장권','공연','자연','쇼핑','휴식','음료','선물','약','휴대폰','현금','상자','휴지통'],icons=ICON_CANDIDATES.includes(selectedCategoryIcon)?ICON_CANDIDATES:[...ICON_CANDIDATES,selectedCategoryIcon];const picker=$('#categoryIconPicker');picker.innerHTML=icons.map((icon,index)=>'<button class="'+(icon===selectedCategoryIcon?'active':'')+'" data-category-icon="'+escapeHtml(icon)+'" aria-label="'+(names[index]||'사용자 아이콘')+'" aria-pressed="'+(icon===selectedCategoryIcon)+'" type="button">'+escapeHtml(icon)+'</button>').join('');}
   function revertSettingsRate(){settingsRateTouched=false;$('#settingsExchangeRate').value=String(exchangeRate);setFieldError('settingsExchangeRate');}
   function openLedgerSettings(){renderLedger();revertSettingsRate();showDialog($('#ledgerSettingsDialog'));setStatus(documentSession.snapshot().pendingDraft?'가계부 설정 중 · 저장되지 않음':'가계부 설정');}

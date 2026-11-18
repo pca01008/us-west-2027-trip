@@ -52,7 +52,7 @@ const server = createServer(async (req, res) => {
     let content = await readBrowserFixture(new URL(relative, root));
     if (relative === 'index.html') content = injectBrowserFixture(source.replace('data-offline="false"', 'data-offline="true"')
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
-      .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, ''), 'window.__inputsTest={captureState,applyState,normalizeState,recordHistory,exportOfflineHtml,exportStaticHtml,history:()=>{const {historyIndex,historyLength}=documentSession.snapshot();return {historyIndex,historyLength};}};');
+      .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, ''), 'window.__inputsTest={captureState,applyState,normalizeState,recordHistory,exportOfflineHtml,exportStaticHtml,showDialog,handleExternalSignOut,history:()=>{const {historyIndex,historyLength}=documentSession.snapshot();return {historyIndex,historyLength};}};');
     const ext = relative.split('.').at(-1);
     res.writeHead(200, { 'Content-Type': { html: 'text/html; charset=utf-8', js: 'text/javascript; charset=utf-8', webp: 'image/webp', png: 'image/png', svg: 'image/svg+xml', woff2: 'font/woff2' }[ext], 'Cache-Control': 'no-store' });
     res.end(content);
@@ -139,11 +139,30 @@ try {
       assert.equal(await error.evaluate((el,dialog)=>{const r=el.getBoundingClientRect();return !!el.closest(dialog)&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight;},dialog),true,'Visible error stays inside the active dialog and viewport');
     };
     const open=async(trigger,dialog,initial)=>{
-      await trigger.focus();await page.keyboard.press('Enter');await page.locator(dialog).waitFor({state:'visible'});await focused(page.locator(initial));
+      await trigger.focus();await page.keyboard.press('Enter');await page.locator(dialog).waitFor({state:'visible'});
+      await page.waitForFunction(selector=>document.querySelector(selector)===document.activeElement,initial);
       const buttons=page.locator(dialog).locator('button:visible:not([disabled]),input:visible:not([disabled]),select:visible:not([disabled]),textarea:visible:not([disabled]),a[href]:visible');
       await buttons.first().focus();await page.keyboard.press('Shift+Tab');await focused(buttons.last());
       await page.keyboard.press('Tab');await focused(buttons.first());
     };
+    const exportTrigger=page.locator('#exportMenuBtn'),main=page.locator('main'),header=page.locator('header');
+    await header.evaluate(el=>el.setAttribute('inert','prior-state'));
+    await open(exportTrigger,'#exportDialog','#offlineExportBtn');
+    assert.equal(await main.evaluate(el=>el.inert),true);
+    await page.locator('#tab-money').evaluate(el=>el.focus());
+    await focused(page.locator('#offlineExportBtn'));
+    const stayedInside=await page.evaluate(()=>{
+      const added=document.createElement('button');document.body.append(added);added.focus();
+      const contained=document.querySelector('#exportDialog').contains(document.activeElement);added.remove();
+      return contained;
+    });
+    assert.equal(stayedInside,true,'Programmatic focus on a new background control is returned to the modal');
+    await page.keyboard.press('Tab');
+    await focused(page.locator('#exportBtn'));
+    await page.keyboard.press('Escape');await focused(exportTrigger);
+    assert.equal(await main.evaluate(el=>el.inert),false);
+    assert.equal(await header.getAttribute('inert'),'prior-state');
+    await header.evaluate(el=>el.removeAttribute('inert'));
     await selectTripTab(page,'money');await page.locator('#expenseName').fill('Keyboard fixture');await page.locator('#expenseKrw').fill('14500');await page.locator('#addExpense').click();
     const expense=page.locator('[data-edit-expense]').first();
     for(const close of ['Escape','#expenseEditCancel','#expenseEditSave']){
@@ -153,10 +172,42 @@ try {
     }
     await open(expense,'#expenseDialog','#expenseEditName');await page.locator('#expenseEditName').fill('   ');await page.locator('#expenseEditSave').click();await fieldError('expenseEditName','#expenseDialog');
     await page.locator('#expenseEditName').fill('Corrected expense');assert.equal(await page.locator('#expenseEditNameError').isHidden(),true);await page.locator('#expenseEditSave').click();await focused(expense);
+    const rows=page.locator('#expenses .expense');
+    for(const name of ['B','C','D']){
+      await page.locator('#expenseName').fill(name);await page.locator('#expenseKrw').fill('1000');await page.locator('#addExpense').click();
+    }
+    const id=await rows.nth(1).getAttribute('data-expense-id'),moved=page.locator(`[data-expense-id="${id}"]`);
+    const moveButton=direction=>moved.locator(`[data-move-direction="${direction}"]`);
+    await moveButton(1).focus();
+    for(const [key,position,nextDirection] of [['Enter',2,1],['Space',3,-1],['Enter',2,-1],['Space',1,-1],['Enter',0,1]]){
+      await page.keyboard.press(key);
+      assert.equal(await rows.nth(position).getAttribute('data-expense-id'),id,'Keyboard move follows the same expense');
+      await focused(moveButton(nextDirection));
+      assert.equal(await moveButton(nextDirection).isEnabled(),true);
+    }
+    const remove=moved.locator('[data-remove-expense]');
+    await remove.focus();await page.keyboard.press('Enter');
+    await page.locator('#noticeDialog').waitFor({state:'visible'});
+    await page.keyboard.press('Escape');await focused(remove);
+    async function deleteRow(row){
+      await row.locator('[data-remove-expense]').focus();await page.keyboard.press('Enter');
+      await page.locator('#noticeDialog').getByRole('button',{name:'삭제',exact:true}).press('Enter');
+      await page.locator('#noticeDialog').waitFor({state:'hidden'});
+    }
+    const neighbor=await rows.nth(1).getAttribute('data-expense-id');
+    await deleteRow(moved);
+    assert.equal(await moved.count(),0);
+    await focused(page.locator(`[data-expense-id="${neighbor}"] [data-edit-expense]`));
+    await deleteRow(rows.last());await focused(rows.last().locator('[data-edit-expense]'));
+    await deleteRow(rows.last());await focused(rows.last().locator('[data-edit-expense]'));
+    await deleteRow(rows.last());await focused(page.locator('#expenseName'));
     await page.locator('#editBtn').focus();await page.keyboard.press('Enter');await page.locator('#ledgerSettingsDialog').waitFor({state:'visible'});
     for(const close of ['Escape','#categoryCancel','#categorySave']){
       const trigger=page.locator(close==='#categorySave'?'[data-category-edit="food"]':'#settingsAddCategory').filter({visible:true});
       await open(trigger,'#categoryDialog','#categoryName');
+      assert.equal(await page.locator('#ledgerSettingsDialog').evaluate(el=>el.inert),true);
+      await trigger.evaluate(el=>el.focus());
+      await focused(page.locator('#categoryName'));
       const picker=page.locator('#categoryIconPicker');
       assert.equal(await picker.locator('[aria-pressed="true"]').count(),1);
       assert.equal(await picker.locator('button:not([aria-label]),button[aria-label=""]').count(),0);
@@ -170,6 +221,8 @@ try {
       }
       if(close==='Escape')await page.keyboard.press(close);else await page.locator(close).press('Enter');
       await page.locator('#categoryDialog').waitFor({state:'hidden'});await focused(trigger);
+      assert.equal(await page.locator('#ledgerSettingsDialog').evaluate(el=>el.inert),false);
+      assert.equal(await main.evaluate(el=>el.inert),true);
       assert.equal(await page.locator('#ledgerSettingsDialog').isVisible(),true,'Closing a child keeps its parent open');
       if(close==='#categorySave'){
         await open(trigger,'#categoryDialog','#categoryName');
@@ -262,7 +315,19 @@ try {
     await page.locator('#mapUrl').fill(validMap);assert.equal(await page.locator('#mapUrlError').isHidden(),true);await page.locator('#mapSave').click();await focused(map);
     assert.equal(await page.locator('.day1 .schedule-map a').first().getAttribute('href'),validMap);
     assert.equal(await page.evaluate(()=>{const api=window.__inputsTest,state=api.normalizeState(api.captureState(),true),template=document.createElement('template');template.innerHTML=state.html;return template.content.querySelector('.day1 .schedule-map a').getAttribute('href');}),validMap,'Import preserves valid query and fragment');
-    await diagnostics.close(context);console.log(`Dialog focus (${mobile?'mobile':'desktop'}): keyboard open, Tab wrapping, Escape/Cancel/Apply, nested dialogs and replaced triggers passed.`);
+    await page.locator('#editBtn').click();
+    await page.locator('#noticeDialog').getByRole('button',{name:'변경사항 폐기',exact:true}).click();
+    await page.waitForFunction(()=>!document.body.classList.contains('editing')&&document.querySelector('#saveBtn').disabled);
+    await selectTripTab(page,'money');
+    await page.locator('#editBtn').focus();await page.keyboard.press('Enter');
+    await page.locator('#ledgerSettingsDialog').waitFor({state:'visible'});
+    await open(page.locator('#settingsAddCategory'),'#categoryDialog','#categoryName');
+    await page.evaluate(()=>window.__inputsTest.handleExternalSignOut());
+    assert.equal(await page.locator('#categoryDialog').isHidden(),true);
+    assert.equal(await page.locator('#ledgerSettingsDialog').isHidden(),true);
+    assert.equal(await main.evaluate(el=>el.inert),false);
+    await focused(page.locator('#editBtn'));
+    await diagnostics.close(context);console.log(`Keyboard interaction (${mobile?'mobile':'desktop'}): dialog isolation, nested close/sign-out, focus return, expense moves and deletion passed.`);
   }
   if(runGroup('editing'))for (const mobile of [false, true]) {
     diagnostics.scenario(`input, import and export / ${mobile ? "mobile" : "desktop"}`);
@@ -272,7 +337,17 @@ try {
     const page = await context.newPage();
     const ready = async p => {await p.waitForFunction(() => !document.body.classList.contains('hydrating'));await waitForFixtureFonts(p);};
     const tab = p => selectTripTab(p, 'd1');
-    await page.goto(origin); await ready(page); await tab(page); await page.locator('#editBtn').click();
+    const assertField = async (field, name) => {
+      assert.equal(await field.and(field.page().getByRole('textbox', { name, exact: true })).count(), 1);
+      assert.equal(await field.getAttribute('aria-multiline'), 'true');
+    };
+    await page.goto(origin); await ready(page); await tab(page);
+    const existing = page.locator('.day1 .timeline-row').first();
+    assert.equal(await existing.getByRole('heading', { level: 3 }).count(), 1);
+    await page.locator('#editBtn').click();
+    await assertField(page.locator('.day1 .day-head p'), '하루 요약');
+    await assertField(existing.locator('h3'), '일정 제목');
+    await assertField(existing.locator('.remark'), '장소 또는 메모');
     const oldRows = await page.locator('.day1 .timeline-row').count();
     await page.locator('#addTimeBtn').click();
     const start = page.locator('#scheduleTimeStart'), end = page.locator('#scheduleTimeEnd');
@@ -297,15 +372,24 @@ try {
     assert.equal(await start.inputValue(), '00:15', 'Noncancelable input must overwrite, not shift digits');
     await start.click(); await start.press('Control+a'); await start.pressSequentially('0930');
     assert.equal(await start.inputValue(), '09:30');
+    await page.locator('#scheduleTimeSave').evaluate(button=>{
+      button.addEventListener('click',()=>queueMicrotask(()=>{
+        const title=document.querySelector('.day1 .timeline-row:last-child h3');
+        window.__newTitleReady=Boolean(title&&document.activeElement===title&&title.contains(getSelection().anchorNode));
+      }),{once:true});
+    });
     await page.locator('#scheduleTimeSave').click();
     assert.equal(await page.locator('.day1 .timeline-row').count(), oldRows + 1);
     const row = page.locator('.day1 .timeline-row').last();
     const rowId = await row.getAttribute('data-row-id');
     const title = row.locator('h3'), detail = row.locator('.remark');
+    await assertField(title, '일정 제목');
+    await assertField(detail, '장소 또는 메모');
     assert.equal(await title.textContent(), ''); assert.equal(await detail.textContent(), '');
     assert.equal(await detail.getAttribute('data-placeholder'),'장소 또는 메모');
     assert.ok(['\"장소 또는 메모\"','attr(data-placeholder)'].includes(await detail.evaluate(el => getComputedStyle(el,'::before').content)),'Placeholder content is literal or an attribute reference (engine serialization)');
-    await title.pressSequentially('Museum'); await detail.click(); await detail.pressSequentially('Los Angeles');
+    assert.equal(await page.evaluate(()=>window.__newTitleReady),true,'The title has focus and a caret before the next keyboard event');
+    await page.keyboard.type('Museum'); await detail.click(); await detail.pressSequentially('Los Angeles');
     assert.equal(await title.textContent(), 'Museum'); assert.equal(await detail.textContent(), 'Los Angeles');
     await detail.press('Control+a'); await detail.press('Backspace');
     assert.equal(await detail.getAttribute('data-empty'), 'true', 'Deleting all text restores the hint even with a remaining BR');
@@ -323,6 +407,7 @@ try {
     assert.equal(await detail.textContent(), '서울'); assert.equal(await detail.getAttribute('data-empty'), 'false');
     await row.locator('[data-media="warning"]').click();
     const warning = row.locator('.schedule-warning-text');
+    await assertField(warning, '주의사항');
     assert.equal(await warning.textContent(), ''); await warning.pressSequentially('Bring tickets');
     assert.equal(await warning.textContent(), 'Bring tickets');
     await page.evaluate(() => window.__inputsTest.recordHistory());
@@ -341,6 +426,9 @@ try {
     assert.deepEqual(stored, ['', '', ''], 'Hints must never become saved content');
     await page.evaluate(state => { const api = window.__inputsTest; api.applyState(api.normalizeState(state, true)); }, snapshot);
     assert.equal(await detail.getAttribute('data-empty'), 'true', 'Imported empty fields retain hints');
+    await assertField(title, '일정 제목');
+    await assertField(detail, '장소 또는 메모');
+    await assertField(warning, '주의사항');
     // Preserve legacy/user content even when it happens to match old hint strings.
     await title.fill('새 일정'); await detail.fill('장소 또는 메모'); await warning.fill('새 주의사항');
     await page.evaluate(() => { const api = window.__inputsTest; api.applyState(api.captureState()); });
@@ -362,7 +450,13 @@ try {
     // Both exports must survive script execution/reload with empty values and correct view styles.
     for (const kind of ['editable', 'readonly']) {
       const download = page.waitForEvent('download');
-      await page.evaluate(kind => kind === 'editable' ? window.__inputsTest.exportOfflineHtml() : window.__inputsTest.exportStaticHtml(), kind);
+      await page.evaluate(async kind=>{
+        const api=window.__inputsTest,dialog=document.querySelector('#exportDialog');
+        api.showDialog(dialog);
+        if(!document.querySelector('main').inert)throw Error('Expected modal isolation before export');
+        try{await (kind==='editable'?api.exportOfflineHtml():api.exportStaticHtml());}
+        finally{dialog.hidden=true;}
+      },kind);
       const file = path.join(output, `${mobile ? 'mobile' : 'desktop'}-${kind}.html`);
       await (await download).saveAs(file);
       const artifact = await context.newPage(); await artifact.goto(pathToFileURL(file).href);
@@ -370,7 +464,11 @@ try {
       assert.equal(await artifact.locator('#tripFontPreload').count(), 0, 'Export must not request a relative font preload');
       if (kind === 'editable') await ready(artifact);
       if(kind==='editable')await tab(artifact);
+      assert.equal(await artifact.locator('main').evaluate(el=>el.inert),false);
+      assert.equal(await artifact.getByRole('dialog').count(),0);
       const restored = artifact.locator(`[data-row-id="${rowId}"]`);
+      assert.equal(await artifact.getByRole('textbox', { name: '일정 제목', exact: true }).count(), 0);
+      assert.equal(await restored.getByRole('heading', { level: 3 }).count(), 1);
       assert.equal(await restored.locator('h3').textContent(), '');
       assert.equal(await restored.locator('h3').evaluate(el => getComputedStyle(el, '::before').content), '"제목 없음"');
       assert.equal(await restored.locator('.remark').isVisible(), false);
@@ -379,6 +477,9 @@ try {
       assert.equal(await restored.locator('h3').textContent(), '');
       if (kind === 'editable') {
         await artifact.locator('#editBtn').click();
+        await assertField(restored.locator('h3'), '일정 제목');
+        await assertField(restored.locator('.remark'), '장소 또는 메모');
+        await assertField(restored.locator('.schedule-warning-text'), '주의사항');
         assert.equal(await restored.locator('.remark').isVisible(), true);
         await restored.locator('.remark').click(); await restored.locator('.remark').pressSequentially('Restored');
         assert.equal(await restored.locator('.remark').textContent(), 'Restored');
