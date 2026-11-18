@@ -8,7 +8,8 @@ Work now focuses on the existing app. Further Daylight development and productio
 
 | Task | Reference |
 |---|---|
-| Latest functionality, UI, and test audit | [2026-11-06 project review](docs/archive/2026-11-06-project-review.md) · [Fixes and verification](docs/archive/2026-11-06-review-fixes.md) · [Checkpoint](docs/REVIEW_2026-11-06_PROGRESS.md) |
+| Latest functionality, UI, and test audit | [2026-11-14 project review](docs/archive/2026-11-14-project-review.md) · [Implementation checkpoint](docs/REVIEW_2026-11-14_PROGRESS.md) |
+| November 6 audit and fixes | [Project review](docs/archive/2026-11-06-project-review.md) · [Fixes and verification](docs/archive/2026-11-06-review-fixes.md) · [Checkpoint](docs/REVIEW_2026-11-06_PROGRESS.md) |
 | October 28 audit and fixes | [Project review](docs/archive/2026-10-28-project-review.md) · [Fixes and verification](docs/archive/2026-10-28-review-fixes.md) · [Audit checkpoint](docs/REVIEW_2026-10-28_PROGRESS.md) |
 | October 26 functionality, UI, and test audit | [Project review](docs/archive/2026-10-26-project-review.md) — seven reproduced defects, one measured UI improvement, and regression priorities |
 | Functionality, UI, and test findings | [2026-10-25 comprehensive review](docs/archive/2026-10-25-comprehensive-review.md) — reproduced issues, priorities, and proposed regression coverage |

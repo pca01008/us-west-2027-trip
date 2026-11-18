@@ -283,7 +283,9 @@ Deferred drafts may have `pendingDraft=false` because they are not applied. Chec
 
 Versions load metadata first, content on demand. Preview preserves the original draft before entry; autosave/pagehide/refresh during preview retain original work. Editing/normal saves are blocked. Restore confirms publication and creates a new version. Undo holds up to 100 in-memory states; the server retains 50 versions.
 
-An input event captures the document once for dirty checking and immediate draft persistence. The session caches the normalized fingerprint of its private baseline and current undo entry. Baseline changes, history navigation, and history reconciliation invalidate those keys. The draft checkpoint and IndexedDB format stay the same.
+An input event captures the document once for dirty checking and immediate draft persistence. Structural itinerary and media actions commit any pending history before mutating the DOM, then record the result. Inline itinerary fields expose named multiline textboxes while editing. Snapshot and export serialization remove those editor-only attributes so reading mode retains native semantics.
+
+The session caches the normalized fingerprint of its private baseline and current undo entry. Baseline changes, history navigation, and history reconciliation invalidate those keys.
 
 `buildDiff()` matches events by stable ID and compares their day index as well as content and flattened order. Across-day moves show the configured old date → new date, even when overall order is unchanged. Within-day reordering remains an order change. Versions, imports and save conflicts share this comparison.
 

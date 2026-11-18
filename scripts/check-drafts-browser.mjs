@@ -175,6 +175,40 @@ try {
     await diagnostics.close(cleanCtx);
   }
   console.log('Pending input Undo/Redo: exact text, continuous edits, redo recovery and clean Undo reload passed on desktop/mobile.');
+  {
+    reset();const ctx=await context('structural history, pending input and reload'),page=await ctx.newPage();
+    await page.goto(origin);await ready(page);await selectTripTab(page,'d1');await page.locator('#editBtn').click();
+    const rows=page.locator('.day1 .timeline-row'),id=await rows.first().getAttribute('data-row-id');
+    const row=page.locator(`[data-row-id="${id}"]`),otherTitle=await rows.nth(1).locator('h3').textContent();
+    const undo=page.locator('#undoBtn'),redo=page.locator('#redoBtn');
+    await page.evaluate(()=>{window.__holdHistory=true;});
+    await row.locator('h3').fill('Latest title before deletion');
+    await row.locator('[data-delete-row]').click();
+    assert.equal(await row.count(),0);
+    await undo.click();
+    assert.equal(await row.locator('h3').textContent(),'Latest title before deletion');
+    assert.equal(await rows.nth(1).locator('h3').textContent(),otherTitle);
+    await redo.click();
+    assert.equal(await row.count(),0);
+    await undo.click();
+    await row.locator('[data-media="warning"]').click();
+    const warning=row.getByRole('textbox',{name:'주의사항',exact:true});
+    await warning.fill('Latest caution before deletion');
+    await row.locator('.warning-delete').click();
+    assert.equal(await warning.count(),0);
+    await undo.click();
+    assert.equal(await warning.textContent(),'Latest caution before deletion');
+    await redo.click();
+    assert.equal(await warning.count(),0);
+    await undo.click();
+    await page.reload();await recover(page);await selectTripTab(page,'d1');
+    if(!await page.locator('body').evaluate(el=>el.classList.contains('editing')))await page.locator('#editBtn').click();
+    assert.equal(await row.getByRole('textbox',{name:'일정 제목',exact:true}).textContent(),'Latest title before deletion');
+    assert.equal(await warning.textContent(),'Latest caution before deletion');
+    assert.equal(await rows.nth(1).locator('h3').textContent(),otherTitle);
+    await diagnostics.close(ctx);
+    console.log('Structural Undo/Redo: pending title and caution restored exactly, including after reload.');
+  }
   // Hold only the history debounce: input, storage, lifecycle and recovery run
   // normally. No helper records history or flushes the draft for these edits.
   for(const selector of ['.day1 h3','.day1 .remark','.schedule-warning-text'])for(const boundary of ['reload','pagehide','hidden','signout']){

@@ -272,7 +272,17 @@ try {
     const page = await context.newPage();
     const ready = async p => {await p.waitForFunction(() => !document.body.classList.contains('hydrating'));await waitForFixtureFonts(p);};
     const tab = p => selectTripTab(p, 'd1');
-    await page.goto(origin); await ready(page); await tab(page); await page.locator('#editBtn').click();
+    const assertField = async (field, name) => {
+      assert.equal(await field.and(field.page().getByRole('textbox', { name, exact: true })).count(), 1);
+      assert.equal(await field.getAttribute('aria-multiline'), 'true');
+    };
+    await page.goto(origin); await ready(page); await tab(page);
+    const existing = page.locator('.day1 .timeline-row').first();
+    assert.equal(await existing.getByRole('heading', { level: 3 }).count(), 1);
+    await page.locator('#editBtn').click();
+    await assertField(page.locator('.day1 .day-head p'), '하루 요약');
+    await assertField(existing.locator('h3'), '일정 제목');
+    await assertField(existing.locator('.remark'), '장소 또는 메모');
     const oldRows = await page.locator('.day1 .timeline-row').count();
     await page.locator('#addTimeBtn').click();
     const start = page.locator('#scheduleTimeStart'), end = page.locator('#scheduleTimeEnd');
@@ -302,6 +312,8 @@ try {
     const row = page.locator('.day1 .timeline-row').last();
     const rowId = await row.getAttribute('data-row-id');
     const title = row.locator('h3'), detail = row.locator('.remark');
+    await assertField(title, '일정 제목');
+    await assertField(detail, '장소 또는 메모');
     assert.equal(await title.textContent(), ''); assert.equal(await detail.textContent(), '');
     assert.equal(await detail.getAttribute('data-placeholder'),'장소 또는 메모');
     assert.ok(['\"장소 또는 메모\"','attr(data-placeholder)'].includes(await detail.evaluate(el => getComputedStyle(el,'::before').content)),'Placeholder content is literal or an attribute reference (engine serialization)');
@@ -323,6 +335,7 @@ try {
     assert.equal(await detail.textContent(), '서울'); assert.equal(await detail.getAttribute('data-empty'), 'false');
     await row.locator('[data-media="warning"]').click();
     const warning = row.locator('.schedule-warning-text');
+    await assertField(warning, '주의사항');
     assert.equal(await warning.textContent(), ''); await warning.pressSequentially('Bring tickets');
     assert.equal(await warning.textContent(), 'Bring tickets');
     await page.evaluate(() => window.__inputsTest.recordHistory());
@@ -341,6 +354,9 @@ try {
     assert.deepEqual(stored, ['', '', ''], 'Hints must never become saved content');
     await page.evaluate(state => { const api = window.__inputsTest; api.applyState(api.normalizeState(state, true)); }, snapshot);
     assert.equal(await detail.getAttribute('data-empty'), 'true', 'Imported empty fields retain hints');
+    await assertField(title, '일정 제목');
+    await assertField(detail, '장소 또는 메모');
+    await assertField(warning, '주의사항');
     // Preserve legacy/user content even when it happens to match old hint strings.
     await title.fill('새 일정'); await detail.fill('장소 또는 메모'); await warning.fill('새 주의사항');
     await page.evaluate(() => { const api = window.__inputsTest; api.applyState(api.captureState()); });
@@ -371,6 +387,8 @@ try {
       if (kind === 'editable') await ready(artifact);
       if(kind==='editable')await tab(artifact);
       const restored = artifact.locator(`[data-row-id="${rowId}"]`);
+      assert.equal(await artifact.getByRole('textbox', { name: '일정 제목', exact: true }).count(), 0);
+      assert.equal(await restored.getByRole('heading', { level: 3 }).count(), 1);
       assert.equal(await restored.locator('h3').textContent(), '');
       assert.equal(await restored.locator('h3').evaluate(el => getComputedStyle(el, '::before').content), '"제목 없음"');
       assert.equal(await restored.locator('.remark').isVisible(), false);
@@ -379,6 +397,9 @@ try {
       assert.equal(await restored.locator('h3').textContent(), '');
       if (kind === 'editable') {
         await artifact.locator('#editBtn').click();
+        await assertField(restored.locator('h3'), '일정 제목');
+        await assertField(restored.locator('.remark'), '장소 또는 메모');
+        await assertField(restored.locator('.schedule-warning-text'), '주의사항');
         assert.equal(await restored.locator('.remark').isVisible(), true);
         await restored.locator('.remark').click(); await restored.locator('.remark').pressSequentially('Restored');
         assert.equal(await restored.locator('.remark').textContent(), 'Restored');

@@ -1,5 +1,5 @@
 function createExportsController({$,$$,CONFIG,EXPORT_BASE_NAME,blobToDataUrl,captureState,currentOperationSignal,fetchAsDataUrl,isOperationBusy,isOperationCancelled,normalizeState,photoResources,setOperationBusy,setStatus,showChoice,showDialog,todayLocal}) {
-  function stripTransient(root){root.querySelectorAll('#draftStorageWarning,.schedule-media-tools,.photo-actions,.row-actions,.photo-delete,.schedule-map-delete,.row-delete,.check-delete,.check-actions,.check-feedback,.warning-delete').forEach(el=>el.remove());root.querySelectorAll('[contenteditable]').forEach(el=>el.setAttribute('contenteditable','false'));}
+  function stripTransient(root){stripScheduleFieldEditing(root);root.querySelectorAll('#draftStorageWarning,.schedule-media-tools,.photo-actions,.row-actions,.photo-delete,.schedule-map-delete,.row-delete,.check-delete,.check-actions,.check-feedback,.warning-delete').forEach(el=>el.remove());root.querySelectorAll('[contenteditable]').forEach(el=>el.setAttribute('contenteditable','false'));}
 
   async function embedPhotos(state,{strict=true}={}){
     const normalized=normalizeState(state),template=document.createElement('template');template.innerHTML=normalized.html;const failures=[],photos=Array.from(template.content.querySelectorAll('.schedule-photo'));

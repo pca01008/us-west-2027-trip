@@ -29,7 +29,7 @@ function fixture(){
     documentSession:session,sessionService:{current:()=>({})},
     fetchPublishedState:()=>{const read=deferred();reads.push(read);return read.promise;},
     receivePublishedState:controller.receivePublishedState,captureState:()=>clone(current),
-    setStatus:()=>{},resetInactivityTimer:()=>{},syncChecklistControls:()=>{},updateContextControls:()=>{}
+    setStatus:()=>{},resetInactivityTimer:()=>{},syncChecklistControls:()=>{},syncScheduleFieldEditing:()=>{},updateContextControls:()=>{}
   });
   return {controller,editor,session,classes,reads,cache,statuses,errors,checklist,current:()=>clone(current),emit:value=>remote({new:value}),
     async hydrate(){const task=controller.hydrate();reads.at(-1).resolve(row(10));await task;cache.length=0;statuses.length=0;}};
