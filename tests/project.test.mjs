@@ -56,8 +56,7 @@ test('브라우저 초안은 IndexedDB에 보존되고 저장 시 revision을 �
   assert.match(html, /tripRepository\.saveDocument\(normalized,documentSession\.snapshot\(\)\.publishedRevision/);
   assert.match(html, /receivePublishedState\(payload\.new,'realtime'\)/);
   assert.match(html, /PUBLIC_CACHE_RECORD_KEY/);
-  assert.match(html, /transaction\.objectStore\('records'\)\.put\(record,PUBLIC_CACHE_RECORD_KEY\)/);
-  assert.match(html, /writePublicCache\(legacy\.state,legacy\)/);
+  // The drafts browser suite verifies shared IndexedDB writes and legacy cache migration.
   assert.match(html, /metadata\.revision\?\?baseline\.publishedRevision/);
   assert.doesNotMatch(html, /localStorage\.setItem\((?:OFFLINE_)?CACHE_KEY/);
   assert.match(html, /window\.addEventListener\('pagehide'/);

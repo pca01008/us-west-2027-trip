@@ -170,7 +170,7 @@ For a component edit, inspect its feature layer, then matching `theme`/`refineme
 
 ## Startup and cache
 
-`hydrate()` builds defaults, applies the shared document for the same `tripId`, writes the IndexedDB public cache, subscribes to Realtime, and checks authentication. Failed reads use public cache, then configuration defaults.
+`hydrate()` builds defaults, applies the shared document for the same `tripId`, writes the IndexedDB public cache, subscribes to Realtime, and checks authentication. Failed reads use public cache, then configuration defaults. Each public-cache write compares revisions in one read/write transaction. The first valid cached record wins equal revisions, including revision zero for unversioned legacy data. A newer record stays available in the writing tab if its transaction fails. Once durable, it is available to new tabs.
 
 `selectInitialTab()` uses the device's `VISITOR_TIME_ZONE` date and stops overriding navigation after user selection. Clocks refresh every minute; progress every hour.
 
@@ -336,8 +336,8 @@ Attached photos use Storage; repository accommodation/map assets use Pages. Brow
 1. Select an event's photos; reject originals above 20MB each.
 2. Decode and resize to at most 1600px on the long edge; verify WebP output or fall back to JPEG with white behind transparency.
 3. Create at most 480px thumbnails likewise; reject compressed files above 5MB.
-4. SHA-256 hash the compressed bytes; stage data URLs in IndexedDB.
-5. Final confirmed Save uploads to hash paths, then replaces only successful staged items with Storage paths/public URLs in a new document version.
+4. Convert both images to data URLs and stage them in the draft. Check cancellation after each encode and conversion. Create the gallery when the first photo attaches.
+5. Final confirmed Save hashes the compressed bytes and uploads to hash paths, then replaces staged items with Storage paths/public URLs in the saved version.
 
 Discarding before upload leaves no server objects. Upload UI provides progress/cancel; public data stays unchanged until save succeeds. Failed/canceled uploads can leave already uploaded objects; retry reuses hashes.
 

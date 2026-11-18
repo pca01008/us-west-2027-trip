@@ -84,7 +84,7 @@ Draft-storage failure means recent edits may exist only in the current tab. Save
 - Maps store a place name and a valid HTTPS URL with a hostname. Missing names or invalid links show an error beside the input and focus the field. Valid queries, fragments and short links are retained; malformed imported links are disabled. Links remain visible offline; opening them needs internet.
 - Photo count is unlimited. New photos stay in drafts until final save. Uploads use WebP at up to 1600px full size/480px thumbnails, with JPEG fallback if WebP encoding is unsupported. Compressed files must be at most 5MB; thumbnails load lazily. Select original files up to 20MB each.
 - Photo description and alt text cannot be blank. Apply shows errors beside each invalid field and focuses the first; correcting a field clears its error.
-- Existence checks time out after 10 seconds; uploads/export downloads after 60 seconds per request. Cancel operation aborts photo requests. Failure/cancellation preserves the draft. Offline export fails if required photos cannot download; print/share falls back to their online URLs.
+- Existence checks time out after 10 seconds; uploads/export downloads after 60 seconds per request. Cancel operation aborts requests and stops adding photos still being prepared. Already attached photos stay in the draft. Offline export fails if required photos cannot download; print/share falls back to their online URLs.
 - Document deletion does not immediately delete stored photo files, allowing earlier-version restoration.
 - Print/share photo viewers support Enter/Space, confined Tab/Shift+Tab, Esc/Close and focus return. While open, the background is inactive and scrolling is locked, including offline.
 
@@ -140,7 +140,7 @@ Install from HTTPS for the configured name/icon and standalone mode in supported
 - Android Chrome: menu → Add to Home screen → Install; names vary by version.
 - iPhone Safari: Share → Add to Home Screen; enable Open as Web App if offered.
 - First open online and wait for the page/latest shared document. Installation alone does not retain all photos offline.
-- Static UI/configuration uses network first, falling back to cache on failure/after four seconds. Shared reads time out after eight seconds and fall back to IndexedDB public cache with saved time, or clearly identified defaults if no cache exists.
+- Static UI/configuration uses network first, falling back to cache on failure/after four seconds. Shared reads time out after eight seconds and fall back to the latest shared revision cached by this browser, or clearly identified defaults if no cache exists.
 - The service worker excludes Supabase authentication, itinerary API, and photo Storage. Login, server saves, external maps, and uploaded photos need internet. Export an offline copy for reliable photo retention.
 - Normal reconnection synchronizes. If startup could not load the SDK, reopen/refresh after reconnecting.
 - Browser cleanup can remove caches; they are not permanent backups.

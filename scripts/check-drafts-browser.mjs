@@ -76,12 +76,12 @@ const server = createServer(async (req, res) => {
       .replace(/<script id="pwaRegistration"[^>]*><\/script>/, '')
       .replace(/<script src="[^\"]*supabase[^\"]*"[^>]*><\/script>/, stub)
       .replace('data-offline="false"', url.searchParams.has('offline') ? 'data-offline="true"' : 'data-offline="false"'), `Object.defineProperty(runtimeOptions,'saveMs',{get:()=>window.__shortSaveTimeout?80:12000});runtimeOptions.historyDelay=()=>window.__holdHistory?60000:400;runtimeOptions.photoTimeout=value=>window.__shortPhotoTimeout&&[10000,60000].includes(value)?150:value;window.__draftTest={captureState,normalizeState,buildDiff,isDirty,recordHistory,flushDraftPersistence,queueDraftPersistence,readDraftRecord,writeDraftRecord,clearDraftRecord,moveHistory,discardDraft,discardAndLogout,logoutPreservingDraft,scheduleSessionTimers,getEditorSession,persistState,saveAndFinish,handleExternalSignOut,closeNotice,
-        refreshPublishedState,readPublicCache,closePreview,enterHistoricalPreview,sessionSnapshot:()=>documentSession.snapshot(),exportOfflineHtml,exportStaticHtml,busy:()=>isSaveInFlight()||isOperationBusy(),
+        refreshPublishedState,receivePublishedState,readPublicCache,writePublicCache,closePreview,enterHistoricalPreview,sessionSnapshot:()=>documentSession.snapshot(),exportOfflineHtml,exportStaticHtml,busy:()=>isSaveInFlight()||isOperationBusy(),
         stagePhoto:async()=>{const canvas=document.createElement('canvas');canvas.width=8;canvas.height=8;const full=canvas.toDataURL('image/jpeg'),thumb=canvas.toDataURL('image/webp');let row=$('.day1 .timeline-row');selectActiveScheduleRow(row);const card=row.querySelector('.card');let gallery=card.querySelector('.schedule-photos');if(!gallery){gallery=document.createElement('div');gallery.className='schedule-photos';card.appendChild(gallery);}gallery.appendChild(createPhotoFigure({fullUrl:full,thumbUrl:thumb,staged:true},'Network draft'));recordHistory();await flushDraftPersistence();},
         remotePhotoState:()=>{const state=captureState(),template=document.createElement('template');template.innerHTML=state.html;const img=template.content.querySelector('.schedule-photo img');img.src=location.origin+'/storage/v1/object/public/trip-media/download.jpg';img.dataset.fullUrl=img.src;state.html=template.innerHTML;return state;},
         base:()=>documentSession.snapshot().lastSavedState,revision:()=>documentSession.snapshot().publishedRevision,pending:()=>pendingCheckCount(),dirty:()=>documentSession.snapshot().pendingDraft,historyIndex:()=>documentSession.snapshot().historyIndex,
         legacyDraft:async()=>{const record=await readDraftRecord();delete record.baseState;await writeDraftRecord(record);draftWorkflow.deferRecovery();documentSession.markClean();draftWorkflow.cancelPendingWrites();},
-        activityKey:SESSION_ACTIVITY_KEY,key:DRAFT_RECORD_KEY,legacyKey:LEGACY_DRAFT_RECORD_KEY,db:DRAFT_DB_NAME,sessionKey:DRAFT_SESSION_KEY};`);
+        activityKey:SESSION_ACTIVITY_KEY,key:DRAFT_RECORD_KEY,legacyKey:LEGACY_DRAFT_RECORD_KEY,legacyCacheKey:LEGACY_CACHE_KEY,publicCacheKey:PUBLIC_CACHE_RECORD_KEY,db:DRAFT_DB_NAME,sessionKey:DRAFT_SESSION_KEY};`);
     if(file==='trip-config.js')body=body+`\nwindow.TRIP_CONFIG.supabase={url:'http://127.0.0.1:${server.address().port}',publishableKey:'fixture-key'};`;
     res.setHeader('Content-Type', file.endsWith('.html') ? 'text/html; charset=utf-8' : file.endsWith('.js') ? 'text/javascript; charset=utf-8' : 'image/webp');
     res.end(body);
@@ -208,6 +208,76 @@ try {
     assert.equal(await rows.nth(1).locator('h3').textContent(),otherTitle);
     await diagnostics.close(ctx);
     console.log('Structural Undo/Redo: pending title and caution restored exactly, including after reload.');
+  }
+  {
+    reset();const ctx=await context('shared public cache ordering and fallback');
+    const a=await ctx.newPage(),b=await ctx.newPage();
+    await Promise.all([a,b].map(async page=>{await page.goto(origin);await ready(page);}));
+    const stateWithTitle=([state,heading])=>{
+      const template=document.createElement('template');template.innerHTML=state.html;
+      template.content.querySelector('.day1 .timeline-row h3').textContent=heading;
+      return {...state,html:template.innerHTML};
+    };
+    const state=await a.evaluate(()=>window.__draftTest.captureState());
+    const cached=page=>page.evaluate(async()=>{
+      const {state,revision}=await window.__draftTest.readPublicCache();
+      const template=document.createElement('template');template.innerHTML=state.html;
+      return [revision,template.content.querySelector('.day1 .timeline-row h3').textContent];
+    });
+    const publish=async(page,revision,heading)=>{
+      const content=await page.evaluate(stateWithTitle,[state,heading]);
+      const accepted=await page.evaluate(row=>window.__draftTest.receivePublishedState(row,'realtime'),{revision,content});
+      assert.equal(accepted,true);
+      await cached(page);
+    };
+    const write=async(page,revision,heading)=>{
+      const content=await page.evaluate(stateWithTitle,[state,heading]);
+      return page.evaluate(({content,revision})=>window.__draftTest.writePublicCache(content,{revision}),{content,revision});
+    };
+    await publish(b,20,'Newer shared title');
+    await publish(a,10,'Delayed older title');
+    assert.equal(await title(a).textContent(),'Delayed older title','Tab A adopted the row against its own baseline');
+    assert.deepEqual(await cached(a),[20,'Newer shared title']);
+    await Promise.all([publish(a,40,'Newest concurrent title'),publish(b,30,'Older concurrent title')]);
+    assert.equal(await write(b,40,'Different title at the same revision'),true);
+    assert.deepEqual(await cached(b),[40,'Newest concurrent title']);
+
+    const fresh=await ctx.newPage();
+    await fresh.route(origin+'/mock/doc',route=>route.abort());
+    await fresh.goto(origin);await ready(fresh);await selectTripTab(fresh,'d1');
+    assert.match(await fresh.locator('#status').textContent(),/오프라인 캐시/);
+    assert.equal(await fresh.evaluate(()=>window.__draftTest.revision()),40);
+    assert.equal(await title(fresh).textContent(),'Newest concurrent title');
+
+    await b.evaluate(()=>{
+      const put=IDBObjectStore.prototype.put;
+      IDBObjectStore.prototype.put=function(value,key){
+        if(key===window.__draftTest.publicCacheKey&&value.revision===50){
+          IDBObjectStore.prototype.put=put;this.transaction.abort();return;
+        }
+        return put.call(this,value,key);
+      };
+    });
+    assert.equal(await write(b,50,'Memory fallback title'),false);
+    assert.deepEqual(await cached(b),[50,'Memory fallback title']);
+    assert.deepEqual(await cached(fresh),[40,'Newest concurrent title']);
+    assert.equal(await write(b,50,'Memory fallback title'),true);
+    assert.deepEqual(await cached(fresh),[50,'Memory fallback title']);
+    await diagnostics.close(ctx);
+
+    const legacy=await context('revision-zero public cache migration'),page=await legacy.newPage();
+    await page.goto(origin);await ready(page);
+    const content=await page.evaluate(stateWithTitle,[state,'Legacy title']);
+    await page.evaluate(content=>localStorage.setItem(window.__draftTest.legacyCacheKey,JSON.stringify(content)),content);
+    assert.deepEqual(await cached(page),[0,'Legacy title']);
+    assert.equal(await page.evaluate(()=>localStorage.getItem(window.__draftTest.legacyCacheKey)),null);
+    assert.equal(await write(page,0,'Another unknown revision'),true);
+    assert.deepEqual(await cached(page),[0,'Legacy title']);
+    assert.equal(await write(page,1,'First published title'),true);
+    assert.equal(await write(page,0,'Stale legacy title'),true);
+    assert.deepEqual(await cached(page),[1,'First published title']);
+    await diagnostics.close(legacy);
+    console.log('Public cache: reversed and concurrent tab arrivals, equal/legacy revisions, write failure and offline startup passed.');
   }
   // Hold only the history debounce: input, storage, lifecycle and recovery run
   // normally. No helper records history or flushes the draft for these edits.

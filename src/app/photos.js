@@ -32,14 +32,31 @@ let activePhotoFigure = null;
   function createPhotoFigure(info,label='일정 사진'){const figure=document.createElement('figure');figure.className='schedule-photo';figure.dataset.photoId=uid('photo');if(info.fullPath)figure.dataset.fullPath=info.fullPath;if(info.thumbPath)figure.dataset.thumbPath=info.thumbPath;if(info.staged)figure.dataset.staged='true';const safeLabel=photoLabelFromName(label);figure.innerHTML='<img alt="'+escapeHtml(safeLabel)+'" decoding="async" fetchpriority="low" loading="lazy" src="'+escapeHtml(info.thumbUrl||info.fullUrl)+'" data-full-url="'+escapeHtml(info.fullUrl||'')+'"><figcaption>'+escapeHtml(safeLabel)+'</figcaption>';decoratePhotoFigure(figure);return figure;}
   async function attachPhotos(files){
     if(!activeScheduleRow||!files.length||isOperationBusy())return;
-    const card=activeScheduleRow.querySelector('.card');let gallery=card.querySelector('.schedule-gallery');
-    if(!gallery){gallery=document.createElement('div');gallery.className='schedule-gallery';card.insertBefore(gallery,card.querySelector('.schedule-media-tools'));}
+    const card=activeScheduleRow.querySelector('.card');if(!card?.isConnected)return;
+    let gallery=card.querySelector('.schedule-gallery');
+    const stopped=()=>isOperationCancelled()||!card.isConnected;
     let attached=0;const failures=[];setOperationBusy(true,{cancelable:true,status:'사진 준비 0/'+files.length});
     try{
       for(let index=0;index<files.length;index++){
-        if(isOperationCancelled())break;const file=files[index];setStatus('사진 준비 '+(index+1)+'/'+files.length+' · '+file.name);
-        try{if(file.size>20*1024*1024)throw new Error('20MB를 초과했습니다.');const full=await compressImage(file,1600,.8);if(isOperationCancelled())break;const thumb=await compressImage(file,480,.76),info={fullUrl:await blobToDataUrl(full),thumbUrl:await blobToDataUrl(thumb),staged:true};gallery.appendChild(createPhotoFigure(info,file.name));attached++;}
-        catch(error){console.error(error);failures.push(file.name+' · '+error.message);}
+        if(stopped())break;
+        const file=files[index];setStatus('사진 준비 '+(index+1)+'/'+files.length+' · '+file.name);
+        try{
+          if(file.size>20*1024*1024)throw new Error('20MB를 초과했습니다.');
+          const full=await compressImage(file,1600,.8);if(stopped())break;
+          const thumb=await compressImage(file,480,.76);if(stopped())break;
+          const fullUrl=await blobToDataUrl(full);if(stopped())break;
+          const thumbUrl=await blobToDataUrl(thumb);if(stopped())break;
+          const figure=createPhotoFigure({fullUrl,thumbUrl,staged:true},file.name);
+          checkpointPendingHistory();
+          if(!gallery){
+            gallery=document.createElement('div');gallery.className='schedule-gallery';
+            card.insertBefore(gallery,card.querySelector('.schedule-media-tools'));
+          }
+          gallery.appendChild(figure);attached++;
+        }catch(error){
+          if(stopped())break;
+          console.error(error);failures.push(file.name+' · '+error.message);
+        }
       }
       updatePhotoMoveButtons(gallery);if(attached)finishMutation();
     }finally{const cancelled=isOperationCancelled();setOperationBusy(false);setStatus(cancelled?'사진 작업 취소 · '+attached+'개 초안 유지':'사진 '+attached+'개 저장 대기');}

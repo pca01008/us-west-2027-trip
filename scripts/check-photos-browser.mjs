@@ -40,11 +40,12 @@ try {
     };
     ${source}
     const photoService=createPhotoService({client,TRIP_ID,MEDIA_BUCKET,SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,operationSignal:()=>operationController?.signal});
-    const photos=createPhotosController({$ : selector=>document.querySelector(selector),OFFLINE_MODE,
-      ...photoService,body:document.body,decorateMapLink:()=>{},decoratePhotoFigure,escapeHtml,finishMutation,
+    const makePhotos=overrides=>createPhotosController({$ : selector=>document.querySelector(selector),OFFLINE_MODE,
+      ...photoService,body:document.body,checkpointPendingHistory:()=>{},decorateMapLink:()=>{},decoratePhotoFigure,escapeHtml,finishMutation,
       isOperationBusy:()=>operationBusy,isOperationCancelled:()=>operationCancelled,mapPlaceName:()=>'',
-      normalizeState,recordHistory:()=>{},setFieldError:()=>{},setOperationBusy,setStatus,showChoice,showDialog:()=>{},uid,updatePhotoMoveButtons});
-    window.photoTest={...photoService,...photos,uploads,setRow:photos.selectActiveScheduleRow};
+      normalizeState,recordHistory:()=>{},setFieldError:()=>{},setOperationBusy,setStatus,showChoice,showDialog:()=>{},uid,updatePhotoMoveButtons,...overrides});
+    const photos=makePhotos();
+    window.photoTest={...photoService,...photos,makePhotos,uploads,setRow:photos.selectActiveScheduleRow};
   ` });
   const results = await page.evaluate(async () => {
     const check=(value,message)=>{if(!value)throw Error(message);};
@@ -112,8 +113,51 @@ try {
     return summary;
   });
   assert.equal(results.length, 2);
+  diagnostics.scenario('cancel during photo preparation');
+  await page.evaluate(async () => {
+    const check=(value,message)=>{if(!value)throw Error(message);};
+    const encoded=new Blob(['encoded'],{type:'image/webp'});
+    const url=document.createElement('canvas').toDataURL('image/webp');
+    const priorFile=new File(['input'],'prior.png',{type:'image/png'});
+    const nextFile=new File(['input'],'next.png',{type:'image/png'});
+    for (const [boundary,offset] of ['full encode','thumbnail encode','full data URL','thumbnail data URL'].entries()){
+      for (const withPrior of [false,true]){
+        let calls=0,mutations=0,status='';
+        operationCancelled=false;
+        const stopAt=boundary+1+(withPrior?4:0);
+        const started=Promise.withResolvers(),release=Promise.withResolvers();
+        const step=async value=>{
+          if(++calls===stopAt){started.resolve();await release.promise;}
+          return value;
+        };
+        const photos=window.photoTest.makePhotos({
+          compressImage:()=>step(encoded),blobToDataUrl:()=>step(url),
+          finishMutation:()=>{mutations++;},setStatus:value=>{status=value;}
+        });
+        const row=document.createElement('div');
+        row.innerHTML='<article class="card"><div class="schedule-media-tools"></div></article>';
+        document.body.replaceChildren(row);photos.selectActiveScheduleRow(row);
+        const names=()=>Array.from(row.querySelectorAll('figcaption'),caption=>caption.textContent).join(',');
+        const pending=photos.attachPhotos(withPrior?[priorFile,nextFile]:[nextFile]);
+        await started.promise;
+        check(operationBusy&&names()===(withPrior?'prior':''),'Invalid state before '+offset);
+        operationCancelled=true;
+        release.resolve();
+        await pending;
+        check(!operationBusy&&calls===stopAt,'Work did not stop after '+offset);
+        check(names()===(withPrior?'prior':''),'Canceled attachment mutated gallery after '+offset);
+        check(Boolean(row.querySelector('.schedule-gallery'))===withPrior,'Canceled attachment left an empty gallery');
+        check(mutations===Number(withPrior)&&status.startsWith('사진 작업 취소'),'Cancellation did not retain prior attachments');
+        operationCancelled=false;
+        await photos.attachPhotos([nextFile]);
+        check(names()===(withPrior?'prior,next':'next')&&!operationBusy,'Retry did not attach after '+offset);
+        check(mutations===Number(withPrior)+1,'Retry did not record attachment');
+      }
+    }
+  });
   await diagnostics.close(context);
   console.log(JSON.stringify(results, null, 2));
+  console.log('Photo cancellation: each preparation boundary stops before attachment, retains completed photos and allows retry.');
 } catch (error) {
   await diagnostics.fail(error);
   throw error;
