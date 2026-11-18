@@ -1,6 +1,6 @@
 # November 14 project review checkpoint
 
-Status: validating Stage 2 as of November 18, 2026.
+Status: validating Stage 3 as of November 18, 2026.
 Requested start: 2026-11-14 04:00 Asia/Seoul, once, in the existing chat.
 Workspace: `D:\Workspace\travel\website`.
 
@@ -41,10 +41,10 @@ Persist concise operational facts after each meaningful finding, before long val
 | Baseline and full audit | Complete | Baseline `a178b19`; historical evidence in the dated review |
 | Findings and ordered plan | Complete | Reproductions and acceptance criteria in the dated review |
 | 1. Undo and field names | Passed | `350cce8`. Build freshness, 195 unit tests, static checks, Chromium editing group and full drafts suite. Titles/cautions survive Undo, Redo, and reload. Named fields and reading roles verified in desktop/mobile fixtures and exports. |
-| 2. Cache and cancellation | Passed | Build freshness, 195 unit tests, static checks, and full Chromium photos/drafts suites. Two-tab writes, fresh offline display, revision ties, legacy migration and failure/retry passed. All four photo-preparation cancellation boundaries retain prior attachments and allow retry. |
-| 3. Keyboard interaction | Pending | U1 and U3 with behavioral regressions |
+| 2. Cache and cancellation | Passed | `b8ac701`. Build freshness, 195 unit tests, static checks, and full Chromium photos/drafts suites. Two-tab writes, fresh offline display, revision ties, legacy migration and failure/retry passed. All four photo-preparation cancellation boundaries retain prior attachments and allow retry. |
+| 3. Keyboard interaction | Passed | Build freshness, 195 unit tests, static checks, Chromium input suite, Firefox input groups, and WebKit groups. The combined Windows WebKit run reached its dialog teardown deadline after assertions passed. Standalone dialog and editing runs exited successfully. Chromium's accessibility tree confirmed modal isolation and the edit-to-reading role change. |
 | 4. Visual verification | Pending | Record automated comparison and inspected states |
 | 5. Optional refinements | Pending | Evaluate mobile task access and font cost before changing either |
 | Final validation and release | Pending | Final checks, commit, push, PR/merge, CI, Pages, public verification |
 
-Next action: implement Stage 3 after the Stage 2 commit.
+Next action: run and record the visual comparison after the Stage 3 commit.

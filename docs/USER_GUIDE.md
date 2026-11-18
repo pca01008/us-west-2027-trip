@@ -22,7 +22,7 @@ The app is publicly readable. Keep original confirmations and personal informati
 
 ## Screens and navigation
 
-Section and Edit controls retain focus after pointer activation, including Safari/WebKit; closing a dialog returns focus to its opening control.
+Section and Edit controls retain focus after pointer activation, including Safari/WebKit. Focus stays in the active dialog and returns to the opening control when it closes.
 
 These instructions describe this branch's existing-app refinement. See the [implementation record](archive/2026-10-24-legacy-ui-refinement.md) for publication status and validation limits. Further Daylight development and production migration are paused.
 
@@ -99,6 +99,7 @@ The current trip uses KRW/USD. Other trips may show a different configured pair;
 - Remote saving, app resume, and reconnection preserve unadded input/cursor position. Deleted categories fall back to available ones. Input has no draft protection until Add.
 - Ledger totals appear above the entry form. The current rate and its update date appear below the form.
 - New expenses default to today. Editing an undated expense keeps its date blank until you choose one. Clearing a date marks the expense as undated.
+- Move an expense with its up/down buttons. Keyboard focus follows the expense and switches direction at the first or last row. After deletion, focus moves to the nearest remaining expense or the new expense field.
 - Ledger settings manages the manual rate and categories. Rate edits apply only with Apply and close (also Enter/Esc). Invalid input keeps the dialog open with a field error; correct it or use Revert rate to restore the current rate. Category deletion moves its expenses to Deleted category. Empty category names or expense descriptions in editing dialogs show an error beside the input; correct the field and apply again.
 - KRW totals sum every expense's KRW amount; USD totals sum every USD amount. These express the same spending; do not add them together. Category totals follow the same rule. KRW totals no longer count only original KRW entries. Budget controls and expense filters are absent.
 - Expense rows and category totals display KRW (USD), with the second amount in teal. Currency symbols and parentheses distinguish the amounts in both themes and print; automatic-calculation labels remain beside the relevant amount.

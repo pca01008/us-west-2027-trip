@@ -321,7 +321,7 @@ Timetable is a read-only projection. Start-only events have no inferred end; exp
 
 ## Dialog focus
 
-`showDialog()` records the active trigger before showing or focusing a modal. The dialog stack traps Tab and closes its top entry on Escape. Closing restores the trigger; ID/action selectors resolve replacement expense/category/time/photo controls after rendering. A child returns focus within its remaining parent. Hidden, unregistered dialogs do not steal focus. Modal openings use this helper; the mutation observer handles closes.
+`showDialog()` records the trigger before showing a modal. Only the top dialog accepts focus. The stack applies `inert` to sibling regions and restores their previous attributes on close. Tab stays in the top dialog and Escape closes it. A child returns focus to its parent. Trigger selectors resolve replacement expense/category/time/photo controls after rendering. The mutation observer handles closes, including simultaneous closes on sign-out. Export cloning restores original inert attributes and hides dialogs.
 
 Settings rate input stays separate from the ledger until Apply and close, Enter, or Escape validates and applies it. Blur validates without applying; rendering preserves edited input. Invalid submission retains the input, shows a local alert and focuses the field. Revert rate restores the current rate without closing or undoing category edits. Rate parsing rejects decimal values that lose precision on JSON Number round trips; exact fractions and trailing zeros remain supported. Unchanged application leaves the rate timestamp/history untouched.
 

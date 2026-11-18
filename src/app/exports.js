@@ -1,4 +1,4 @@
-function createExportsController({$,$$,CONFIG,EXPORT_BASE_NAME,blobToDataUrl,captureState,currentOperationSignal,fetchAsDataUrl,isOperationBusy,isOperationCancelled,normalizeState,photoResources,setOperationBusy,setStatus,showChoice,showDialog,todayLocal}) {
+function createExportsController({$,$$,CONFIG,EXPORT_BASE_NAME,blobToDataUrl,captureState,clonePageForExport,currentOperationSignal,fetchAsDataUrl,isOperationBusy,isOperationCancelled,normalizeState,photoResources,setOperationBusy,setStatus,showChoice,showDialog,todayLocal}) {
   function stripTransient(root){stripScheduleFieldEditing(root);root.querySelectorAll('#draftStorageWarning,.schedule-media-tools,.photo-actions,.row-actions,.photo-delete,.schedule-map-delete,.row-delete,.check-delete,.check-actions,.check-feedback,.warning-delete').forEach(el=>el.remove());root.querySelectorAll('[contenteditable]').forEach(el=>el.setAttribute('contenteditable','false'));}
 
   async function embedPhotos(state,{strict=true}={}){
@@ -55,7 +55,7 @@ function createExportsController({$,$$,CONFIG,EXPORT_BASE_NAME,blobToDataUrl,cap
   async function exportOfflineHtml(sourceState=captureState()) {
     if(isOperationBusy())return;setOperationBusy(true,{cancelable:true,status:'오프라인 작업본 준비 중'});
     try {
-      const embedded=await embedPhotos(sourceState),state=embedded.state,cloneDoc=document.documentElement.cloneNode(true);
+      const embedded=await embedPhotos(sourceState),state=embedded.state,cloneDoc=clonePageForExport();
       cloneDoc.dataset.offline='true';cloneDoc.dataset.offlineId=Date.now().toString(36);
       const cloneBody=cloneDoc.querySelector('body'),cloneMain=cloneDoc.querySelector('main'),cloneLoading=cloneDoc.querySelector('#appLoading');
       cloneBody.className='viewing offline-mode hydrating';cloneMain.innerHTML=state.html;cloneMain.setAttribute('aria-busy','true');
@@ -97,7 +97,7 @@ function createExportsController({$,$$,CONFIG,EXPORT_BASE_NAME,blobToDataUrl,cap
   async function exportStaticHtml(){
     if(isOperationBusy())return;setOperationBusy(true,{cancelable:true,status:'인쇄·공유용 사본 준비 중'});
     try{
-      const embedded=await embedPhotos(captureState(),{strict:false}),cloneDoc=document.documentElement.cloneNode(true),photoData=new Map();
+      const embedded=await embedPhotos(captureState(),{strict:false}),cloneDoc=clonePageForExport(),photoData=new Map();
       const embeddedTemplate=document.createElement('template');embeddedTemplate.innerHTML=embedded.state.html;embeddedTemplate.content.querySelectorAll('.schedule-photo').forEach(figure=>{const img=figure.querySelector('img');photoData.set(figure.dataset.photoId,{src:img?.src||'',full:img?.dataset.fullUrl||img?.src||''});});
       cloneDoc.querySelectorAll('.schedule-photo').forEach(figure=>{const data=photoData.get(figure.dataset.photoId),img=figure.querySelector('img');if(data&&img){img.src=data.src;img.dataset.fullUrl=data.full;}});
       cloneDoc.querySelectorAll('script,#moneyPanelTemplate,.editor-bar,.auth-dialog,.notice-dialog,.version-dialog,.preview-banner,.app-loading,.tab-scroll').forEach(el=>el.remove());
