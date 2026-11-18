@@ -1,7 +1,7 @@
-function createScheduleController({$,$$,TIMETABLE_KINDS,TRIP_DAYS,body,checkpointPendingHistory,configDateParts,decorateButtonIcons,editScheduleClock,escapeHtml,focusAndSelect,hashText,iconSvg,isOperationBusy,mapPlaceName,openMapDialog,parseTimetableTime,prefersReducedMotion,readScheduleTime,recordHistory,resetInactivityTimer,scheduleClockMask,scheduleClockValue,scheduleKindMode,scheduleTimeValue,selectActiveScheduleRow,showDialog,timetableClock,timetableKind,uid}) {
+function createScheduleController({$,$$,TIMETABLE_KINDS,TRIP_DAYS,body,checkpointPendingHistory,closeDialog,configDateParts,decorateButtonIcons,editScheduleClock,escapeHtml,focusAndSelect,hashText,iconSvg,isOperationBusy,mapPlaceName,openMapDialog,parseTimetableTime,prefersReducedMotion,readScheduleTime,recordHistory,resetInactivityTimer,scheduleClockMask,scheduleClockValue,scheduleKindMode,scheduleTimeValue,selectActiveScheduleRow,showDialog,timetableClock,timetableKind,uid}) {
 let scheduleTimeTarget = null;
   function addTimeRow(){const id=$('.day-radio:checked')?.id||'';if(!/^d\d+$/.test(id))return;openScheduleTimeDialog(null,$('.day'+id.slice(1)));}
-  function closeScheduleTimeDialog(){$('#scheduleTimeDialog').hidden=true;scheduleTimeTarget=null;}
+  function closeScheduleTimeDialog(){scheduleTimeTarget=null;closeDialog($('#scheduleTimeDialog'));}
   function openScheduleTimeDialog(row,panel=row?.closest('.day')) {
     if(!body.classList.contains('editing')||!panel)return;
     checkpointPendingHistory();
@@ -72,6 +72,9 @@ let scheduleTimeTarget = null;
     if(result.error){$('#scheduleTimeError').textContent=result.error;$('#scheduleTimeError').hidden=false;const input=$(result.field==='end'?'#scheduleTimeEnd':'#scheduleTimeStart');input.setAttribute('aria-invalid','true');input.focus();return;}
     const {panel}=scheduleTimeTarget;let {row}=scheduleTimeTarget;const isNew=!row,zone=$('#scheduleTimeZone').value.trim();
     if(!panel.isConnected||row&&!row.isConnected){closeScheduleTimeDialog();return;}
+    // Release the background before inserting editable fields. Linux WebKit
+    // can focus a field created under inert yet fail to insert typed text.
+    closeScheduleTimeDialog();
     if(isNew){row=document.createElement('div');row.className='timeline-row';row.dataset.rowId=uid('row');row.innerHTML='<div class="time" contenteditable="false"></div><div class="rail"><i class="dot"></i></div><article class="card"><h3></h3><div class="remark"></div></article>';panel.appendChild(row);row.querySelectorAll(SCHEDULE_FIELD_SELECTOR).forEach(field=>setScheduleFieldEditing(field,true));}
     const original=readScheduleTime(row);
     if(isNew||original.time!==result.time||original.zone!==zone){
@@ -80,9 +83,8 @@ let scheduleTimeTarget = null;
       else timeNode.textContent=result.time;
       if(zone){const small=document.createElement('small');small.textContent=zone;timeNode.appendChild(small);}
     }
-    closeScheduleTimeDialog();decorateScheduleRows();recordHistory();resetInactivityTimer();
-    // Let the dialog observer remove inert before moving focus. Finish the
-    // handoff before another keyboard event can arrive or change the selection.
+    decorateScheduleRows();recordHistory();resetInactivityTimer();
+    // Finish the handoff before another keyboard event can change the selection.
     if(isNew)queueMicrotask(()=>{
       if(row.isConnected&&body.classList.contains('editing'))focusAndSelect(row.querySelector('h3'));
     });

@@ -2910,6 +2910,11 @@ function showDialog(dialog){
     registerDialogState(dialog);
   }
 
+function closeDialog(dialog){
+    dialog.hidden=true;
+    removeClosedDialogs();
+  }
+
 function closeTopDialog(dialog){const closeId={checklistDialog:'checklistCancel',authDialog:'authCancel',versionDialog:'closeVersionsBtn',versionCompareDialog:'versionCompareClose',categoryDialog:'categoryCancel',ledgerSettingsDialog:'ledgerSettingsClose',expenseDialog:'expenseEditCancel',scheduleTimeDialog:'scheduleTimeCancel',mapDialog:'mapCancel',photoEditDialog:'photoEditCancel',importDialog:'importCancel',exportDialog:'exportCancel',photoViewer:'photoViewerClose',timetableDetail:'timetableDetailClose'}[dialog.id];if(dialog.id==='noticeDialog'){closeNotice($('#sessionCountdown').hidden?'cancel':'continue');return;}if(closeId)$('#'+closeId)?.click();}
 
 function registerDialogState(dialog){
@@ -2968,7 +2973,7 @@ function initializeDialogAccessibility(){
     observer?.disconnect();observer=null;openDialogStack.length=0;updateDialogBackground();
     document.removeEventListener('keydown',handleDialogKey,true);document.removeEventListener('focusin',guardDialogFocus,true);clearCountdown();
   }
-  return Object.freeze({clonePageForExport,closeNotice,showChoice,focusableIn,setFieldError,rememberDialogOrigin,showDialog,closeTopDialog,registerDialogState,initializeDialogAccessibility,startNoticeCountdown,clearCountdown,dispose,inputValue:()=>noticeInputValue});
+  return Object.freeze({clonePageForExport,closeDialog,closeNotice,showChoice,focusableIn,setFieldError,rememberDialogOrigin,showDialog,closeTopDialog,registerDialogState,initializeDialogAccessibility,startNoticeCountdown,clearCountdown,dispose,inputValue:()=>noticeInputValue});
 }
 
 /** Editor identity and activity transport. Draft and dialog policy is injected. */
@@ -3271,10 +3276,10 @@ function currentOperationSignal(){return operationController?.signal;}
 return Object.freeze({invalidateEditorEntry,setOperationBusy,cancelCurrentOperation,isOperationBusy,isOperationCancelled,currentOperationSignal,resetDraft,confirmSave,showInactivityWarning,closeEditorDialogs,handleExternalSignOut,logoutPreservingDraft,requestManualLogout,discardDraft,discardAndLogout,bindAuthentication,checkpointPendingHistory,isRevisionConflict,compactDiffMessage,resolveSaveConflict,persistState,saveAndFinish,requestFinishEditing,beginEditing,requestAuthentication,runPurpose,requireEditor,isDirty,updateDirtyState,setEditable,recordHistory,queueHistory,initializeHistory,updateHistoryControls,moveHistory,setEditingUI,finishMutation,isSaveInFlight,bindEditingControls});
 }
 
-function createScheduleController({$,$$,TIMETABLE_KINDS,TRIP_DAYS,body,checkpointPendingHistory,configDateParts,decorateButtonIcons,editScheduleClock,escapeHtml,focusAndSelect,hashText,iconSvg,isOperationBusy,mapPlaceName,openMapDialog,parseTimetableTime,prefersReducedMotion,readScheduleTime,recordHistory,resetInactivityTimer,scheduleClockMask,scheduleClockValue,scheduleKindMode,scheduleTimeValue,selectActiveScheduleRow,showDialog,timetableClock,timetableKind,uid}) {
+function createScheduleController({$,$$,TIMETABLE_KINDS,TRIP_DAYS,body,checkpointPendingHistory,closeDialog,configDateParts,decorateButtonIcons,editScheduleClock,escapeHtml,focusAndSelect,hashText,iconSvg,isOperationBusy,mapPlaceName,openMapDialog,parseTimetableTime,prefersReducedMotion,readScheduleTime,recordHistory,resetInactivityTimer,scheduleClockMask,scheduleClockValue,scheduleKindMode,scheduleTimeValue,selectActiveScheduleRow,showDialog,timetableClock,timetableKind,uid}) {
 let scheduleTimeTarget = null;
   function addTimeRow(){const id=$('.day-radio:checked')?.id||'';if(!/^d\d+$/.test(id))return;openScheduleTimeDialog(null,$('.day'+id.slice(1)));}
-  function closeScheduleTimeDialog(){$('#scheduleTimeDialog').hidden=true;scheduleTimeTarget=null;}
+  function closeScheduleTimeDialog(){scheduleTimeTarget=null;closeDialog($('#scheduleTimeDialog'));}
   function openScheduleTimeDialog(row,panel=row?.closest('.day')) {
     if(!body.classList.contains('editing')||!panel)return;
     checkpointPendingHistory();
@@ -3345,6 +3350,9 @@ let scheduleTimeTarget = null;
     if(result.error){$('#scheduleTimeError').textContent=result.error;$('#scheduleTimeError').hidden=false;const input=$(result.field==='end'?'#scheduleTimeEnd':'#scheduleTimeStart');input.setAttribute('aria-invalid','true');input.focus();return;}
     const {panel}=scheduleTimeTarget;let {row}=scheduleTimeTarget;const isNew=!row,zone=$('#scheduleTimeZone').value.trim();
     if(!panel.isConnected||row&&!row.isConnected){closeScheduleTimeDialog();return;}
+    // Release the background before inserting editable fields. Linux WebKit
+    // can focus a field created under inert yet fail to insert typed text.
+    closeScheduleTimeDialog();
     if(isNew){row=document.createElement('div');row.className='timeline-row';row.dataset.rowId=uid('row');row.innerHTML='<div class="time" contenteditable="false"></div><div class="rail"><i class="dot"></i></div><article class="card"><h3></h3><div class="remark"></div></article>';panel.appendChild(row);row.querySelectorAll(SCHEDULE_FIELD_SELECTOR).forEach(field=>setScheduleFieldEditing(field,true));}
     const original=readScheduleTime(row);
     if(isNew||original.time!==result.time||original.zone!==zone){
@@ -3353,9 +3361,8 @@ let scheduleTimeTarget = null;
       else timeNode.textContent=result.time;
       if(zone){const small=document.createElement('small');small.textContent=zone;timeNode.appendChild(small);}
     }
-    closeScheduleTimeDialog();decorateScheduleRows();recordHistory();resetInactivityTimer();
-    // Let the dialog observer remove inert before moving focus. Finish the
-    // handoff before another keyboard event can arrive or change the selection.
+    decorateScheduleRows();recordHistory();resetInactivityTimer();
+    // Finish the handoff before another keyboard event can change the selection.
     if(isNew)queueMicrotask(()=>{
       if(row.isConnected&&body.classList.contains('editing'))focusAndSelect(row.querySelector('h3'));
     });
@@ -4470,6 +4477,7 @@ TIMETABLE_KINDS:TIMETABLE_KINDS,
 TRIP_DAYS:TRIP_DAYS,
 body:body,
 checkpointPendingHistory:()=>checkpointPendingHistory(),
+closeDialog:dialogs.closeDialog,
 configDateParts:(...args)=>configDateParts(...args),
 decorateButtonIcons:(...args)=>decorateButtonIcons(...args),
 editScheduleClock:(...args)=>editScheduleClock(...args),

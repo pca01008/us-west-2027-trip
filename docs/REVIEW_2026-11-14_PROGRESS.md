@@ -65,4 +65,8 @@ The strict coordinator stopped at the Ubuntu 24.04 requirement on Windows. The p
 
 Schedule creation now finishes its focus and caret handoff after dialog isolation is released and before the next keyboard event. A side-by-side Chromium probe reproduced the missing immediate caret against `2104d0b` and verified it after the correction. The integrated editing regressions passed on Chromium, Firefox and WebKit. Generated, static, whitespace and 195 unit checks passed again.
 
-Next action: push the verified focus correction and follow the updated PR checks through Pages.
+[Validate at `a027203`](https://github.com/pca01008/us-west-2027-trip/actions/runs/44245648502) passed the immediate focus/caret assertion in Ubuntu WebKit, but the title still received no text. A temporary environment built from the pinned Ubuntu 24.04 Playwright layers and Node 24.22.1 reproduced the failure. The title received keydown events without beforeinput or input. Scrolling it onscreen or adding a line break did not help. Synchronously releasing the dialog's inert background before creating the row restored native text insertion.
+
+The close-before-insertion correction passed the Ubuntu WebKit editing and dialog groups on desktop and mobile. The broad Chromium input suite and all 195 unit tests passed again, along with generated and static checks. The temporary Linux environment supplied focused diagnostic evidence; the complete required verification still runs in the protected PR.
+
+Next action: push the verified WebKit correction and follow the updated PR checks through Pages.

@@ -78,6 +78,11 @@ function showDialog(dialog){
     registerDialogState(dialog);
   }
 
+function closeDialog(dialog){
+    dialog.hidden=true;
+    removeClosedDialogs();
+  }
+
 function closeTopDialog(dialog){const closeId={checklistDialog:'checklistCancel',authDialog:'authCancel',versionDialog:'closeVersionsBtn',versionCompareDialog:'versionCompareClose',categoryDialog:'categoryCancel',ledgerSettingsDialog:'ledgerSettingsClose',expenseDialog:'expenseEditCancel',scheduleTimeDialog:'scheduleTimeCancel',mapDialog:'mapCancel',photoEditDialog:'photoEditCancel',importDialog:'importCancel',exportDialog:'exportCancel',photoViewer:'photoViewerClose',timetableDetail:'timetableDetailClose'}[dialog.id];if(dialog.id==='noticeDialog'){closeNotice($('#sessionCountdown').hidden?'cancel':'continue');return;}if(closeId)$('#'+closeId)?.click();}
 
 function registerDialogState(dialog){
@@ -136,5 +141,5 @@ function initializeDialogAccessibility(){
     observer?.disconnect();observer=null;openDialogStack.length=0;updateDialogBackground();
     document.removeEventListener('keydown',handleDialogKey,true);document.removeEventListener('focusin',guardDialogFocus,true);clearCountdown();
   }
-  return Object.freeze({clonePageForExport,closeNotice,showChoice,focusableIn,setFieldError,rememberDialogOrigin,showDialog,closeTopDialog,registerDialogState,initializeDialogAccessibility,startNoticeCountdown,clearCountdown,dispose,inputValue:()=>noticeInputValue});
+  return Object.freeze({clonePageForExport,closeDialog,closeNotice,showChoice,focusableIn,setFieldError,rememberDialogOrigin,showDialog,closeTopDialog,registerDialogState,initializeDialogAccessibility,startNoticeCountdown,clearCountdown,dispose,inputValue:()=>noticeInputValue});
 }
