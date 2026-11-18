@@ -59,4 +59,10 @@ Windows used Node 24.22.3 and Playwright 1.62.1. Generated-output freshness, sta
 
 The strict coordinator stopped at the Ubuntu 24.04 requirement on Windows. The protected PR workflow supplies the pinned Ubuntu/Node/npm/browser environment and disposable PostgreSQL 17. Its required gate and Pages artifact must succeed before merging.
 
-Next action: push the final commit, open the protected PR, and follow the validated main push through Pages.
+## Release candidate follow-up
+
+[PR 4](https://github.com/pca01008/us-west-2027-trip/pull/4) at `2104d0b` passed unit/static and PostgreSQL 17 in [Validate](https://github.com/pca01008/us-west-2027-trip/actions/runs/44244586003). Ubuntu WebKit discarded the first keyboard input after adding an event. The trace showed a named editable title with empty content after typing; typing into the explicitly clicked note still worked. The required gate stopped publication.
+
+Schedule creation now finishes its focus and caret handoff after dialog isolation is released and before the next keyboard event. A side-by-side Chromium probe reproduced the missing immediate caret against `2104d0b` and verified it after the correction. The integrated editing regressions passed on Chromium, Firefox and WebKit. Generated, static, whitespace and 195 unit checks passed again.
+
+Next action: push the verified focus correction and follow the updated PR checks through Pages.

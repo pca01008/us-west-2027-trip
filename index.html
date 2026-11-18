@@ -3354,7 +3354,11 @@ let scheduleTimeTarget = null;
       if(zone){const small=document.createElement('small');small.textContent=zone;timeNode.appendChild(small);}
     }
     closeScheduleTimeDialog();decorateScheduleRows();recordHistory();resetInactivityTimer();
-    if(isNew)requestAnimationFrame(()=>focusAndSelect(row.querySelector('h3')));
+    // Let the dialog observer remove inert before moving focus. Finish the
+    // handoff before another keyboard event can arrive or change the selection.
+    if(isNew)queueMicrotask(()=>{
+      if(row.isConnected&&body.classList.contains('editing'))focusAndSelect(row.querySelector('h3'));
+    });
   }
   function addScheduleWarning(row){
     const card=row?.querySelector('.card');if(!card)return;

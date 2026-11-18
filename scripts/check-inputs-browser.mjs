@@ -372,6 +372,12 @@ try {
     assert.equal(await start.inputValue(), '00:15', 'Noncancelable input must overwrite, not shift digits');
     await start.click(); await start.press('Control+a'); await start.pressSequentially('0930');
     assert.equal(await start.inputValue(), '09:30');
+    await page.locator('#scheduleTimeSave').evaluate(button=>{
+      button.addEventListener('click',()=>queueMicrotask(()=>{
+        const title=document.querySelector('.day1 .timeline-row:last-child h3');
+        window.__newTitleReady=Boolean(title&&document.activeElement===title&&title.contains(getSelection().anchorNode));
+      }),{once:true});
+    });
     await page.locator('#scheduleTimeSave').click();
     assert.equal(await page.locator('.day1 .timeline-row').count(), oldRows + 1);
     const row = page.locator('.day1 .timeline-row').last();
@@ -382,7 +388,8 @@ try {
     assert.equal(await title.textContent(), ''); assert.equal(await detail.textContent(), '');
     assert.equal(await detail.getAttribute('data-placeholder'),'장소 또는 메모');
     assert.ok(['\"장소 또는 메모\"','attr(data-placeholder)'].includes(await detail.evaluate(el => getComputedStyle(el,'::before').content)),'Placeholder content is literal or an attribute reference (engine serialization)');
-    await title.pressSequentially('Museum'); await detail.click(); await detail.pressSequentially('Los Angeles');
+    assert.equal(await page.evaluate(()=>window.__newTitleReady),true,'The title has focus and a caret before the next keyboard event');
+    await page.keyboard.type('Museum'); await detail.click(); await detail.pressSequentially('Los Angeles');
     assert.equal(await title.textContent(), 'Museum'); assert.equal(await detail.textContent(), 'Los Angeles');
     await detail.press('Control+a'); await detail.press('Backspace');
     assert.equal(await detail.getAttribute('data-empty'), 'true', 'Deleting all text restores the hint even with a remaining BR');
